@@ -1,0 +1,19 @@
+defaultNamespace: monitoring
+dependsOn:
+  - name: fleet-kube-prometheus-stack-pvc
+helm:
+  releaseName: kube-prometheus-stack
+  repo: https://prometheus-community.github.io/helm-charts
+  chart: kube-prometheus-stack
+  version: 87.21.0
+  valuesFiles:
+    - values.yaml
+  # Optional: Timeout for large deployments
+  timeoutSeconds: 600
+diff:
+  comparePatches:
+    - apiVersion: v1
+      kind: Secret
+      name: grafana-admin
+      operations:
+        - { "op": "remove", "path": "/data" }

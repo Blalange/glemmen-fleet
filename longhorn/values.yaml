@@ -1,0 +1,20 @@
+# Longhorn distributed block storage
+
+# Storage class configuration
+persistence:
+  # Create the default 'longhorn' StorageClass
+  createStorageClass: true
+  # Do not make it the cluster default (apps use explicit SCs)
+  defaultClass: false
+  # Match the 1-replica convention used by the btrix/monitoring SCs
+  defaultClassReplicaCount: 1
+
+# Backups to SeaweedFS S3 via the internal haproxy load balancer
+# Credentials live in the restored 'longhorn-weed-credentials' secret
+defaultBackupStore:
+  backupTarget: s3://longhorn-backups@none/
+  backupTargetCredentialSecret: longhorn-weed-credentials
+
+# Longhorn is managed by Fleet/GitOps
+preUpgradeChecker:
+  jobEnabled: false

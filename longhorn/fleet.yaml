@@ -1,0 +1,9 @@
+defaultNamespace: longhorn-system
+helm:
+  releaseName: longhorn
+  repo: https://charts.longhorn.io
+  chart: longhorn
+  version: 1.12.1
+  valuesFiles:
+    - values.yaml
+  timeoutSeconds: 600
