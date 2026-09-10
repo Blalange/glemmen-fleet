@@ -36,15 +36,6 @@ prometheus:
     serviceMonitorNamespaceSelector: {}
     podMonitorNamespaceSelector: {}
 
-    # Static targets for external node exporters
-    additionalScrapeConfigs:
-      - job_name: node
-        static_configs:
-          - targets:
-              - 100.110.169.220:9100
-              - 100.110.145.230:9100
-              - 100.110.72.224:9100
-
 # Grafana configuration
 grafana:
   enabled: true
@@ -66,11 +57,11 @@ grafana:
   # Grafana resources
   resources:
     requests:
-      cpu: 100m
-      memory: 256Mi
+      cpu: 2
+      memory: 1Gi
     limits:
-      cpu: 500m
-      memory: 512Mi
+      cpu: 4
+      memory: 2Gi
 
   # Ingress configuration
   ingress:
