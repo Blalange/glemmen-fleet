@@ -4,7 +4,7 @@
 # Prometheus configuration
 prometheus:
   prometheusSpec:
-    replicas: 2
+    replicas: 1
     # Scrape configuration
     scrapeInterval: 15s
 
@@ -39,7 +39,7 @@ prometheus:
 # Grafana configuration
 grafana:
   enabled: true
-  replicas: 2
+  replicas: 1
 
   # Use secret for admin password
   admin:
@@ -76,7 +76,7 @@ grafana:
 # Alertmanager configuration
 alertmanager:
   enabled: true
-  replicas: 2
+  replicas: 1
   alertmanagerSpec:
     storage:
       volumeClaimTemplate:
