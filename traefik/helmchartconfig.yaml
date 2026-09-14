@@ -1,0 +1,28 @@
+# Customizes the Traefik chart bundled with K3s so every Ingress gets HTTPS:
+# - the cert-manager wildcard cert is the default certificate
+# - websecure is the default entrypoint, so Ingresses are served over TLS
+# - HTTP is redirected to HTTPS
+apiVersion: helm.cattle.io/v1
+kind: HelmChartConfig
+metadata:
+  name: traefik
+  namespace: kube-system
+spec:
+  valuesContent: |-
+    ports:
+      web:
+        http:
+          redirections:
+            entryPoint:
+              to: websecure
+              scheme: https
+              permanent: true
+      websecure:
+        asDefault: true
+        http:
+          tls:
+            enabled: true
+    tlsStore:
+      default:
+        defaultCertificate:
+          secretName: glem-blatrix-eu-wildcard-tls

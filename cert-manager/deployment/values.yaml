@@ -1,0 +1,37 @@
+# cert-manager - automatically issues and renews TLS certificates
+
+# Install the cert-manager CRDs (ClusterIssuer, Certificate, ...) with the chart
+crds:
+  enabled: true
+
+# Scrape cert-manager metrics with kube-prometheus-stack
+prometheus:
+  servicemonitor:
+    enabled: true
+
+# Resource limits
+resources:
+  requests:
+    cpu: 50m
+    memory: 64Mi
+  limits:
+    cpu: 500m
+    memory: 256Mi
+
+webhook:
+  resources:
+    requests:
+      cpu: 20m
+      memory: 32Mi
+    limits:
+      cpu: 200m
+      memory: 128Mi
+
+cainjector:
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 500m
+      memory: 256Mi

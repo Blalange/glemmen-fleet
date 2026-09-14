@@ -1,0 +1,42 @@
+# Let's Encrypt issuers using Cloudflare DNS-01, which is required for wildcard
+# certificates.
+#
+# Before these can issue anything, a Cloudflare API token secret must exist in
+# the cert-manager namespace:
+#
+#   kubectl create secret generic cloudflare-api-token -n cert-manager \
+#     --from-literal=api-token=<token>
+#
+# The token needs Zone:Zone:Read and Zone:DNS:Edit for blatrix.eu.
+# Use letsencrypt-staging when testing to avoid hitting Let's Encrypt rate limits.
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: letsencrypt-staging
+spec:
+  acme:
+    server: https://acme-staging-v02.api.letsencrypt.org/directory
+    privateKeySecretRef:
+      name: letsencrypt-staging-account-key
+    solvers:
+      - dns01:
+          cloudflare:
+            apiTokenSecretRef:
+              name: cloudflare-api-token
+              key: api-token
+---
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: letsencrypt-prod
+spec:
+  acme:
+    server: https://acme-v02.api.letsencrypt.org/directory
+    privateKeySecretRef:
+      name: letsencrypt-prod-account-key
+    solvers:
+      - dns01:
+          cloudflare:
+            apiTokenSecretRef:
+              name: cloudflare-api-token
+              key: api-token

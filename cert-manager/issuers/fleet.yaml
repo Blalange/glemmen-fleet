@@ -1,0 +1,3 @@
+defaultNamespace: cert-manager
+dependsOn:
+  - name: glemmen-fleet-cert-manager-deployment

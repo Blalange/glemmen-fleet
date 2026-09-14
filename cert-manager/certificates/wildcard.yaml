@@ -1,0 +1,15 @@
+# Wildcard certificate for *.glem.blatrix.eu. It lives in kube-system so Traefik
+# (which runs there in K3s) can use the resulting secret as its default
+# certificate for every Ingress.
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: glem-blatrix-eu-wildcard
+spec:
+  secretName: glem-blatrix-eu-wildcard-tls
+  issuerRef:
+    name: letsencrypt-prod
+    kind: ClusterIssuer
+  dnsNames:
+    - glem.blatrix.eu
+    - "*.glem.blatrix.eu"
