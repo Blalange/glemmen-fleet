@@ -1,5 +1,6 @@
 # Customizes the Traefik chart bundled with K3s so every Ingress gets HTTPS:
-# - the cert-manager wildcard cert is the default certificate
+# - the cert-manager wildcard certs are loaded into the default TLS store and
+#   selected per SNI; the blatrix one is also the fallback certificate
 # - websecure is the default entrypoint, so Ingresses are served over TLS
 # - HTTP is redirected to HTTPS
 apiVersion: helm.cattle.io/v1
@@ -26,3 +27,8 @@ spec:
       default:
         defaultCertificate:
           secretName: glem-blatrix-eu-wildcard-tls
+        certificates:
+          - secretName: glem-blatrix-eu-wildcard-tls
+          - secretName: shrail-eu-org-wildcard-tls
+          - secretName: thisisaveryshortdomain-asso-eu-org-wildcard-tls
+          - secretName: glem-men-wildcard-tls

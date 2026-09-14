@@ -1,6 +1,8 @@
-# Wildcard certificate for *.glem.blatrix.eu. It lives in kube-system so Traefik
-# (which runs there in K3s) can use the resulting secret as its default
-# certificate for every Ingress.
+# Wildcard certificates. They live in kube-system so Traefik (which runs there
+# in K3s) can load the resulting secrets into its default TLS store and serve
+# them per SNI for every Ingress.
+---
+# *.glem.blatrix.eu
 apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
@@ -13,3 +15,43 @@ spec:
   dnsNames:
     - glem.blatrix.eu
     - "*.glem.blatrix.eu"
+---
+# *.shrail.eu.org, uses the same Cloudflare token as blatrix.eu
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: shrail-eu-org-wildcard
+spec:
+  secretName: shrail-eu-org-wildcard-tls
+  issuerRef:
+    name: letsencrypt-prod
+    kind: ClusterIssuer
+  dnsNames:
+    - "*.shrail.eu.org"
+---
+# *.thisisaveryshortdomain.asso.eu.org, uses the same Cloudflare token as blatrix.eu
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: thisisaveryshortdomain-asso-eu-org-wildcard
+spec:
+  secretName: thisisaveryshortdomain-asso-eu-org-wildcard-tls
+  issuerRef:
+    name: letsencrypt-prod
+    kind: ClusterIssuer
+  dnsNames:
+    - "*.thisisaveryshortdomain.asso.eu.org"
+---
+# *.glem.men, uses its own Cloudflare token
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: glem-men-wildcard
+spec:
+  secretName: glem-men-wildcard-tls
+  issuerRef:
+    name: letsencrypt-prod-glem-men
+    kind: ClusterIssuer
+  dnsNames:
+    - glem.men
+    - "*.glem.men"

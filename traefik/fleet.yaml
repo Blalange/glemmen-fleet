@@ -1,3 +1,1 @@
 defaultNamespace: kube-system
-dependsOn:
-  - name: glemmen-fleet-cert-manager-certificates

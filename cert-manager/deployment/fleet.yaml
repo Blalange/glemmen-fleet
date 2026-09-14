@@ -7,17 +7,3 @@ helm:
   valuesFiles:
     - values.yaml
   timeoutSeconds: 600
-# cainjector fills in the CA bundle on the webhook configurations, ignore that
-# field so Fleet does not report constant drift.
-diff:
-  comparePatches:
-    - apiVersion: admissionregistration.k8s.io/v1
-      kind: ValidatingWebhookConfiguration
-      name: cert-manager-webhook
-      operations:
-        - { "op": "remove", "path": "/webhooks/0/clientConfig/caBundle" }
-    - apiVersion: admissionregistration.k8s.io/v1
-      kind: MutatingWebhookConfiguration
-      name: cert-manager-webhook
-      operations:
-        - { "op": "remove", "path": "/webhooks/0/clientConfig/caBundle" }
