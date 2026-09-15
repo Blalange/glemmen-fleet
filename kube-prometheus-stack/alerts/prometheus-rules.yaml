@@ -1,0 +1,64 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: custom-alerts
+  labels:
+    release: kube-prometheus-stack
+spec:
+  groups:
+    - name: custom.storage
+      rules:
+        - alert: PersistentVolumeLowFreeSpace
+          expr: |
+            (
+              kubelet_volume_stats_available_bytes{job="kubelet", metrics_path="/metrics"}
+              /
+              kubelet_volume_stats_capacity_bytes{job="kubelet", metrics_path="/metrics"}
+            ) * 100 < 10
+          for: 15m
+          labels:
+            severity: warning
+          annotations:
+            summary: 'PersistentVolumeClaim {{ $labels.namespace }}/{{ $labels.persistentvolumeclaim }} is low on free space'
+            description: 'PersistentVolumeClaim {{ $labels.namespace }}/{{ $labels.persistentvolumeclaim }} has less than 10% free space ({{ printf "%.2f" $value }}% remaining).'
+        - alert: PersistentVolumeLowFreeInodes
+          expr: |
+            (
+              kubelet_volume_stats_inodes_free{job="kubelet", metrics_path="/metrics"}
+              /
+              kubelet_volume_stats_inodes{job="kubelet", metrics_path="/metrics"}
+            ) * 100 < 10
+          for: 15m
+          labels:
+            severity: warning
+          annotations:
+            summary: 'PersistentVolumeClaim {{ $labels.namespace }}/{{ $labels.persistentvolumeclaim }} is low on free inodes'
+            description: 'PersistentVolumeClaim {{ $labels.namespace }}/{{ $labels.persistentvolumeclaim }} has less than 10% free inodes ({{ printf "%.2f" $value }}% remaining).'
+        - alert: PersistentVolumeClaimPending
+          expr: kube_persistentvolumeclaim_status_phase{phase="Pending"} == 1
+          for: 15m
+          labels:
+            severity: warning
+          annotations:
+            summary: 'PersistentVolumeClaim {{ $labels.namespace }}/{{ $labels.persistentvolumeclaim }} is stuck in Pending'
+            description: 'PersistentVolumeClaim {{ $labels.namespace }}/{{ $labels.persistentvolumeclaim }} has been Pending for more than 15 minutes, so its pods cannot start.'
+    - name: custom.certmanager
+      rules:
+        - alert: CertManagerCertificateExpiringSoon
+          expr: |
+            certmanager_certificate_expiration_timestamp_seconds - time() < 21 * 24 * 3600
+          for: 1h
+          labels:
+            severity: warning
+          annotations:
+            summary: 'Certificate {{ $labels.namespace }}/{{ $labels.name }} expires soon'
+            description: 'Certificate {{ $labels.namespace }}/{{ $labels.name }} expires in {{ $value | humanizeDuration }}.'
+        - alert: CertManagerCertificateNotReady
+          expr: |
+            certmanager_certificate_ready_status{condition="False"} == 1
+          for: 1h
+          labels:
+            severity: warning
+          annotations:
+            summary: 'Certificate {{ $labels.namespace }}/{{ $labels.name }} is not ready'
+            description: 'Certificate {{ $labels.namespace }}/{{ $labels.name }} has been in a non-ready state for more than 1 hour.'
