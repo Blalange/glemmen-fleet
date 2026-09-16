@@ -1,0 +1,5 @@
+# Static files for the Homepage dashboard (logo, background and custom.css).
+# They are bundled into a ConfigMap named homepage-assets by kustomize and
+# mounted into the Homepage pod under /app/public and /app/config by the
+# homepage/deployment bundle, which dependsOn this one.
+defaultNamespace: homepage

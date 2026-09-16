@@ -75,6 +75,49 @@ env:
         name: unpoller-unifi
         key: password
 
+# Static files from the homepage-assets ConfigMap (see ../assets) are mounted
+# under /app/public so Homepage serves them as /logo.svg and /background.webp,
+# and custom.css at /app/config/custom.css. The chart's default emptyDir for
+# /app/config/logs is merged in by Helm.
+persistence:
+  logo:
+    enabled: true
+    type: configMap
+    name: homepage-assets
+    mountPath: /app/public/logo.svg
+    subPath: logo.svg
+    readOnly: true
+  background:
+    enabled: true
+    type: configMap
+    name: homepage-assets
+    mountPath: /app/public/background.webp
+    subPath: background.webp
+    readOnly: true
+  custom-css:
+    enabled: true
+    type: configMap
+    name: homepage-assets
+    mountPath: /app/config/custom.css
+    subPath: custom.css
+    readOnly: true
+
+# Homepage bakes settings.yaml into static HTML at image build time. Hitting
+# /api/revalidate as the startup probe regenerates that HTML once the pod is
+# up, so the mounted settings (layout, background, logo, ...) apply without
+# anyone having to click the refresh icon. The other probes stay TCP.
+probes:
+  startup:
+    enabled: true
+    custom: true
+    spec:
+      httpGet:
+        path: /api/revalidate
+        port: http
+      periodSeconds: 5
+      timeoutSeconds: 10
+      failureThreshold: 60
+
 config:
   # Use the ServiceAccount above instead of a kubeconfig file.
   kubernetes:
@@ -89,12 +132,22 @@ config:
     theme: dark
     color: slate
     headerStyle: boxed
-    cardBlur: sm
     useEqualHeights: true
     hideVersion: true
     disableIndexing: true
     language: nb-NO
     target: _blank
+    # Blossom wallpaper served by Homepage itself (homepage-assets ConfigMap);
+    # hotlinking imgur is unreliable because browsers get a consent page.
+    # The image stays sharp, 'opacity' only controls how much of it shows
+    # through the dark overlay. The frosted glass effect is cardBlur (below)
+    # plus the styling in assets/custom.css.
+    background:
+      image: /background.webp
+      opacity: 50
+    # Blur the cards and the header bar so the background shows through them
+    # like frosted glass.
+    cardBlur: md
     # Longhorn has no public ingress, so the widget talks to the in-cluster
     # frontend service directly.
     providers:
@@ -115,6 +168,9 @@ config:
           columns: 3
 
   widgets:
+    # Served from the homepage-assets ConfigMap mounted at /app/public/logo.svg.
+    - logo:
+        icon: /logo.svg
     - kubernetes:
         cluster:
           show: true

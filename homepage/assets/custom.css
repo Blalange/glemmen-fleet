@@ -1,0 +1,17 @@
+/* Frosted glass look: a translucent dark fill, hairline border and soft shadow
+   so the background photo shows through the blurred service cards and header. */
+
+.service-card {
+  background-color: rgb(15 23 42 / 0.5) !important;
+  border: 1px solid rgb(148 163 184 / 0.14);
+  box-shadow: 0 8px 24px rgb(2 6 23 / 0.35);
+}
+
+.service-card:hover {
+  background-color: rgb(15 23 42 / 0.7) !important;
+}
+
+#information-widgets {
+  background-color: rgb(15 23 42 / 0.45) !important;
+  border: 1px solid rgb(148 163 184 / 0.14);
+}

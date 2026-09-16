@@ -1,5 +1,6 @@
 defaultNamespace: homepage
 dependsOn:
+  - name: glemmen-fleet-homepage-assets
   - name: glemmen-fleet-kube-prometheus-stack-deployment
   - name: glemmen-fleet-longhorn
 helm:
