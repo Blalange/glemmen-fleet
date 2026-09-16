@@ -51,7 +51,7 @@ grafana:
   # rollingUpdate must be explicitly null, otherwise the API rejects the change
   # on the existing Deployment (spec.strategy.rollingUpdate is Forbidden when
   # type is Recreate).
-  deploymentStrategy:
+  updateStrategy:
     type: Recreate
     rollingUpdate: null
 
