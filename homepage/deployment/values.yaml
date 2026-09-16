@@ -77,7 +77,7 @@ env:
 
 # Static files from the homepage-assets ConfigMap (see ../assets) are mounted
 # under /app/public so Homepage serves them as /logo.svg and /background.webp,
-# and custom.css at /app/config/custom.css. The chart's default emptyDir for
+# and custom.css/custom.js at /app/config. The chart's default emptyDir for
 # /app/config/logs is merged in by Helm.
 persistence:
   logo:
@@ -100,6 +100,13 @@ persistence:
     name: homepage-assets
     mountPath: /app/config/custom.css
     subPath: custom.css
+    readOnly: true
+  custom-js:
+    enabled: true
+    type: configMap
+    name: homepage-assets
+    mountPath: /app/config/custom.js
+    subPath: custom.js
     readOnly: true
 
 # Homepage bakes settings.yaml into static HTML at image build time. Hitting
@@ -131,7 +138,9 @@ config:
     description: Dashboard for 2ITA sitt Kubernetes-cluster
     theme: dark
     color: slate
-    headerStyle: boxed
+    # 'clean' keeps the header fully transparent (no fill, border or blur);
+    # assets/custom.css pushes the cluster stats to the right edge.
+    headerStyle: clean
     useEqualHeights: true
     hideVersion: true
     disableIndexing: true
@@ -145,8 +154,8 @@ config:
     background:
       image: /background.webp
       opacity: 50
-    # Blur the cards and the header bar so the background shows through them
-    # like frosted glass.
+    # Blur the service cards so the background shows through them like frosted
+    # glass. The header is 'clean' and stays transparent.
     cardBlur: md
     # Longhorn has no public ingress, so the widget talks to the in-cluster
     # frontend service directly.

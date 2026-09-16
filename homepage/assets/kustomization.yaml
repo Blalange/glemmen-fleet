@@ -1,8 +1,9 @@
 # Generates the homepage-assets ConfigMap from the files in this directory:
 # logo.svg (header logo), background.webp (dashboard background, 3200px wide
-# WebP q88 so it stays well under the 1 MiB ConfigMap limit) and custom.css
-# (frosted glass styling for the cards). disableNameSuffixHash keeps the name
-# stable so the Homepage values can mount it by name.
+# WebP q88 so it stays well under the 1 MiB ConfigMap limit), custom.css
+# (frosted glass styling and header layout) and custom.js (injects the
+# "Om clusteret" section). disableNameSuffixHash keeps the name stable so the
+# Homepage values can mount it by name.
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 generatorOptions:
@@ -13,3 +14,4 @@ configMapGenerator:
       - logo.svg
       - background.webp
       - custom.css
+      - custom.js
