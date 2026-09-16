@@ -76,9 +76,9 @@ env:
         key: password
 
 # Static files from the homepage-assets ConfigMap (see ../assets) are mounted
-# under /app/public so Homepage serves them as /logo.svg and /background.webp,
-# and custom.css/custom.js at /app/config. The chart's default emptyDir for
-# /app/config/logs is merged in by Helm.
+# under /app/public so Homepage serves them as /logo.svg, /background.webp and
+# /about.html, plus custom.css/custom.js at /app/config. The chart's default
+# emptyDir for /app/config/logs is merged in by Helm.
 persistence:
   logo:
     enabled: true
@@ -93,6 +93,13 @@ persistence:
     name: homepage-assets
     mountPath: /app/public/background.webp
     subPath: background.webp
+    readOnly: true
+  about:
+    enabled: true
+    type: configMap
+    name: homepage-assets
+    mountPath: /app/public/about.html
+    subPath: about.html
     readOnly: true
   custom-css:
     enabled: true
@@ -130,11 +137,13 @@ config:
   kubernetes:
     mode: cluster
 
+  disableIndexing: true
+
   # The links live under services instead.
   bookmarks: []
 
   settings:
-    title: Glemmen Fleet
+    title: Glemmen K8S cluster
     description: Dashboard for 2ITA sitt Kubernetes-cluster
     theme: dark
     color: slate
