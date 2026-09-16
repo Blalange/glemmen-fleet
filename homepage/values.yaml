@@ -107,9 +107,6 @@ config:
         total: true
         labels: true
         nodes: true
-    - search:
-        provider: duckduckgo
-        target: _blank
 
   services:
     - Overvåking:
