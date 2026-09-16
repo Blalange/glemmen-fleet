@@ -2,14 +2,23 @@
 # served at https://glem.men. Kubernetes, Longhorn and Prometheus stats are
 # read in-cluster; Grafana stats come from the Grafana API.
 #
-# Homepage needs Grafana admin credentials for its widget. They are read from
-# the pre-created 'homepage-grafana' Secret in this namespace (keys: username,
-# password). Create it before Fleet rolls out the bundle:
+# Homepage reads credentials from two pre-created Secrets in this namespace:
+#
+#   homepage-grafana  Grafana admin user/password    (keys: username, password)
+#   unpoller-unifi    UniFi controller user/password (keys: username, password)
+#
+# Create them before Fleet rolls out the bundle by copying the existing values:
 #
 #   kubectl -n homepage create secret generic homepage-grafana \
 #     --from-literal=username=admin \
 #     --from-literal=password="$(kubectl -n monitoring get secret grafana-admin \
 #       -o jsonpath='{.data.admin-password}' | base64 -d)"
+#
+#   kubectl -n homepage create secret generic unpoller-unifi \
+#     --from-literal=username="$(kubectl -n monitoring get secret unpoller-unifi \
+#       -o jsonpath='{.data.username}' | base64 -d)" \
+#     --from-literal=password="$(kubectl -n monitoring get secret unpoller-unifi \
+#       -o jsonpath='{.data.password}' | base64 -d)"
 
 # The chart (2.1.0) still pins Homepage v1.2.0, whose Grafana widget cannot
 # read Alertmanager alerts. v2.3.0 supports 'version: 2' with
@@ -54,6 +63,16 @@ env:
     valueFrom:
       secretKeyRef:
         name: homepage-grafana
+        key: password
+  - name: HOMEPAGE_VAR_UNIFI_USER
+    valueFrom:
+      secretKeyRef:
+        name: unpoller-unifi
+        key: username
+  - name: HOMEPAGE_VAR_UNIFI_PASSWORD
+    valueFrom:
+      secretKeyRef:
+        name: unpoller-unifi
         key: password
 
 config:
@@ -145,7 +164,7 @@ config:
               url: http://kube-prometheus-stack-prometheus.monitoring.svc.cluster.local:9090
               metrics:
                 - label: CPU
-                  query: 100 * (1 - avg(rate(node_cpu_seconds_total{mode="idle"}[5m])))
+                  query: 100 * (1 - avg(irate(node_cpu_seconds_total{mode="idle"}[2m])))
                   format:
                     type: percent
                     options:
@@ -159,7 +178,7 @@ config:
                 - label: Ned
                   query: >-
                     sum(
-                      rate(node_network_receive_bytes_total{device!~"lo|veth.*|br.*|cali.*|flannel.*|cni.*|docker.*|kube.*|nodelocaldns|lhnet.*|wt.*|tun.*|tap.*|wg.*"}[5m])
+                      irate(node_network_receive_bytes_total{device!~"lo|veth.*|br.*|cali.*|flannel.*|cni.*|docker.*|kube.*|nodelocaldns|lhnet.*|wt.*|tun.*|tap.*|wg.*"}[2m])
                       unless on(device, node) label_replace(node_bonding_slaves, "device", "$1", "slave", "(.+)")
                     )
                   format:
@@ -167,16 +186,30 @@ config:
                 - label: Opp
                   query: >-
                     sum(
-                      rate(node_network_transmit_bytes_total{device!~"lo|veth.*|br.*|cali.*|flannel.*|cni.*|docker.*|kube.*|nodelocaldns|lhnet.*|wt.*|tun.*|tap.*|wg.*"}[5m])
+                      irate(node_network_transmit_bytes_total{device!~"lo|veth.*|br.*|cali.*|flannel.*|cni.*|docker.*|kube.*|nodelocaldns|lhnet.*|wt.*|tun.*|tap.*|wg.*"}[2m])
                       unless on(device, node) label_replace(node_bonding_slaves, "device", "$1", "slave", "(.+)")
                     )
                   format:
                     type: byterate
+        - UniFi:
+            icon: unifi.png
+            href: https://unifi.glem.men
+            description: Nettverkskontroller og tilkoblede klienter
+            widget:
+              type: unifi
+              url: https://unifi.glem.men
+              username: "{{HOMEPAGE_VAR_UNIFI_USER}}"
+              password: "{{HOMEPAGE_VAR_UNIFI_PASSWORD}}"
     # Per-node CPU/RAM/network from node-exporter via Prometheus. The queries
     # filter on the 'node' label, which kube-prometheus-stack attaches to every
     # node-exporter metric through the ServiceMonitor relabeling. Virtual
     # interfaces are excluded and bond slaves are dropped so bonded nodes are
     # not counted twice.
+    #
+    # Rates use irate() (last two samples) instead of rate(): when a
+    # node-exporter pod restarts it gets a new instance IP, which creates new
+    # series, and rate() over a window longer than the series history reports
+    # badly wrong values (e.g. 70% CPU instead of 20%) until the window fills.
     - Noder:
         - glemmen130:
             icon: linux.png
@@ -187,7 +220,7 @@ config:
               url: http://kube-prometheus-stack-prometheus.monitoring.svc.cluster.local:9090
               metrics:
                 - label: CPU
-                  query: 100 * (1 - avg(rate(node_cpu_seconds_total{mode="idle",node="glemmen130"}[5m])))
+                  query: 100 * (1 - avg(irate(node_cpu_seconds_total{mode="idle",node="glemmen130"}[2m])))
                   format: &percent
                     type: percent
                     options:
@@ -198,7 +231,7 @@ config:
                 - label: Ned
                   query: >-
                     sum(
-                      rate(node_network_receive_bytes_total{node="glemmen130",device!~"lo|veth.*|br.*|cali.*|flannel.*|cni.*|docker.*|kube.*|nodelocaldns|lhnet.*|wt.*|tun.*|tap.*|wg.*"}[5m])
+                      irate(node_network_receive_bytes_total{node="glemmen130",device!~"lo|veth.*|br.*|cali.*|flannel.*|cni.*|docker.*|kube.*|nodelocaldns|lhnet.*|wt.*|tun.*|tap.*|wg.*"}[2m])
                       unless on(device, node) label_replace(node_bonding_slaves, "device", "$1", "slave", "(.+)")
                     )
                   format: &byterate
@@ -206,7 +239,7 @@ config:
                 - label: Opp
                   query: >-
                     sum(
-                      rate(node_network_transmit_bytes_total{node="glemmen130",device!~"lo|veth.*|br.*|cali.*|flannel.*|cni.*|docker.*|kube.*|nodelocaldns|lhnet.*|wt.*|tun.*|tap.*|wg.*"}[5m])
+                      irate(node_network_transmit_bytes_total{node="glemmen130",device!~"lo|veth.*|br.*|cali.*|flannel.*|cni.*|docker.*|kube.*|nodelocaldns|lhnet.*|wt.*|tun.*|tap.*|wg.*"}[2m])
                       unless on(device, node) label_replace(node_bonding_slaves, "device", "$1", "slave", "(.+)")
                     )
                   format: *byterate
@@ -219,7 +252,7 @@ config:
               url: http://kube-prometheus-stack-prometheus.monitoring.svc.cluster.local:9090
               metrics:
                 - label: CPU
-                  query: 100 * (1 - avg(rate(node_cpu_seconds_total{mode="idle",node="glemmen150"}[5m])))
+                  query: 100 * (1 - avg(irate(node_cpu_seconds_total{mode="idle",node="glemmen150"}[2m])))
                   format: *percent
                 - label: RAM
                   query: 100 * (1 - node_memory_MemAvailable_bytes{node="glemmen150"} / node_memory_MemTotal_bytes{node="glemmen150"})
@@ -227,14 +260,14 @@ config:
                 - label: Ned
                   query: >-
                     sum(
-                      rate(node_network_receive_bytes_total{node="glemmen150",device!~"lo|veth.*|br.*|cali.*|flannel.*|cni.*|docker.*|kube.*|nodelocaldns|lhnet.*|wt.*|tun.*|tap.*|wg.*"}[5m])
+                      irate(node_network_receive_bytes_total{node="glemmen150",device!~"lo|veth.*|br.*|cali.*|flannel.*|cni.*|docker.*|kube.*|nodelocaldns|lhnet.*|wt.*|tun.*|tap.*|wg.*"}[2m])
                       unless on(device, node) label_replace(node_bonding_slaves, "device", "$1", "slave", "(.+)")
                     )
                   format: *byterate
                 - label: Opp
                   query: >-
                     sum(
-                      rate(node_network_transmit_bytes_total{node="glemmen150",device!~"lo|veth.*|br.*|cali.*|flannel.*|cni.*|docker.*|kube.*|nodelocaldns|lhnet.*|wt.*|tun.*|tap.*|wg.*"}[5m])
+                      irate(node_network_transmit_bytes_total{node="glemmen150",device!~"lo|veth.*|br.*|cali.*|flannel.*|cni.*|docker.*|kube.*|nodelocaldns|lhnet.*|wt.*|tun.*|tap.*|wg.*"}[2m])
                       unless on(device, node) label_replace(node_bonding_slaves, "device", "$1", "slave", "(.+)")
                     )
                   format: *byterate
@@ -247,7 +280,7 @@ config:
               url: http://kube-prometheus-stack-prometheus.monitoring.svc.cluster.local:9090
               metrics:
                 - label: CPU
-                  query: 100 * (1 - avg(rate(node_cpu_seconds_total{mode="idle",node="glemmen160"}[5m])))
+                  query: 100 * (1 - avg(irate(node_cpu_seconds_total{mode="idle",node="glemmen160"}[2m])))
                   format: *percent
                 - label: RAM
                   query: 100 * (1 - node_memory_MemAvailable_bytes{node="glemmen160"} / node_memory_MemTotal_bytes{node="glemmen160"})
@@ -255,14 +288,14 @@ config:
                 - label: Ned
                   query: >-
                     sum(
-                      rate(node_network_receive_bytes_total{node="glemmen160",device!~"lo|veth.*|br.*|cali.*|flannel.*|cni.*|docker.*|kube.*|nodelocaldns|lhnet.*|wt.*|tun.*|tap.*|wg.*"}[5m])
+                      irate(node_network_receive_bytes_total{node="glemmen160",device!~"lo|veth.*|br.*|cali.*|flannel.*|cni.*|docker.*|kube.*|nodelocaldns|lhnet.*|wt.*|tun.*|tap.*|wg.*"}[2m])
                       unless on(device, node) label_replace(node_bonding_slaves, "device", "$1", "slave", "(.+)")
                     )
                   format: *byterate
                 - label: Opp
                   query: >-
                     sum(
-                      rate(node_network_transmit_bytes_total{node="glemmen160",device!~"lo|veth.*|br.*|cali.*|flannel.*|cni.*|docker.*|kube.*|nodelocaldns|lhnet.*|wt.*|tun.*|tap.*|wg.*"}[5m])
+                      irate(node_network_transmit_bytes_total{node="glemmen160",device!~"lo|veth.*|br.*|cali.*|flannel.*|cni.*|docker.*|kube.*|nodelocaldns|lhnet.*|wt.*|tun.*|tap.*|wg.*"}[2m])
                       unless on(device, node) label_replace(node_bonding_slaves, "device", "$1", "slave", "(.+)")
                     )
                   format: *byterate
@@ -275,7 +308,7 @@ config:
               url: http://kube-prometheus-stack-prometheus.monitoring.svc.cluster.local:9090
               metrics:
                 - label: CPU
-                  query: 100 * (1 - avg(rate(node_cpu_seconds_total{mode="idle",node="glemmen170"}[5m])))
+                  query: 100 * (1 - avg(irate(node_cpu_seconds_total{mode="idle",node="glemmen170"}[2m])))
                   format: *percent
                 - label: RAM
                   query: 100 * (1 - node_memory_MemAvailable_bytes{node="glemmen170"} / node_memory_MemTotal_bytes{node="glemmen170"})
@@ -283,14 +316,14 @@ config:
                 - label: Ned
                   query: >-
                     sum(
-                      rate(node_network_receive_bytes_total{node="glemmen170",device!~"lo|veth.*|br.*|cali.*|flannel.*|cni.*|docker.*|kube.*|nodelocaldns|lhnet.*|wt.*|tun.*|tap.*|wg.*"}[5m])
+                      irate(node_network_receive_bytes_total{node="glemmen170",device!~"lo|veth.*|br.*|cali.*|flannel.*|cni.*|docker.*|kube.*|nodelocaldns|lhnet.*|wt.*|tun.*|tap.*|wg.*"}[2m])
                       unless on(device, node) label_replace(node_bonding_slaves, "device", "$1", "slave", "(.+)")
                     )
                   format: *byterate
                 - label: Opp
                   query: >-
                     sum(
-                      rate(node_network_transmit_bytes_total{node="glemmen170",device!~"lo|veth.*|br.*|cali.*|flannel.*|cni.*|docker.*|kube.*|nodelocaldns|lhnet.*|wt.*|tun.*|tap.*|wg.*"}[5m])
+                      irate(node_network_transmit_bytes_total{node="glemmen170",device!~"lo|veth.*|br.*|cali.*|flannel.*|cni.*|docker.*|kube.*|nodelocaldns|lhnet.*|wt.*|tun.*|tap.*|wg.*"}[2m])
                       unless on(device, node) label_replace(node_bonding_slaves, "device", "$1", "slave", "(.+)")
                     )
                   format: *byterate
@@ -303,7 +336,7 @@ config:
               url: http://kube-prometheus-stack-prometheus.monitoring.svc.cluster.local:9090
               metrics:
                 - label: CPU
-                  query: 100 * (1 - avg(rate(node_cpu_seconds_total{mode="idle",node="glemmen180"}[5m])))
+                  query: 100 * (1 - avg(irate(node_cpu_seconds_total{mode="idle",node="glemmen180"}[2m])))
                   format: *percent
                 - label: RAM
                   query: 100 * (1 - node_memory_MemAvailable_bytes{node="glemmen180"} / node_memory_MemTotal_bytes{node="glemmen180"})
@@ -311,14 +344,14 @@ config:
                 - label: Ned
                   query: >-
                     sum(
-                      rate(node_network_receive_bytes_total{node="glemmen180",device!~"lo|veth.*|br.*|cali.*|flannel.*|cni.*|docker.*|kube.*|nodelocaldns|lhnet.*|wt.*|tun.*|tap.*|wg.*"}[5m])
+                      irate(node_network_receive_bytes_total{node="glemmen180",device!~"lo|veth.*|br.*|cali.*|flannel.*|cni.*|docker.*|kube.*|nodelocaldns|lhnet.*|wt.*|tun.*|tap.*|wg.*"}[2m])
                       unless on(device, node) label_replace(node_bonding_slaves, "device", "$1", "slave", "(.+)")
                     )
                   format: *byterate
                 - label: Opp
                   query: >-
                     sum(
-                      rate(node_network_transmit_bytes_total{node="glemmen180",device!~"lo|veth.*|br.*|cali.*|flannel.*|cni.*|docker.*|kube.*|nodelocaldns|lhnet.*|wt.*|tun.*|tap.*|wg.*"}[5m])
+                      irate(node_network_transmit_bytes_total{node="glemmen180",device!~"lo|veth.*|br.*|cali.*|flannel.*|cni.*|docker.*|kube.*|nodelocaldns|lhnet.*|wt.*|tun.*|tap.*|wg.*"}[2m])
                       unless on(device, node) label_replace(node_bonding_slaves, "device", "$1", "slave", "(.+)")
                     )
                   format: *byterate
@@ -331,7 +364,7 @@ config:
               url: http://kube-prometheus-stack-prometheus.monitoring.svc.cluster.local:9090
               metrics:
                 - label: CPU
-                  query: 100 * (1 - avg(rate(node_cpu_seconds_total{mode="idle",node="glemmen80"}[5m])))
+                  query: 100 * (1 - avg(irate(node_cpu_seconds_total{mode="idle",node="glemmen80"}[2m])))
                   format: *percent
                 - label: RAM
                   query: 100 * (1 - node_memory_MemAvailable_bytes{node="glemmen80"} / node_memory_MemTotal_bytes{node="glemmen80"})
@@ -339,14 +372,14 @@ config:
                 - label: Ned
                   query: >-
                     sum(
-                      rate(node_network_receive_bytes_total{node="glemmen80",device!~"lo|veth.*|br.*|cali.*|flannel.*|cni.*|docker.*|kube.*|nodelocaldns|lhnet.*|wt.*|tun.*|tap.*|wg.*"}[5m])
+                      irate(node_network_receive_bytes_total{node="glemmen80",device!~"lo|veth.*|br.*|cali.*|flannel.*|cni.*|docker.*|kube.*|nodelocaldns|lhnet.*|wt.*|tun.*|tap.*|wg.*"}[2m])
                       unless on(device, node) label_replace(node_bonding_slaves, "device", "$1", "slave", "(.+)")
                     )
                   format: *byterate
                 - label: Opp
                   query: >-
                     sum(
-                      rate(node_network_transmit_bytes_total{node="glemmen80",device!~"lo|veth.*|br.*|cali.*|flannel.*|cni.*|docker.*|kube.*|nodelocaldns|lhnet.*|wt.*|tun.*|tap.*|wg.*"}[5m])
+                      irate(node_network_transmit_bytes_total{node="glemmen80",device!~"lo|veth.*|br.*|cali.*|flannel.*|cni.*|docker.*|kube.*|nodelocaldns|lhnet.*|wt.*|tun.*|tap.*|wg.*"}[2m])
                       unless on(device, node) label_replace(node_bonding_slaves, "device", "$1", "slave", "(.+)")
                     )
                   format: *byterate
