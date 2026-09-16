@@ -17,7 +17,7 @@ prometheus:
           accessModes: ["ReadWriteOnce"]
           resources:
             requests:
-              storage: 5Gi
+              storage: 20Gi
 
     # Resource limits
     resources:
@@ -68,7 +68,7 @@ grafana:
     enabled: true
     ingressClassName: traefik
     hosts:
-      - grafana.glem.blatrix.eu
+      - grafana.glem.men
 
   # Additional data sources
   additionalDataSources: []
