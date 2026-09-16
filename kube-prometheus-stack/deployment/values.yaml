@@ -5,6 +5,10 @@
 prometheus:
   prometheusSpec:
     replicas: 1
+    # Prometheus is a StatefulSet: its updateStrategy only supports RollingUpdate
+    # or OnDelete (the CRD rejects Recreate). With one replica the old pod is
+    # terminated before the new one is created, so the RWO volume is never
+    # attached to two pods at once.
     # Scrape configuration
     scrapeInterval: 15s
 
@@ -40,6 +44,16 @@ prometheus:
 grafana:
   enabled: true
   replicas: 1
+
+  # Grafana mounts a ReadWriteOnce volume (monitoring-grafana), so a rolling
+  # update can deadlock: the new pod cannot attach the volume while the old pod
+  # still holds it (Multi-Attach error). Recreate terminates the old pod first.
+  # rollingUpdate must be explicitly null, otherwise the API rejects the change
+  # on the existing Deployment (spec.strategy.rollingUpdate is Forbidden when
+  # type is Recreate).
+  deploymentStrategy:
+    type: Recreate
+    rollingUpdate: null
 
   # Use secret for admin password
   admin:
