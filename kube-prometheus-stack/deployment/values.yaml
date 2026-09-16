@@ -61,6 +61,17 @@ grafana:
     userKey: admin-user
     passwordKey: admin-password
 
+  # Let the Homepage dashboard at glem.men embed Grafana panels (the WAN
+  # traffic graph). Embedding needs allow_embedding, and anonymous Viewer
+  # access is what lets the panel render for visitors who are not logged in.
+  # Note: this makes all dashboards readable by anyone who can reach Grafana.
+  grafana.ini:
+    security:
+      allow_embedding: true
+    auth.anonymous:
+      enabled: true
+      org_role: Viewer
+
   # Persistence for dashboards
   persistence:
     enabled: true
@@ -112,6 +123,17 @@ alertmanager:
 # Node exporter - collects hardware and OS metrics
 nodeExporter:
   enabled: true
+
+# Adds the Kubernetes node name as a 'node' label to every node-exporter metric,
+# so PromQL can query per node (the default instance label is just the pod IP).
+# The subchart is configured under its own name, not under nodeExporter.
+prometheus-node-exporter:
+  prometheus:
+    monitor:
+      relabelings:
+        - sourceLabels: [__meta_kubernetes_pod_node_name]
+          targetLabel: node
+          action: replace
 
 # Kube-state-metrics - collects Kubernetes object state
 kubeStateMetrics:

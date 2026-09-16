@@ -85,6 +85,12 @@ config:
       - Overvåking:
           style: row
           columns: 3
+      - Noder:
+          style: row
+          columns: 3
+      - Nettverk:
+          style: row
+          columns: 1
       - Lenker:
           style: row
           columns: 3
@@ -130,10 +136,238 @@ config:
             widget:
               type: prometheus
               url: http://kube-prometheus-stack-prometheus.monitoring.svc.cluster.local:9090
-        - Node Exporter:
-            icon: grafana.png
+        - Cluster:
+            icon: kubernetes.png
             href: https://grafana.glem.men/d/rYdddlPWk/node-exporter-full
-            description: CPU, RAM og disk per node
+            description: CPU, RAM og nettverk for hele clusteret
+            widget:
+              type: prometheusmetric
+              url: http://kube-prometheus-stack-prometheus.monitoring.svc.cluster.local:9090
+              metrics:
+                - label: CPU
+                  query: 100 * (1 - avg(rate(node_cpu_seconds_total{mode="idle"}[5m])))
+                  format:
+                    type: percent
+                    options:
+                      maximumFractionDigits: 1
+                - label: RAM
+                  query: 100 * (1 - sum(node_memory_MemAvailable_bytes) / sum(node_memory_MemTotal_bytes))
+                  format:
+                    type: percent
+                    options:
+                      maximumFractionDigits: 1
+                - label: Ned
+                  query: >-
+                    sum(
+                      rate(node_network_receive_bytes_total{device!~"lo|veth.*|br.*|cali.*|flannel.*|cni.*|docker.*|kube.*|nodelocaldns|lhnet.*|wt.*|tun.*|tap.*|wg.*"}[5m])
+                      unless on(device, node) label_replace(node_bonding_slaves, "device", "$1", "slave", "(.+)")
+                    )
+                  format:
+                    type: byterate
+                - label: Opp
+                  query: >-
+                    sum(
+                      rate(node_network_transmit_bytes_total{device!~"lo|veth.*|br.*|cali.*|flannel.*|cni.*|docker.*|kube.*|nodelocaldns|lhnet.*|wt.*|tun.*|tap.*|wg.*"}[5m])
+                      unless on(device, node) label_replace(node_bonding_slaves, "device", "$1", "slave", "(.+)")
+                    )
+                  format:
+                    type: byterate
+    # Per-node CPU/RAM/network from node-exporter via Prometheus. The queries
+    # filter on the 'node' label, which kube-prometheus-stack attaches to every
+    # node-exporter metric through the ServiceMonitor relabeling. Virtual
+    # interfaces are excluded and bond slaves are dropped so bonded nodes are
+    # not counted twice.
+    - Noder:
+        - glemmen130:
+            icon: linux.png
+            href: https://grafana.glem.men/d/rYdddlPWk/node-exporter-full?var-job=node-exporter&var-nodename=glemmen130
+            description: CPU, RAM og nettverk
+            widget: &node-widget
+              type: prometheusmetric
+              url: http://kube-prometheus-stack-prometheus.monitoring.svc.cluster.local:9090
+              metrics:
+                - label: CPU
+                  query: 100 * (1 - avg(rate(node_cpu_seconds_total{mode="idle",node="glemmen130"}[5m])))
+                  format: &percent
+                    type: percent
+                    options:
+                      maximumFractionDigits: 1
+                - label: RAM
+                  query: 100 * (1 - node_memory_MemAvailable_bytes{node="glemmen130"} / node_memory_MemTotal_bytes{node="glemmen130"})
+                  format: *percent
+                - label: Ned
+                  query: >-
+                    sum(
+                      rate(node_network_receive_bytes_total{node="glemmen130",device!~"lo|veth.*|br.*|cali.*|flannel.*|cni.*|docker.*|kube.*|nodelocaldns|lhnet.*|wt.*|tun.*|tap.*|wg.*"}[5m])
+                      unless on(device, node) label_replace(node_bonding_slaves, "device", "$1", "slave", "(.+)")
+                    )
+                  format: &byterate
+                    type: byterate
+                - label: Opp
+                  query: >-
+                    sum(
+                      rate(node_network_transmit_bytes_total{node="glemmen130",device!~"lo|veth.*|br.*|cali.*|flannel.*|cni.*|docker.*|kube.*|nodelocaldns|lhnet.*|wt.*|tun.*|tap.*|wg.*"}[5m])
+                      unless on(device, node) label_replace(node_bonding_slaves, "device", "$1", "slave", "(.+)")
+                    )
+                  format: *byterate
+        - glemmen150:
+            icon: linux.png
+            href: https://grafana.glem.men/d/rYdddlPWk/node-exporter-full?var-job=node-exporter&var-nodename=glemmen150
+            description: CPU, RAM og nettverk
+            widget: &node150-widget
+              type: prometheusmetric
+              url: http://kube-prometheus-stack-prometheus.monitoring.svc.cluster.local:9090
+              metrics:
+                - label: CPU
+                  query: 100 * (1 - avg(rate(node_cpu_seconds_total{mode="idle",node="glemmen150"}[5m])))
+                  format: *percent
+                - label: RAM
+                  query: 100 * (1 - node_memory_MemAvailable_bytes{node="glemmen150"} / node_memory_MemTotal_bytes{node="glemmen150"})
+                  format: *percent
+                - label: Ned
+                  query: >-
+                    sum(
+                      rate(node_network_receive_bytes_total{node="glemmen150",device!~"lo|veth.*|br.*|cali.*|flannel.*|cni.*|docker.*|kube.*|nodelocaldns|lhnet.*|wt.*|tun.*|tap.*|wg.*"}[5m])
+                      unless on(device, node) label_replace(node_bonding_slaves, "device", "$1", "slave", "(.+)")
+                    )
+                  format: *byterate
+                - label: Opp
+                  query: >-
+                    sum(
+                      rate(node_network_transmit_bytes_total{node="glemmen150",device!~"lo|veth.*|br.*|cali.*|flannel.*|cni.*|docker.*|kube.*|nodelocaldns|lhnet.*|wt.*|tun.*|tap.*|wg.*"}[5m])
+                      unless on(device, node) label_replace(node_bonding_slaves, "device", "$1", "slave", "(.+)")
+                    )
+                  format: *byterate
+        - glemmen160:
+            icon: linux.png
+            href: https://grafana.glem.men/d/rYdddlPWk/node-exporter-full?var-job=node-exporter&var-nodename=glemmen160
+            description: CPU, RAM og nettverk
+            widget: &node160-widget
+              type: prometheusmetric
+              url: http://kube-prometheus-stack-prometheus.monitoring.svc.cluster.local:9090
+              metrics:
+                - label: CPU
+                  query: 100 * (1 - avg(rate(node_cpu_seconds_total{mode="idle",node="glemmen160"}[5m])))
+                  format: *percent
+                - label: RAM
+                  query: 100 * (1 - node_memory_MemAvailable_bytes{node="glemmen160"} / node_memory_MemTotal_bytes{node="glemmen160"})
+                  format: *percent
+                - label: Ned
+                  query: >-
+                    sum(
+                      rate(node_network_receive_bytes_total{node="glemmen160",device!~"lo|veth.*|br.*|cali.*|flannel.*|cni.*|docker.*|kube.*|nodelocaldns|lhnet.*|wt.*|tun.*|tap.*|wg.*"}[5m])
+                      unless on(device, node) label_replace(node_bonding_slaves, "device", "$1", "slave", "(.+)")
+                    )
+                  format: *byterate
+                - label: Opp
+                  query: >-
+                    sum(
+                      rate(node_network_transmit_bytes_total{node="glemmen160",device!~"lo|veth.*|br.*|cali.*|flannel.*|cni.*|docker.*|kube.*|nodelocaldns|lhnet.*|wt.*|tun.*|tap.*|wg.*"}[5m])
+                      unless on(device, node) label_replace(node_bonding_slaves, "device", "$1", "slave", "(.+)")
+                    )
+                  format: *byterate
+        - glemmen170:
+            icon: linux.png
+            href: https://grafana.glem.men/d/rYdddlPWk/node-exporter-full?var-job=node-exporter&var-nodename=glemmen170
+            description: CPU, RAM og nettverk
+            widget: &node170-widget
+              type: prometheusmetric
+              url: http://kube-prometheus-stack-prometheus.monitoring.svc.cluster.local:9090
+              metrics:
+                - label: CPU
+                  query: 100 * (1 - avg(rate(node_cpu_seconds_total{mode="idle",node="glemmen170"}[5m])))
+                  format: *percent
+                - label: RAM
+                  query: 100 * (1 - node_memory_MemAvailable_bytes{node="glemmen170"} / node_memory_MemTotal_bytes{node="glemmen170"})
+                  format: *percent
+                - label: Ned
+                  query: >-
+                    sum(
+                      rate(node_network_receive_bytes_total{node="glemmen170",device!~"lo|veth.*|br.*|cali.*|flannel.*|cni.*|docker.*|kube.*|nodelocaldns|lhnet.*|wt.*|tun.*|tap.*|wg.*"}[5m])
+                      unless on(device, node) label_replace(node_bonding_slaves, "device", "$1", "slave", "(.+)")
+                    )
+                  format: *byterate
+                - label: Opp
+                  query: >-
+                    sum(
+                      rate(node_network_transmit_bytes_total{node="glemmen170",device!~"lo|veth.*|br.*|cali.*|flannel.*|cni.*|docker.*|kube.*|nodelocaldns|lhnet.*|wt.*|tun.*|tap.*|wg.*"}[5m])
+                      unless on(device, node) label_replace(node_bonding_slaves, "device", "$1", "slave", "(.+)")
+                    )
+                  format: *byterate
+        - glemmen180:
+            icon: linux.png
+            href: https://grafana.glem.men/d/rYdddlPWk/node-exporter-full?var-job=node-exporter&var-nodename=glemmen180
+            description: CPU, RAM og nettverk
+            widget: &node180-widget
+              type: prometheusmetric
+              url: http://kube-prometheus-stack-prometheus.monitoring.svc.cluster.local:9090
+              metrics:
+                - label: CPU
+                  query: 100 * (1 - avg(rate(node_cpu_seconds_total{mode="idle",node="glemmen180"}[5m])))
+                  format: *percent
+                - label: RAM
+                  query: 100 * (1 - node_memory_MemAvailable_bytes{node="glemmen180"} / node_memory_MemTotal_bytes{node="glemmen180"})
+                  format: *percent
+                - label: Ned
+                  query: >-
+                    sum(
+                      rate(node_network_receive_bytes_total{node="glemmen180",device!~"lo|veth.*|br.*|cali.*|flannel.*|cni.*|docker.*|kube.*|nodelocaldns|lhnet.*|wt.*|tun.*|tap.*|wg.*"}[5m])
+                      unless on(device, node) label_replace(node_bonding_slaves, "device", "$1", "slave", "(.+)")
+                    )
+                  format: *byterate
+                - label: Opp
+                  query: >-
+                    sum(
+                      rate(node_network_transmit_bytes_total{node="glemmen180",device!~"lo|veth.*|br.*|cali.*|flannel.*|cni.*|docker.*|kube.*|nodelocaldns|lhnet.*|wt.*|tun.*|tap.*|wg.*"}[5m])
+                      unless on(device, node) label_replace(node_bonding_slaves, "device", "$1", "slave", "(.+)")
+                    )
+                  format: *byterate
+        - glemmen80:
+            icon: linux.png
+            href: https://grafana.glem.men/d/rYdddlPWk/node-exporter-full?var-job=node-exporter&var-nodename=glemmen80
+            description: CPU, RAM og nettverk
+            widget: &node80-widget
+              type: prometheusmetric
+              url: http://kube-prometheus-stack-prometheus.monitoring.svc.cluster.local:9090
+              metrics:
+                - label: CPU
+                  query: 100 * (1 - avg(rate(node_cpu_seconds_total{mode="idle",node="glemmen80"}[5m])))
+                  format: *percent
+                - label: RAM
+                  query: 100 * (1 - node_memory_MemAvailable_bytes{node="glemmen80"} / node_memory_MemTotal_bytes{node="glemmen80"})
+                  format: *percent
+                - label: Ned
+                  query: >-
+                    sum(
+                      rate(node_network_receive_bytes_total{node="glemmen80",device!~"lo|veth.*|br.*|cali.*|flannel.*|cni.*|docker.*|kube.*|nodelocaldns|lhnet.*|wt.*|tun.*|tap.*|wg.*"}[5m])
+                      unless on(device, node) label_replace(node_bonding_slaves, "device", "$1", "slave", "(.+)")
+                    )
+                  format: *byterate
+                - label: Opp
+                  query: >-
+                    sum(
+                      rate(node_network_transmit_bytes_total{node="glemmen80",device!~"lo|veth.*|br.*|cali.*|flannel.*|cni.*|docker.*|kube.*|nodelocaldns|lhnet.*|wt.*|tun.*|tap.*|wg.*"}[5m])
+                      unless on(device, node) label_replace(node_bonding_slaves, "device", "$1", "slave", "(.+)")
+                    )
+                  format: *byterate
+    # Live WAN throughput graph. Homepage has no PromQL graph widget, so this
+    # embeds panel 3 ("WAN Throughput") from the UniFi Poller USG Insights
+    # dashboard in Grafana. The panel plots the two WAN byte rates (Rx on the
+    # negative axis):
+    #   rate(unpoller_device_wan_receive_bytes_total{...}[$__interval])
+    #   rate(unpoller_device_wan_transmit_bytes_total{...}[$__interval])
+    # Grafana must allow embedding and anonymous viewing (configured in
+    # kube-prometheus-stack values).
+    - Nettverk:
+        - WAN-trafikk:
+            icon: unifi.png
+            href: https://grafana.glem.men/d/4Yo8IZ-Wk/unifi-poller-usg-insights-prometheus
+            description: WAN inn/ut for gatewayen
+            widget:
+              type: iframe
+              name: WAN Throughput
+              src: https://grafana.glem.men/d-solo/4Yo8IZ-Wk/unifi-poller3a-usg-insights-prometheus?orgId=1&panelId=Default%20(default)$panel-3&kiosk=true&refresh=1m&var-Controller=$__all&var-Site=$__all&var-Gateway=$__all&timezone=browser&var-Smooth=2m&var-DS_PROMETHEUS=prometheus&from=now-3h&to=now
+              classes: h-72 sm:h-72 md:h-80 lg:h-96 xl:h-96 2xl:h-96
     - Lenker:
         - Rancher:
             icon: rancher.png
