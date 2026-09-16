@@ -1,0 +1,152 @@
+# Homepage (https://gethomepage.dev) - dashboard for the Glemmen cluster,
+# served at https://glem.men. Kubernetes, Longhorn and Prometheus stats are
+# read in-cluster; Grafana stats come from the Grafana API.
+#
+# Homepage needs Grafana admin credentials for its widget. They are read from
+# the pre-created 'homepage-grafana' Secret in this namespace (keys: username,
+# password). Create it before Fleet rolls out the bundle:
+#
+#   kubectl -n homepage create secret generic homepage-grafana \
+#     --from-literal=username=admin \
+#     --from-literal=password="$(kubectl -n monitoring get secret grafana-admin \
+#       -o jsonpath='{.data.admin-password}' | base64 -d)"
+
+# The chart (2.1.0) still pins Homepage v1.2.0, whose Grafana widget cannot
+# read Alertmanager alerts. v2.3.0 supports 'version: 2' with
+# 'alerts: alertmanager' below.
+image:
+  tag: v2.3.0
+
+# ClusterRole/ClusterRoleBinding and ServiceAccount for the Kubernetes widget
+# (nodes, pods and metrics.k8s.io). K3s ships metrics-server, so node CPU and
+# memory metrics are available out of the box.
+enableRbac: true
+serviceAccount:
+  create: true
+
+# Traefik terminates TLS with the *.glem.men wildcard certificate, which also
+# covers the apex domain.
+ingress:
+  main:
+    enabled: true
+    ingressClassName: traefik
+    hosts:
+      - host: glem.men
+        paths:
+          - path: /
+            pathType: Prefix
+
+# HOMEPAGE_ALLOWED_HOSTS must list every Host header Homepage accepts. The pod
+# IP is included so requests that bypass the Ingress (port-forward) still work.
+env:
+  - name: MY_POD_IP
+    valueFrom:
+      fieldRef:
+        fieldPath: status.podIP
+  - name: HOMEPAGE_ALLOWED_HOSTS
+    value: "glem.men,$(MY_POD_IP):3000"
+  - name: HOMEPAGE_VAR_GRAFANA_USER
+    valueFrom:
+      secretKeyRef:
+        name: homepage-grafana
+        key: username
+  - name: HOMEPAGE_VAR_GRAFANA_PASSWORD
+    valueFrom:
+      secretKeyRef:
+        name: homepage-grafana
+        key: password
+
+config:
+  # Use the ServiceAccount above instead of a kubeconfig file.
+  kubernetes:
+    mode: cluster
+
+  # The links live under services instead.
+  bookmarks: []
+
+  settings:
+    title: Glemmen Fleet
+    description: Dashboard for 2ITA sitt Kubernetes-cluster
+    theme: dark
+    color: slate
+    headerStyle: boxed
+    cardBlur: sm
+    useEqualHeights: true
+    hideVersion: true
+    disableIndexing: true
+    language: nb-NO
+    target: _blank
+    # Longhorn has no public ingress, so the widget talks to the in-cluster
+    # frontend service directly.
+    providers:
+      longhorn:
+        url: http://longhorn-frontend.longhorn-system.svc.cluster.local
+    layout:
+      - Overvåking:
+          style: row
+          columns: 3
+      - Lenker:
+          style: row
+          columns: 3
+
+  widgets:
+    - kubernetes:
+        cluster:
+          show: true
+          cpu: true
+          memory: true
+          showLabel: true
+          label: Cluster
+        nodes:
+          show: true
+          cpu: true
+          memory: true
+          showLabel: true
+    - longhorn:
+        expanded: true
+        total: true
+        labels: true
+        nodes: true
+    - search:
+        provider: duckduckgo
+        target: _blank
+
+  services:
+    - Overvåking:
+        - Grafana:
+            icon: grafana.png
+            href: https://grafana.glem.men
+            description: Dashboards, datasources og varsler
+            widget:
+              type: grafana
+              # Grafana 10.4+ needs version 2, and kube-prometheus-stack
+              # provisions an Alertmanager datasource named "alertmanager".
+              version: 2
+              alerts: alertmanager
+              url: http://kube-prometheus-stack-grafana.monitoring.svc.cluster.local
+              username: "{{HOMEPAGE_VAR_GRAFANA_USER}}"
+              password: "{{HOMEPAGE_VAR_GRAFANA_PASSWORD}}"
+        - Prometheus:
+            icon: prometheus.png
+            href: https://grafana.glem.men/explore
+            description: Metrikk og scrape targets
+            widget:
+              type: prometheus
+              url: http://kube-prometheus-stack-prometheus.monitoring.svc.cluster.local:9090
+        - Node Exporter:
+            icon: grafana.png
+            href: https://grafana.glem.men/d/rYdddlPWk/node-exporter-full
+            description: CPU, RAM og disk per node
+    - Lenker:
+        - Rancher:
+            icon: rancher.png
+            href: https://rancher.blalange.org
+            description: Administrasjon av clusteret
+        - GitHub:
+            icon: github.png
+            href: https://github.com/Blalange/glemmen-fleet
+            description: Konfigurasjonen for clusteret
+        - Grafana-alarmer:
+            icon: alertmanager.png
+            href: https://grafana.glem.men/alerting/list
+            description: Aktive alarmer og varsler

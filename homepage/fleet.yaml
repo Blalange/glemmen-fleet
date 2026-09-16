@@ -1,0 +1,11 @@
+defaultNamespace: homepage
+dependsOn:
+  - name: glemmen-fleet-kube-prometheus-stack-deployment
+  - name: glemmen-fleet-longhorn
+helm:
+  releaseName: homepage
+  repo: https://jameswynn.github.io/helm-charts
+  chart: homepage
+  version: 2.1.0
+  valuesFiles:
+    - values.yaml
