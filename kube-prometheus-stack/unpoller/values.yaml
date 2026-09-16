@@ -86,6 +86,6 @@ podMonitor:
   enabled: true
 
 dashboards:
-  create: true
+  create: false
   grafana:
     create: false
