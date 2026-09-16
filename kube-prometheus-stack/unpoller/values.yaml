@@ -1,0 +1,91 @@
+# unpoller - UniFi metrics exporter
+# Polls the UniFi controller at 192.168.50.1 and exposes the metrics on :9130,
+# where Prometheus picks them up through the PodMonitor created below.
+
+# One replica is enough. Every replica exposes the same controller metrics, so a
+# second one would only add duplicate series to Prometheus.
+replicaCount: 1
+
+# The UniFi controller (192.168.50.1) is only reachable from the glemmen nodes,
+# so the pod must never be scheduled anywhere else.
+affinity:
+  nodeAffinity:
+    requiredDuringSchedulingIgnoredDuringExecution:
+      nodeSelectorTerms:
+        - matchExpressions:
+            - key: kubernetes.io/hostname
+              operator: In
+              values:
+                - glemmen130
+                - glemmen150
+                - glemmen160
+                - glemmen170
+                - glemmen180
+                - glemmen80
+
+# The UniFi user/password are injected from the pre-created 'unpoller-unifi'
+# Secret (see README.md). Environment variables override upConfig, so the
+# credentials never end up in this file.
+extraEnv:
+  - name: UP_UNIFI_CONTROLLER_0_USER
+    valueFrom:
+      secretKeyRef:
+        name: unpoller-unifi
+        key: username
+  - name: UP_UNIFI_CONTROLLER_0_PASS
+    valueFrom:
+      secretKeyRef:
+        name: unpoller-unifi
+        key: password
+
+# up.conf without credentials. See:
+# https://github.com/unpoller/unpoller/blob/master/examples/up.conf.example
+upConfig: |
+  [poller]
+      debug = false
+      quiet = false
+      plugins = []
+
+  [prometheus]
+    disable = false
+    http_listen = "0.0.0.0:9130"
+    report_errors = false
+
+  [influxdb]
+    disable = true
+
+  [loki]
+    disable = true
+
+  [unifi]
+    dynamic = false
+
+    # user/pass for controller 0 come from the unpoller-unifi Secret.
+    [[unifi.controller]]
+      url         = "https://unifi.glem.men"
+      sites       = ["all"]
+      save_sites  = true
+      save_dpi    = true
+      hash_pii    = false
+      # The controller is reached through Traefik, which serves the valid
+      # *.glem.men wildcard certificate to clients.
+      verify_ssl  = true
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: 500m
+    memory: 512Mi
+
+# Creates a PodMonitor that scrapes the unpoller pods. kube-prometheus-stack
+# runs with podMonitorSelectorNilUsesHelmValues=false and selects PodMonitors
+# in every namespace, so Prometheus discovers this one automatically.
+podMonitor:
+  enabled: true
+
+dashboards:
+  create: true
+  grafana:
+    create: false

@@ -1,0 +1,11 @@
+defaultNamespace: monitoring
+dependsOn:
+  - name: glemmen-fleet-kube-prometheus-stack-deployment
+helm:
+  releaseName: unpoller
+  # unpoller publishes new chart versions to ghcr.io; the Helm repo at
+  # https://unpoller.github.io/helm-chart stopped at 2.4.0 (poller v3.5.0).
+  chart: "oci://ghcr.io/unpoller/helm-chart/unpoller"
+  version: 2.8.0
+  valuesFiles:
+    - values.yaml
