@@ -21,6 +21,8 @@ matplotlib is only needed for the heatmaps.
 Run:  python3 network-test.py all
       python3 network-test.py ping --count 20
       python3 network-test.py iperf --time 10 --resolve-locally --accept-host-keys
+      python3 network-test.py ping --ssh-user= --resolve-locally \
+          --hosts piax@raspberrypi,ajax@slowdesk,user@contabo-eu
 """
 
 import argparse
@@ -104,12 +106,14 @@ def add_common_args(parser):
     parser.add_argument(
         "--hosts",
         default=",".join(DEFAULT_HOSTS),
-        help="comma-separated node list (default: %(default)s)",
+        help="comma-separated node list; a host may carry its own SSH user "
+             "as user@host, which overrides --ssh-user (default: %(default)s)",
     )
     parser.add_argument(
         "--ssh-user",
         default="user",
-        help="SSH user to log in as on every node (default: %(default)s)",
+        help="default SSH user for hosts without an explicit user@ prefix, "
+             "use --ssh-user= to disable (default: %(default)s)",
     )
     parser.add_argument(
         "--resolve-locally",
@@ -223,30 +227,43 @@ def ssh_options(args):
     return options
 
 
+def ssh_target(host, args):
+    if "@" in host:
+        return host
+    if args.ssh_user:
+        return "{}@{}".format(args.ssh_user, host)
+    return host
+
+
 def ssh_run(host, script, args, timeout=None):
-    target = "{}@{}".format(args.ssh_user, host) if args.ssh_user else host
-    command = ["ssh", *ssh_options(args), target, script]
+    command = ["ssh", *ssh_options(args), ssh_target(host, args), script]
     return subprocess.run(command, capture_output=True, text=True, timeout=timeout)
 
 
+def host_part(host):
+    return host.split("@", 1)[1] if "@" in host else host
+
+
 def display_name(host):
-    if host.endswith(DISPLAY_SUFFIX):
-        return host[: -len(DISPLAY_SUFFIX)]
-    return host
+    name = host_part(host)
+    if name.endswith(DISPLAY_SUFFIX):
+        return name[: -len(DISPLAY_SUFFIX)]
+    return name
 
 
 def resolve_addresses(hosts, resolve_locally):
     addresses = {}
     for host in hosts:
+        name = host_part(host)
         if not resolve_locally:
-            addresses[host] = host
+            addresses[host] = name
             continue
         try:
-            infos = socket.getaddrinfo(host, None, socket.AF_INET, socket.SOCK_STREAM)
+            infos = socket.getaddrinfo(name, None, socket.AF_INET, socket.SOCK_STREAM)
         except socket.gaierror as exc:
             print("warning: could not resolve {} locally ({}), "
-                  "using the host name".format(host, exc), file=sys.stderr)
-            addresses[host] = host
+                  "using the host name".format(name, exc), file=sys.stderr)
+            addresses[host] = name
             continue
         addresses[host] = infos[0][4][0]
     return addresses
@@ -283,10 +300,11 @@ def fetch_netbird_status(host, args):
 def peer_endpoint(status, host):
     if not status:
         return None, None, None
-    short = host.split(".")[0]
+    name = host_part(host)
+    short = name.split(".")[0]
     for peer in (status.get("peers") or {}).get("details") or []:
         fqdn = peer.get("fqdn") or ""
-        if fqdn == host or fqdn.split(".")[0] == short:
+        if fqdn == name or fqdn.split(".")[0] == short:
             endpoint = peer.get("iceCandidateEndpoint") or {}
             return (endpoint.get("local"), endpoint.get("remote"),
                     peer.get("connectionType"))
