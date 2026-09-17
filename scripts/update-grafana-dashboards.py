@@ -13,7 +13,7 @@ Grafana.com dashboards use the __inputs export format, which Grafana's file
 provisioning ignores; those inputs are rewritten to datasource template
 variables so the dashboards work when loaded from a ConfigMap.
 
-Stdlib only. Run:  python3 update-grafana-dashboards.py
+Stdlib only. Run:  python3 scripts/update-grafana-dashboards.py
 """
 
 import argparse
@@ -59,7 +59,7 @@ DASHBOARDS = [
     },
 ]
 
-DEFAULT_OUTPUT_DIR = Path(__file__).resolve().parent / \
+DEFAULT_OUTPUT_DIR = Path(__file__).resolve().parent.parent / \
     "kube-prometheus-stack" / "dashboards"
 
 
