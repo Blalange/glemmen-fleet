@@ -47,7 +47,12 @@ spec:
                 exit 0
               fi
               pip install --quiet --no-cache-dir huggingface_hub==1.32.0
-              hf download Justvugg/GLM-5.3-Flash-colibri-int4-g64 --local-dir /model
+              # glemmen80 also runs the k3s control plane on the same HDD.
+              # Idle IO class + low CPU priority + fewer parallel shards keep
+              # etcd/kubelet responsive; the download still gets all the disk
+              # and CPU whenever they are idle.
+              nice -n 19 ionice -c 3 hf download Justvugg/GLM-5.3-Flash-colibri-int4-g64 \
+                --local-dir /model --max-workers 2
               touch /model/.download-complete
               # the colibri image runs as uid 1000 and writes .coli_usage here
               chown -R 1000:1000 /model
@@ -57,6 +62,9 @@ spec:
               cpu: 2
               memory: 2Gi
             limits:
+              # CPU-limited: this node's etcd and kubelet need cycles more
+              # than the download does.
+              cpu: "2"
               memory: 8Gi
           volumeMounts:
             - name: model
@@ -65,6 +73,19 @@ spec:
         - name: colibri
           image: hexahigh/colibri:1.11.0
           imagePullPolicy: IfNotPresent
+          # Same reasoning as the init container: this node is also the k3s
+          # control plane, and the engine streams ~4.8 GB per token from the
+          # HDD etcd lives on. Low priority keeps the API responsive; the
+          # engine still gets every idle cycle of CPU and disk.
+          command:
+            - nice
+            - -n
+            - "19"
+            - ionice
+            - -c
+            - "3"
+            - python3
+            - /app/coli
           # The image's default CMD is `web` on 127.0.0.1; serve instead.
           # --allowed-host '*' is the documented opt-out of the DNS-rebinding
           # guard for a 0.0.0.0 bind: the client's Host header (ClusterIP or
@@ -88,9 +109,11 @@ spec:
             - name: http
               containerPort: 8000
           resources:
-            # 185Gi of glemmen80's 192Gi. If this pod stays Pending with
-            # "Insufficient memory", the node's allocatable is below 185Gi
-            # and preemption cannot help (nothing left to evict): lower it.
+            # Keep a few Gi for the host: glemmen80 reports 188.6Gi total
+            # (firmware reserves part of the nominal 192Gi) and also runs
+            # k3s/etcd/containerd/Longhorn. If this stays Pending with
+            # "Insufficient memory", allocatable is below the request and
+            # preemption cannot help past allocatable -- lower it.
             requests:
               cpu: "6"
               memory: 185Gi
