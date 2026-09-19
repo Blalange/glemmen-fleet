@@ -1,0 +1,5 @@
+defaultNamespace: colibri
+# The StorageClass/PVC here are Longhorn volumes, and the deployment waits for
+# a strict-local replica on glemmen80 before it can start.
+dependsOn:
+  - name: glemmen-fleet-longhorn

@@ -1,0 +1,14 @@
+# 220 GB for a 195 GB checkpoint plus the huggingface cache and room to
+# breathe. reclaimPolicy: Retain on the StorageClass means deleting this PVC
+# does not delete the Longhorn volume, so a re-download is never forced.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: colibri-model
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: colibri-model
+  resources:
+    requests:
+      storage: 220Gi

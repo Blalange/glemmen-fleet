@@ -1,0 +1,18 @@
+# Colibri runs GLM-5.3-Flash (321B, int4) entirely on glemmen80 and asks for
+# 185Gi of the node's 192Gi. When it cannot fit, the pod gets this priority so
+# the scheduler preempts (evicts) the lower-priority workloads already on that
+# node until it does. Their controllers reschedule them elsewhere.
+#
+# 1e8 sits above every normal workload (default priority 0) but below
+# Longhorn's longhorn-critical (1e9): storage components must never be the
+# thing we preempt, or the volume this workload streams from would detach.
+apiVersion: scheduling.k8s.io/v1
+kind: PriorityClass
+metadata:
+  name: colibri-critical
+value: 100000000
+globalDefault: false
+preemptionPolicy: PreemptLowerPriority
+description: >-
+  Colibri model server. Preempts lower-priority pods so the 185Gi pod fits on
+  glemmen80; always below longhorn-critical.

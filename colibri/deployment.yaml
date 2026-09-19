@@ -1,0 +1,132 @@
+# Colibri: GLM-5.3-Flash (int4-g64, 321B) on CPU, streaming the routed experts
+# from a strict-local Longhorn volume on glemmen80.
+#
+# Image: docker build -t hexahigh/colibri:1.11.0 . (in the Dockerfile repo);
+# built for x86-64-v3 (AVX2), all nine colibri engines included.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: colibri
+  labels:
+    app.kubernetes.io/name: colibri
+spec:
+  replicas: 1
+  # RWO volume + a pod that fills the node: never run two, and stop the old
+  # one before starting the replacement instead of leaving it Pending.
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: colibri
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: colibri
+    spec:
+      # Evicts lower-priority workloads from glemmen80 when the 185Gi pod
+      # cannot fit; stays below longhorn-critical so storage is untouched.
+      priorityClassName: colibri-critical
+      # Hard pin: refuse to run on anything but glemmen80. The strict-local
+      # volume is created on the same node and follows the pod.
+      nodeSelector:
+        kubernetes.io/hostname: glemmen80
+      terminationGracePeriodSeconds: 60
+      initContainers:
+        # Downloads the checkpoint into the Longhorn volume the first time the
+        # pod runs (195 GB, ~30-60 min at 1 Gbit/s) and resumes it after an
+        # interruption. `hf download` is incremental, and the sentinel makes
+        # later starts skip the check entirely.
+        - name: model-download
+          image: python:3.13-slim
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              set -eu
+              if [ -f /model/.download-complete ]; then
+                echo "model already present; skipping download"
+                exit 0
+              fi
+              pip install --quiet --no-cache-dir huggingface_hub==1.32.0
+              hf download Justvugg/GLM-5.3-Flash-colibri-int4-g64 --local-dir /model
+              touch /model/.download-complete
+              # the colibri image runs as uid 1000 and writes .coli_usage here
+              chown -R 1000:1000 /model
+              echo "download complete"
+          resources:
+            requests:
+              cpu: 250m
+              memory: 512Mi
+            limits:
+              memory: 2Gi
+          volumeMounts:
+            - name: model
+              mountPath: /model
+      containers:
+        - name: colibri
+          image: hexahigh/colibri:1.11.0
+          imagePullPolicy: IfNotPresent
+          # The image's default CMD is `web` on 127.0.0.1; serve instead.
+          # --allowed-host '*' is the documented opt-out of the DNS-rebinding
+          # guard for a 0.0.0.0 bind: the client's Host header (ClusterIP or
+          # service DNS) is not predictable inside the container.
+          args:
+            - serve
+            - --host
+            - 0.0.0.0
+            - --allowed-host
+            - "*"
+            # 180 GB budget inside the 185Gi cgroup: ~168Gi of expert cache,
+            # the rest headroom for page cache and the runtime.
+            - --ram
+            - "172"
+          env:
+            # The bind is 0.0.0.0 with no API key, allowed because the
+            # Service is ClusterIP: only pods in this cluster can reach it.
+            - name: COLI_ALLOW_INSECURE_BIND
+              value: "1"
+          ports:
+            - name: http
+              containerPort: 8000
+          resources:
+            # 185Gi of glemmen80's 192Gi. If this pod stays Pending with
+            # "Insufficient memory", the node's allocatable is below 185Gi
+            # and preemption cannot help (nothing left to evict): lower it.
+            requests:
+              cpu: "6"
+              memory: 185Gi
+            limits:
+              # No CPU limit: throttling the engine is pure lost throughput.
+              memory: 185Gi
+          startupProbe:
+            httpGet:
+              path: /health
+              port: http
+            # The engine loads the dense weights before answering: give it
+            # up to 30 minutes instead of restart-looping a cold start.
+            periodSeconds: 10
+            failureThreshold: 180
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+            periodSeconds: 15
+            timeoutSeconds: 5
+            failureThreshold: 4
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            periodSeconds: 30
+            timeoutSeconds: 10
+            failureThreshold: 6
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1000
+            runAsGroup: 1000
+          volumeMounts:
+            - name: model
+              mountPath: /model
+      volumes:
+        - name: model
+          persistentVolumeClaim:
+            claimName: colibri-model

@@ -1,0 +1,24 @@
+# StorageClass for the GLM-5.3-Flash checkpoint (195 GB on disk).
+#
+# dataLocality: strict-local tells Longhorn to keep the volume's only replica on
+# the same node as the workload. Combined with the pod's nodeSelector and
+# volumeBindingMode: WaitForFirstConsumer, the replica is created on glemmen80
+# and the volume refuses to come up anywhere else.
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: colibri-model
+provisioner: driver.longhorn.io
+allowVolumeExpansion: true
+# The 195 GB download must survive a PVC/Deployment mistake.
+reclaimPolicy: Retain
+# Bind the PV only after the pod is scheduled, so Longhorn knows which node
+# (glemmen80) the strict-local replica must live on before creating it.
+volumeBindingMode: WaitForFirstConsumer
+parameters:
+  # strict-local requires exactly one replica; the docs fail volume creation
+  # rather than silently placing it on another node.
+  numberOfReplicas: "1"
+  dataLocality: "strict-local"
+  staleReplicaTimeout: "2880"
+  fsType: "ext4"

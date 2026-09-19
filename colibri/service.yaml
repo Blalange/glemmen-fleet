@@ -1,0 +1,17 @@
+# ClusterIP only. The OpenAI-compatible API is unauthenticated, so nothing
+# publishes it outside the cluster; reach it with
+#   kubectl -n colibri port-forward svc/colibri 8000:8000
+apiVersion: v1
+kind: Service
+metadata:
+  name: colibri
+  labels:
+    app.kubernetes.io/name: colibri
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: colibri
+  ports:
+    - name: http
+      port: 8000
+      targetPort: http
