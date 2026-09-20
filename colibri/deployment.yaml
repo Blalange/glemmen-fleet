@@ -91,11 +91,12 @@ spec:
           # guard for a 0.0.0.0 bind: the client's Host header (ClusterIP or
           # service DNS) is not predictable inside the container.
           args:
-            - serve
+            - web
             - --host
             - 0.0.0.0
             - --allowed-host
             - "*"
+            - --no-browser
             # 180 GB budget inside the 185Gi cgroup: ~168Gi of expert cache,
             # the rest headroom for page cache and the runtime.
             - --ram
@@ -105,6 +106,9 @@ spec:
             # Service is ClusterIP: only pods in this cluster can reach it.
             - name: COLI_ALLOW_INSECURE_BIND
               value: "1"
+          envFrom:
+            - secretRef:
+                name: colibri-secrets
           ports:
             - name: http
               containerPort: 8000

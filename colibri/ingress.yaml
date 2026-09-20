@@ -1,0 +1,20 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: colibri-ingress
+  labels:
+    app.kubernetes.io/name: colibri
+    app.kubernetes.io/instance: colibri
+spec:
+  ingressClassName: traefik
+  rules:
+    - host: coli.glem.men
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: colibri
+                port:
+                  number: 8000
