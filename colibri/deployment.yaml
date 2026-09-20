@@ -10,7 +10,7 @@ metadata:
   labels:
     app.kubernetes.io/name: colibri
 spec:
-  replicas: 0
+  replicas: 1
   # RWO volume + a pod that fills the node: never run two, and stop the old
   # one before starting the replacement instead of leaving it Pending.
   strategy:
