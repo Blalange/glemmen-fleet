@@ -198,3 +198,4 @@ spec:
               # few GiB uncommitted past the colibri pod, so the sidecar must
               # never be able to OOM the node.
               memoryLimit: 1Gi
+              cacheSize: 16777216 # 16 MiB
