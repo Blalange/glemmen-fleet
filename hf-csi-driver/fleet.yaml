@@ -1,0 +1,11 @@
+defaultNamespace: kube-system
+helm:
+  releaseName: hf-csi
+  # OCI chart. `chart: oci://...` is the form that works on both older Fleet
+  # (which expects the OCI URL in `chart`) and newer Fleet (which prefers
+  # `repo:`); the latter only logs a deprecation warning.
+  chart: oci://ghcr.io/huggingface/charts/hf-csi-driver
+  version: 0.14.2
+  valuesFiles:
+    - values.yaml
+  timeoutSeconds: 600

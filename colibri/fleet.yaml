@@ -1,5 +1,7 @@
 defaultNamespace: colibri
-# The StorageClass/PVC here are Longhorn volumes, and the deployment waits for
-# a strict-local replica on glemmen80 before it can start.
+# The StorageClass/PVC here are Longhorn volumes, and the deployment also
+# mounts the model repo through the hf-csi-driver; both bundles must exist
+# before the workload starts.
 dependsOn:
   - name: glemmen-fleet-longhorn
+  - name: glemmen-fleet-hf-csi-driver

@@ -1,5 +1,7 @@
-# Colibri: GLM-5.3-Flash (int4-g64, 321B) on CPU, streaming the routed experts
-# from a strict-local Longhorn volume on glemmen80.
+# Colibri: GLM-5.3-Flash (int4-g64, 321B) on CPU. The routed experts stream
+# from a read-only hf-csi-driver FUSE mount of the Hugging Face repo at
+# /model-hf; the strict-local Longhorn volume stays attached at /model so the
+# engine keeps its learned .coli_usage history and the warm local copy.
 #
 # Image: docker build -t hexahigh/colibri:1.11.0 . (in the Dockerfile repo);
 # built for x86-64-v3 (AVX2), all nine colibri engines included.
@@ -71,7 +73,7 @@ spec:
               mountPath: /model
       containers:
         - name: colibri
-          image: hexahigh/colibri:1.12.0
+          image: hexahigh/colibri:1.12.0-1
           imagePullPolicy: IfNotPresent
           # Same reasoning as the init container: this node is also the k3s
           # control plane, and the engine streams ~4.8 GB per token from the
@@ -92,6 +94,9 @@ spec:
           # service DNS) is not predictable inside the container.
           args:
             - web
+            # Weights come from the HF FUSE mount, not the Longhorn volume.
+            - --model
+            - /model-hf
             - --host
             - 0.0.0.0
             - --allowed-host
@@ -116,6 +121,12 @@ spec:
               value: "409600"
             - name: PREFETCH
               value: "1"
+            # PIN/PIN_GB seed the hot store from the .coli_usage history. With
+            # --model pointed at the read-only HF mount the engine would look
+            # for it there, so point it at the copy on the Longhorn volume,
+            # which is also where the updated history is written back.
+            - name: COLI_USAGE
+              value: /model/.coli_usage
           envFrom:
             - secretRef:
                 name: colibri-secrets
@@ -163,7 +174,27 @@ spec:
           volumeMounts:
             - name: model
               mountPath: /model
+            - name: model-hf
+              mountPath: /model-hf
+              readOnly: true
       volumes:
         - name: model
           persistentVolumeClaim:
             claimName: colibri-model
+        # Ephemeral CSI volume: the hf-csi-driver sidecar-injection webhook
+        # reads the attributes straight off the pod spec, so there is no
+        # PV/PVC to bind (and nothing to provision). mountFlags are forwarded
+        # to hf-mount as --flags; no-disk-cache keeps the 195 GB checkpoint
+        # off glemmen80's disk, so every expert read goes to the Hub.
+        - name: model-hf
+          csi:
+            driver: hf.csi.huggingface.co
+            readOnly: true
+            volumeAttributes:
+              sourceType: repo
+              sourceId: Justvugg/GLM-5.3-Flash-colibri-int4-g64
+              mountFlags: no-disk-cache
+              # Bound the injected hf-mount sidecar: glemmen80 leaves only a
+              # few GiB uncommitted past the colibri pod, so the sidecar must
+              # never be able to OOM the node.
+              memoryLimit: 1Gi
