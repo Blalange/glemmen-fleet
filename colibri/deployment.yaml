@@ -71,10 +71,16 @@ spec:
               value: main
             - name: HF_MOUNT
               value: /mnt/model
-            # Per-file readahead is one block past the requested range; 4 MiB
-            # keeps ~8 MiB in memory per open shard.
+            # Per-file window: 4 MiB blocks, four fetched ahead by eight
+            # concurrent range GETs. Raise HF_MAX_INFLIGHT / HF_PREFETCH_BLOCKS
+            # if the link still is not saturated; lower them if the sidecar
+            # hits its memory limit (window + cache per open shard).
             - name: HF_BLOCK_SIZE
               value: "4194304"
+            - name: HF_PREFETCH_BLOCKS
+              value: "4"
+            - name: HF_MAX_INFLIGHT
+              value: "12"
             - name: HF_UID
               value: "1000"
             - name: HF_GID

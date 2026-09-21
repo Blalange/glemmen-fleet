@@ -3,9 +3,12 @@
 # It serves the GLM-5.3-Flash colibri container read-only over plain HTTP
 # Range requests against the Hugging Face Hub - deliberately NOT via hf-mount
 # or the hf-csi-driver, whose Xet transfer path stalled with 0 bytes per fetch
-# on this cluster while plain HTTP downloads worked. Nothing is written to
-# disk: a cache miss is one Range GET against /resolve/, served from a small
-# in-memory readahead block per open file.
+# on this cluster while plain HTTP downloads worked.
+#
+# Nothing is written to disk. Each open file gets a background prefetch window
+# (HF_PREFETCH_BLOCKS) fetched by a shared pool (HF_MAX_INFLIGHT), and the
+# signed CDN URL from the Hub redirect is reused, so the fetches keep a
+# 1 Gbit/s link busy instead of waiting out two round trips per block.
 #
 # Run it with:  HF_MOUNT=/mnt/model python3 hf-fuse.py
 apiVersion: v1
@@ -19,16 +22,28 @@ data:
 
     This replaces the hf-mount / hf-csi-driver path: no Xet, no on-disk chunk
     cache. Cache misses are issued as `Range` GETs against
-    https://<endpoint>/<repo>/resolve/<revision>/<path> and served from a bounded
-    in-memory readahead buffer per open file, so the 195 GB checkpoint never lands
-    on local disk.
+    https://<endpoint>/<repo>/resolve/<revision>/<path> (which redirects to the
+    CDN) and nothing is written to disk.
+
+    Implementation: read(offset) schedules its demand block(s) immediately, then
+    the next HF_PREFETCH_BLOCKS blocks behind them, and up to HF_MAX_INFLIGHT
+    range GETs run concurrently on a shared pool. The signed CDN URL returned by
+    the Hub's /resolve/ redirect is cached per file and reused, so later blocks are
+    a single range GET with no Hub round trip. Without this, every 4-8 MiB block
+    costs two round trips on the calling thread, which cannot fill a 1 Gbit/s link.
 
     Configuration (environment):
       HF_REPO              repo id                    (default: the colibri model)
       HF_REVISION          git revision               (default: main)
       HF_MOUNT             mount point                (default: /mnt/hf)
-      HF_BLOCK_SIZE        fsspec block size, bytes   (default: 4 MiB)
+      HF_BLOCK_SIZE        fetch block size, bytes    (default: 8 MiB)
+      HF_PREFETCH_BLOCKS   blocks fetched ahead       (default: 4)
+      HF_MAX_INFLIGHT      concurrent range GETs      (default: 8)
+      HF_CACHE_BLOCKS      max blocks kept per file   (default: 6)
+      HF_IDLE_TRIM_SECS    trim a file's cache after  (default: 5)
+      HF_HUB_DOWNLOAD_TIMEOUT  per-request timeout    (default: 60)
       HF_UID / HF_GID      uid/gid reported to the kernel (default: 1000)
+      HF_VERBOSE=1         log every range fetch
 
     Stays in the foreground; exits non-zero if the mount cannot be established.
     """
@@ -36,7 +51,11 @@ data:
     import logging
     import os
     import sys
+    import threading
+    import time
+    from concurrent.futures import ThreadPoolExecutor
 
+    import httpx
     from fuse import FUSE, FuseOSError
     from fsspec.fuse import FUSEr
     from huggingface_hub import HfFileSystem
@@ -44,28 +63,185 @@ data:
     REPO = os.environ.get("HF_REPO", "Justvugg/GLM-5.3-Flash-colibri-int4-g64")
     REVISION = os.environ.get("HF_REVISION", "main")
     MOUNT = os.environ.get("HF_MOUNT", "/mnt/hf")
-    BLOCK = int(os.environ.get("HF_BLOCK_SIZE", str(4 * 1024 * 1024)))
+    BLOCK = int(os.environ.get("HF_BLOCK_SIZE", str(8 * 1024 * 1024)))
+    WINDOW = int(os.environ.get("HF_PREFETCH_BLOCKS", "4"))
+    INFLIGHT = int(os.environ.get("HF_MAX_INFLIGHT", "8"))
+    CACHE_BLOCKS = int(os.environ.get("HF_CACHE_BLOCKS", "6"))
+    IDLE_TRIM = float(os.environ.get("HF_IDLE_TRIM_SECS", "5"))
+    TIMEOUT = float(os.environ.get("HF_HUB_DOWNLOAD_TIMEOUT", "60"))
     UID = int(os.environ.get("HF_UID", "1000"))
     GID = int(os.environ.get("HF_GID", "1000"))
+    VERBOSE = os.environ.get("HF_VERBOSE") == "1"
 
     log = logging.getLogger("hf-fuse")
 
+    # Shared across all open files.
+    client = None
+    pool = None
+
+
+    class Budget:
+        """Caps how many speculative (non-demand) fetches may sit in the pool."""
+
+        def __init__(self, capacity):
+            self.capacity = capacity
+            self.used = 0
+            self.lock = threading.Lock()
+
+        def take(self):
+            with self.lock:
+                if self.used >= self.capacity:
+                    return False
+                self.used += 1
+                return True
+
+        def release(self):
+            with self.lock:
+                self.used -= 1
+
+
+    budget = Budget(max(INFLIGHT * 2, 8))
+
+
+    class RepoFile:
+        """One repo file: bounded block cache with background prefetch."""
+
+        def __init__(self, fs, path, size):
+            self.path = path
+            self.size = size
+            self.url = fs.url(path)
+            self.headers = fs._api._build_hf_headers()
+            # Filled with the signed CDN URL after the first fetch (: the Hub
+            # redirects /resolve/ to it). Reused until the CDN rejects it, which
+            # saves one round trip per block and keeps Hub request volume low.
+            self.cdn_url = None
+            self.block = BLOCK
+            self.nblocks = max(1, (size + self.block - 1) // self.block)
+            self.cond = threading.Condition()
+            self.blocks = {}
+            self.pending = set()
+            self.failed = {}
+            self.closed = False
+            self.last_use = time.monotonic()
+            self.last_block = 0
+
+        def _fetch_range(self, start, end):
+            last = None
+            for attempt in range(3):
+                try:
+                    headers = dict(self.headers)
+                    headers["range"] = f"bytes={start}-{end - 1}"
+                    url = self.cdn_url or self.url
+                    r = client.get(url, headers=headers, timeout=TIMEOUT)
+                    if self.cdn_url is not None and r.status_code in (401, 403):
+                        # Signed CDN URL expired: re-resolve through the Hub.
+                        self.cdn_url = None
+                        raise IOError(f"cdn url rejected ({r.status_code})")
+                    r.raise_for_status()
+                    if r.history:
+                        self.cdn_url = str(r.url)
+                    data = r.content
+                    if len(data) != end - start:
+                        raise IOError(f"short range: got {len(data)} of {end - start}")
+                    return data
+                except Exception as e:  # noqa: BLE001
+                    last = e
+                    time.sleep(0.5 * (attempt + 1))
+            raise last
+
+        def _fetch(self, b, speculative):
+            start = b * self.block
+            end = min(self.size, start + self.block)
+            try:
+                if VERBOSE:
+                    log.info("fetch %s block %d (%d bytes)", self.path, b, end - start)
+                data = self._fetch_range(start, end)
+            except Exception as e:  # noqa: BLE001
+                log.warning("fetch failed %s block %d: %s", self.path, b, e)
+                with self.cond:
+                    self.pending.discard(b)
+                    # A failed speculation is simply retried on the next read.
+                    if not speculative:
+                        self.failed[b] = e
+                    self.cond.notify_all()
+                return
+            finally:
+                if speculative:
+                    budget.release()
+            with self.cond:
+                self.pending.discard(b)
+                if not self.closed:
+                    self.blocks[b] = data
+                self.cond.notify_all()
+
+        def _schedule(self, first, last):
+            """Schedule [first, last] as demand; the window behind it as prefetch."""
+            with self.cond:
+                if self.closed:
+                    return
+                for b in range(first, last + 1):
+                    self.failed.pop(b, None)  # a new demand read may retry
+                for b in range(first, min(self.nblocks, last + WINDOW + 1)):
+                    if b in self.blocks or b in self.pending or b in self.failed:
+                        continue
+                    demand = b <= last
+                    if not demand and not budget.take():
+                        continue
+                    self.pending.add(b)
+                    pool.submit(self._fetch, b, not demand)
+
+        def read(self, offset, length):
+            if length <= 0 or offset >= self.size:
+                return b""
+            length = min(length, self.size - offset)
+            first = offset // self.block
+            last = (offset + length - 1) // self.block
+            self._schedule(first, last)
+            deadline = time.monotonic() + TIMEOUT * 4
+            with self.cond:
+                while True:
+                    missing = [b for b in range(first, last + 1) if b not in self.blocks]
+                    if not missing:
+                        break
+                    if any(b in self.failed for b in missing) or time.monotonic() > deadline:
+                        raise FuseOSError(5)  # EIO
+                    self.cond.wait(timeout=1)
+                data = b"".join(self.blocks[b] for b in range(first, last + 1))
+                self.last_use = time.monotonic()
+                self.last_block = first
+                # Bound the cache: keep a little behind the reader, the window
+                # ahead, then let the idle trimmer shrink cold files further.
+                lo = max(0, first - 1)
+                hi = first + max(WINDOW, CACHE_BLOCKS)
+                for b in list(self.blocks):
+                    if b < lo or b > hi:
+                        self.blocks.pop(b, None)
+            start = offset - first * self.block
+            return data[start:start + length]
+
+        def trim_idle(self, now, idle_secs):
+            with self.cond:
+                if self.closed or now - self.last_use < idle_secs:
+                    return
+                keep = {self.last_block, self.last_block + 1}
+                for b in list(self.blocks):
+                    if b not in keep:
+                        self.blocks.pop(b, None)
+
+        def close(self):
+            with self.cond:
+                self.closed = True
+                self.blocks.clear()
+                self.cond.notify_all()
+
 
     class ReadOnlyFUSEr(FUSEr):
-        """fsspec's FUSEr with read-only modes and bounded readahead."""
+        """fsspec metadata plumbing + the prefetching read path above."""
 
-        def open(self, path, flags):
-            if flags & (os.O_WRONLY | os.O_RDWR):
-                raise FuseOSError(30)  # EROFS
-            fn = "".join([self.root, path.lstrip("/")])
-            self.cache[self.counter] = self.fs.open(
-                fn,
-                "rb",
-                block_size=BLOCK,
-                cache_type="readahead",
-            )
-            self.counter += 1
-            return self.counter - 1
+        def __init__(self, fs, path, ready_file=False):
+            super().__init__(fs, path, ready_file=ready_file)
+            self.files = {}
+            threading.Thread(target=self._trim_loop, daemon=True).start()
 
         def getattr(self, path, fh=None):
             data = super().getattr(path, fh)
@@ -80,22 +256,56 @@ data:
             data["st_gid"] = GID
             return data
 
+        def open(self, path, flags):
+            if flags & (os.O_WRONLY | os.O_RDWR):
+                raise FuseOSError(30)  # EROFS
+            fn = "".join([self.root, path.lstrip("/")])
+            fh = self.counter
+            self.counter += 1
+            self.files[fh] = RepoFile(self.fs, fn, self.fs.info(fn)["size"])
+            return fh
+
+        def read(self, path, size, offset, fh):
+            f = self.files.get(fh)
+            if f is None:
+                return b""
+            return f.read(offset, size)
+
+        def release(self, path, fh):
+            f = self.files.pop(fh, None)
+            if f is not None:
+                f.close()
+            return 0
+
+        def _trim_loop(self):
+            while True:
+                time.sleep(max(IDLE_TRIM, 1.0))
+                now = time.monotonic()
+                for f in list(self.files.values()):
+                    f.trim_idle(now, IDLE_TRIM)
+
 
     def main():
+        global client, pool
         logging.basicConfig(
             level=logging.INFO,
             stream=sys.stderr,
             format="%(asctime)s %(levelname)s %(name)s: %(message)s",
         )
+        client = httpx.Client(
+            follow_redirects=True,
+            timeout=httpx.Timeout(TIMEOUT),
+            limits=httpx.Limits(
+                max_connections=INFLIGHT + 4, max_keepalive_connections=INFLIGHT
+            ),
+        )
+        pool = ThreadPoolExecutor(max_workers=INFLIGHT, thread_name_prefix="hf-fetch")
         os.makedirs(MOUNT, exist_ok=True)
-        fs = HfFileSystem(block_size=BLOCK)
+        fs = HfFileSystem()
         root = f"{REPO}@{REVISION}"
         log.info(
-            "mounting %s at %s (block=%d, uid=%d)",
-            root,
-            MOUNT,
-            BLOCK,
-            UID,
+            "mounting %s at %s (block=%d, prefetch=%d, inflight=%d, uid=%d)",
+            root, MOUNT, BLOCK, WINDOW, INFLIGHT, UID,
         )
         FUSE(
             ReadOnlyFUSEr(fs, root, ready_file=True),
