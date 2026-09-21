@@ -87,7 +87,7 @@ spec:
             # FUSE mount + Bidirectional mount propagation require it.
             privileged: true
           volumeMounts:
-            - name: hf-model
+            - name: model-hf
               mountPath: /mnt
               mountPropagation: Bidirectional
             - name: hf-fuse-script
