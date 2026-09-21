@@ -178,7 +178,7 @@ spec:
             # Weights come from the hf-fuse mount (the FUSE mount lives in a
             # subdirectory of the shared emptyDir), not the Longhorn volume.
             - --model
-            - /model-hf/model
+            - /model
             - --host
             - 0.0.0.0
             - --allowed-host
