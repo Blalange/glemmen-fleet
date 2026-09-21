@@ -206,7 +206,3 @@ spec:
               # few GiB uncommitted past the colibri pod, so the sidecar must
               # never be able to OOM the node.
               memoryLimit: 1Gi
-              # Inert while no-disk-cache is set (the chunk cache is not
-              # created at all); kept as a ceiling if the disk cache is ever
-              # re-enabled.
-              cacheSize: 16Mi
