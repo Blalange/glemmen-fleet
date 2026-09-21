@@ -1,0 +1,112 @@
+# Python FUSE daemon used by the hf-fuse sidecar in deployment.yaml.
+#
+# It serves the GLM-5.3-Flash colibri container read-only over plain HTTP
+# Range requests against the Hugging Face Hub - deliberately NOT via hf-mount
+# or the hf-csi-driver, whose Xet transfer path stalled with 0 bytes per fetch
+# on this cluster while plain HTTP downloads worked. Nothing is written to
+# disk: a cache miss is one Range GET against /resolve/, served from a small
+# in-memory readahead block per open file.
+#
+# Run it with:  HF_MOUNT=/mnt/model python3 hf-fuse.py
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: hf-fuse-script
+data:
+  hf-fuse.py: |
+    #!/usr/bin/env python3
+    """Read-only FUSE mount of a Hugging Face Hub repo over plain HTTP range reads.
+
+    This replaces the hf-mount / hf-csi-driver path: no Xet, no on-disk chunk
+    cache. Cache misses are issued as `Range` GETs against
+    https://<endpoint>/<repo>/resolve/<revision>/<path> and served from a bounded
+    in-memory readahead buffer per open file, so the 195 GB checkpoint never lands
+    on local disk.
+
+    Configuration (environment):
+      HF_REPO              repo id                    (default: the colibri model)
+      HF_REVISION          git revision               (default: main)
+      HF_MOUNT             mount point                (default: /mnt/hf)
+      HF_BLOCK_SIZE        fsspec block size, bytes   (default: 4 MiB)
+      HF_UID / HF_GID      uid/gid reported to the kernel (default: 1000)
+
+    Stays in the foreground; exits non-zero if the mount cannot be established.
+    """
+
+    import logging
+    import os
+    import sys
+
+    from fuse import FUSE, FuseOSError
+    from fsspec.fuse import FUSEr
+    from huggingface_hub import HfFileSystem
+
+    REPO = os.environ.get("HF_REPO", "Justvugg/GLM-5.3-Flash-colibri-int4-g64")
+    REVISION = os.environ.get("HF_REVISION", "main")
+    MOUNT = os.environ.get("HF_MOUNT", "/mnt/hf")
+    BLOCK = int(os.environ.get("HF_BLOCK_SIZE", str(4 * 1024 * 1024)))
+    UID = int(os.environ.get("HF_UID", "1000"))
+    GID = int(os.environ.get("HF_GID", "1000"))
+
+    log = logging.getLogger("hf-fuse")
+
+
+    class ReadOnlyFUSEr(FUSEr):
+        """fsspec's FUSEr with read-only modes and bounded readahead."""
+
+        def open(self, path, flags):
+            if flags & (os.O_WRONLY | os.O_RDWR):
+                raise FuseOSError(30)  # EROFS
+            fn = "".join([self.root, path.lstrip("/")])
+            self.cache[self.counter] = self.fs.open(
+                fn,
+                "rb",
+                block_size=BLOCK,
+                cache_type="readahead",
+            )
+            self.counter += 1
+            return self.counter - 1
+
+        def getattr(self, path, fh=None):
+            data = super().getattr(path, fh)
+            mode = data.get("st_mode")
+            if mode is None:
+                # The .fuse_ready marker is synthesized by FUSEr without st_mode.
+                data["st_mode"] = 0o100444  # regular file, r--r--r--
+            else:
+                kind = mode & 0o170000
+                data["st_mode"] = kind | (0o555 if kind == 0o040000 else 0o444)
+            data["st_uid"] = UID
+            data["st_gid"] = GID
+            return data
+
+
+    def main():
+        logging.basicConfig(
+            level=logging.INFO,
+            stream=sys.stderr,
+            format="%(asctime)s %(levelname)s %(name)s: %(message)s",
+        )
+        os.makedirs(MOUNT, exist_ok=True)
+        fs = HfFileSystem(block_size=BLOCK)
+        root = f"{REPO}@{REVISION}"
+        log.info(
+            "mounting %s at %s (block=%d, uid=%d)",
+            root,
+            MOUNT,
+            BLOCK,
+            UID,
+        )
+        FUSE(
+            ReadOnlyFUSEr(fs, root, ready_file=True),
+            MOUNT,
+            foreground=True,
+            nothreads=False,
+            allow_other=True,
+            default_permissions=True,
+            ro=True,
+        )
+
+
+    if __name__ == "__main__":
+        main()

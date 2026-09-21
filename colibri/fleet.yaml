@@ -1,7 +1,6 @@
 defaultNamespace: colibri
-# The StorageClass/PVC here are Longhorn volumes, and the deployment also
-# mounts the model repo through the hf-csi-driver; both bundles must exist
-# before the workload starts.
+# The StorageClass/PVC here are Longhorn volumes and must exist before the
+# workload starts. The Hugging Face model mount is created inside the pod by
+# the hf-fuse sidecar, so it needs no cluster-level driver.
 dependsOn:
   - name: glemmen-fleet-longhorn
-  - name: glemmen-fleet-hf-csi-driver

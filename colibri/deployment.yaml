@@ -1,6 +1,7 @@
 # Colibri: GLM-5.3-Flash (int4-g64, 321B) on CPU. The routed experts stream
-# from a read-only hf-csi-driver FUSE mount of the Hugging Face repo at
-# /model-hf; the strict-local Longhorn volume stays attached at /model so the
+# from a read-only FUSE mount of the Hugging Face repo at /model-hf, served by
+# the hf-fuse sidecar below over plain HTTP Range requests (no Xet, no disk
+# cache). The strict-local Longhorn volume stays attached at /model so the
 # engine keeps its learned .coli_usage history and the warm local copy.
 #
 # Image: docker build -t hexahigh/colibri:1.11.0 . (in the Dockerfile repo);
@@ -34,6 +35,80 @@ spec:
         kubernetes.io/hostname: glemmen80
       terminationGracePeriodSeconds: 60
       initContainers:
+        # Native sidecar (restartPolicy: Always) that keeps a read-only FUSE
+        # view of the Hub repo mounted at /mnt/model for the pod's lifetime.
+        # It deliberately does NOT use hf-mount/hf-csi-driver: that stack
+        # stalled fetching Xet ranges (0 bytes per fetch) on this cluster while
+        # plain HTTP downloads worked. Here every cache miss is a Range GET
+        # against the Hub's /resolve/ redirect (the xet-bridge CDN URL, over
+        # HTTP/1.1) and nothing is written to disk.
+        #
+        # The mount is shared with the colibri container through the hf-model
+        # emptyDir: this container mounts it Bidirectional (so the FUSE mount
+        # propagates to the host), colibri mounts it HostToContainer.
+        - name: hf-fuse
+          image: python:3.13-slim
+          restartPolicy: Always
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              set -eu
+              apt-get update -qq
+              apt-get install -y -qq --no-install-recommends ca-certificates util-linux
+              # t64 on trixie, plain libfuse2 on older Debian.
+              apt-get install -y -qq --no-install-recommends libfuse2t64 || \
+                apt-get install -y -qq --no-install-recommends libfuse2
+              pip install --quiet --no-cache-dir --disable-pip-version-check \
+                huggingface_hub==1.32.0 fsspec==2026.9.0 fusepy==3.0.1
+              # A previous sidecar may have died leaving a dead FUSE mount in
+              # the shared emptyDir; detach it so a fresh one can mount.
+              if mountpoint -q "$HF_MOUNT"; then umount -l "$HF_MOUNT" || true; fi
+              exec python3 /srv/hf-fuse.py
+          env:
+            - name: HF_REPO
+              value: Justvugg/GLM-5.3-Flash-colibri-int4-g64
+            - name: HF_REVISION
+              value: main
+            - name: HF_MOUNT
+              value: /mnt/model
+            # Per-file readahead is one block past the requested range; 4 MiB
+            # keeps ~8 MiB in memory per open shard.
+            - name: HF_BLOCK_SIZE
+              value: "4194304"
+            - name: HF_UID
+              value: "1000"
+            - name: HF_GID
+              value: "1000"
+            # Default is 10s, which is tight for a 4 MiB block on a shared
+            # 1 Gbit/s link.
+            - name: HF_HUB_DOWNLOAD_TIMEOUT
+              value: "60"
+          securityContext:
+            # FUSE mount + Bidirectional mount propagation require it.
+            privileged: true
+          volumeMounts:
+            - name: hf-model
+              mountPath: /mnt
+              mountPropagation: Bidirectional
+            - name: hf-fuse-script
+              mountPath: /srv
+              readOnly: true
+          startupProbe:
+            # Written by the FUSE daemon once the mount is ready.
+            exec:
+              command: ["test", "-f", "/mnt/model/.fuse_ready"]
+            # apt-get + pip at container start: allow up to 5 minutes.
+            periodSeconds: 2
+            failureThreshold: 150
+          resources:
+            requests:
+              cpu: 50m
+              # Keep the pod's scheduling request as close to colibri's 185Gi
+              # as possible; the 2Gi limit still covers the buffers.
+              memory: 64Mi
+            limits:
+              # Readahead buffers (8 MiB per open shard) plus Python/httpx.
+              memory: 2Gi
         # Downloads the checkpoint into the Longhorn volume the first time the
         # pod runs (195 GB, ~30-60 min at 1 Gbit/s) and resumes it after an
         # interruption. `hf download` is incremental, and the sentinel makes
@@ -94,9 +169,10 @@ spec:
           # service DNS) is not predictable inside the container.
           args:
             - web
-            # Weights come from the HF FUSE mount, not the Longhorn volume.
+            # Weights come from the hf-fuse mount (the FUSE mount lives in a
+            # subdirectory of the shared emptyDir), not the Longhorn volume.
             - --model
-            - /model-hf
+            - /model-hf/model
             - --host
             - 0.0.0.0
             - --allowed-host
@@ -176,33 +252,18 @@ spec:
               mountPath: /model
             - name: model-hf
               mountPath: /model-hf
-              readOnly: true
+              # See the mount in the hf-fuse sidecar: the FUSE mount is
+              # established on the host under this emptyDir and propagates in.
+              mountPropagation: HostToContainer
       volumes:
         - name: model
           persistentVolumeClaim:
             claimName: colibri-model
-        # Ephemeral CSI volume: the hf-csi-driver sidecar-injection webhook
-        # reads the attributes straight off the pod spec, so there is no
-        # PV/PVC to bind (and nothing to provision). mountFlags are forwarded
-        # to hf-mount as --flags:
-        #   no-disk-cache          - keep the 195 GB checkpoint off glemmen80's
-        #                            disk; every expert read goes to the Hub
-        #   read-fetch-timeout-ms  - per-chunk read ceiling. The 30s default
-        #                            cancels xet-core's own retries before
-        #                            they can recover a stalled Xet CDN
-        #                            transfer (observed: 3x30s of 0 bytes per
-        #                            fetch); two minutes per attempt lets a
-        #                            transient stall retry instead of failing
-        #                            the read and killing the engine.
+        # Carries the FUSE mount from the hf-fuse sidecar to the colibri
+        # container. No model bytes are stored here; the emptyDir only holds
+        # the mount point.
         - name: model-hf
-          csi:
-            driver: hf.csi.huggingface.co
-            readOnly: true
-            volumeAttributes:
-              sourceType: repo
-              sourceId: Justvugg/GLM-5.3-Flash-colibri-int4-g64
-              mountFlags: no-disk-cache,read-fetch-timeout-ms=120000
-              # Bound the injected hf-mount sidecar: glemmen80 leaves only a
-              # few GiB uncommitted past the colibri pod, so the sidecar must
-              # never be able to OOM the node.
-              memoryLimit: 1Gi
+          emptyDir: {}
+        - name: hf-fuse-script
+          configMap:
+            name: hf-fuse-script
