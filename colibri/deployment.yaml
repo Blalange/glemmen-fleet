@@ -71,7 +71,7 @@ spec:
               mountPath: /model
       containers:
         - name: colibri
-          image: hexahigh/colibri:1.11.0
+          image: hexahigh/colibri:1.12.0
           imagePullPolicy: IfNotPresent
           # Same reasoning as the init container: this node is also the k3s
           # control plane, and the engine streams ~4.8 GB per token from the
@@ -105,6 +105,16 @@ spec:
             # The bind is 0.0.0.0 with no API key, allowed because the
             # Service is ClusterIP: only pods in this cluster can reach it.
             - name: COLI_ALLOW_INSECURE_BIND
+              value: "1"
+            - name: PIN
+              value: "auto"
+            - name: PIN_GB
+              value: "172"
+            - name: RAM_GB
+              value: "172"
+            - name: CTX
+              value: "409600"
+            - name: PREFETCH
               value: "1"
           envFrom:
             - secretRef:
