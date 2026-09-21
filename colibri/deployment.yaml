@@ -184,8 +184,16 @@ spec:
         # Ephemeral CSI volume: the hf-csi-driver sidecar-injection webhook
         # reads the attributes straight off the pod spec, so there is no
         # PV/PVC to bind (and nothing to provision). mountFlags are forwarded
-        # to hf-mount as --flags; no-disk-cache keeps the 195 GB checkpoint
-        # off glemmen80's disk, so every expert read goes to the Hub.
+        # to hf-mount as --flags:
+        #   no-disk-cache          - keep the 195 GB checkpoint off glemmen80's
+        #                            disk; every expert read goes to the Hub
+        #   read-fetch-timeout-ms  - per-chunk read ceiling. The 30s default
+        #                            cancels xet-core's own retries before
+        #                            they can recover a stalled Xet CDN
+        #                            transfer (observed: 3x30s of 0 bytes per
+        #                            fetch); two minutes per attempt lets a
+        #                            transient stall retry instead of failing
+        #                            the read and killing the engine.
         - name: model-hf
           csi:
             driver: hf.csi.huggingface.co
@@ -193,9 +201,12 @@ spec:
             volumeAttributes:
               sourceType: repo
               sourceId: Justvugg/GLM-5.3-Flash-colibri-int4-g64
-              mountFlags: no-disk-cache
+              mountFlags: no-disk-cache,read-fetch-timeout-ms=120000
               # Bound the injected hf-mount sidecar: glemmen80 leaves only a
               # few GiB uncommitted past the colibri pod, so the sidecar must
               # never be able to OOM the node.
               memoryLimit: 1Gi
+              # Inert while no-disk-cache is set (the chunk cache is not
+              # created at all); kept as a ceiling if the disk cache is ever
+              # re-enabled.
               cacheSize: 16777216 # 16 MiB
