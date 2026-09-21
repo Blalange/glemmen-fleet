@@ -209,4 +209,4 @@ spec:
               # Inert while no-disk-cache is set (the chunk cache is not
               # created at all); kept as a ceiling if the disk cache is ever
               # re-enabled.
-              cacheSize: 16777216 # 16 MiB
+              cacheSize: 16Mi
