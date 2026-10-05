@@ -146,7 +146,7 @@ spec:
               port: http
             periodSeconds: 10
             timeoutSeconds: 5
-            failureThreshold: 60
+            failureThreshold: 6
           livenessProbe:
             httpGet:
               path: /login
@@ -154,7 +154,7 @@ spec:
             initialDelaySeconds: 30
             periodSeconds: 30
             timeoutSeconds: 5
-            failureThreshold: 60
+            failureThreshold: 6
           resources:
             requests:
               cpu: 100m
@@ -167,6 +167,12 @@ spec:
             # container environment, so a restart only logs people out.
             - name: data
               mountPath: /var/lib/snipeit
+            # Alpine's apache2 package points /var/www/logs at /var/log/apache2
+            # (root:wheel, mode 2750), which uid 100 cannot write. The emptyDir
+            # is world-writable and mounted over that path so httpd can open
+            # its error and access logs; the logs are ephemeral as usual.
+            - name: logs
+              mountPath: /var/www/logs
             - name: startup
               mountPath: /custom-startup
               readOnly: true
@@ -174,6 +180,8 @@ spec:
         - name: data
           persistentVolumeClaim:
             claimName: snipe-it-data
+        - name: logs
+          emptyDir: {}
         - name: startup
           configMap:
             name: snipe-it-startup
