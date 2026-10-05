@@ -1,0 +1,16 @@
+# Dedicated Longhorn StorageClass for Snipe-IT (same convention as the
+# monitoring and colibri-model classes). One replica because each volume lives
+# on a single node anyway, Retain so deleting a PVC can never delete the only
+# copy of the database or uploads, and Immediate binding so the volumes exist
+# before the pods are scheduled.
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: snipe-it
+provisioner: driver.longhorn.io
+allowVolumeExpansion: true
+reclaimPolicy: Retain
+volumeBindingMode: Immediate
+parameters:
+  numberOfReplicas: "1"
+  staleReplicaTimeout: "2880"

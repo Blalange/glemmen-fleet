@@ -1,0 +1,180 @@
+# Snipe-IT (https://snipeitapp.com) - IT asset and license management, served
+# at https://snipe.glem.men.
+#
+# The upstream image expects to start as root; the ConfigMap in
+# startup-configmap.yaml carries a copy of its entrypoint with the root-only
+# chown calls removed so the pod can run as the apache user with an fsGroup
+# that makes the Longhorn volume group-writable.
+#
+# First start: the entrypoint runs the database migrations and the app then
+# redirects to /setup, where the initial admin account is created (the image
+# ships no default user).
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: snipe-it
+  labels:
+    app.kubernetes.io/name: snipe-it
+    app.kubernetes.io/instance: snipe-it
+spec:
+  replicas: 1
+  # One ReadWriteOnce volume: never run the old and the new pod at the same
+  # time.
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: snipe-it
+      app.kubernetes.io/instance: snipe-it
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: snipe-it
+        app.kubernetes.io/instance: snipe-it
+    spec:
+      # apache:apache in the image is uid 100, gid 101. fsGroup 101 lets that
+      # user create and write the upload/keys/dumps tree on the volume.
+      securityContext:
+        runAsUser: 100
+        runAsGroup: 101
+        runAsNonRoot: true
+        fsGroup: 101
+        fsGroupChangePolicy: OnRootMismatch
+        seccompProfile:
+          type: RuntimeDefault
+      initContainers:
+        # The entrypoint runs `php artisan migrate` once, without retrying, so
+        # wait until MariaDB is really up before the app container starts. The
+        # check goes one step further than a TCP connect: it runs a query with
+        # the app's credentials, which only succeed after the database
+        # entrypoint has created the database and user.
+        - name: wait-for-mariadb
+          image: docker.io/library/mariadb:11.8.9
+          imagePullPolicy: IfNotPresent
+          command:
+            - sh
+            - -c
+            - >-
+              until mariadb --host=mariadb --user="$DB_USERNAME"
+              --password="$DB_PASSWORD" --execute='SELECT 1' >/dev/null 2>&1;
+              do echo waiting for mariadb; sleep 2; done
+          env:
+            - name: DB_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: snipe-it-db
+                  key: username
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: snipe-it-db
+                  key: password
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32Mi
+            limits:
+              memory: 64Mi
+      containers:
+        - name: snipe-it
+          image: docker.io/snipe/snipe-it:v8.8.0-alpine
+          imagePullPolicy: IfNotPresent
+          command: ["/sbin/tini", "--"]
+          args: ["/custom-startup/startup.sh"]
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+          env:
+            - name: APP_ENV
+              value: production
+            - name: APP_DEBUG
+              value: "false"
+            - name: APP_URL
+              value: https://snipe.glem.men
+            - name: APP_TIMEZONE
+              value: Europe/Oslo
+            - name: APP_LOCALE
+              value: nb-NO
+            - name: APP_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: snipe-it-app-key
+                  key: APP_KEY
+            - name: DB_CONNECTION
+              value: mysql
+            - name: DB_HOST
+              value: mariadb
+            - name: DB_PORT
+              value: "3306"
+            - name: DB_DATABASE
+              valueFrom:
+                secretKeyRef:
+                  name: snipe-it-db
+                  key: database
+            - name: DB_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: snipe-it-db
+                  key: username
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: snipe-it-db
+                  key: password
+            # Traefik terminates TLS and forwards X-Forwarded-*; Laravel only
+            # honours those headers when the proxy and the individual headers
+            # are trusted (Snipe-IT 8 does not trust anything by default).
+            # Without this, generated URLs and redirects would use http://.
+            # The app is only reachable through Traefik, so '*' is safe.
+            - name: APP_TRUSTED_PROXIES
+              value: "*"
+            - name: APP_TRUSTED_HEADERS
+              value: HEADER_X_FORWARDED_TRAEFIK
+            - name: SECURE_COOKIES
+              value: "true"
+          ports:
+            - name: http
+              containerPort: 80
+          readinessProbe:
+            httpGet:
+              path: /login
+              port: http
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 6
+          livenessProbe:
+            httpGet:
+              path: /login
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 6
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              memory: 1Gi
+          volumeMounts:
+            # Uploads, barcodes, dumps and OAuth keys live on the volume.
+            # Sessions use the image's default file driver inside the
+            # container environment, so a restart only logs people out.
+            - name: data
+              mountPath: /var/lib/snipeit
+            - name: startup
+              mountPath: /custom-startup
+              readOnly: true
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: snipe-it-data
+        - name: startup
+          configMap:
+            name: snipe-it-startup
+            defaultMode: 0755

@@ -1,0 +1,17 @@
+# Snipe-IT uploads (asset photos, barcodes, private uploads), its dumps and the
+# Passport OAuth keys. The image symlinks all of these into /var/lib/snipeit,
+# so a single volume mounted there is enough.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: snipe-it-data
+  labels:
+    app.kubernetes.io/name: snipe-it
+    app.kubernetes.io/instance: snipe-it
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: snipe-it
+  resources:
+    requests:
+      storage: 5Gi

@@ -1,0 +1,5 @@
+defaultNamespace: snipe-it
+# The database and upload PVCs are Longhorn volumes, so the StorageClass must
+# exist before the workloads start.
+dependsOn:
+  - name: glemmen-fleet-longhorn

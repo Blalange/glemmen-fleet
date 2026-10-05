@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: snipe-it
+  labels:
+    app.kubernetes.io/name: snipe-it
+    app.kubernetes.io/instance: snipe-it
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: snipe-it
+    app.kubernetes.io/instance: snipe-it
+  ports:
+    - name: http
+      port: 80
+      targetPort: http

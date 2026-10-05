@@ -476,6 +476,10 @@ config:
               src: https://grafana.glem.men/d-solo/4Yo8IZ-Wk/unifi-poller3a-usg-insights-prometheus?orgId=1&panelId=Default%20(default)$panel-3&kiosk=true&refresh=1m&var-Controller=$__all&var-Site=$__all&var-Gateway=$__all&timezone=browser&var-Smooth=2m&var-DS_PROMETHEUS=prometheus&from=now-3h&to=now
               classes: h-72 sm:h-72 md:h-80 lg:h-96 xl:h-96 2xl:h-96
     - Lenker:
+        - Snipe-IT:
+            icon: snipe-it.png
+            href: https://snipe.glem.men
+            description: Inventar og lån av IT-utstyr
         - Rancher:
             icon: rancher.png
             href: https://rancher.blalange.org

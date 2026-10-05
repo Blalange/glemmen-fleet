@@ -1,0 +1,22 @@
+# Traefik terminates TLS with the *.glem.men wildcard certificate (loaded into
+# its default TLS store) and forwards to the ClusterIP Service.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: snipe-it
+  labels:
+    app.kubernetes.io/name: snipe-it
+    app.kubernetes.io/instance: snipe-it
+spec:
+  ingressClassName: traefik
+  rules:
+    - host: snipe.glem.men
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: snipe-it
+                port:
+                  number: 80

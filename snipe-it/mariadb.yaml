@@ -1,0 +1,132 @@
+# MariaDB for Snipe-IT. Snipe-IT is a Laravel application that requires
+# MySQL/MariaDB, and the cluster has no shared database, so the two run
+# together in this namespace.
+#
+# The credentials are deliberately not stored in git. Create the namespace and
+# the two Secrets before (or while) Fleet rolls this bundle out:
+#
+#   kubectl create namespace snipe-it --dry-run=client -o yaml | kubectl apply -f -
+#   kubectl -n snipe-it create secret generic snipe-it-db \
+#     --from-literal=database=snipeit \
+#     --from-literal=username=snipeit \
+#     --from-literal=password="$(openssl rand -base64 24)" \
+#     --from-literal=root-password="$(openssl rand -base64 24)"
+#   kubectl -n snipe-it create secret generic snipe-it-app-key \
+#     --from-literal=APP_KEY="base64:$(openssl rand -base64 32)"
+#
+# The official mariadb image only creates the database/user and sets these
+# passwords while /var/lib/mysql is empty. Changing snipe-it-db later does not
+# change the password inside the database, so rotate with SQL as well.
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mariadb
+  labels:
+    app.kubernetes.io/name: mariadb
+    app.kubernetes.io/instance: snipe-it
+spec:
+  # Headless: the single pod's DNS name is the Service name, which is all a
+  # single-writer database needs.
+  clusterIP: None
+  selector:
+    app.kubernetes.io/name: mariadb
+    app.kubernetes.io/instance: snipe-it
+  ports:
+    - name: mysql
+      port: 3306
+      targetPort: mysql
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: mariadb
+  labels:
+    app.kubernetes.io/name: mariadb
+    app.kubernetes.io/instance: snipe-it
+spec:
+  serviceName: mariadb
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: mariadb
+      app.kubernetes.io/instance: snipe-it
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: mariadb
+        app.kubernetes.io/instance: snipe-it
+    spec:
+      # The image starts as root, prepares /var/lib/mysql and then drops to its
+      # mysql user with gosu. It is only reachable through the ClusterIP
+      # Service above, so it stays on that supported path instead of pinning a
+      # user id that the base image does not guarantee.
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: mariadb
+          image: docker.io/library/mariadb:11.8.9
+          imagePullPolicy: IfNotPresent
+          securityContext:
+            allowPrivilegeEscalation: false
+          env:
+            - name: MARIADB_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: snipe-it-db
+                  key: root-password
+            - name: MARIADB_DATABASE
+              valueFrom:
+                secretKeyRef:
+                  name: snipe-it-db
+                  key: database
+            - name: MARIADB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: snipe-it-db
+                  key: username
+            - name: MARIADB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: snipe-it-db
+                  key: password
+          ports:
+            - name: mysql
+              containerPort: 3306
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/mysql
+          # healthcheck.sh connects over the unix socket and
+          # --innodb_initialized waits out first-start initialization and
+          # crash recovery, so the app never migrates against a half-started
+          # server.
+          readinessProbe:
+            exec:
+              command: ["healthcheck.sh", "--connect", "--innodb_initialized"]
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 6
+          livenessProbe:
+            exec:
+              command: ["healthcheck.sh", "--connect", "--innodb_initialized"]
+            initialDelaySeconds: 30
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 6
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              memory: 1Gi
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        storageClassName: snipe-it
+        resources:
+          requests:
+            storage: 5Gi
