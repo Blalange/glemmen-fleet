@@ -20,6 +20,13 @@ resources:
 # one automatically.
 serviceMonitor:
   enabled: true
+  # Adds the Kubernetes node name as a 'node' label to every smartctl metric so
+  # dashboards can filter/group by hostname (the default instance label is just
+  # the pod IP). Same relabeling the node-exporter ServiceMonitor uses.
+  relabelings:
+    - sourceLabels: [__meta_kubernetes_pod_node_name]
+      targetLabel: node
+      action: replace
 
 # Ship the chart's built-in SMART alert rules (media errors, critical warnings,
 # available spare under threshold, bad SMART status, ...). The release label is
