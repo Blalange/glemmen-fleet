@@ -67,7 +67,7 @@ data:
           }
         ]
       },
-      "description": "Physical disk health, SMART reliability and I/O performance for every node, from smartctl-exporter and node-exporter. Filter by Host and Disk; loop/dm and other virtual block devices are always excluded. Disk names are the exporter's device labels (e.g. sda, or bus_0_sat+megaraid_0 behind a RAID controller).",
+      "description": "Physical disk health, SMART reliability and I/O performance for every node, from smartctl-exporter and node-exporter. Filter by Host and Disk; loop/dm/iSCSI and other virtual block devices are always excluded, and RAID controller pass-through duplicates (bus_0_...) are folded into the OS device name (sda, sdb, ...).",
       "editable": true,
       "fiscalYearStartMonth": 0,
       "graphTooltip": 1,
@@ -139,7 +139,7 @@ data:
                 "type": "prometheus",
                 "uid": "${DS_PROMETHEUS}"
               },
-              "expr": "count(count by (node) (smartctl_device{node=~\"$node\", device=~\"^($disk)$\", device!~\"^(loop|ram|sr|fd|dm-|zram|zd|nbd|rbd|drbd)[0-9]+$\", model_name!=\"IET VIRTUAL-DISK\"})) or vector(0)",
+              "expr": "count(count by (node) (smartctl_device{node=~\"$node\", device=~\"^($disk)$\", device!~\"^(loop|ram|sr|fd|dm-|zram|zd|nbd|rbd|drbd)[0-9]+$\", device!~\"^bus_[0-9]+_.*\", model_name!=\"IET VIRTUAL-DISK\"})) or vector(0)",
               "refId": "A"
             }
           ],
@@ -199,7 +199,7 @@ data:
                 "type": "prometheus",
                 "uid": "${DS_PROMETHEUS}"
               },
-              "expr": "count(smartctl_device{node=~\"$node\", device=~\"^($disk)$\", device!~\"^(loop|ram|sr|fd|dm-|zram|zd|nbd|rbd|drbd)[0-9]+$\", model_name!=\"IET VIRTUAL-DISK\"}) or vector(0)",
+              "expr": "count(smartctl_device{node=~\"$node\", device=~\"^($disk)$\", device!~\"^(loop|ram|sr|fd|dm-|zram|zd|nbd|rbd|drbd)[0-9]+$\", device!~\"^bus_[0-9]+_.*\", model_name!=\"IET VIRTUAL-DISK\"}) or vector(0)",
               "refId": "A"
             }
           ],
@@ -263,7 +263,7 @@ data:
                 "type": "prometheus",
                 "uid": "${DS_PROMETHEUS}"
               },
-              "expr": "count(smartctl_device_smart_status{node=~\"$node\", device=~\"^($disk)$\", device!~\"^(loop|ram|sr|fd|dm-|zram|zd|nbd|rbd|drbd)[0-9]+$\", model_name!=\"IET VIRTUAL-DISK\"} != 1) or vector(0)",
+              "expr": "count((smartctl_device_smart_status{node=~\"$node\", device=~\"^($disk)$\", device!~\"^(loop|ram|sr|fd|dm-|zram|zd|nbd|rbd|drbd)[0-9]+$\", device!~\"^bus_[0-9]+_.*\", model_name!=\"IET VIRTUAL-DISK\"} != 1) and on (node, device) smartctl_device{node=~\"$node\", model_name!=\"IET VIRTUAL-DISK\"}) or vector(0)",
               "refId": "A"
             }
           ],
@@ -327,7 +327,7 @@ data:
                 "type": "prometheus",
                 "uid": "${DS_PROMETHEUS}"
               },
-              "expr": "sum(smartctl_device_error_log_count{node=~\"$node\", device=~\"^($disk)$\", device!~\"^(loop|ram|sr|fd|dm-|zram|zd|nbd|rbd|drbd)[0-9]+$\", model_name!=\"IET VIRTUAL-DISK\", error_log_type=\"summary\"}) or vector(0)",
+              "expr": "sum((smartctl_device_error_log_count{node=~\"$node\", device=~\"^($disk)$\", device!~\"^(loop|ram|sr|fd|dm-|zram|zd|nbd|rbd|drbd)[0-9]+$\", device!~\"^bus_[0-9]+_.*\", model_name!=\"IET VIRTUAL-DISK\", error_log_type=\"summary\"}) and on (node, device) smartctl_device{node=~\"$node\", model_name!=\"IET VIRTUAL-DISK\"}) or vector(0)",
               "refId": "A"
             }
           ],
@@ -391,7 +391,7 @@ data:
                 "type": "prometheus",
                 "uid": "${DS_PROMETHEUS}"
               },
-              "expr": "sum(smartctl_device_critical_warning{node=~\"$node\", device=~\"^($disk)$\", device!~\"^(loop|ram|sr|fd|dm-|zram|zd|nbd|rbd|drbd)[0-9]+$\", model_name!=\"IET VIRTUAL-DISK\"}) or vector(0)",
+              "expr": "sum((smartctl_device_critical_warning{node=~\"$node\", device=~\"^($disk)$\", device!~\"^(loop|ram|sr|fd|dm-|zram|zd|nbd|rbd|drbd)[0-9]+$\", device!~\"^bus_[0-9]+_.*\", model_name!=\"IET VIRTUAL-DISK\"}) and on (node, device) smartctl_device{node=~\"$node\", model_name!=\"IET VIRTUAL-DISK\"}) or vector(0)",
               "refId": "A"
             }
           ],
@@ -459,7 +459,7 @@ data:
                 "type": "prometheus",
                 "uid": "${DS_PROMETHEUS}"
               },
-              "expr": "max(smartctl_device_temperature{node=~\"$node\", device=~\"^($disk)$\", device!~\"^(loop|ram|sr|fd|dm-|zram|zd|nbd|rbd|drbd)[0-9]+$\", model_name!=\"IET VIRTUAL-DISK\", temperature_type=\"current\"})",
+              "expr": "max((smartctl_device_temperature{node=~\"$node\", device=~\"^($disk)$\", device!~\"^(loop|ram|sr|fd|dm-|zram|zd|nbd|rbd|drbd)[0-9]+$\", device!~\"^bus_[0-9]+_.*\", model_name!=\"IET VIRTUAL-DISK\", temperature_type=\"current\"}) and on (node, device) smartctl_device{node=~\"$node\", model_name!=\"IET VIRTUAL-DISK\"})",
               "refId": "A"
             }
           ],
@@ -519,7 +519,7 @@ data:
                 "type": "prometheus",
                 "uid": "${DS_PROMETHEUS}"
               },
-              "expr": "sum(smartctl_device_capacity_bytes{node=~\"$node\", device=~\"^($disk)$\", device!~\"^(loop|ram|sr|fd|dm-|zram|zd|nbd|rbd|drbd)[0-9]+$\", model_name!=\"IET VIRTUAL-DISK\"}) or vector(0)",
+              "expr": "sum((smartctl_device_capacity_bytes{node=~\"$node\", device=~\"^($disk)$\", device!~\"^(loop|ram|sr|fd|dm-|zram|zd|nbd|rbd|drbd)[0-9]+$\", device!~\"^bus_[0-9]+_.*\", model_name!=\"IET VIRTUAL-DISK\"}) and on (node, device) smartctl_device{node=~\"$node\", model_name!=\"IET VIRTUAL-DISK\"}) or vector(0)",
               "refId": "A"
             }
           ],
@@ -579,7 +579,7 @@ data:
                 "type": "prometheus",
                 "uid": "${DS_PROMETHEUS}"
               },
-              "expr": "sum(sum by (node, device) (smartctl_device_bytes_written{node=~\"$node\", device=~\"^($disk)$\", device!~\"^(loop|ram|sr|fd|dm-|zram|zd|nbd|rbd|drbd)[0-9]+$\", model_name!=\"IET VIRTUAL-DISK\"}) or sum by (node, device) (smartctl_device_attribute{node=~\"$node\", device=~\"^($disk)$\", device!~\"^(loop|ram|sr|fd|dm-|zram|zd|nbd|rbd|drbd)[0-9]+$\", model_name!=\"IET VIRTUAL-DISK\", attribute_name=\"Total_LBAs_Written\", attribute_value_type=\"raw\"} * on(node, device) group_left() smartctl_device_block_size{node=~\"$node\", device=~\"^($disk)$\", device!~\"^(loop|ram|sr|fd|dm-|zram|zd|nbd|rbd|drbd)[0-9]+$\", model_name!=\"IET VIRTUAL-DISK\", blocks_type=\"logical\"})) or vector(0)",
+              "expr": "sum((sum by (node, device) (smartctl_device_bytes_written{node=~\"$node\", device=~\"^($disk)$\", device!~\"^(loop|ram|sr|fd|dm-|zram|zd|nbd|rbd|drbd)[0-9]+$\", device!~\"^bus_[0-9]+_.*\", model_name!=\"IET VIRTUAL-DISK\"}) or sum by (node, device) (smartctl_device_attribute{node=~\"$node\", device=~\"^($disk)$\", device!~\"^(loop|ram|sr|fd|dm-|zram|zd|nbd|rbd|drbd)[0-9]+$\", device!~\"^bus_[0-9]+_.*\", model_name!=\"IET VIRTUAL-DISK\", attribute_name=\"Total_LBAs_Written\", attribute_value_type=\"raw\"} * on(node, device) group_left() smartctl_device_block_size{node=~\"$node\", device=~\"^($disk)$\", device!~\"^(loop|ram|sr|fd|dm-|zram|zd|nbd|rbd|drbd)[0-9]+$\", device!~\"^bus_[0-9]+_.*\", model_name!=\"IET VIRTUAL-DISK\", blocks_type=\"logical\"})) and on (node, device) smartctl_device{node=~\"$node\", model_name!=\"IET VIRTUAL-DISK\"}) or vector(0)",
               "refId": "A"
             }
           ],
@@ -805,7 +805,7 @@ data:
                 "type": "prometheus",
                 "uid": "${DS_PROMETHEUS}"
               },
-              "expr": "max by (node, device, model_name, serial_number, firmware_version, interface) (smartctl_device{node=~\"$node\", device=~\"^($disk)$\", device!~\"^(loop|ram|sr|fd|dm-|zram|zd|nbd|rbd|drbd)[0-9]+$\", model_name!=\"IET VIRTUAL-DISK\"})",
+              "expr": "max by (node, device, model_name, serial_number, firmware_version, interface) (smartctl_device{node=~\"$node\", device=~\"^($disk)$\", device!~\"^(loop|ram|sr|fd|dm-|zram|zd|nbd|rbd|drbd)[0-9]+$\", device!~\"^bus_[0-9]+_.*\", model_name!=\"IET VIRTUAL-DISK\"})",
               "refId": "A",
               "instant": true,
               "range": false,
@@ -816,7 +816,7 @@ data:
                 "type": "prometheus",
                 "uid": "${DS_PROMETHEUS}"
               },
-              "expr": "max by (node, device, model_name, serial_number, firmware_version, interface) ((max by (node, device) (smartctl_device_capacity_bytes{node=~\"$node\", device=~\"^($disk)$\", device!~\"^(loop|ram|sr|fd|dm-|zram|zd|nbd|rbd|drbd)[0-9]+$\", model_name!=\"IET VIRTUAL-DISK\"})) * on(node, device) group_left(model_name, serial_number, firmware_version, interface) (max by (node, device, model_name, serial_number, firmware_version, interface) (smartctl_device{node=~\"$node\", device=~\"^($disk)$\", device!~\"^(loop|ram|sr|fd|dm-|zram|zd|nbd|rbd|drbd)[0-9]+$\", model_name!=\"IET VIRTUAL-DISK\"})))",
+              "expr": "max by (node, device, model_name, serial_number, firmware_version, interface) ((max by (node, device) ((smartctl_device_capacity_bytes{node=~\"$node\", device=~\"^($disk)$\", device!~\"^(loop|ram|sr|fd|dm-|zram|zd|nbd|rbd|drbd)[0-9]+$\", device!~\"^bus_[0-9]+_.*\", model_name!=\"IET VIRTUAL-DISK\"}) and on (node, device) smartctl_device{node=~\"$node\", model_name!=\"IET VIRTUAL-DISK\"})) * on(node, device) group_left(model_name, serial_number, firmware_version, interface) (max by (node, device, model_name, serial_number, firmware_version, interface) (smartctl_device{node=~\"$node\", device=~\"^($disk)$\", device!~\"^(loop|ram|sr|fd|dm-|zram|zd|nbd|rbd|drbd)[0-9]+$\", device!~\"^bus_[0-9]+_.*\", model_name!=\"IET VIRTUAL-DISK\"})))",
               "refId": "B",
               "instant": true,
               "range": false,
@@ -827,7 +827,7 @@ data:
                 "type": "prometheus",
                 "uid": "${DS_PROMETHEUS}"
               },
-              "expr": "max by (node, device, model_name, serial_number, firmware_version, interface) ((max by (node, device) (smartctl_device_rotation_rate{node=~\"$node\", device=~\"^($disk)$\", device!~\"^(loop|ram|sr|fd|dm-|zram|zd|nbd|rbd|drbd)[0-9]+$\", model_name!=\"IET VIRTUAL-DISK\"})) * on(node, device) group_left(model_name, serial_number, firmware_version, interface) (max by (node, device, model_name, serial_number, firmware_version, interface) (smartctl_device{node=~\"$node\", device=~\"^($disk)$\", device!~\"^(loop|ram|sr|fd|dm-|zram|zd|nbd|rbd|drbd)[0-9]+$\", model_name!=\"IET VIRTUAL-DISK\"})))",
+              "expr": "max by (node, device, model_name, serial_number, firmware_version, interface) ((max by (node, device) ((smartctl_device_rotation_rate{node=~\"$node\", device=~\"^($disk)$\", device!~\"^(loop|ram|sr|fd|dm-|zram|zd|nbd|rbd|drbd)[0-9]+$\", device!~\"^bus_[0-9]+_.*\", model_name!=\"IET VIRTUAL-DISK\"}) and on (node, device) smartctl_device{node=~\"$node\", model_name!=\"IET VIRTUAL-DISK\"})) * on(node, device) group_left(model_name, serial_number, firmware_version, interface) (max by (node, device, model_name, serial_number, firmware_version, interface) (smartctl_device{node=~\"$node\", device=~\"^($disk)$\", device!~\"^(loop|ram|sr|fd|dm-|zram|zd|nbd|rbd|drbd)[0-9]+$\", device!~\"^bus_[0-9]+_.*\", model_name!=\"IET VIRTUAL-DISK\"})))",
               "refId": "C",
               "instant": true,
               "range": false,
@@ -838,7 +838,7 @@ data:
                 "type": "prometheus",
                 "uid": "${DS_PROMETHEUS}"
               },
-              "expr": "max by (node, device, model_name, serial_number, firmware_version, interface) ((max by (node, device) (smartctl_device_interface_speed{node=~\"$node\", device=~\"^($disk)$\", device!~\"^(loop|ram|sr|fd|dm-|zram|zd|nbd|rbd|drbd)[0-9]+$\", model_name!=\"IET VIRTUAL-DISK\", speed_type=\"current\"})) * on(node, device) group_left(model_name, serial_number, firmware_version, interface) (max by (node, device, model_name, serial_number, firmware_version, interface) (smartctl_device{node=~\"$node\", device=~\"^($disk)$\", device!~\"^(loop|ram|sr|fd|dm-|zram|zd|nbd|rbd|drbd)[0-9]+$\", model_name!=\"IET VIRTUAL-DISK\"})))",
+              "expr": "max by (node, device, model_name, serial_number, firmware_version, interface) ((max by (node, device) ((smartctl_device_interface_speed{node=~\"$node\", device=~\"^($disk)$\", device!~\"^(loop|ram|sr|fd|dm-|zram|zd|nbd|rbd|drbd)[0-9]+$\", device!~\"^bus_[0-9]+_.*\", model_name!=\"IET VIRTUAL-DISK\", speed_type=\"current\"}) and on (node, device) smartctl_device{node=~\"$node\", model_name!=\"IET VIRTUAL-DISK\"})) * on(node, device) group_left(model_name, serial_number, firmware_version, interface) (max by (node, device, model_name, serial_number, firmware_version, interface) (smartctl_device{node=~\"$node\", device=~\"^($disk)$\", device!~\"^(loop|ram|sr|fd|dm-|zram|zd|nbd|rbd|drbd)[0-9]+$\", device!~\"^bus_[0-9]+_.*\", model_name!=\"IET VIRTUAL-DISK\"})))",
               "refId": "D",
               "instant": true,
               "range": false,
@@ -849,7 +849,7 @@ data:
                 "type": "prometheus",
                 "uid": "${DS_PROMETHEUS}"
               },
-              "expr": "max by (node, device, model_name, serial_number, firmware_version, interface) ((max by (node, device) (smartctl_device_power_on_seconds{node=~\"$node\", device=~\"^($disk)$\", device!~\"^(loop|ram|sr|fd|dm-|zram|zd|nbd|rbd|drbd)[0-9]+$\", model_name!=\"IET VIRTUAL-DISK\"})) * on(node, device) group_left(model_name, serial_number, firmware_version, interface) (max by (node, device, model_name, serial_number, firmware_version, interface) (smartctl_device{node=~\"$node\", device=~\"^($disk)$\", device!~\"^(loop|ram|sr|fd|dm-|zram|zd|nbd|rbd|drbd)[0-9]+$\", model_name!=\"IET VIRTUAL-DISK\"})))",
+              "expr": "max by (node, device, model_name, serial_number, firmware_version, interface) ((max by (node, device) ((smartctl_device_power_on_seconds{node=~\"$node\", device=~\"^($disk)$\", device!~\"^(loop|ram|sr|fd|dm-|zram|zd|nbd|rbd|drbd)[0-9]+$\", device!~\"^bus_[0-9]+_.*\", model_name!=\"IET VIRTUAL-DISK\"}) and on (node, device) smartctl_device{node=~\"$node\", model_name!=\"IET VIRTUAL-DISK\"})) * on(node, device) group_left(model_name, serial_number, firmware_version, interface) (max by (node, device, model_name, serial_number, firmware_version, interface) (smartctl_device{node=~\"$node\", device=~\"^($disk)$\", device!~\"^(loop|ram|sr|fd|dm-|zram|zd|nbd|rbd|drbd)[0-9]+$\", device!~\"^bus_[0-9]+_.*\", model_name!=\"IET VIRTUAL-DISK\"})))",
               "refId": "E",
               "instant": true,
               "range": false,
@@ -860,7 +860,7 @@ data:
                 "type": "prometheus",
                 "uid": "${DS_PROMETHEUS}"
               },
-              "expr": "max by (node, device, model_name, serial_number, firmware_version, interface) ((max by (node, device) (smartctl_device_power_cycle_count{node=~\"$node\", device=~\"^($disk)$\", device!~\"^(loop|ram|sr|fd|dm-|zram|zd|nbd|rbd|drbd)[0-9]+$\", model_name!=\"IET VIRTUAL-DISK\"})) * on(node, device) group_left(model_name, serial_number, firmware_version, interface) (max by (node, device, model_name, serial_number, firmware_version, interface) (smartctl_device{node=~\"$node\", device=~\"^($disk)$\", device!~\"^(loop|ram|sr|fd|dm-|zram|zd|nbd|rbd|drbd)[0-9]+$\", model_name!=\"IET VIRTUAL-DISK\"})))",
+              "expr": "max by (node, device, model_name, serial_number, firmware_version, interface) ((max by (node, device) ((smartctl_device_power_cycle_count{node=~\"$node\", device=~\"^($disk)$\", device!~\"^(loop|ram|sr|fd|dm-|zram|zd|nbd|rbd|drbd)[0-9]+$\", device!~\"^bus_[0-9]+_.*\", model_name!=\"IET VIRTUAL-DISK\"}) and on (node, device) smartctl_device{node=~\"$node\", model_name!=\"IET VIRTUAL-DISK\"})) * on(node, device) group_left(model_name, serial_number, firmware_version, interface) (max by (node, device, model_name, serial_number, firmware_version, interface) (smartctl_device{node=~\"$node\", device=~\"^($disk)$\", device!~\"^(loop|ram|sr|fd|dm-|zram|zd|nbd|rbd|drbd)[0-9]+$\", device!~\"^bus_[0-9]+_.*\", model_name!=\"IET VIRTUAL-DISK\"})))",
               "refId": "F",
               "instant": true,
               "range": false,
@@ -1270,7 +1270,7 @@ data:
                 "type": "prometheus",
                 "uid": "${DS_PROMETHEUS}"
               },
-              "expr": "max by (node, device) (smartctl_device_smart_status{node=~\"$node\", device=~\"^($disk)$\", device!~\"^(loop|ram|sr|fd|dm-|zram|zd|nbd|rbd|drbd)[0-9]+$\", model_name!=\"IET VIRTUAL-DISK\"})",
+              "expr": "max by (node, device) ((smartctl_device_smart_status{node=~\"$node\", device=~\"^($disk)$\", device!~\"^(loop|ram|sr|fd|dm-|zram|zd|nbd|rbd|drbd)[0-9]+$\", device!~\"^bus_[0-9]+_.*\", model_name!=\"IET VIRTUAL-DISK\"}) and on (node, device) smartctl_device{node=~\"$node\", model_name!=\"IET VIRTUAL-DISK\"})",
               "refId": "A",
               "instant": true,
               "range": false,
@@ -1281,7 +1281,7 @@ data:
                 "type": "prometheus",
                 "uid": "${DS_PROMETHEUS}"
               },
-              "expr": "max by (node, device) (smartctl_device_temperature{node=~\"$node\", device=~\"^($disk)$\", device!~\"^(loop|ram|sr|fd|dm-|zram|zd|nbd|rbd|drbd)[0-9]+$\", model_name!=\"IET VIRTUAL-DISK\", temperature_type=\"current\"})",
+              "expr": "max by (node, device) ((smartctl_device_temperature{node=~\"$node\", device=~\"^($disk)$\", device!~\"^(loop|ram|sr|fd|dm-|zram|zd|nbd|rbd|drbd)[0-9]+$\", device!~\"^bus_[0-9]+_.*\", model_name!=\"IET VIRTUAL-DISK\", temperature_type=\"current\"}) and on (node, device) smartctl_device{node=~\"$node\", model_name!=\"IET VIRTUAL-DISK\"})",
               "refId": "B",
               "instant": true,
               "range": false,
@@ -1292,7 +1292,7 @@ data:
                 "type": "prometheus",
                 "uid": "${DS_PROMETHEUS}"
               },
-              "expr": "max by (node, device) (smartctl_device_attribute{node=~\"$node\", device=~\"^($disk)$\", device!~\"^(loop|ram|sr|fd|dm-|zram|zd|nbd|rbd|drbd)[0-9]+$\", model_name!=\"IET VIRTUAL-DISK\", attribute_name=\"Reallocated_Sector_Ct\", attribute_value_type=\"raw\"})",
+              "expr": "max by (node, device) ((smartctl_device_attribute{node=~\"$node\", device=~\"^($disk)$\", device!~\"^(loop|ram|sr|fd|dm-|zram|zd|nbd|rbd|drbd)[0-9]+$\", device!~\"^bus_[0-9]+_.*\", model_name!=\"IET VIRTUAL-DISK\", attribute_name=\"Reallocated_Sector_Ct\", attribute_value_type=\"raw\"}) and on (node, device) smartctl_device{node=~\"$node\", model_name!=\"IET VIRTUAL-DISK\"})",
               "refId": "C",
               "instant": true,
               "range": false,
@@ -1303,7 +1303,7 @@ data:
                 "type": "prometheus",
                 "uid": "${DS_PROMETHEUS}"
               },
-              "expr": "max by (node, device) (smartctl_device_attribute{node=~\"$node\", device=~\"^($disk)$\", device!~\"^(loop|ram|sr|fd|dm-|zram|zd|nbd|rbd|drbd)[0-9]+$\", model_name!=\"IET VIRTUAL-DISK\", attribute_name=\"Current_Pending_Sector\", attribute_value_type=\"raw\"})",
+              "expr": "max by (node, device) ((smartctl_device_attribute{node=~\"$node\", device=~\"^($disk)$\", device!~\"^(loop|ram|sr|fd|dm-|zram|zd|nbd|rbd|drbd)[0-9]+$\", device!~\"^bus_[0-9]+_.*\", model_name!=\"IET VIRTUAL-DISK\", attribute_name=\"Current_Pending_Sector\", attribute_value_type=\"raw\"}) and on (node, device) smartctl_device{node=~\"$node\", model_name!=\"IET VIRTUAL-DISK\"})",
               "refId": "D",
               "instant": true,
               "range": false,
@@ -1314,7 +1314,7 @@ data:
                 "type": "prometheus",
                 "uid": "${DS_PROMETHEUS}"
               },
-              "expr": "max by (node, device) (smartctl_device_attribute{node=~\"$node\", device=~\"^($disk)$\", device!~\"^(loop|ram|sr|fd|dm-|zram|zd|nbd|rbd|drbd)[0-9]+$\", model_name!=\"IET VIRTUAL-DISK\", attribute_name=\"Offline_Uncorrectable\", attribute_value_type=\"raw\"})",
+              "expr": "max by (node, device) ((smartctl_device_attribute{node=~\"$node\", device=~\"^($disk)$\", device!~\"^(loop|ram|sr|fd|dm-|zram|zd|nbd|rbd|drbd)[0-9]+$\", device!~\"^bus_[0-9]+_.*\", model_name!=\"IET VIRTUAL-DISK\", attribute_name=\"Offline_Uncorrectable\", attribute_value_type=\"raw\"}) and on (node, device) smartctl_device{node=~\"$node\", model_name!=\"IET VIRTUAL-DISK\"})",
               "refId": "E",
               "instant": true,
               "range": false,
@@ -1325,7 +1325,7 @@ data:
                 "type": "prometheus",
                 "uid": "${DS_PROMETHEUS}"
               },
-              "expr": "max by (node, device) (smartctl_device_attribute{node=~\"$node\", device=~\"^($disk)$\", device!~\"^(loop|ram|sr|fd|dm-|zram|zd|nbd|rbd|drbd)[0-9]+$\", model_name!=\"IET VIRTUAL-DISK\", attribute_name=\"UDMA_CRC_Error_Count\", attribute_value_type=\"raw\"})",
+              "expr": "max by (node, device) ((smartctl_device_attribute{node=~\"$node\", device=~\"^($disk)$\", device!~\"^(loop|ram|sr|fd|dm-|zram|zd|nbd|rbd|drbd)[0-9]+$\", device!~\"^bus_[0-9]+_.*\", model_name!=\"IET VIRTUAL-DISK\", attribute_name=\"UDMA_CRC_Error_Count\", attribute_value_type=\"raw\"}) and on (node, device) smartctl_device{node=~\"$node\", model_name!=\"IET VIRTUAL-DISK\"})",
               "refId": "F",
               "instant": true,
               "range": false,
@@ -1336,7 +1336,7 @@ data:
                 "type": "prometheus",
                 "uid": "${DS_PROMETHEUS}"
               },
-              "expr": "max by (node, device) (smartctl_device_smartctl_exit_status{node=~\"$node\", device=~\"^($disk)$\", device!~\"^(loop|ram|sr|fd|dm-|zram|zd|nbd|rbd|drbd)[0-9]+$\", model_name!=\"IET VIRTUAL-DISK\"})",
+              "expr": "max by (node, device) ((smartctl_device_smartctl_exit_status{node=~\"$node\", device=~\"^($disk)$\", device!~\"^(loop|ram|sr|fd|dm-|zram|zd|nbd|rbd|drbd)[0-9]+$\", device!~\"^bus_[0-9]+_.*\", model_name!=\"IET VIRTUAL-DISK\"}) and on (node, device) smartctl_device{node=~\"$node\", model_name!=\"IET VIRTUAL-DISK\"})",
               "refId": "G",
               "instant": true,
               "range": false,
@@ -1510,7 +1510,7 @@ data:
                 "type": "prometheus",
                 "uid": "${DS_PROMETHEUS}"
               },
-              "expr": "max by (node, device) (smartctl_device_temperature{node=~\"$node\", device=~\"^($disk)$\", device!~\"^(loop|ram|sr|fd|dm-|zram|zd|nbd|rbd|drbd)[0-9]+$\", model_name!=\"IET VIRTUAL-DISK\", temperature_type=\"current\"})",
+              "expr": "max by (node, device) ((smartctl_device_temperature{node=~\"$node\", device=~\"^($disk)$\", device!~\"^(loop|ram|sr|fd|dm-|zram|zd|nbd|rbd|drbd)[0-9]+$\", device!~\"^bus_[0-9]+_.*\", model_name!=\"IET VIRTUAL-DISK\", temperature_type=\"current\"}) and on (node, device) smartctl_device{node=~\"$node\", model_name!=\"IET VIRTUAL-DISK\"})",
               "refId": "A",
               "legendFormat": "{{node}} {{device}}"
             }
@@ -1603,7 +1603,7 @@ data:
                 "type": "prometheus",
                 "uid": "${DS_PROMETHEUS}"
               },
-              "expr": "max by (node, device) (smartctl_device_temperature{node=~\"$node\", device=~\"^($disk)$\", device!~\"^(loop|ram|sr|fd|dm-|zram|zd|nbd|rbd|drbd)[0-9]+$\", model_name!=\"IET VIRTUAL-DISK\", temperature_type=\"current\"})",
+              "expr": "max by (node, device) ((smartctl_device_temperature{node=~\"$node\", device=~\"^($disk)$\", device!~\"^(loop|ram|sr|fd|dm-|zram|zd|nbd|rbd|drbd)[0-9]+$\", device!~\"^bus_[0-9]+_.*\", model_name!=\"IET VIRTUAL-DISK\", temperature_type=\"current\"}) and on (node, device) smartctl_device{node=~\"$node\", model_name!=\"IET VIRTUAL-DISK\"})",
               "refId": "A",
               "legendFormat": "{{node}} {{device}}"
             }
@@ -1714,7 +1714,7 @@ data:
                 "type": "prometheus",
                 "uid": "${DS_PROMETHEUS}"
               },
-              "expr": "max by (node, device) (smartctl_device_attribute{node=~\"$node\", device=~\"^($disk)$\", device!~\"^(loop|ram|sr|fd|dm-|zram|zd|nbd|rbd|drbd)[0-9]+$\", model_name!=\"IET VIRTUAL-DISK\", attribute_name=\"Reallocated_Sector_Ct\", attribute_value_type=\"raw\"})",
+              "expr": "max by (node, device) ((smartctl_device_attribute{node=~\"$node\", device=~\"^($disk)$\", device!~\"^(loop|ram|sr|fd|dm-|zram|zd|nbd|rbd|drbd)[0-9]+$\", device!~\"^bus_[0-9]+_.*\", model_name!=\"IET VIRTUAL-DISK\", attribute_name=\"Reallocated_Sector_Ct\", attribute_value_type=\"raw\"}) and on (node, device) smartctl_device{node=~\"$node\", model_name!=\"IET VIRTUAL-DISK\"})",
               "refId": "A",
               "legendFormat": "{{node}} {{device}}"
             }
@@ -1812,7 +1812,7 @@ data:
                 "type": "prometheus",
                 "uid": "${DS_PROMETHEUS}"
               },
-              "expr": "max by (node, device) (smartctl_device_attribute{node=~\"$node\", device=~\"^($disk)$\", device!~\"^(loop|ram|sr|fd|dm-|zram|zd|nbd|rbd|drbd)[0-9]+$\", model_name!=\"IET VIRTUAL-DISK\", attribute_name=\"Current_Pending_Sector\", attribute_value_type=\"raw\"})",
+              "expr": "max by (node, device) ((smartctl_device_attribute{node=~\"$node\", device=~\"^($disk)$\", device!~\"^(loop|ram|sr|fd|dm-|zram|zd|nbd|rbd|drbd)[0-9]+$\", device!~\"^bus_[0-9]+_.*\", model_name!=\"IET VIRTUAL-DISK\", attribute_name=\"Current_Pending_Sector\", attribute_value_type=\"raw\"}) and on (node, device) smartctl_device{node=~\"$node\", model_name!=\"IET VIRTUAL-DISK\"})",
               "refId": "A",
               "legendFormat": "{{node}} {{device}}"
             }
@@ -1910,7 +1910,7 @@ data:
                 "type": "prometheus",
                 "uid": "${DS_PROMETHEUS}"
               },
-              "expr": "max by (node, device) (smartctl_device_attribute{node=~\"$node\", device=~\"^($disk)$\", device!~\"^(loop|ram|sr|fd|dm-|zram|zd|nbd|rbd|drbd)[0-9]+$\", model_name!=\"IET VIRTUAL-DISK\", attribute_name=\"Offline_Uncorrectable\", attribute_value_type=\"raw\"})",
+              "expr": "max by (node, device) ((smartctl_device_attribute{node=~\"$node\", device=~\"^($disk)$\", device!~\"^(loop|ram|sr|fd|dm-|zram|zd|nbd|rbd|drbd)[0-9]+$\", device!~\"^bus_[0-9]+_.*\", model_name!=\"IET VIRTUAL-DISK\", attribute_name=\"Offline_Uncorrectable\", attribute_value_type=\"raw\"}) and on (node, device) smartctl_device{node=~\"$node\", model_name!=\"IET VIRTUAL-DISK\"})",
               "refId": "A",
               "legendFormat": "{{node}} {{device}}"
             }
@@ -2008,7 +2008,7 @@ data:
                 "type": "prometheus",
                 "uid": "${DS_PROMETHEUS}"
               },
-              "expr": "max by (node, device) (smartctl_device_attribute{node=~\"$node\", device=~\"^($disk)$\", device!~\"^(loop|ram|sr|fd|dm-|zram|zd|nbd|rbd|drbd)[0-9]+$\", model_name!=\"IET VIRTUAL-DISK\", attribute_name=\"UDMA_CRC_Error_Count\", attribute_value_type=\"raw\"})",
+              "expr": "max by (node, device) ((smartctl_device_attribute{node=~\"$node\", device=~\"^($disk)$\", device!~\"^(loop|ram|sr|fd|dm-|zram|zd|nbd|rbd|drbd)[0-9]+$\", device!~\"^bus_[0-9]+_.*\", model_name!=\"IET VIRTUAL-DISK\", attribute_name=\"UDMA_CRC_Error_Count\", attribute_value_type=\"raw\"}) and on (node, device) smartctl_device{node=~\"$node\", model_name!=\"IET VIRTUAL-DISK\"})",
               "refId": "A",
               "legendFormat": "{{node}} {{device}}"
             }
@@ -2111,7 +2111,7 @@ data:
                 "type": "prometheus",
                 "uid": "${DS_PROMETHEUS}"
               },
-              "expr": "max by (node, device) (smartctl_device_power_on_seconds{node=~\"$node\", device=~\"^($disk)$\", device!~\"^(loop|ram|sr|fd|dm-|zram|zd|nbd|rbd|drbd)[0-9]+$\", model_name!=\"IET VIRTUAL-DISK\"}) / 31536000",
+              "expr": "max by (node, device) ((smartctl_device_power_on_seconds{node=~\"$node\", device=~\"^($disk)$\", device!~\"^(loop|ram|sr|fd|dm-|zram|zd|nbd|rbd|drbd)[0-9]+$\", device!~\"^bus_[0-9]+_.*\", model_name!=\"IET VIRTUAL-DISK\"}) and on (node, device) smartctl_device{node=~\"$node\", model_name!=\"IET VIRTUAL-DISK\"}) / 31536000",
               "refId": "A",
               "legendFormat": "{{node}} {{device}}"
             }
@@ -2202,7 +2202,7 @@ data:
                 "type": "prometheus",
                 "uid": "${DS_PROMETHEUS}"
               },
-              "expr": "max by (node, device) (smartctl_device_power_cycle_count{node=~\"$node\", device=~\"^($disk)$\", device!~\"^(loop|ram|sr|fd|dm-|zram|zd|nbd|rbd|drbd)[0-9]+$\", model_name!=\"IET VIRTUAL-DISK\"})",
+              "expr": "max by (node, device) ((smartctl_device_power_cycle_count{node=~\"$node\", device=~\"^($disk)$\", device!~\"^(loop|ram|sr|fd|dm-|zram|zd|nbd|rbd|drbd)[0-9]+$\", device!~\"^bus_[0-9]+_.*\", model_name!=\"IET VIRTUAL-DISK\"}) and on (node, device) smartctl_device{node=~\"$node\", model_name!=\"IET VIRTUAL-DISK\"})",
               "refId": "A",
               "legendFormat": "{{node}} {{device}}"
             }
@@ -2293,7 +2293,7 @@ data:
                 "type": "prometheus",
                 "uid": "${DS_PROMETHEUS}"
               },
-              "expr": "sum by (node, device) (smartctl_device_bytes_read{node=~\"$node\", device=~\"^($disk)$\", device!~\"^(loop|ram|sr|fd|dm-|zram|zd|nbd|rbd|drbd)[0-9]+$\", model_name!=\"IET VIRTUAL-DISK\"}) or sum by (node, device) (smartctl_device_attribute{node=~\"$node\", device=~\"^($disk)$\", device!~\"^(loop|ram|sr|fd|dm-|zram|zd|nbd|rbd|drbd)[0-9]+$\", model_name!=\"IET VIRTUAL-DISK\", attribute_name=\"Total_LBAs_Read\", attribute_value_type=\"raw\"} * on(node, device) group_left() smartctl_device_block_size{node=~\"$node\", device=~\"^($disk)$\", device!~\"^(loop|ram|sr|fd|dm-|zram|zd|nbd|rbd|drbd)[0-9]+$\", model_name!=\"IET VIRTUAL-DISK\", blocks_type=\"logical\"})",
+              "expr": "(sum by (node, device) (smartctl_device_bytes_read{node=~\"$node\", device=~\"^($disk)$\", device!~\"^(loop|ram|sr|fd|dm-|zram|zd|nbd|rbd|drbd)[0-9]+$\", device!~\"^bus_[0-9]+_.*\", model_name!=\"IET VIRTUAL-DISK\"}) or sum by (node, device) (smartctl_device_attribute{node=~\"$node\", device=~\"^($disk)$\", device!~\"^(loop|ram|sr|fd|dm-|zram|zd|nbd|rbd|drbd)[0-9]+$\", device!~\"^bus_[0-9]+_.*\", model_name!=\"IET VIRTUAL-DISK\", attribute_name=\"Total_LBAs_Read\", attribute_value_type=\"raw\"} * on(node, device) group_left() smartctl_device_block_size{node=~\"$node\", device=~\"^($disk)$\", device!~\"^(loop|ram|sr|fd|dm-|zram|zd|nbd|rbd|drbd)[0-9]+$\", device!~\"^bus_[0-9]+_.*\", model_name!=\"IET VIRTUAL-DISK\", blocks_type=\"logical\"})) and on (node, device) smartctl_device{node=~\"$node\", model_name!=\"IET VIRTUAL-DISK\"}",
               "refId": "A",
               "legendFormat": "{{node}} {{device}}"
             }
@@ -2384,7 +2384,7 @@ data:
                 "type": "prometheus",
                 "uid": "${DS_PROMETHEUS}"
               },
-              "expr": "sum by (node, device) (smartctl_device_bytes_written{node=~\"$node\", device=~\"^($disk)$\", device!~\"^(loop|ram|sr|fd|dm-|zram|zd|nbd|rbd|drbd)[0-9]+$\", model_name!=\"IET VIRTUAL-DISK\"}) or sum by (node, device) (smartctl_device_attribute{node=~\"$node\", device=~\"^($disk)$\", device!~\"^(loop|ram|sr|fd|dm-|zram|zd|nbd|rbd|drbd)[0-9]+$\", model_name!=\"IET VIRTUAL-DISK\", attribute_name=\"Total_LBAs_Written\", attribute_value_type=\"raw\"} * on(node, device) group_left() smartctl_device_block_size{node=~\"$node\", device=~\"^($disk)$\", device!~\"^(loop|ram|sr|fd|dm-|zram|zd|nbd|rbd|drbd)[0-9]+$\", model_name!=\"IET VIRTUAL-DISK\", blocks_type=\"logical\"})",
+              "expr": "(sum by (node, device) (smartctl_device_bytes_written{node=~\"$node\", device=~\"^($disk)$\", device!~\"^(loop|ram|sr|fd|dm-|zram|zd|nbd|rbd|drbd)[0-9]+$\", device!~\"^bus_[0-9]+_.*\", model_name!=\"IET VIRTUAL-DISK\"}) or sum by (node, device) (smartctl_device_attribute{node=~\"$node\", device=~\"^($disk)$\", device!~\"^(loop|ram|sr|fd|dm-|zram|zd|nbd|rbd|drbd)[0-9]+$\", device!~\"^bus_[0-9]+_.*\", model_name!=\"IET VIRTUAL-DISK\", attribute_name=\"Total_LBAs_Written\", attribute_value_type=\"raw\"} * on(node, device) group_left() smartctl_device_block_size{node=~\"$node\", device=~\"^($disk)$\", device!~\"^(loop|ram|sr|fd|dm-|zram|zd|nbd|rbd|drbd)[0-9]+$\", device!~\"^bus_[0-9]+_.*\", model_name!=\"IET VIRTUAL-DISK\", blocks_type=\"logical\"})) and on (node, device) smartctl_device{node=~\"$node\", model_name!=\"IET VIRTUAL-DISK\"}",
               "refId": "A",
               "legendFormat": "{{node}} {{device}}"
             }
@@ -2491,7 +2491,7 @@ data:
                 "type": "prometheus",
                 "uid": "${DS_PROMETHEUS}"
               },
-              "expr": "sum by (node, device) (rate(node_disk_read_bytes_total{node=~\"$node\", device=~\"^($disk)$\", device=~\"^(sd[a-z]+|hd[a-z]+|vd[a-z]+|xvd[a-z]+|nvme[0-9]+n[0-9]+|md[0-9]+|mmcblk[0-9]+)$\"}[$__rate_interval]))",
+              "expr": "(sum by (node, device) (rate(node_disk_read_bytes_total{node=~\"$node\", device=~\"^($disk)$\", device=~\"^(sd[a-z]+|hd[a-z]+|vd[a-z]+|xvd[a-z]+|nvme[0-9]+n[0-9]+|md[0-9]+|mmcblk[0-9]+)$\"}[$__rate_interval]))) and on (node, device) smartctl_device{node=~\"$node\", model_name!=\"IET VIRTUAL-DISK\"}",
               "refId": "A",
               "legendFormat": "{{node}} {{device}}"
             }
@@ -2585,7 +2585,7 @@ data:
                 "type": "prometheus",
                 "uid": "${DS_PROMETHEUS}"
               },
-              "expr": "sum by (node, device) (rate(node_disk_written_bytes_total{node=~\"$node\", device=~\"^($disk)$\", device=~\"^(sd[a-z]+|hd[a-z]+|vd[a-z]+|xvd[a-z]+|nvme[0-9]+n[0-9]+|md[0-9]+|mmcblk[0-9]+)$\"}[$__rate_interval]))",
+              "expr": "(sum by (node, device) (rate(node_disk_written_bytes_total{node=~\"$node\", device=~\"^($disk)$\", device=~\"^(sd[a-z]+|hd[a-z]+|vd[a-z]+|xvd[a-z]+|nvme[0-9]+n[0-9]+|md[0-9]+|mmcblk[0-9]+)$\"}[$__rate_interval]))) and on (node, device) smartctl_device{node=~\"$node\", model_name!=\"IET VIRTUAL-DISK\"}",
               "refId": "A",
               "legendFormat": "{{node}} {{device}}"
             }
@@ -2710,7 +2710,7 @@ data:
                 "type": "prometheus",
                 "uid": "${DS_PROMETHEUS}"
               },
-              "expr": "sum by (node, device) (rate(node_disk_reads_completed_total{node=~\"$node\", device=~\"^($disk)$\", device=~\"^(sd[a-z]+|hd[a-z]+|vd[a-z]+|xvd[a-z]+|nvme[0-9]+n[0-9]+|md[0-9]+|mmcblk[0-9]+)$\"}[$__rate_interval]))",
+              "expr": "(sum by (node, device) (rate(node_disk_reads_completed_total{node=~\"$node\", device=~\"^($disk)$\", device=~\"^(sd[a-z]+|hd[a-z]+|vd[a-z]+|xvd[a-z]+|nvme[0-9]+n[0-9]+|md[0-9]+|mmcblk[0-9]+)$\"}[$__rate_interval]))) and on (node, device) smartctl_device{node=~\"$node\", model_name!=\"IET VIRTUAL-DISK\"}",
               "refId": "A",
               "legendFormat": "{{node}} {{device}} read"
             },
@@ -2719,7 +2719,7 @@ data:
                 "type": "prometheus",
                 "uid": "${DS_PROMETHEUS}"
               },
-              "expr": "sum by (node, device) (rate(node_disk_writes_completed_total{node=~\"$node\", device=~\"^($disk)$\", device=~\"^(sd[a-z]+|hd[a-z]+|vd[a-z]+|xvd[a-z]+|nvme[0-9]+n[0-9]+|md[0-9]+|mmcblk[0-9]+)$\"}[$__rate_interval]))",
+              "expr": "(sum by (node, device) (rate(node_disk_writes_completed_total{node=~\"$node\", device=~\"^($disk)$\", device=~\"^(sd[a-z]+|hd[a-z]+|vd[a-z]+|xvd[a-z]+|nvme[0-9]+n[0-9]+|md[0-9]+|mmcblk[0-9]+)$\"}[$__rate_interval]))) and on (node, device) smartctl_device{node=~\"$node\", model_name!=\"IET VIRTUAL-DISK\"}",
               "refId": "B",
               "legendFormat": "{{node}} {{device}} write"
             }
@@ -2844,7 +2844,7 @@ data:
                 "type": "prometheus",
                 "uid": "${DS_PROMETHEUS}"
               },
-              "expr": "sum by (node, device) (rate(node_disk_read_time_seconds_total{node=~\"$node\", device=~\"^($disk)$\", device=~\"^(sd[a-z]+|hd[a-z]+|vd[a-z]+|xvd[a-z]+|nvme[0-9]+n[0-9]+|md[0-9]+|mmcblk[0-9]+)$\"}[$__rate_interval])) / sum by (node, device) (rate(node_disk_reads_completed_total{node=~\"$node\", device=~\"^($disk)$\", device=~\"^(sd[a-z]+|hd[a-z]+|vd[a-z]+|xvd[a-z]+|nvme[0-9]+n[0-9]+|md[0-9]+|mmcblk[0-9]+)$\"}[$__rate_interval])) * 1000",
+              "expr": "(sum by (node, device) (rate(node_disk_read_time_seconds_total{node=~\"$node\", device=~\"^($disk)$\", device=~\"^(sd[a-z]+|hd[a-z]+|vd[a-z]+|xvd[a-z]+|nvme[0-9]+n[0-9]+|md[0-9]+|mmcblk[0-9]+)$\"}[$__rate_interval])) / sum by (node, device) (rate(node_disk_reads_completed_total{node=~\"$node\", device=~\"^($disk)$\", device=~\"^(sd[a-z]+|hd[a-z]+|vd[a-z]+|xvd[a-z]+|nvme[0-9]+n[0-9]+|md[0-9]+|mmcblk[0-9]+)$\"}[$__rate_interval])) * 1000) and on (node, device) smartctl_device{node=~\"$node\", model_name!=\"IET VIRTUAL-DISK\"}",
               "refId": "A",
               "legendFormat": "{{node}} {{device}} read"
             },
@@ -2853,7 +2853,7 @@ data:
                 "type": "prometheus",
                 "uid": "${DS_PROMETHEUS}"
               },
-              "expr": "sum by (node, device) (rate(node_disk_write_time_seconds_total{node=~\"$node\", device=~\"^($disk)$\", device=~\"^(sd[a-z]+|hd[a-z]+|vd[a-z]+|xvd[a-z]+|nvme[0-9]+n[0-9]+|md[0-9]+|mmcblk[0-9]+)$\"}[$__rate_interval])) / sum by (node, device) (rate(node_disk_writes_completed_total{node=~\"$node\", device=~\"^($disk)$\", device=~\"^(sd[a-z]+|hd[a-z]+|vd[a-z]+|xvd[a-z]+|nvme[0-9]+n[0-9]+|md[0-9]+|mmcblk[0-9]+)$\"}[$__rate_interval])) * 1000",
+              "expr": "(sum by (node, device) (rate(node_disk_write_time_seconds_total{node=~\"$node\", device=~\"^($disk)$\", device=~\"^(sd[a-z]+|hd[a-z]+|vd[a-z]+|xvd[a-z]+|nvme[0-9]+n[0-9]+|md[0-9]+|mmcblk[0-9]+)$\"}[$__rate_interval])) / sum by (node, device) (rate(node_disk_writes_completed_total{node=~\"$node\", device=~\"^($disk)$\", device=~\"^(sd[a-z]+|hd[a-z]+|vd[a-z]+|xvd[a-z]+|nvme[0-9]+n[0-9]+|md[0-9]+|mmcblk[0-9]+)$\"}[$__rate_interval])) * 1000) and on (node, device) smartctl_device{node=~\"$node\", model_name!=\"IET VIRTUAL-DISK\"}",
               "refId": "B",
               "legendFormat": "{{node}} {{device}} write"
             }
@@ -2947,7 +2947,7 @@ data:
                 "type": "prometheus",
                 "uid": "${DS_PROMETHEUS}"
               },
-              "expr": "sum by (node, device) (rate(node_disk_io_time_seconds_total{node=~\"$node\", device=~\"^($disk)$\", device=~\"^(sd[a-z]+|hd[a-z]+|vd[a-z]+|xvd[a-z]+|nvme[0-9]+n[0-9]+|md[0-9]+|mmcblk[0-9]+)$\"}[$__rate_interval])) * 100",
+              "expr": "(sum by (node, device) (rate(node_disk_io_time_seconds_total{node=~\"$node\", device=~\"^($disk)$\", device=~\"^(sd[a-z]+|hd[a-z]+|vd[a-z]+|xvd[a-z]+|nvme[0-9]+n[0-9]+|md[0-9]+|mmcblk[0-9]+)$\"}[$__rate_interval])) * 100) and on (node, device) smartctl_device{node=~\"$node\", model_name!=\"IET VIRTUAL-DISK\"}",
               "refId": "A",
               "legendFormat": "{{node}} {{device}}"
             }
@@ -3041,7 +3041,7 @@ data:
                 "type": "prometheus",
                 "uid": "${DS_PROMETHEUS}"
               },
-              "expr": "avg_over_time(node_disk_io_now{node=~\"$node\", device=~\"^($disk)$\", device=~\"^(sd[a-z]+|hd[a-z]+|vd[a-z]+|xvd[a-z]+|nvme[0-9]+n[0-9]+|md[0-9]+|mmcblk[0-9]+)$\"}[$__rate_interval])",
+              "expr": "(avg_over_time(node_disk_io_now{node=~\"$node\", device=~\"^($disk)$\", device=~\"^(sd[a-z]+|hd[a-z]+|vd[a-z]+|xvd[a-z]+|nvme[0-9]+n[0-9]+|md[0-9]+|mmcblk[0-9]+)$\"}[$__rate_interval])) and on (node, device) smartctl_device{node=~\"$node\", model_name!=\"IET VIRTUAL-DISK\"}",
               "refId": "A",
               "legendFormat": "{{node}} {{device}}"
             }
@@ -3083,14 +3083,14 @@ data:
               "type": "prometheus",
               "uid": "${DS_PROMETHEUS}"
             },
-            "definition": "label_values(smartctl_device{device!~\"^(loop|ram|sr|fd|dm-|zram|zd|nbd|rbd|drbd)[0-9]+$\", model_name!=\"IET VIRTUAL-DISK\"}, node)",
+            "definition": "label_values(smartctl_device{device!~\"^(loop|ram|sr|fd|dm-|zram|zd|nbd|rbd|drbd)[0-9]+$\", device!~\"^bus_[0-9]+_.*\", model_name!=\"IET VIRTUAL-DISK\"}, node)",
             "hide": 0,
             "includeAll": true,
             "label": "Host",
             "multi": true,
             "name": "node",
             "options": [],
-            "query": "label_values(smartctl_device{device!~\"^(loop|ram|sr|fd|dm-|zram|zd|nbd|rbd|drbd)[0-9]+$\", model_name!=\"IET VIRTUAL-DISK\"}, node)",
+            "query": "label_values(smartctl_device{device!~\"^(loop|ram|sr|fd|dm-|zram|zd|nbd|rbd|drbd)[0-9]+$\", device!~\"^bus_[0-9]+_.*\", model_name!=\"IET VIRTUAL-DISK\"}, node)",
             "refresh": 1,
             "regex": "",
             "skipUrlSync": false,
@@ -3104,14 +3104,14 @@ data:
               "type": "prometheus",
               "uid": "${DS_PROMETHEUS}"
             },
-            "definition": "label_values(smartctl_device{node=~\"$node\", device!~\"^(loop|ram|sr|fd|dm-|zram|zd|nbd|rbd|drbd)[0-9]+$\", model_name!=\"IET VIRTUAL-DISK\"}, device)",
+            "definition": "label_values(smartctl_device{node=~\"$node\", device!~\"^(loop|ram|sr|fd|dm-|zram|zd|nbd|rbd|drbd)[0-9]+$\", device!~\"^bus_[0-9]+_.*\", model_name!=\"IET VIRTUAL-DISK\"}, device)",
             "hide": 0,
             "includeAll": true,
             "label": "Disk",
             "multi": true,
             "name": "disk",
             "options": [],
-            "query": "label_values(smartctl_device{node=~\"$node\", device!~\"^(loop|ram|sr|fd|dm-|zram|zd|nbd|rbd|drbd)[0-9]+$\", model_name!=\"IET VIRTUAL-DISK\"}, device)",
+            "query": "label_values(smartctl_device{node=~\"$node\", device!~\"^(loop|ram|sr|fd|dm-|zram|zd|nbd|rbd|drbd)[0-9]+$\", device!~\"^bus_[0-9]+_.*\", model_name!=\"IET VIRTUAL-DISK\"}, device)",
             "refresh": 1,
             "regex": "",
             "skipUrlSync": false,
