@@ -2460,7 +2460,7 @@ data:
                   }
                 ]
               },
-              "unit": "B/s"
+              "unit": "Bps"
             },
             "overrides": []
           },
@@ -2554,7 +2554,7 @@ data:
                   }
                 ]
               },
-              "unit": "B/s"
+              "unit": "Bps"
             },
             "overrides": []
           },
@@ -3113,7 +3113,7 @@ data:
             "options": [],
             "query": "label_values(smartctl_device{node=~\"$node\", device!~\"/dev/(loop|ram|sr|fd|dm-|zram|zd|nbd|rbd|drbd)[0-9]+\"}, device)",
             "refresh": 1,
-            "regex": "/dev/(.+)",
+            "regex": "/\\/dev\\/(.+)/",
             "skipUrlSync": false,
             "sort": 1,
             "type": "query"
