@@ -1,0 +1,2355 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-dashboard-smartctl-exporter
+  labels:
+    grafana_dashboard: "1"
+data:
+  smartctl-exporter.json: |
+    {
+      "__elements": {},
+      "__requires": [
+        {
+          "type": "panel",
+          "id": "barchart",
+          "name": "Bar chart",
+          "version": ""
+        },
+        {
+          "type": "panel",
+          "id": "gauge",
+          "name": "Gauge",
+          "version": ""
+        },
+        {
+          "type": "grafana",
+          "id": "grafana",
+          "name": "Grafana",
+          "version": "12.3.3"
+        },
+        {
+          "type": "datasource",
+          "id": "prometheus",
+          "name": "Prometheus",
+          "version": "1.0.0"
+        },
+        {
+          "type": "panel",
+          "id": "stat",
+          "name": "Stat",
+          "version": ""
+        },
+        {
+          "type": "panel",
+          "id": "table",
+          "name": "Table",
+          "version": ""
+        },
+        {
+          "type": "panel",
+          "id": "timeseries",
+          "name": "Time series",
+          "version": ""
+        }
+      ],
+      "annotations": {
+        "list": [
+          {
+            "builtIn": 1,
+            "datasource": {
+              "type": "grafana",
+              "uid": "-- Grafana --"
+            },
+            "enable": true,
+            "hide": true,
+            "iconColor": "rgba(0, 211, 255, 1)",
+            "name": "Annotations & Alerts",
+            "type": "dashboard"
+          }
+        ]
+      },
+      "description": "SMART storage observability dashboard for NVMe/SATA devices via smartctl_exporter and Prometheus.",
+      "editable": true,
+      "fiscalYearStartMonth": 0,
+      "graphTooltip": 2,
+      "id": null,
+      "links": [],
+      "panels": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "dark-green",
+                    "value": 0
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 3,
+            "w": 4,
+            "x": 0,
+            "y": 0
+          },
+          "id": 100,
+          "options": {
+            "colorMode": "background_solid",
+            "graphMode": "none",
+            "justifyMode": "auto",
+            "orientation": "auto",
+            "percentChangeColorMode": "standard",
+            "reduceOptions": {
+              "calcs": [
+                "last"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "showPercentChange": false,
+            "textMode": "auto",
+            "wideLayout": true
+          },
+          "pluginVersion": "12.3.3",
+          "targets": [
+            {
+              "expr": "count(count by (instance) (max by (instance, device) (max by (instance, device, protocol, model_name, firmware_version, serial_number) (smartctl_device{instance=~\"$node\",device=~\"$disk\",interface=~\"$type\",serial_number=~\"$serial_number\",model_name=~\"$device_model\"})))) or vector(0)",
+              "instant": true,
+              "range": false,
+              "refId": "A",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              }
+            }
+          ],
+          "title": "Monitored Hosts",
+          "type": "stat"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "dark-green",
+                    "value": 0
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 3,
+            "w": 4,
+            "x": 4,
+            "y": 0
+          },
+          "id": 101,
+          "options": {
+            "colorMode": "background_solid",
+            "graphMode": "none",
+            "justifyMode": "auto",
+            "orientation": "auto",
+            "percentChangeColorMode": "standard",
+            "reduceOptions": {
+              "calcs": [
+                "last"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "showPercentChange": false,
+            "textMode": "auto",
+            "wideLayout": true
+          },
+          "pluginVersion": "12.3.3",
+          "targets": [
+            {
+              "expr": "count(max by (instance, device) (max by (instance, device, protocol, model_name, firmware_version, serial_number) (smartctl_device{instance=~\"$node\",device=~\"$disk\",interface=~\"$type\",serial_number=~\"$serial_number\",model_name=~\"$device_model\"}))) or vector(0)",
+              "instant": true,
+              "range": false,
+              "refId": "A",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              }
+            }
+          ],
+          "title": "Total Devices",
+          "type": "stat"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "dark-green",
+                    "value": 0
+                  },
+                  {
+                    "color": "dark-red",
+                    "value": 1
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 3,
+            "w": 4,
+            "x": 8,
+            "y": 0
+          },
+          "id": 102,
+          "options": {
+            "colorMode": "background_solid",
+            "graphMode": "none",
+            "justifyMode": "auto",
+            "orientation": "auto",
+            "percentChangeColorMode": "standard",
+            "reduceOptions": {
+              "calcs": [
+                "last"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "showPercentChange": false,
+            "textMode": "auto",
+            "wideLayout": true
+          },
+          "pluginVersion": "12.3.3",
+          "targets": [
+            {
+              "expr": "count((max by (instance, device) (smartctl_device_smart_status{instance=~\"$node\",device=~\"$disk\"} != 1)) and on(instance, device) (max by (instance, device) (max by (instance, device, protocol, model_name, firmware_version, serial_number) (smartctl_device{instance=~\"$node\",device=~\"$disk\",interface=~\"$type\",serial_number=~\"$serial_number\",model_name=~\"$device_model\"})))) or vector(0)",
+              "instant": true,
+              "range": false,
+              "refId": "A",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              }
+            }
+          ],
+          "title": "Unhealthy Devices",
+          "type": "stat"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "dark-green",
+                    "value": 0
+                  },
+                  {
+                    "color": "dark-red",
+                    "value": 1
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 3,
+            "w": 4,
+            "x": 12,
+            "y": 0
+          },
+          "id": 103,
+          "options": {
+            "colorMode": "background_solid",
+            "graphMode": "none",
+            "justifyMode": "auto",
+            "orientation": "auto",
+            "percentChangeColorMode": "standard",
+            "reduceOptions": {
+              "calcs": [
+                "last"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "showPercentChange": false,
+            "textMode": "auto",
+            "wideLayout": true
+          },
+          "pluginVersion": "12.3.3",
+          "targets": [
+            {
+              "expr": "count((max by (instance, device) (smartctl_device_critical_warning{instance=~\"$node\",device=~\"$disk\"} > 0)) and on(instance, device) (max by (instance, device) (max by (instance, device, protocol, model_name, firmware_version, serial_number) (smartctl_device{instance=~\"$node\",device=~\"$disk\",interface=~\"$type\",serial_number=~\"$serial_number\",model_name=~\"$device_model\"})))) or vector(0)",
+              "instant": true,
+              "range": false,
+              "refId": "A",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              }
+            }
+          ],
+          "title": "Devices with Critical Warnings",
+          "type": "stat"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "dark-green",
+                    "value": 0
+                  },
+                  {
+                    "color": "dark-red",
+                    "value": 1
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 3,
+            "w": 4,
+            "x": 16,
+            "y": 0
+          },
+          "id": 104,
+          "options": {
+            "colorMode": "background_solid",
+            "graphMode": "none",
+            "justifyMode": "auto",
+            "orientation": "auto",
+            "percentChangeColorMode": "standard",
+            "reduceOptions": {
+              "calcs": [
+                "last"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "showPercentChange": false,
+            "textMode": "auto",
+            "wideLayout": true
+          },
+          "pluginVersion": "12.3.3",
+          "targets": [
+            {
+              "expr": "count((max by (instance, device) (smartctl_device_media_errors{instance=~\"$node\",device=~\"$disk\"} > 0)) and on(instance, device) (max by (instance, device) (max by (instance, device, protocol, model_name, firmware_version, serial_number) (smartctl_device{instance=~\"$node\",device=~\"$disk\",interface=~\"$type\",serial_number=~\"$serial_number\",model_name=~\"$device_model\"})))) or vector(0)",
+              "instant": true,
+              "range": false,
+              "refId": "A",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              }
+            }
+          ],
+          "title": "Devices with Media Errors",
+          "type": "stat"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "dark-green",
+                    "value": 0
+                  },
+                  {
+                    "color": "dark-red",
+                    "value": 1
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 3,
+            "w": 4,
+            "x": 20,
+            "y": 0
+          },
+          "id": 105,
+          "options": {
+            "colorMode": "background_solid",
+            "graphMode": "none",
+            "justifyMode": "auto",
+            "orientation": "auto",
+            "percentChangeColorMode": "standard",
+            "reduceOptions": {
+              "calcs": [
+                "last"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "showPercentChange": false,
+            "textMode": "auto",
+            "wideLayout": true
+          },
+          "pluginVersion": "12.3.3",
+          "targets": [
+            {
+              "expr": "count((max by (instance, device) (smartctl_device_error_log_count{instance=~\"$node\",device=~\"$disk\"} > 0)) and on(instance, device) (max by (instance, device) (max by (instance, device, protocol, model_name, firmware_version, serial_number) (smartctl_device{instance=~\"$node\",device=~\"$disk\",interface=~\"$type\",serial_number=~\"$serial_number\",model_name=~\"$device_model\"})))) or vector(0)",
+              "instant": true,
+              "range": false,
+              "refId": "A",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              }
+            }
+          ],
+          "title": "Devices with Error Logs",
+          "type": "stat"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "mappings": [],
+              "max": 100,
+              "min": 0,
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "dark-red",
+                    "value": 0
+                  },
+                  {
+                    "color": "dark-yellow",
+                    "value": 10
+                  },
+                  {
+                    "color": "dark-green",
+                    "value": 25
+                  }
+                ]
+              },
+              "unit": "percent"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 6,
+            "w": 12,
+            "x": 0,
+            "y": 3
+          },
+          "id": 110,
+          "options": {
+            "minVizHeight": 75,
+            "minVizWidth": 75,
+            "orientation": "auto",
+            "reduceOptions": {
+              "calcs": [
+                "last"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "showThresholdLabels": false,
+            "showThresholdMarkers": true,
+            "sizing": "auto"
+          },
+          "pluginVersion": "12.3.3",
+          "targets": [
+            {
+              "expr": "max by (instance, device, model_name) (((100 - smartctl_device_percentage_used{instance=~\"$node\",device=~\"$disk\"}) * on(instance, device) group_left(model_name) smartctl_device{interface=~\"$type\",interface=~\"nvme\",serial_number=~\"$serial_number\",model_name=~\"$device_model\"})) or max by (instance, device, model_name) ((smartctl_device_attribute{instance=~\"$node\",device=~\"$disk\",attribute_name=~\"Percent_Lifetime_Remain|Wear_Leveling_Count|Media_Wearout_Indicator\",attribute_value_type=\"value\"} * on(instance, device) group_left(model_name) smartctl_device{interface=~\"$type\",interface=~\"sat\",serial_number=~\"$serial_number\",model_name=~\"$device_model\"}))",
+              "instant": true,
+              "legendFormat": "{{device}}",
+              "range": false,
+              "refId": "A",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              }
+            }
+          ],
+          "title": "Health Status",
+          "type": "gauge"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "mappings": [],
+              "max": 80,
+              "min": 0,
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "dark-green",
+                    "value": 0
+                  },
+                  {
+                    "color": "dark-yellow",
+                    "value": 55
+                  },
+                  {
+                    "color": "dark-red",
+                    "value": 65
+                  }
+                ]
+              },
+              "unit": "celsius"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 6,
+            "w": 12,
+            "x": 12,
+            "y": 3
+          },
+          "id": 111,
+          "options": {
+            "minVizHeight": 75,
+            "minVizWidth": 75,
+            "orientation": "auto",
+            "reduceOptions": {
+              "calcs": [
+                "last"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "showThresholdLabels": false,
+            "showThresholdMarkers": true,
+            "sizing": "auto"
+          },
+          "pluginVersion": "12.3.3",
+          "targets": [
+            {
+              "expr": "max by (instance, device, model_name) (smartctl_device_temperature{instance=~\"$node\",device=~\"$disk\"} * on(instance, device) group_left(model_name) smartctl_device{interface=~\"$type\",serial_number=~\"$serial_number\",model_name=~\"$device_model\"})",
+              "instant": true,
+              "legendFormat": "{{device}}",
+              "range": false,
+              "refId": "A",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              }
+            }
+          ],
+          "title": "Current Temperature",
+          "type": "gauge"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisBorderShow": false,
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "barWidthFactor": 0.6,
+                "drawStyle": "line",
+                "fillOpacity": 8,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "insertNulls": false,
+                "lineInterpolation": "linear",
+                "lineWidth": 2,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "never",
+                "showValues": false,
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": 0
+                  },
+                  {
+                    "color": "red",
+                    "value": 80
+                  }
+                ]
+              },
+              "unit": "celsius"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 24,
+            "x": 0,
+            "y": 9
+          },
+          "id": 120,
+          "interval": "1m",
+          "maxDataPoints": 1000,
+          "options": {
+            "legend": {
+              "calcs": [
+                "lastNotNull",
+                "min",
+                "max",
+                "mean"
+              ],
+              "displayMode": "table",
+              "placement": "right",
+              "showLegend": true
+            },
+            "tooltip": {
+              "hideZeros": false,
+              "mode": "single",
+              "sort": "asc"
+            }
+          },
+          "pluginVersion": "12.3.3",
+          "targets": [
+            {
+              "expr": "max by (instance, device, model_name) (smartctl_device_temperature{instance=~\"$node\",device=~\"$disk\"} * on(instance, device) group_left(model_name) smartctl_device{interface=~\"$type\",serial_number=~\"$serial_number\",model_name=~\"$device_model\"})",
+              "interval": "1m",
+              "legendFormat": "{{instance}} {{device}} {{model_name}}",
+              "refId": "A",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              }
+            }
+          ],
+          "title": "Temperature Trend",
+          "type": "timeseries"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "custom": {
+                "align": "auto",
+                "cellOptions": {
+                  "type": "auto"
+                },
+                "footer": {
+                  "reducers": []
+                },
+                "inspect": false
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": 0
+                  },
+                  {
+                    "color": "red",
+                    "value": 80
+                  }
+                ]
+              }
+            },
+            "overrides": [
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "SMART Status"
+                },
+                "properties": [
+                  {
+                    "id": "custom.cellOptions",
+                    "value": {
+                      "mode": "basic",
+                      "type": "color-background"
+                    }
+                  },
+                  {
+                    "id": "thresholds",
+                    "value": {
+                      "mode": "absolute",
+                      "steps": [
+                        {
+                          "color": "dark-red",
+                          "value": 0
+                        },
+                        {
+                          "color": "dark-green",
+                          "value": 1
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "id": "mappings",
+                    "value": [
+                      {
+                        "options": {
+                          "0": {
+                            "color": "dark-red",
+                            "text": "FAIL"
+                          },
+                          "1": {
+                            "color": "dark-green",
+                            "text": "PASS"
+                          }
+                        },
+                        "type": "value"
+                      }
+                    ]
+                  },
+                  {
+                    "id": "custom.width",
+                    "value": 50
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Node"
+                },
+                "properties": [
+                  {
+                    "id": "custom.width",
+                    "value": 170
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Device"
+                },
+                "properties": [
+                  {
+                    "id": "custom.width",
+                    "value": 80
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Protocol"
+                },
+                "properties": [
+                  {
+                    "id": "custom.width",
+                    "value": 80
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Model"
+                },
+                "properties": [
+                  {
+                    "id": "custom.width",
+                    "value": 300
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Capacity"
+                },
+                "properties": [
+                  {
+                    "id": "unit",
+                    "value": "decbytes"
+                  },
+                  {
+                    "id": "decimals",
+                    "value": 2
+                  },
+                  {
+                    "id": "custom.width",
+                    "value": 100
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Firmware"
+                },
+                "properties": [
+                  {
+                    "id": "custom.width",
+                    "value": 120
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Serial Number"
+                },
+                "properties": [
+                  {
+                    "id": "custom.width",
+                    "value": 170
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Critical Warning"
+                },
+                "properties": [
+                  {
+                    "id": "custom.width",
+                    "value": 100
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Media Errors"
+                },
+                "properties": [
+                  {
+                    "id": "custom.width",
+                    "value": 100
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Error Logs"
+                },
+                "properties": [
+                  {
+                    "id": "custom.width",
+                    "value": 100
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Power On Time"
+                },
+                "properties": [
+                  {
+                    "id": "unit",
+                    "value": "s"
+                  },
+                  {
+                    "id": "custom.width",
+                    "value": 150
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Power Cycles"
+                },
+                "properties": [
+                  {
+                    "id": "custom.width",
+                    "value": 120
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Total Reads"
+                },
+                "properties": [
+                  {
+                    "id": "unit",
+                    "value": "decbytes"
+                  },
+                  {
+                    "id": "decimals",
+                    "value": 2
+                  },
+                  {
+                    "id": "custom.width",
+                    "value": 100
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Total Writes"
+                },
+                "properties": [
+                  {
+                    "id": "unit",
+                    "value": "decbytes"
+                  },
+                  {
+                    "id": "decimals",
+                    "value": 2
+                  },
+                  {
+                    "id": "custom.width",
+                    "value": 100
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Last Checked"
+                },
+                "properties": [
+                  {
+                    "id": "unit",
+                    "value": "time:HH:mm:ss"
+                  },
+                  {
+                    "id": "custom.width",
+                    "value": 100
+                  }
+                ]
+              }
+            ]
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 24,
+            "x": 0,
+            "y": 17
+          },
+          "id": 200,
+          "options": {
+            "cellHeight": "sm",
+            "frameIndex": 0,
+            "showHeader": true,
+            "showTypeIcons": false
+          },
+          "pluginVersion": "12.3.3",
+          "targets": [
+            {
+              "expr": "max by (instance, device, protocol, model_name, firmware_version, serial_number) ((max by (instance, device) (smartctl_device_smart_status{instance=~\"$node\",device=~\"$disk\"})) * on(instance, device) group_left(protocol, model_name, firmware_version, serial_number) (max by (instance, device, protocol, model_name, firmware_version, serial_number) (smartctl_device{instance=~\"$node\",device=~\"$disk\",interface=~\"$type\",serial_number=~\"$serial_number\",model_name=~\"$device_model\"})))",
+              "format": "table",
+              "instant": true,
+              "range": false,
+              "refId": "A",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              }
+            },
+            {
+              "expr": "max by (instance, device, protocol, model_name, firmware_version, serial_number) ((max by (instance, device) (smartctl_device_critical_warning{instance=~\"$node\",device=~\"$disk\"})) * on(instance, device) group_left(protocol, model_name, firmware_version, serial_number) (max by (instance, device, protocol, model_name, firmware_version, serial_number) (smartctl_device{instance=~\"$node\",device=~\"$disk\",interface=~\"$type\",serial_number=~\"$serial_number\",model_name=~\"$device_model\"})))",
+              "format": "table",
+              "instant": true,
+              "range": false,
+              "refId": "B",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              }
+            },
+            {
+              "expr": "max by (instance, device, protocol, model_name, firmware_version, serial_number) ((max by (instance, device) (smartctl_device_media_errors{instance=~\"$node\",device=~\"$disk\"})) * on(instance, device) group_left(protocol, model_name, firmware_version, serial_number) (max by (instance, device, protocol, model_name, firmware_version, serial_number) (smartctl_device{instance=~\"$node\",device=~\"$disk\",interface=~\"$type\",serial_number=~\"$serial_number\",model_name=~\"$device_model\"})))",
+              "format": "table",
+              "instant": true,
+              "range": false,
+              "refId": "C",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              }
+            },
+            {
+              "expr": "max by (instance, device, protocol, model_name, firmware_version, serial_number) ((max by (instance, device) (smartctl_device_error_log_count{instance=~\"$node\",device=~\"$disk\"})) * on(instance, device) group_left(protocol, model_name, firmware_version, serial_number) (max by (instance, device, protocol, model_name, firmware_version, serial_number) (smartctl_device{instance=~\"$node\",device=~\"$disk\",interface=~\"$type\",serial_number=~\"$serial_number\",model_name=~\"$device_model\"})))",
+              "format": "table",
+              "instant": true,
+              "range": false,
+              "refId": "D",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              }
+            },
+            {
+              "expr": "max by (instance, device, protocol, model_name, firmware_version, serial_number) ((max by (instance, device) (smartctl_device_power_on_seconds{instance=~\"$node\",device=~\"$disk\"})) * on(instance, device) group_left(protocol, model_name, firmware_version, serial_number) (max by (instance, device, protocol, model_name, firmware_version, serial_number) (smartctl_device{instance=~\"$node\",device=~\"$disk\",interface=~\"$type\",serial_number=~\"$serial_number\",model_name=~\"$device_model\"})))",
+              "format": "table",
+              "instant": true,
+              "range": false,
+              "refId": "E",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              }
+            },
+            {
+              "expr": "max by (instance, device, protocol, model_name, firmware_version, serial_number) ((max by (instance, device) (smartctl_device_power_cycle_count{instance=~\"$node\",device=~\"$disk\"})) * on(instance, device) group_left(protocol, model_name, firmware_version, serial_number) (max by (instance, device, protocol, model_name, firmware_version, serial_number) (smartctl_device{instance=~\"$node\",device=~\"$disk\",interface=~\"$type\",serial_number=~\"$serial_number\",model_name=~\"$device_model\"})))",
+              "format": "table",
+              "instant": true,
+              "range": false,
+              "refId": "F",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              }
+            },
+            {
+              "expr": "max by (instance, device, protocol, model_name, firmware_version, serial_number) (((max by (instance, device) (smartctl_device_bytes_read{instance=~\"$node\",device=~\"$disk\"})) or (max by (instance, device) (smartctl_device_attribute{instance=~\"$node\",device=~\"$disk\",attribute_name=\"Total_LBAs_Read\",attribute_value_type=\"raw\"} * on(instance, device) smartctl_device_block_size{instance=~\"$node\",device=~\"$disk\",blocks_type=\"logical\"}))) * on(instance, device) group_left(protocol, model_name, firmware_version, serial_number) (max by (instance, device, protocol, model_name, firmware_version, serial_number) (smartctl_device{instance=~\"$node\",device=~\"$disk\",interface=~\"$type\",serial_number=~\"$serial_number\",model_name=~\"$device_model\"})))",
+              "format": "table",
+              "instant": true,
+              "range": false,
+              "refId": "G",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              }
+            },
+            {
+              "expr": "max by (instance, device, protocol, model_name, firmware_version, serial_number) (((max by (instance, device) (smartctl_device_bytes_written{instance=~\"$node\",device=~\"$disk\"})) or (max by (instance, device) (smartctl_device_attribute{instance=~\"$node\",device=~\"$disk\",attribute_name=\"Total_LBAs_Written\",attribute_value_type=\"raw\"} * on(instance, device) smartctl_device_block_size{instance=~\"$node\",device=~\"$disk\",blocks_type=\"logical\"}))) * on(instance, device) group_left(protocol, model_name, firmware_version, serial_number) (max by (instance, device, protocol, model_name, firmware_version, serial_number) (smartctl_device{instance=~\"$node\",device=~\"$disk\",interface=~\"$type\",serial_number=~\"$serial_number\",model_name=~\"$device_model\"})))",
+              "format": "table",
+              "instant": true,
+              "range": false,
+              "refId": "H",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              }
+            },
+            {
+              "expr": "max by (instance, device, protocol, model_name, firmware_version, serial_number) ((max by (instance, device) (smartctl_device_capacity_bytes{instance=~\"$node\",device=~\"$disk\"})) * on(instance, device) group_left(protocol, model_name, firmware_version, serial_number) (max by (instance, device, protocol, model_name, firmware_version, serial_number) (smartctl_device{instance=~\"$node\",device=~\"$disk\",interface=~\"$type\",serial_number=~\"$serial_number\",model_name=~\"$device_model\"})))",
+              "format": "table",
+              "instant": true,
+              "range": false,
+              "refId": "I",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              }
+            }
+          ],
+          "title": "Disk Overview",
+          "transformations": [
+            {
+              "id": "merge",
+              "options": {
+                "reducers": []
+              }
+            },
+            {
+              "id": "organize",
+              "options": {
+                "excludeByName": {},
+                "indexByName": {
+                  "Time": 15,
+                  "Value #A": 0,
+                  "Value #B": 8,
+                  "Value #C": 9,
+                  "Value #D": 10,
+                  "Value #E": 11,
+                  "Value #F": 12,
+                  "Value #G": 13,
+                  "Value #H": 14,
+                  "Value #I": 5,
+                  "device": 2,
+                  "firmware_version": 6,
+                  "instance": 1,
+                  "model_name": 4,
+                  "protocol": 3,
+                  "serial_number": 7
+                },
+                "renameByName": {
+                  "Time": "Last Checked",
+                  "Value #A": "SMART Status",
+                  "Value #B": "Critical Warning",
+                  "Value #C": "Media Errors",
+                  "Value #D": "Error Logs",
+                  "Value #E": "Power On Time",
+                  "Value #F": "Power Cycles",
+                  "Value #G": "Total Reads",
+                  "Value #H": "Total Writes",
+                  "Value #I": "Capacity",
+                  "device": "Device",
+                  "firmware_version": "Firmware",
+                  "instance": "Node",
+                  "model_name": "Model",
+                  "protocol": "Protocol",
+                  "serial_number": "Serial Number"
+                }
+              }
+            }
+          ],
+          "type": "table"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisBorderShow": false,
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "fillOpacity": 80,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "lineWidth": 0,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "dark-green",
+                    "value": 0
+                  }
+                ]
+              },
+              "unit": "h"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 25
+          },
+          "id": 210,
+          "options": {
+            "barRadius": 0,
+            "barWidth": 0.97,
+            "fullHighlight": false,
+            "groupWidth": 0.7,
+            "legend": {
+              "calcs": [],
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": false
+            },
+            "orientation": "horizontal",
+            "showValue": "auto",
+            "stacking": "none",
+            "tooltip": {
+              "hideZeros": false,
+              "mode": "single",
+              "sort": "none"
+            },
+            "xTickLabelMaxLength": 20,
+            "xTickLabelRotation": 0,
+            "xTickLabelSpacing": 0
+          },
+          "pluginVersion": "12.3.3",
+          "targets": [
+            {
+              "expr": "max by (device) ((smartctl_device_power_on_seconds{instance=~\"$node\",device=~\"$disk\"} / 3600) * on(instance, device) group_left(model_name) smartctl_device{interface=~\"$type\",serial_number=~\"$serial_number\",model_name=~\"$device_model\"})",
+              "instant": true,
+              "legendFormat": "{{device}}",
+              "range": false,
+              "refId": "A",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              }
+            }
+          ],
+          "title": "Power On Hours",
+          "transformations": [
+            {
+              "id": "seriesToRows",
+              "options": {}
+            }
+          ],
+          "type": "barchart"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisBorderShow": false,
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "fillOpacity": 80,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "lineWidth": 0,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "dark-green",
+                    "value": 0
+                  }
+                ]
+              },
+              "unit": "short"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 12,
+            "y": 25
+          },
+          "id": 211,
+          "options": {
+            "barRadius": 0,
+            "barWidth": 0.97,
+            "fullHighlight": false,
+            "groupWidth": 0.7,
+            "legend": {
+              "calcs": [],
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": false
+            },
+            "orientation": "horizontal",
+            "showValue": "auto",
+            "stacking": "none",
+            "tooltip": {
+              "hideZeros": false,
+              "mode": "single",
+              "sort": "none"
+            },
+            "xTickLabelMaxLength": 20,
+            "xTickLabelRotation": 0,
+            "xTickLabelSpacing": 0
+          },
+          "pluginVersion": "12.3.3",
+          "targets": [
+            {
+              "expr": "max by (device) (smartctl_device_power_cycle_count{instance=~\"$node\",device=~\"$disk\"} * on(instance, device) group_left(model_name) smartctl_device{interface=~\"$type\",serial_number=~\"$serial_number\",model_name=~\"$device_model\"})",
+              "instant": true,
+              "legendFormat": "{{device}}",
+              "range": false,
+              "refId": "A",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              }
+            }
+          ],
+          "title": "Power Cycles",
+          "transformations": [
+            {
+              "id": "seriesToRows",
+              "options": {}
+            }
+          ],
+          "type": "barchart"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisBorderShow": false,
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "barWidthFactor": 0.6,
+                "drawStyle": "line",
+                "fillOpacity": 8,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "insertNulls": false,
+                "lineInterpolation": "linear",
+                "lineWidth": 2,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "never",
+                "showValues": false,
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": 0
+                  },
+                  {
+                    "color": "red",
+                    "value": 80
+                  }
+                ]
+              },
+              "unit": "decbytes"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 33
+          },
+          "id": 330,
+          "interval": "1m",
+          "maxDataPoints": 1000,
+          "options": {
+            "legend": {
+              "calcs": [
+                "lastNotNull",
+                "min",
+                "max"
+              ],
+              "displayMode": "table",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "hideZeros": false,
+              "mode": "single",
+              "sort": "asc"
+            }
+          },
+          "pluginVersion": "12.3.3",
+          "targets": [
+            {
+              "expr": "(max by (instance, device, model_name, protocol) (smartctl_device_bytes_read{instance=~\"$node\",device=~\"$disk\"} * on(instance, device) group_left(model_name, protocol) smartctl_device{interface=~\"$type\",interface=~\"nvme\",serial_number=~\"$serial_number\",model_name=~\"$device_model\"})) or (max by (instance, device, model_name, protocol) ((smartctl_device_bytes_read{instance=~\"$node\",device=~\"$disk\"}) * on(instance, device) group_left(model_name, protocol) smartctl_device{interface=~\"$type\",interface=~\"sat\",serial_number=~\"$serial_number\",model_name=~\"$device_model\"}) or max by (instance, device, model_name, protocol) ((smartctl_device_attribute{instance=~\"$node\",device=~\"$disk\",attribute_name=\"Total_LBAs_Read\",attribute_value_type=\"raw\"} * on(instance, device) smartctl_device_block_size{instance=~\"$node\",device=~\"$disk\",blocks_type=\"logical\"}) * on(instance, device) group_left(model_name, protocol) smartctl_device{interface=~\"$type\",interface=~\"sat\",serial_number=~\"$serial_number\",model_name=~\"$device_model\"}))",
+              "interval": "1m",
+              "legendFormat": "{{instance}} {{device}} {{model_name}}",
+              "refId": "A",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              }
+            }
+          ],
+          "title": "Total Reads Trend",
+          "type": "timeseries"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisBorderShow": false,
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "barWidthFactor": 0.6,
+                "drawStyle": "line",
+                "fillOpacity": 8,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "insertNulls": false,
+                "lineInterpolation": "linear",
+                "lineWidth": 2,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "never",
+                "showValues": false,
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": 0
+                  },
+                  {
+                    "color": "red",
+                    "value": 80
+                  }
+                ]
+              },
+              "unit": "decbytes"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 12,
+            "y": 33
+          },
+          "id": 331,
+          "interval": "1m",
+          "maxDataPoints": 1000,
+          "options": {
+            "legend": {
+              "calcs": [
+                "lastNotNull",
+                "min",
+                "max"
+              ],
+              "displayMode": "table",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "hideZeros": false,
+              "mode": "single",
+              "sort": "asc"
+            }
+          },
+          "pluginVersion": "12.3.3",
+          "targets": [
+            {
+              "expr": "(max by (instance, device, model_name, protocol) (smartctl_device_bytes_written{instance=~\"$node\",device=~\"$disk\"} * on(instance, device) group_left(model_name, protocol) smartctl_device{interface=~\"$type\",interface=~\"nvme\",serial_number=~\"$serial_number\",model_name=~\"$device_model\"})) or (max by (instance, device, model_name, protocol) ((smartctl_device_bytes_written{instance=~\"$node\",device=~\"$disk\"}) * on(instance, device) group_left(model_name, protocol) smartctl_device{interface=~\"$type\",interface=~\"sat\",serial_number=~\"$serial_number\",model_name=~\"$device_model\"}) or max by (instance, device, model_name, protocol) ((smartctl_device_attribute{instance=~\"$node\",device=~\"$disk\",attribute_name=\"Total_LBAs_Written\",attribute_value_type=\"raw\"} * on(instance, device) smartctl_device_block_size{instance=~\"$node\",device=~\"$disk\",blocks_type=\"logical\"}) * on(instance, device) group_left(model_name, protocol) smartctl_device{interface=~\"$type\",interface=~\"sat\",serial_number=~\"$serial_number\",model_name=~\"$device_model\"}))",
+              "interval": "1m",
+              "legendFormat": "{{instance}} {{device}} {{model_name}}",
+              "refId": "A",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              }
+            }
+          ],
+          "title": "Total Writes Trend",
+          "type": "timeseries"
+        },
+        {
+          "collapsed": false,
+          "gridPos": {
+            "h": 1,
+            "w": 24,
+            "x": 0,
+            "y": 41
+          },
+          "id": 300,
+          "panels": [],
+          "title": "NVMe Details",
+          "type": "row"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "displayName": "${__field.labels.device}",
+              "mappings": [],
+              "max": 100,
+              "min": 0,
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "dark-red",
+                    "value": 0
+                  },
+                  {
+                    "color": "dark-yellow",
+                    "value": 10
+                  },
+                  {
+                    "color": "dark-green",
+                    "value": 20
+                  }
+                ]
+              },
+              "unit": "percent"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 42
+          },
+          "id": 310,
+          "options": {
+            "minVizHeight": 75,
+            "minVizWidth": 75,
+            "orientation": "auto",
+            "reduceOptions": {
+              "calcs": [
+                "last"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "showThresholdLabels": false,
+            "showThresholdMarkers": true,
+            "sizing": "auto"
+          },
+          "pluginVersion": "12.3.3",
+          "targets": [
+            {
+              "expr": "max by (instance, device, model_name) (smartctl_device_available_spare{instance=~\"$node\",device=~\"$disk\"} * on(instance, device) group_left(model_name) smartctl_device{interface=~\"$type\",interface=~\"nvme\",serial_number=~\"$serial_number\",model_name=~\"$device_model\"})",
+              "instant": true,
+              "legendFormat": "{{device}}",
+              "range": false,
+              "refId": "A",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              }
+            }
+          ],
+          "title": "Available Spare",
+          "type": "gauge"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "displayName": "${__field.labels.device}",
+              "mappings": [],
+              "max": 100,
+              "min": 0,
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "text",
+                    "value": 0
+                  }
+                ]
+              },
+              "unit": "percent"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 12,
+            "y": 42
+          },
+          "id": 311,
+          "options": {
+            "minVizHeight": 75,
+            "minVizWidth": 75,
+            "orientation": "auto",
+            "reduceOptions": {
+              "calcs": [
+                "last"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "showThresholdLabels": false,
+            "showThresholdMarkers": false,
+            "sizing": "auto"
+          },
+          "pluginVersion": "12.3.3",
+          "targets": [
+            {
+              "expr": "max by (instance, device, model_name) (smartctl_device_available_spare_threshold{instance=~\"$node\",device=~\"$disk\"} * on(instance, device) group_left(model_name) smartctl_device{interface=~\"$type\",interface=~\"nvme\",serial_number=~\"$serial_number\",model_name=~\"$device_model\"})",
+              "instant": true,
+              "legendFormat": "{{device}}",
+              "range": false,
+              "refId": "A",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              }
+            }
+          ],
+          "title": "Available Spare Threshold",
+          "type": "gauge"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisBorderShow": false,
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "barWidthFactor": 0.6,
+                "drawStyle": "line",
+                "fillOpacity": 8,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "insertNulls": false,
+                "lineInterpolation": "linear",
+                "lineWidth": 2,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "never",
+                "showValues": false,
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": 0
+                  },
+                  {
+                    "color": "red",
+                    "value": 80
+                  }
+                ]
+              },
+              "unit": "short"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 50
+          },
+          "id": 312,
+          "interval": "1m",
+          "maxDataPoints": 1000,
+          "options": {
+            "legend": {
+              "calcs": [
+                "lastNotNull",
+                "min",
+                "max"
+              ],
+              "displayMode": "table",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "hideZeros": false,
+              "mode": "single",
+              "sort": "asc"
+            }
+          },
+          "pluginVersion": "12.3.3",
+          "targets": [
+            {
+              "expr": "max by (instance, device, protocol, model_name, firmware_version, serial_number) ((max by (instance, device) (smartctl_device_critical_warning{instance=~\"$node\",device=~\"$disk\"})) * on(instance, device) group_left(protocol, model_name, firmware_version, serial_number) (smartctl_device{interface=~\"$type\",interface=~\"nvme\",serial_number=~\"$serial_number\",model_name=~\"$device_model\"}))",
+              "interval": "1m",
+              "legendFormat": "{{instance}} {{device}} {{model_name}}",
+              "refId": "A",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              }
+            }
+          ],
+          "title": "Critical Warnings Trend",
+          "type": "timeseries"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisBorderShow": false,
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "barWidthFactor": 0.6,
+                "drawStyle": "line",
+                "fillOpacity": 8,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "insertNulls": false,
+                "lineInterpolation": "linear",
+                "lineWidth": 2,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "never",
+                "showValues": false,
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": 0
+                  },
+                  {
+                    "color": "red",
+                    "value": 80
+                  }
+                ]
+              },
+              "unit": "short"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 12,
+            "y": 50
+          },
+          "id": 313,
+          "interval": "1m",
+          "maxDataPoints": 1000,
+          "options": {
+            "legend": {
+              "calcs": [
+                "lastNotNull",
+                "min",
+                "max"
+              ],
+              "displayMode": "table",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "hideZeros": false,
+              "mode": "single",
+              "sort": "asc"
+            }
+          },
+          "pluginVersion": "12.3.3",
+          "targets": [
+            {
+              "expr": "max by (instance, device, protocol, model_name, firmware_version, serial_number) ((max by (instance, device) (smartctl_device_media_errors{instance=~\"$node\",device=~\"$disk\"})) * on(instance, device) group_left(protocol, model_name, firmware_version, serial_number) (smartctl_device{interface=~\"$type\",interface=~\"nvme\",serial_number=~\"$serial_number\",model_name=~\"$device_model\"}))",
+              "interval": "1m",
+              "legendFormat": "{{instance}} {{device}} {{model_name}}",
+              "refId": "A",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              }
+            }
+          ],
+          "title": "Media Errors Trend",
+          "type": "timeseries"
+        },
+        {
+          "collapsed": false,
+          "gridPos": {
+            "h": 1,
+            "w": 24,
+            "x": 0,
+            "y": 58
+          },
+          "id": 301,
+          "panels": [],
+          "title": "SATA Details",
+          "type": "row"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "description": "SATA fault-focused counters are healthiest at zero, and rising values should be prioritized for investigation.",
+          "fieldConfig": {
+            "defaults": {
+              "custom": {
+                "align": "auto",
+                "cellOptions": {
+                  "type": "auto"
+                },
+                "footer": {
+                  "reducers": []
+                },
+                "inspect": false
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": 0
+                  },
+                  {
+                    "color": "red",
+                    "value": 80
+                  }
+                ]
+              }
+            },
+            "overrides": [
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Node"
+                },
+                "properties": [
+                  {
+                    "id": "custom.width",
+                    "value": 170
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Device"
+                },
+                "properties": [
+                  {
+                    "id": "custom.width",
+                    "value": 80
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Model"
+                },
+                "properties": [
+                  {
+                    "id": "custom.width",
+                    "value": 300
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Protocol"
+                },
+                "properties": [
+                  {
+                    "id": "custom.width",
+                    "value": 80
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byRegexp",
+                  "options": "^(Pending|Uncorrectable|Reallocated Sectors|Reallocation Events|CRC Errors|CRC 24h Delta|Error Logs)$"
+                },
+                "properties": [
+                  {
+                    "id": "custom.cellOptions",
+                    "value": {
+                      "mode": "basic",
+                      "type": "color-text"
+                    }
+                  },
+                  {
+                    "id": "thresholds",
+                    "value": {
+                      "mode": "absolute",
+                      "steps": [
+                        {
+                          "color": "green",
+                          "value": 0
+                        },
+                        {
+                          "color": "red",
+                          "value": 1
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "id": "custom.width",
+                    "value": 150
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Last Checked"
+                },
+                "properties": [
+                  {
+                    "id": "unit",
+                    "value": "time:HH:mm:ss"
+                  },
+                  {
+                    "id": "custom.width",
+                    "value": 100
+                  }
+                ]
+              }
+            ]
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 24,
+            "x": 0,
+            "y": 59
+          },
+          "id": 341,
+          "options": {
+            "cellHeight": "sm",
+            "frameIndex": 0,
+            "showHeader": true,
+            "showTypeIcons": false
+          },
+          "pluginVersion": "12.3.3",
+          "targets": [
+            {
+              "expr": "max by (instance, device, protocol, model_name, firmware_version, serial_number) (smartctl_device{interface=~\"$type\",interface=~\"sat\",serial_number=~\"$serial_number\",model_name=~\"$device_model\"})",
+              "format": "table",
+              "instant": true,
+              "range": false,
+              "refId": "A",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              }
+            },
+            {
+              "expr": "max by (instance, device, protocol, model_name, firmware_version, serial_number) ((max by (instance, device) (smartctl_device_attribute{instance=~\"$node\",device=~\"$disk\",attribute_name=\"Current_Pending_Sector\",attribute_value_type=\"raw\"})) * on(instance, device) group_left(protocol, model_name, firmware_version, serial_number) (max by (instance, device, protocol, model_name, firmware_version, serial_number) (smartctl_device{interface=~\"$type\",interface=~\"sat\",serial_number=~\"$serial_number\",model_name=~\"$device_model\"})))",
+              "format": "table",
+              "instant": true,
+              "range": false,
+              "refId": "B",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              }
+            },
+            {
+              "expr": "max by (instance, device, protocol, model_name, firmware_version, serial_number) ((max by (instance, device) (smartctl_device_attribute{instance=~\"$node\",device=~\"$disk\",attribute_name=\"Offline_Uncorrectable\",attribute_value_type=\"raw\"})) * on(instance, device) group_left(protocol, model_name, firmware_version, serial_number) (max by (instance, device, protocol, model_name, firmware_version, serial_number) (smartctl_device{interface=~\"$type\",interface=~\"sat\",serial_number=~\"$serial_number\",model_name=~\"$device_model\"})))",
+              "format": "table",
+              "instant": true,
+              "range": false,
+              "refId": "C",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              }
+            },
+            {
+              "expr": "max by (instance, device, protocol, model_name, firmware_version, serial_number) ((max by (instance, device) (smartctl_device_attribute{instance=~\"$node\",device=~\"$disk\",attribute_name=\"Reallocated_Sector_Ct\",attribute_value_type=\"raw\"})) * on(instance, device) group_left(protocol, model_name, firmware_version, serial_number) (max by (instance, device, protocol, model_name, firmware_version, serial_number) (smartctl_device{interface=~\"$type\",interface=~\"sat\",serial_number=~\"$serial_number\",model_name=~\"$device_model\"})))",
+              "format": "table",
+              "instant": true,
+              "range": false,
+              "refId": "D",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              }
+            },
+            {
+              "expr": "max by (instance, device, protocol, model_name, firmware_version, serial_number) ((max by (instance, device) (smartctl_device_attribute{instance=~\"$node\",device=~\"$disk\",attribute_name=\"Reallocated_Event_Count\",attribute_value_type=\"raw\"})) * on(instance, device) group_left(protocol, model_name, firmware_version, serial_number) (max by (instance, device, protocol, model_name, firmware_version, serial_number) (smartctl_device{interface=~\"$type\",interface=~\"sat\",serial_number=~\"$serial_number\",model_name=~\"$device_model\"})))",
+              "format": "table",
+              "instant": true,
+              "range": false,
+              "refId": "E",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              }
+            },
+            {
+              "expr": "max by (instance, device, protocol, model_name, firmware_version, serial_number) ((max by (instance, device) (smartctl_device_attribute{instance=~\"$node\",device=~\"$disk\",attribute_name=\"UDMA_CRC_Error_Count\",attribute_value_type=\"raw\"})) * on(instance, device) group_left(protocol, model_name, firmware_version, serial_number) (max by (instance, device, protocol, model_name, firmware_version, serial_number) (smartctl_device{interface=~\"$type\",interface=~\"sat\",serial_number=~\"$serial_number\",model_name=~\"$device_model\"})))",
+              "format": "table",
+              "instant": true,
+              "range": false,
+              "refId": "F",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              }
+            },
+            {
+              "expr": "max by (instance, device, protocol, model_name, firmware_version, serial_number) ((max by (instance, device) (clamp_min(delta(smartctl_device_attribute{instance=~\"$node\",device=~\"$disk\",attribute_name=\"UDMA_CRC_Error_Count\",attribute_value_type=\"raw\"}[24h]), 0))) * on(instance, device) group_left(protocol, model_name, firmware_version, serial_number) (max by (instance, device, protocol, model_name, firmware_version, serial_number) (smartctl_device{interface=~\"$type\",interface=~\"sat\",serial_number=~\"$serial_number\",model_name=~\"$device_model\"})))",
+              "format": "table",
+              "instant": true,
+              "range": false,
+              "refId": "G",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              }
+            },
+            {
+              "expr": "max by (instance, device, protocol, model_name, firmware_version, serial_number) ((max by (instance, device) (smartctl_device_error_log_count{instance=~\"$node\",device=~\"$disk\"})) * on(instance, device) group_left(protocol, model_name, firmware_version, serial_number) (max by (instance, device, protocol, model_name, firmware_version, serial_number) (smartctl_device{interface=~\"$type\",interface=~\"sat\",serial_number=~\"$serial_number\",model_name=~\"$device_model\"})))",
+              "format": "table",
+              "instant": true,
+              "range": false,
+              "refId": "H",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              }
+            }
+          ],
+          "title": "SATA Reliability Table",
+          "transformations": [
+            {
+              "id": "merge",
+              "options": {
+                "reducers": []
+              }
+            },
+            {
+              "id": "organize",
+              "options": {
+                "excludeByName": {
+                  "Value #A": true,
+                  "firmware_version": true,
+                  "serial_number": true
+                },
+                "indexByName": {
+                  "Time": 11,
+                  "Value #B": 4,
+                  "Value #C": 5,
+                  "Value #D": 6,
+                  "Value #E": 7,
+                  "Value #F": 8,
+                  "Value #G": 9,
+                  "Value #H": 10,
+                  "device": 1,
+                  "instance": 0,
+                  "model_name": 2,
+                  "protocol": 3
+                },
+                "renameByName": {
+                  "Time": "Last Checked",
+                  "Value #B": "Pending",
+                  "Value #C": "Uncorrectable",
+                  "Value #D": "Reallocated Sectors",
+                  "Value #E": "Reallocation Events",
+                  "Value #F": "CRC Errors",
+                  "Value #G": "CRC 24h Delta",
+                  "Value #H": "Error Logs",
+                  "device": "Device",
+                  "instance": "Node",
+                  "model_name": "Model",
+                  "protocol": "Protocol"
+                }
+              }
+            }
+          ],
+          "type": "table"
+        }
+      ],
+      "preload": false,
+      "refresh": "1m",
+      "schemaVersion": 42,
+      "tags": [
+        "smartctl",
+        "storage",
+        "nvme",
+        "sata",
+        "prometheus"
+      ],
+      "templating": {
+        "list": [
+          {
+            "allValue": ".*",
+            "current": {},
+            "datasource": {
+              "type": "prometheus",
+              "uid": "${DS_PROMETHEUS}"
+            },
+            "includeAll": true,
+            "multi": true,
+            "name": "node",
+            "options": [],
+            "query": "label_values(smartctl_version,instance)",
+            "refresh": 1,
+            "sort": 1,
+            "type": "query"
+          },
+          {
+            "allValue": ".*",
+            "current": {},
+            "datasource": {
+              "type": "prometheus",
+              "uid": "${DS_PROMETHEUS}"
+            },
+            "includeAll": true,
+            "multi": true,
+            "name": "disk",
+            "options": [],
+            "query": "label_values(smartctl_device,device)",
+            "refresh": 1,
+            "sort": 1,
+            "type": "query"
+          },
+          {
+            "allValue": ".*",
+            "current": {},
+            "datasource": {
+              "type": "prometheus",
+              "uid": "${DS_PROMETHEUS}"
+            },
+            "includeAll": true,
+            "multi": true,
+            "name": "type",
+            "options": [],
+            "query": "label_values(smartctl_device,interface)",
+            "refresh": 1,
+            "sort": 1,
+            "type": "query"
+          },
+          {
+            "allValue": ".*",
+            "current": {},
+            "datasource": {
+              "type": "prometheus",
+              "uid": "${DS_PROMETHEUS}"
+            },
+            "includeAll": true,
+            "multi": true,
+            "name": "device_model",
+            "options": [],
+            "query": "label_values(smartctl_device,model_name)",
+            "refresh": 1,
+            "sort": 1,
+            "type": "query"
+          },
+          {
+            "allValue": ".*",
+            "current": {},
+            "datasource": {
+              "type": "prometheus",
+              "uid": "${DS_PROMETHEUS}"
+            },
+            "includeAll": true,
+            "multi": true,
+            "name": "serial_number",
+            "options": [],
+            "query": "label_values(smartctl_device,serial_number)",
+            "refresh": 1,
+            "sort": 1,
+            "type": "query"
+          },
+          {
+            "current": {},
+            "hide": 0,
+            "includeAll": false,
+            "multi": false,
+            "options": [],
+            "refresh": 1,
+            "regex": "",
+            "skipUrlSync": false,
+            "type": "datasource",
+            "name": "DS_PROMETHEUS",
+            "query": "prometheus"
+          }
+        ]
+      },
+      "time": {
+        "from": "now-6h",
+        "to": "now"
+      },
+      "timepicker": {
+        "refresh_intervals": [
+          "30s",
+          "1m",
+          "5m",
+          "15m",
+          "30m",
+          "1h"
+        ]
+      },
+      "timezone": "browser",
+      "title": "retn0's SMARTctl Exporter Dashboard",
+      "uid": "retn0-smartctl-exporter-dashboard",
+      "version": 1,
+      "weekStart": "",
+      "gnetId": 24922
+    }

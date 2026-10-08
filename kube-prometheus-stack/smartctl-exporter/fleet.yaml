@@ -1,0 +1,10 @@
+defaultNamespace: monitoring
+dependsOn:
+  - name: glemmen-fleet-kube-prometheus-stack-deployment
+helm:
+  releaseName: smartctl-exporter
+  repo: https://prometheus-community.github.io/helm-charts
+  chart: prometheus-smartctl-exporter
+  version: 0.17.1
+  valuesFiles:
+    - values.yaml

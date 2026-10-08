@@ -28,6 +28,11 @@ DASHBOARDS = [
         "url": "https://raw.githubusercontent.com/rfmoz/grafana-dashboards/master/prometheus/node-exporter-full.json",
     },
     {
+        "configmap": "grafana-dashboard-smartctl-exporter",
+        "url": "https://grafana.com/api/dashboards/24922/revisions/latest/download",
+        "data_key": "smartctl-exporter.json",
+    },
+    {
         "configmap": "grafana-dashboard-unpoller-client-dpi",
         "url": "https://grafana.com/api/dashboards/11310/revisions/latest/download",
         "data_key": "client-dpi.json",

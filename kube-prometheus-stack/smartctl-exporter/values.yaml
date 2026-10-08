@@ -1,0 +1,32 @@
+# prometheus-smartctl-exporter - S.M.A.R.T. disk health metrics
+# Runs as a privileged DaemonSet on every node (it needs root and the host's
+# /dev to talk to the physical disks) and exposes metrics on :9633, where
+# Prometheus picks them up through the ServiceMonitor created below.
+
+# Every node has physical disks, so this must run everywhere. The chart's
+# default tolerations already allow scheduling on tainted nodes.
+
+resources:
+  requests:
+    cpu: 10m
+    memory: 64Mi
+  limits:
+    cpu: 500m
+    memory: 128Mi
+
+# Creates a ServiceMonitor that scrapes the smartctl-exporter pods.
+# kube-prometheus-stack runs with serviceMonitorSelectorNilUsesHelmValues=false
+# and selects ServiceMonitors in every namespace, so Prometheus discovers this
+# one automatically.
+serviceMonitor:
+  enabled: true
+
+# Ship the chart's built-in SMART alert rules (media errors, critical warnings,
+# available spare under threshold, bad SMART status, ...). The release label is
+# needed because kube-prometheus-stack selects PrometheusRules with
+# ruleSelectorNilUsesHelmValues=true, i.e. it only loads rules labelled with
+# this Helm release name.
+prometheusRules:
+  enabled: true
+  extraLabels:
+    release: kube-prometheus-stack
