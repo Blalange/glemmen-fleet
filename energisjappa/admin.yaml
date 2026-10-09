@@ -29,7 +29,7 @@ spec:
           type: RuntimeDefault
       containers:
         - name: admin
-          image: hexahigh/energisjappa-admin:0.1.0
+          image: hexahigh/energisjappa-admin:0.2.0
           imagePullPolicy: IfNotPresent
           securityContext:
             allowPrivilegeEscalation: false
