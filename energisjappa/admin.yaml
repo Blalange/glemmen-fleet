@@ -1,0 +1,76 @@
+# Energisjappa admin app served at https://energisjappa.glem.men/. The Vite
+# build is baked into the image and served by unprivileged nginx (uid 101,
+# port 8080). The version shown in the footer comes from the image tag below
+# and the backend's /api/v1/version endpoint.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: energisjappa-admin
+  labels:
+    app.kubernetes.io/name: energisjappa-admin
+    app.kubernetes.io/instance: energisjappa
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: energisjappa-admin
+      app.kubernetes.io/instance: energisjappa
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: energisjappa-admin
+        app.kubernetes.io/instance: energisjappa
+    spec:
+      securityContext:
+        runAsUser: 101
+        runAsGroup: 101
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: admin
+          image: hexahigh/energisjappa-admin:0.1.0
+          imagePullPolicy: IfNotPresent
+          securityContext:
+            allowPrivilegeEscalation: false
+          ports:
+            - name: http
+              containerPort: 8080
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 6
+          resources:
+            requests:
+              cpu: 20m
+              memory: 32Mi
+            limits:
+              cpu: 200m
+              memory: 128Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: energisjappa-admin
+  labels:
+    app.kubernetes.io/name: energisjappa-admin
+    app.kubernetes.io/instance: energisjappa
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: energisjappa-admin
+    app.kubernetes.io/instance: energisjappa
+  ports:
+    - name: http
+      port: 80
+      targetPort: http

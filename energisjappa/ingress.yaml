@@ -1,0 +1,55 @@
+# Traefik terminates TLS with the *.glem.men wildcard certificate (loaded into
+# its default TLS store) and forwards to the ClusterIP Services.
+#
+# Paths are matched longest-first, so the API, uploads, webhooks and the Vipps
+# return page go to the backend while everything else serves the admin SPA.
+# Admin sessions are same-origin cookies, which is exactly what this layout
+# gives them.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: energisjappa
+  labels:
+    app.kubernetes.io/name: energisjappa
+    app.kubernetes.io/instance: energisjappa
+spec:
+  ingressClassName: traefik
+  rules:
+    - host: energisjappa.glem.men
+      http:
+        paths:
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: energisjappa-backend
+                port:
+                  number: 8080
+          - path: /uploads
+            pathType: Prefix
+            backend:
+              service:
+                name: energisjappa-backend
+                port:
+                  number: 8080
+          - path: /webhooks
+            pathType: Prefix
+            backend:
+              service:
+                name: energisjappa-backend
+                port:
+                  number: 8080
+          - path: /vipps
+            pathType: Prefix
+            backend:
+              service:
+                name: energisjappa-backend
+                port:
+                  number: 8080
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: energisjappa-admin
+                port:
+                  number: 80

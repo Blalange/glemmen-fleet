@@ -1,0 +1,125 @@
+# Postgres for Energisjappa. The cluster has no shared database, so it runs in
+# this namespace next to the backend.
+#
+# The credentials are deliberately not stored in git. Create the namespace and
+# the shared Secret before (or while) Fleet rolls this bundle out:
+#
+#   kubectl create namespace energisjappa --dry-run=client -o yaml | kubectl apply -f -
+#   kubectl -n energisjappa create secret generic energisjappa-secrets \
+#     --from-literal=postgres-password="$(openssl rand -base64 24)" \
+#     --from-literal=database-url="postgres://energisjappa:<SAME PASSWORD>@energisjappa-postgres:5432/energisjappa?sslmode=disable" \
+#     --from-literal=api-key="$(openssl rand -hex 32)" \
+#     --from-literal=vipps-client-id="<client_id from the portal>" \
+#     --from-literal=vipps-client-secret="<client_secret from the portal>" \
+#     --from-literal=vipps-subscription-key="<Ocp-Apim-Subscription-Key>" \
+#     --from-literal=vipps-msn="<MSN>" \
+#     --from-literal=vipps-webhook-secret="<secret from cmd/vipps-webhook>"
+#
+# The official postgres image only creates the database/user and sets the
+# password while the data directory is empty. Changing postgres-password later
+# does not change the password inside the database, so rotate with SQL as well.
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: energisjappa-postgres
+  labels:
+    app.kubernetes.io/name: energisjappa-postgres
+    app.kubernetes.io/instance: energisjappa
+spec:
+  # Headless: the single pod's DNS name is the Service name, which is all a
+  # single-writer database needs.
+  clusterIP: None
+  selector:
+    app.kubernetes.io/name: energisjappa-postgres
+    app.kubernetes.io/instance: energisjappa
+  ports:
+    - name: postgres
+      port: 5432
+      targetPort: postgres
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: energisjappa-postgres
+  labels:
+    app.kubernetes.io/name: energisjappa-postgres
+    app.kubernetes.io/instance: energisjappa
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: energisjappa
+  resources:
+    requests:
+      storage: 5Gi
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: energisjappa-postgres
+  labels:
+    app.kubernetes.io/name: energisjappa-postgres
+    app.kubernetes.io/instance: energisjappa
+spec:
+  serviceName: energisjappa-postgres
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: energisjappa-postgres
+      app.kubernetes.io/instance: energisjappa
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: energisjappa-postgres
+        app.kubernetes.io/instance: energisjappa
+    spec:
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: postgres
+          image: docker.io/library/postgres:18-alpine
+          imagePullPolicy: IfNotPresent
+          securityContext:
+            allowPrivilegeEscalation: false
+          env:
+            - name: POSTGRES_DB
+              value: energisjappa
+            - name: POSTGRES_USER
+              value: energisjappa
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: energisjappa-secrets
+                  key: postgres-password
+          ports:
+            - name: postgres
+              containerPort: 5432
+          # postgres:18 keeps its cluster in /var/lib/postgresql/18/docker, so
+          # the volume mounts one level above the data directory.
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/postgresql
+          readinessProbe:
+            exec:
+              command: ["pg_isready", "-U", "energisjappa", "-d", "energisjappa"]
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          livenessProbe:
+            exec:
+              command: ["pg_isready", "-U", "energisjappa", "-d", "energisjappa"]
+            initialDelaySeconds: 30
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 6
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              memory: 1Gi
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: energisjappa-postgres

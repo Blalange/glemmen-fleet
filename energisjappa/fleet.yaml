@@ -1,0 +1,5 @@
+defaultNamespace: energisjappa
+# The database and uploads PVCs are Longhorn volumes, so the StorageClass must
+# exist before the workloads start.
+dependsOn:
+  - name: glemmen-fleet-longhorn

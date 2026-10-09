@@ -1,0 +1,158 @@
+# Energisjappa backend (Go API, Vipps payments, webhooks) served at
+# https://energisjappa.glem.men/api. The terminal and the admin app both talk
+# to it through that host, and Vipps delivers webhooks to /webhooks/vipps.
+#
+# Runs against the Vipps *test* environment until production keys are in
+# place: change VIPPS_BASE_URL below and rotate the vipps-* keys in the
+# energisjappa-secrets Secret at go-live.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: energisjappa-backend
+  labels:
+    app.kubernetes.io/name: energisjappa-backend
+    app.kubernetes.io/instance: energisjappa
+spec:
+  replicas: 1
+  # One ReadWriteOnce uploads volume: never run the old and the new pod at the
+  # same time.
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: energisjappa-backend
+      app.kubernetes.io/instance: energisjappa
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: energisjappa-backend
+        app.kubernetes.io/instance: energisjappa
+    spec:
+      # The distroless image runs as nonroot (65532); the fsGroup makes the
+      # Longhorn volume writable for uploaded product images.
+      securityContext:
+        runAsUser: 65532
+        runAsGroup: 65532
+        runAsNonRoot: true
+        fsGroup: 65532
+        fsGroupChangePolicy: OnRootMismatch
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: backend
+          image: hexahigh/energisjappa-backend:0.1.0
+          imagePullPolicy: IfNotPresent
+          securityContext:
+            allowPrivilegeEscalation: false
+          env:
+            - name: HTTP_ADDR
+              value: ":8080"
+            - name: PAYMENT_PROVIDER
+              value: vipps
+            - name: PAYMENT_WINDOW
+              value: 10m
+            - name: UPLOAD_DIR
+              value: /data/uploads
+            - name: PUBLIC_BASE_URL
+              value: https://energisjappa.glem.men
+            # Vipps MobilePay Merchant Test environment.
+            - name: VIPPS_BASE_URL
+              value: https://apitest.vipps.no
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: energisjappa-secrets
+                  key: database-url
+            - name: API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: energisjappa-secrets
+                  key: api-key
+            - name: VIPPS_CLIENT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: energisjappa-secrets
+                  key: vipps-client-id
+            - name: VIPPS_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: energisjappa-secrets
+                  key: vipps-client-secret
+            - name: VIPPS_SUBSCRIPTION_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: energisjappa-secrets
+                  key: vipps-subscription-key
+            - name: VIPPS_MSN
+              valueFrom:
+                secretKeyRef:
+                  name: energisjappa-secrets
+                  key: vipps-msn
+            - name: VIPPS_WEBHOOK_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: energisjappa-secrets
+                  key: vipps-webhook-secret
+          ports:
+            - name: http
+              containerPort: 8080
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: http
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 6
+          resources:
+            requests:
+              cpu: 50m
+              memory: 96Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
+          volumeMounts:
+            - name: data
+              mountPath: /data
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: energisjappa-data
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: energisjappa-backend
+  labels:
+    app.kubernetes.io/name: energisjappa-backend
+    app.kubernetes.io/instance: energisjappa
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: energisjappa-backend
+    app.kubernetes.io/instance: energisjappa
+  ports:
+    - name: http
+      port: 8080
+      targetPort: http
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: energisjappa-data
+  labels:
+    app.kubernetes.io/name: energisjappa-backend
+    app.kubernetes.io/instance: energisjappa
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: energisjappa
+  resources:
+    requests:
+      storage: 2Gi
