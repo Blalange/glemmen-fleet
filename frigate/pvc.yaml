@@ -1,0 +1,33 @@
+# Frigate's /config (sqlite database, jwt secret, go2rtc helpers) and the
+# recordings. 200Gi fits roughly a week of 24/7 recording for one 720p camera
+# at ~2 Mbps plus a month of event clips; see configmap.yaml for the retention
+# settings.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: frigate-config
+  labels:
+    app.kubernetes.io/name: frigate
+    app.kubernetes.io/instance: frigate
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: frigate
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: frigate-media
+  labels:
+    app.kubernetes.io/name: frigate
+    app.kubernetes.io/instance: frigate
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: frigate
+  resources:
+    requests:
+      storage: 200Gi

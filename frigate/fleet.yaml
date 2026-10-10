@@ -1,0 +1,5 @@
+defaultNamespace: frigate
+# The config and recordings PVCs are Longhorn volumes, so the StorageClass
+# must exist before the workload starts.
+dependsOn:
+  - name: glemmen-fleet-longhorn

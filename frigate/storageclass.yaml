@@ -1,0 +1,15 @@
+# Dedicated Longhorn StorageClass for Frigate (same convention as the
+# energisjappa and snipe-it classes). One replica because the volume lives on
+# a single node anyway, Retain so deleting a PVC never deletes the only copy
+# of the recordings or the config database, and Immediate binding.
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: frigate
+provisioner: driver.longhorn.io
+allowVolumeExpansion: true
+reclaimPolicy: Retain
+volumeBindingMode: Immediate
+parameters:
+  numberOfReplicas: "1"
+  staleReplicaTimeout: "2880"

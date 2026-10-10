@@ -1,0 +1,126 @@
+# Frigate NVR for the Energisjappa terminal: it pulls the kiosk camera stream
+# over netbird, records 24/7 and stores the purchase/theft events the terminal
+# creates through the API.
+#
+# Before Fleet rolls this out, create the namespace and the stream credentials
+# (deliberately not in git). Use the same password for CAMERA_RTSP_PASSWORD in
+# /etc/energisjappa/terminal.env on the Raspberry Pi:
+#
+#   kubectl create namespace frigate --dry-run=client -o yaml | kubectl apply -f -
+#   kubectl -n frigate create secret generic frigate-secrets \
+#     --from-literal=FRIGATE_RTSP_USER=frigate \
+#     --from-literal=FRIGATE_RTSP_PASSWORD="$(openssl rand -hex 24)"
+#
+# After the first start, the generated admin password is in the logs:
+#
+#   kubectl -n frigate logs deploy/frigate | grep -B1 "Password:"
+#
+# Log in at https://frigate.glem.men, set a new admin password under
+# Settings -> Users and create a user "terminal" with the admin role. Put its
+# credentials on the Pi as FRIGATE_USER / FRIGATE_PASSWORD in
+# /etc/energisjappa/terminal.env (together with
+# FRIGATE_URL=https://frigate.glem.men).
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frigate
+  labels:
+    app.kubernetes.io/name: frigate
+    app.kubernetes.io/instance: frigate
+spec:
+  replicas: 1
+  # One ReadWriteOnce volume for config and one for media: never run the old
+  # and the new pod at the same time.
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: frigate
+      app.kubernetes.io/instance: frigate
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: frigate
+        app.kubernetes.io/instance: frigate
+    spec:
+      initContainers:
+        # The ConfigMap is the source of truth; copy it onto the writable
+        # config volume so Frigate can run config migrations if it needs to.
+        - name: copy-config
+          image: busybox:1.37
+          command:
+            - sh
+            - -c
+            - cp /configmap/config.yml /config/config.yml
+          volumeMounts:
+            - name: configmap
+              mountPath: /configmap
+            - name: config
+              mountPath: /config
+      containers:
+        - name: frigate
+          image: ghcr.io/blakeblackshear/frigate:0.18.0
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: TZ
+              value: Europe/Oslo
+          envFrom:
+            - secretRef:
+                name: frigate-secrets
+          ports:
+            - name: http
+              containerPort: 8971
+            - name: internal
+              containerPort: 5000
+          readinessProbe:
+            httpGet:
+              path: /api/version
+              port: internal
+            initialDelaySeconds: 30
+            periodSeconds: 15
+            timeoutSeconds: 5
+            failureThreshold: 6
+          livenessProbe:
+            httpGet:
+              path: /api/version
+              port: internal
+            initialDelaySeconds: 60
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 6
+          resources:
+            requests:
+              cpu: 500m
+              memory: 1Gi
+            limits:
+              cpu: "4"
+              memory: 4Gi
+          volumeMounts:
+            - name: config
+              mountPath: /config
+            - name: media
+              mountPath: /media/frigate
+            - name: shm
+              mountPath: /dev/shm
+            - name: cache
+              mountPath: /tmp/cache
+      volumes:
+        - name: configmap
+          configMap:
+            name: frigate-config
+        - name: config
+          persistentVolumeClaim:
+            claimName: frigate-config
+        - name: media
+          persistentVolumeClaim:
+            claimName: frigate-media
+        # Frigate decodes and scales frames through shared memory.
+        - name: shm
+          emptyDir:
+            medium: Memory
+            sizeLimit: 512Mi
+        # Recording segments are buffered here before they are moved.
+        - name: cache
+          emptyDir:
+            medium: Memory
+            sizeLimit: 1Gi

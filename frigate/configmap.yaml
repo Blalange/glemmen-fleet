@@ -1,0 +1,62 @@
+# Frigate configuration. The file is copied onto the writable /config volume
+# by an init container on every start, so this ConfigMap is the source of
+# truth; changes made in the Frigate UI are lost on the next restart.
+#
+# The camera stream is pulled from the Energisjappa terminal over netbird
+# (the node network can reach the Pi's overlay address). The RTSP credentials
+# come from the frigate-secrets Secret via {FRIGATE_RTSP_USER} /
+# {FRIGATE_RTSP_PASSWORD}; the terminal serves the stream itself with
+# libcamera. Recordings are 24/7 for 7 days, event clips are kept for 30 days.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: frigate-config
+  labels:
+    app.kubernetes.io/name: frigate
+    app.kubernetes.io/instance: frigate
+data:
+  config.yml: |
+    mqtt:
+      enabled: false
+
+    # Authentication is on; the first admin password is printed in the pod
+    # logs on first start. Create a "terminal" admin user for the Pi after
+    # logging in (see deployment.yaml for the exact commands).
+    auth:
+      enabled: true
+
+    # Traefik terminates TLS with the *.glem.men certificate.
+    tls:
+      enabled: false
+
+    cameras:
+      energisjappa:
+        ffmpeg:
+          inputs:
+            - path: rtsp://{FRIGATE_RTSP_USER}:{FRIGATE_RTSP_PASSWORD}@100.110.143.93:8554/energisjappa
+              roles:
+                - detect
+                - record
+        detect:
+          width: 1280
+          height: 720
+          fps: 5
+        record:
+          enabled: true
+          retain:
+            days: 7
+            mode: all
+          alerts:
+            retain:
+              days: 30
+              mode: motion
+            pre_capture: 5
+            post_capture: 10
+          detections:
+            retain:
+              days: 14
+              mode: motion
+        snapshots:
+          enabled: true
+          timestamp: true
+          bounding_box: true

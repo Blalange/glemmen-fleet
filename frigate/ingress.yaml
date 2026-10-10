@@ -1,0 +1,23 @@
+# Traefik terminates TLS with the *.glem.men wildcard certificate and forwards
+# to the authenticated Frigate port; the internal port 5000 stays in the
+# cluster only.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: frigate
+  labels:
+    app.kubernetes.io/name: frigate
+    app.kubernetes.io/instance: frigate
+spec:
+  ingressClassName: traefik
+  rules:
+    - host: frigate.glem.men
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: frigate
+                port:
+                  number: 8971
