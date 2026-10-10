@@ -40,7 +40,7 @@ spec:
           type: RuntimeDefault
       containers:
         - name: backend
-          image: hexahigh/energisjappa-backend:0.2.0
+          image: hexahigh/energisjappa-backend:0.3.0
           imagePullPolicy: IfNotPresent
           securityContext:
             allowPrivilegeEscalation: false
@@ -53,6 +53,11 @@ spec:
               value: 10m
             - name: UPLOAD_DIR
               value: /data/uploads
+            # Security recordings (purchase and theft clips) live next to the
+            # product images; the backend deletes them after
+            # RECORDINGS_RETENTION (default 30 days).
+            - name: RECORDINGS_DIR
+              value: /data/recordings
             - name: PUBLIC_BASE_URL
               value: https://energisjappa.glem.men
             # Vipps MobilePay Merchant Test environment.
@@ -155,4 +160,6 @@ spec:
   storageClassName: energisjappa
   resources:
     requests:
-      storage: 2Gi
+      # Product images plus security recordings. The backend removes
+      # recordings older than RECORDINGS_RETENTION (30 days by default).
+      storage: 20Gi
