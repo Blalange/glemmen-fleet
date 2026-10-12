@@ -7,6 +7,10 @@
 # come from the frigate-secrets Secret via {FRIGATE_RTSP_USER} /
 # {FRIGATE_RTSP_PASSWORD}; the terminal serves the stream itself with
 # libcamera. Recordings are 24/7 for 7 days, event clips are kept for 30 days.
+#
+# Every terminal has its own camera (it reports the name in its hello, see
+# terminals.frigate_camera): add one entry under cameras: per terminal,
+# pointing at that terminal's address and RTSP path. The first one is:
 apiVersion: v1
 kind: ConfigMap
 metadata:
