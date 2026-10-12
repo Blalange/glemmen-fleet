@@ -40,7 +40,7 @@ spec:
           type: RuntimeDefault
       containers:
         - name: backend
-          image: hexahigh/energisjappa-backend:0.4.0
+          image: hexahigh/energisjappa-backend:0.5.0
           imagePullPolicy: IfNotPresent
           securityContext:
             allowPrivilegeEscalation: false
@@ -55,6 +55,20 @@ spec:
               value: /data/uploads
             - name: PUBLIC_BASE_URL
               value: https://energisjappa.glem.men
+            # Frigate review page: the backend proxies events, snapshots and
+            # clips with its own read-only user. The password comes from the
+            # energisjappa-secrets Secret (key: frigate-password); a missing
+            # key only disables the admin page, not the shop.
+            - name: FRIGATE_URL
+              value: https://frigate.glem.men
+            - name: FRIGATE_USER
+              value: backend
+            - name: FRIGATE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: energisjappa-secrets
+                  key: frigate-password
+                  optional: true
             # Vipps MobilePay Merchant Test environment.
             - name: VIPPS_BASE_URL
               value: https://apitest.vipps.no
