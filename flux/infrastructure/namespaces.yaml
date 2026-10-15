@@ -1,0 +1,72 @@
+# Namespaces for the workloads.
+#
+# Talos enables Kubernetes Pod Security Admission with a `baseline` default, so
+# namespaces that run privileged or host-namespace pods must opt out explicitly.
+# Privileged:
+#   - longhorn-system: Longhorn's privileged daemonsets/installer
+#   - metallb-system:  the speaker needs NET_ADMIN/NET_RAW and friends
+#   - monitoring:      node-exporter (hostNetwork/hostPID) + smartctl-exporter
+#   - colibri:         the hf-fuse sidecar needs a privileged FUSE mount
+# All other namespaces (and anything added later) stay on the baseline default.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: longhorn-system
+  labels:
+    pod-security.kubernetes.io/enforce: privileged
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: metallb-system
+  labels:
+    pod-security.kubernetes.io/enforce: privileged
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: cert-manager
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: monitoring
+  labels:
+    pod-security.kubernetes.io/enforce: privileged
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: colibri
+  labels:
+    pod-security.kubernetes.io/enforce: privileged
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: energisjappa
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: frigate
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: homepage
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: panel
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: snipe-it
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: unifi

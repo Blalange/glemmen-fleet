@@ -1,0 +1,37 @@
+# Traefik Kubernetes ingress controller, replacing the K3s-bundled Traefik.
+#
+# Serves HTTPS for all ingress hosts; the cert-manager wildcard certificates are
+# loaded into the default TLS store and selected per SNI, with the blatrix one
+# as fallback certificate (same behaviour as the old cluster).
+#
+# The Service is a LoadBalancer served by MetalLB. During the migration it
+# advertises 192.168.6.97; at cutover change this single value to
+# 192.168.6.99 (the IP the UniFi router forwards 80/443 to).
+ports:
+  web:
+    http:
+      redirections:
+        entryPoint:
+          to: websecure
+          scheme: https
+          permanent: true
+  websecure:
+    asDefault: true
+    http:
+      tls:
+        enabled: true
+
+tlsStore:
+  default:
+    defaultCertificate:
+      secretName: glem-blatrix-eu-wildcard-tls
+    certificates:
+      - secretName: glem-blatrix-eu-wildcard-tls
+      - secretName: shrail-eu-org-wildcard-tls
+      - secretName: thisisaveryshortdomain-asso-eu-org-wildcard-tls
+      - secretName: glem-men-wildcard-tls
+
+service:
+  type: LoadBalancer
+  annotations:
+    metallb.io/loadBalancerIPs: 192.168.6.97

@@ -1,0 +1,36 @@
+# glemmen180 - 1 physical disk only (the old node never had a working second 2TB disk):
+#   sda ST2000NM012B-2TD WRE0MBFX - system disk (wiped by the installer)
+# Longhorn uses the system disk only (directory volume below).
+apiVersion: v1alpha1
+kind: HostnameConfig
+hostname: glemmen180
+---
+apiVersion: v1alpha1
+kind: BondConfig
+name: bond0
+links:
+    - eno8303
+    - eno8403
+bondMode: 802.3ad
+miimon: 100
+updelay: 200
+downdelay: 200
+xmitHashPolicy: layer3+4
+lacpRate: slow
+up: true
+addresses:
+    - address: 192.168.6.180/24
+routes:
+    - gateway: 192.168.6.1
+---
+apiVersion: v1alpha1
+kind: Layer2VIPConfig
+name: 192.168.6.98
+link: bond0
+---
+apiVersion: v1alpha1
+kind: KubeNodeConfig
+labels:
+    node.longhorn.io/create-default-disk: config
+annotations:
+    node.longhorn.io/default-disks-config: '[{"name":"system","path":"/var/mnt/longhorn-system","allowScheduling":true,"storageReserved":600000000000}]'

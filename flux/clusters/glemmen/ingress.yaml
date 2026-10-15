@@ -1,0 +1,18 @@
+# Traefik ingress (Helm release under flux/ingress). Runs in kube-system.
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: ingress
+  namespace: flux-system
+spec:
+  interval: 1h
+  retryInterval: 2m
+  path: ./flux/ingress
+  prune: true
+  wait: true
+  targetNamespace: kube-system
+  dependsOn:
+    - name: cert-manager-certificates
+  sourceRef:
+    kind: GitRepository
+    name: flux-system

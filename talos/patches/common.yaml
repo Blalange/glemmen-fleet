@@ -1,0 +1,74 @@
+# Common machine config patch, applied to every node.
+#
+# Applied by gen-config.sh via `talosctl gen config --config-patch`.
+# Node specific overrides live in talos/nodes/<hostname>.yaml and are merged on top.
+#
+# Notes:
+# - v1.14 splits most settings into prefix-less config documents (kind: X). Patches
+#   merge per document (kind + name for named documents).
+# - `$patch: delete` removes a field/document from the generated defaults.
+# - We deliberately do NOT set node-role.kubernetes.io/* labels: Kubernetes
+#   NodeRestriction forbids the kubelet identity from setting them (Talos applies
+#   node labels/annotations with the kubelet identity). Longhorn's
+#   node.longhorn.io/* label+annotation are allowed and applied below per node.
+
+# Static hostnames: delete the generated `auto: stable` (the actual hostname is
+# set per node in talos/nodes/<host>.yaml).
+apiVersion: v1alpha1
+kind: HostnameConfig
+auto:
+    $patch: delete
+---
+# Keep the pod/service CIDRs familiar (same as the old k3s cluster).
+apiVersion: v1alpha1
+kind: KubeNetworkConfig
+podSubnets:
+    - 10.42.0.0/16
+serviceSubnets:
+    - 10.43.0.0/16
+---
+# Pin the kubelet node IP to the LAN, and drop the generated control-plane taint
+# (all nodes run all roles; the old cluster had no taints either) and the
+# generated role labels (see note above).
+apiVersion: v1alpha1
+kind: KubeNodeConfig
+nodeIP:
+    validSubnets:
+        - 192.168.6.0/24
+labels:
+    $patch: delete
+taints:
+    $patch: delete
+---
+# Upstream DNS servers (no DHCP on the static bond).
+apiVersion: v1alpha1
+kind: ResolverConfig
+nameservers:
+    - address: 192.168.6.1
+    - address: 1.1.1.1
+---
+# Pin etcd to the LAN: the netbird interface comes up early in boot and the
+# default "first routable address" selection would otherwise pick the 100.110.x/16
+# address for etcd (and kube-apiserver) traffic.
+cluster:
+    etcd:
+        advertisedSubnets:
+            - 192.168.6.0/24
+        listenSubnets:
+            - 192.168.6.0/24
+---
+# btrfs kernel module (btrfs user volumes for Longhorn).
+apiVersion: v1alpha1
+kind: KernelModuleConfig
+name: btrfs
+---
+# NOTE: UnattendedInstallConfig is rendered by gen-config.sh
+# (generated/patches/install.yaml) because it embeds the schematic-specific
+# installer image. `provisioning` is replaced, not merged, by config patches.
+# Directory user volume on the system disk (EPHEMERAL). Longhorn uses it as its
+# "system" disk. Directory volumes are bind-mounted and propagated into the
+# kubelet container automatically, so Longhorn's hostPath can reach them.
+apiVersion: v1alpha1
+kind: UserVolumeConfig
+name: longhorn-system
+volumeType: directory

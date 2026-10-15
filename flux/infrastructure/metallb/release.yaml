@@ -1,0 +1,30 @@
+# MetalLB in L2 mode: advertises LoadBalancer service IPs from the pool with
+# gratuitous ARP, replacing the old keepalived VRRP setup.
+#
+# Pool: 192.168.6.96-192.168.6.99. autoAssign is off, so every service that
+# wants an external IP must ask for one explicitly (annotation
+# metallb.io/loadBalancerIPs). This keeps 192.168.6.99 free until the cutover
+# from the old cluster (keepalived still holds it) and makes future assignments
+# (e.g. a Minecraft server on its own IP/port) explicit.
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: HelmRepository
+metadata:
+  name: metallb
+spec:
+  interval: 1h
+  url: https://metallb.github.io/metallb
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: metallb
+spec:
+  interval: 1h
+  timeout: 10m
+  chart:
+    spec:
+      chart: metallb
+      version: 0.16.1
+      sourceRef:
+        kind: HelmRepository
+        name: metallb

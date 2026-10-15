@@ -1,0 +1,22 @@
+# Address pool and L2 advertisement for the internal network.
+#
+# 192.168.6.99 is the address the UniFi router forwards port 80/443 to (as well
+# as any future forwarded ports). During the migration Traefik uses
+# 192.168.6.97 and this cluster switches it to .99 once the old keepalived is
+# stopped (see flux/README.md, cutover).
+apiVersion: metallb.io/v1beta1
+kind: IPAddressPool
+metadata:
+  name: internal
+spec:
+  addresses:
+    - 192.168.6.96-192.168.6.99
+  autoAssign: false
+---
+apiVersion: metallb.io/v1beta1
+kind: L2Advertisement
+metadata:
+  name: internal
+spec:
+  ipAddressPools:
+    - internal

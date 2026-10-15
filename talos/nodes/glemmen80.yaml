@@ -1,0 +1,68 @@
+# glemmen80 - 3 disks, single 10GbE NIC (no bond):
+#   sda WDC WD10JFCX-68N WD-WXL1AA55CN98 - boot disk, RAID1 member
+#   sdb WDC WD10JFCX-68N WD-WXL1AA5J34UJ - boot disk, RAID1 member
+#   sdc ST91000640NS 9XG58GD8 - Longhorn data disk (old /mnt/hdd1)
+#
+# The OS disk is mirrored (RAID1) like the old btrfs RAID1 root. Both members
+# are matched by their by-id symlinks (the SATA serial is empty on this machine).
+# NOTE: SecureBoot is enabled on this machine; disable it in the BIOS (or build a
+# SecureBoot-signed image) before installing Talos.
+apiVersion: v1alpha1
+kind: HostnameConfig
+hostname: glemmen80
+---
+apiVersion: v1alpha1
+kind: LinkConfig
+name: enp4s0f0
+up: true
+addresses:
+    - address: 192.168.6.80/24
+routes:
+    - gateway: 192.168.6.1
+---
+apiVersion: v1alpha1
+kind: Layer2VIPConfig
+name: 192.168.6.98
+link: enp4s0f0
+---
+# RAID1 boot mirror (Talos v1.14 supports RAID1 arrays; metadata 1.0 for bootable arrays).
+apiVersion: v1alpha1
+kind: RAIDArrayConfig
+name: boot
+level: raid1
+metadata: "1.0"
+provisioning:
+    volumeSelector:
+        match: 'disk.wwid == "naa.50014ee65b9e625a" || disk.wwid == "naa.50014ee606491ff7"'
+---
+apiVersion: v1alpha1
+kind: KernelModuleConfig
+name: raid1
+---
+# Install to the MD array instead of /dev/sda (overrides the common install target).
+# `provisioning` is replaced (not merged) by patches, so repeat wipe here.
+apiVersion: v1alpha1
+kind: UnattendedInstallConfig
+reboot: true
+provisioning:
+    diskSelector:
+        match: '"/dev/disk/by-id/md-name-talos:boot" in disk.symlinks'
+    wipe: true
+---
+apiVersion: v1alpha1
+kind: UserVolumeConfig
+name: hdd1
+provisioning:
+    diskSelector:
+        match: 'disk.wwid == "naa.5000c500647fdfa5"'
+    minSize: 10GiB
+    grow: true
+filesystem:
+    type: btrfs
+---
+apiVersion: v1alpha1
+kind: KubeNodeConfig
+labels:
+    node.longhorn.io/create-default-disk: config
+annotations:
+    node.longhorn.io/default-disks-config: '[{"name":"system","path":"/var/mnt/longhorn-system","allowScheduling":true,"storageReserved":300000000000},{"name":"hdd1","path":"/var/mnt/hdd1","allowScheduling":true,"storageReserved":0}]'

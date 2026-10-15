@@ -1,3 +1,0 @@
-defaultNamespace: monitoring
-dependsOn:
-  - name: glemmen-fleet-kube-prometheus-stack-deployment

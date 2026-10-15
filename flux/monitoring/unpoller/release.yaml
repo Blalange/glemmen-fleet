@@ -1,0 +1,24 @@
+# unpoller - UniFi metrics exporter. Published as an OCI chart on ghcr.io.
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: OCIRepository
+metadata:
+  name: unpoller
+spec:
+  interval: 1h
+  url: oci://ghcr.io/unpoller/helm-chart/unpoller
+  ref:
+    tag: 2.8.0
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: unpoller
+spec:
+  interval: 1h
+  chartRef:
+    kind: OCIRepository
+    name: unpoller
+  valuesFrom:
+    - kind: ConfigMap
+      name: unpoller-values
+      valuesKey: values.yaml

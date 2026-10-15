@@ -1,0 +1,35 @@
+# Longhorn distributed block storage
+#
+# Talos specifics:
+# - the data paths are NOT the default /var/lib/longhorn: each node exposes a
+#   directory user volume on the system disk (/var/mnt/longhorn-system) and a
+#   btrfs user volume on the data disk (/var/mnt/longhorn, and /var/mnt/hdd1 on
+#   glemmen130/glemmen80/glemmen60). The disk configuration itself comes from
+#   the node label/annotation set in the Talos machine config, see
+#   ../talos/nodes/*.yaml (node.longhorn.io/create-default-disk + default-disks-config).
+# - for that mechanism to be picked up, createDefaultDiskLabeledNodes must be on.
+
+defaultSettings:
+  createDefaultDiskLabeledNodes: true
+  defaultDataPath: /var/mnt/longhorn-system
+
+# Storage class configuration
+persistence:
+  # Create the default 'longhorn' StorageClass
+  createStorageClass: true
+  # Do not make it the cluster default (apps use explicit SCs)
+  defaultClass: false
+  # Match the 1-replica convention used by the btrix/monitoring SCs
+  defaultClassReplicaCount: 1
+
+# Backup target used for the migration: NFS export on glemmen60 (not yet part of
+# the cluster). After the migration this switches to the in-cluster SeaweedFS S3
+# backupstore (endpoint configured through the restored longhorn-weed-credentials
+# secret, see the migration plan).
+defaultBackupStore:
+  backupTarget: nfs://192.168.6.60:/mnt/hdd1/longhorn-backups
+  backupTargetCredentialSecret: ""
+
+# Longhorn is managed by Flux/GitOps
+preUpgradeChecker:
+  jobEnabled: false

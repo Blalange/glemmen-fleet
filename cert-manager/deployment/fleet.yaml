@@ -1,9 +1,0 @@
-defaultNamespace: cert-manager
-helm:
-  releaseName: cert-manager
-  repo: https://charts.jetstack.io
-  chart: cert-manager
-  version: v1.21.1
-  valuesFiles:
-    - values.yaml
-  timeoutSeconds: 600

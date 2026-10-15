@@ -1,0 +1,17 @@
+# Talos Image Factory schematic for the glemmen cluster.
+#
+# Extensions:
+#   iscsi-tools     - iscsid/iscsiadm for Longhorn (required)
+#   util-linux-tools- blkid/fstrim etc. used by Longhorn (required)
+#   btrfs           - btrfs kernel module + mkfs.btrfs for the data volumes
+#   netbird         - self-hosted Netbird client, keeps the nodes on the
+#                     blalange.intra mesh (management/SSH-less access via talosctl)
+#
+# gen-iso.sh turns this file into a schematic ID and prints the ISO/installer URLs.
+customization:
+  systemExtensions:
+    officialExtensions:
+      - siderolabs/iscsi-tools
+      - siderolabs/util-linux-tools
+      - siderolabs/btrfs
+      - siderolabs/netbird

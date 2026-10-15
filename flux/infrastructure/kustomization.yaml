@@ -1,0 +1,12 @@
+# Infrastructure building blocks, reconciled before anything else:
+# namespaces, Longhorn (storage classes + volumes), cert-manager (the chart, so
+# the issuers/certificates in the next stage can be created), MetalLB and
+# metrics-server.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - namespaces.yaml
+  - longhorn/
+  - cert-manager/
+  - metallb/
+  - metrics-server/

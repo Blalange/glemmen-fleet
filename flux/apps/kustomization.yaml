@@ -1,0 +1,14 @@
+# Application Kustomizations. Each entry points at the existing manifest
+# directory in the repository root (same layout as the old Fleet bundles).
+# Helpers for suspending/resuming everything: flux/manage.sh.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - colibri.yaml
+  - energisjappa.yaml
+  - frigate.yaml
+  - homepage-assets.yaml
+  - homepage.yaml
+  - panel.yaml
+  - snipe-it.yaml
+  - unifi.yaml

@@ -1,0 +1,9 @@
+# Monitoring stack. Requires Longhorn for its volumes (infrastructure first),
+# and the PVC/static volume for Grafana is applied by the kube-prometheus-stack-pvc
+# Kustomization before the chart.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - kube-prometheus-stack/
+  - smartctl-exporter/
+  - unpoller/
