@@ -1,0 +1,19 @@
+# MetalLB address pool + L2 advertisement. Separate from the infrastructure
+# Kustomization because the IPAddressPool CRD is installed by the MetalLB chart
+# itself; applying both in the same pass races the CRD registration.
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: metallb-pool
+  namespace: flux-system
+spec:
+  interval: 1h
+  retryInterval: 2m
+  path: ./flux/metallb-pool
+  prune: true
+  targetNamespace: metallb-system
+  dependsOn:
+    - name: infrastructure
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
