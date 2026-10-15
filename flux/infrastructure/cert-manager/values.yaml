@@ -4,10 +4,14 @@
 crds:
   enabled: true
 
-# Scrape cert-manager metrics with kube-prometheus-stack
+# Scrape cert-manager metrics with kube-prometheus-stack.
+# Disabled here: the ServiceMonitor requires the Prometheus Operator CRDs, which
+# are installed later with kube-prometheus-stack (monitoring). The equivalent
+# ServiceMonitor is created by the monitoring-servicemonitors Kustomization once
+# monitoring is up.
 prometheus:
   servicemonitor:
-    enabled: true
+    enabled: false
 
 # Resource limits
 resources:
