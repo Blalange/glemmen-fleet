@@ -34,7 +34,7 @@ metadata:
     app.kubernetes.io/name: nodeodx
 spec:
   serviceName: nodeodx-hl
-  replicas: 2
+  replicas: 6
   podManagementPolicy: Parallel
   selector:
     matchLabels:
@@ -80,13 +80,11 @@ spec:
               mountPath: /tmp
           resources:
             requests:
-              cpu: 500m
-              memory: 2Gi
+              cpu: 4
+              memory: 24Gi
             limits:
-              # Per worker. Leave room for the rest of the cluster; bump (or
-              # run fewer/larger workers) if you have spare capacity.
-              cpu: "6"
-              memory: 16Gi
+              cpu: 8
+              memory: 24Gi
       volumes:
         - name: scratch
           emptyDir: {}
