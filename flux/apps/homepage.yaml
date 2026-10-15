@@ -13,7 +13,7 @@ spec:
   targetNamespace: homepage
   dependsOn:
     - name: homepage-assets
-    - name: kube-prometheus-stack
+    - name: monitoring
     - name: infrastructure
   sourceRef:
     kind: GitRepository

@@ -9,7 +9,9 @@ spec:
   retryInterval: 2m
   path: ./colibri
   prune: true
-  wait: true
+  # The 220Gi strict-local colibri volume is WaitForFirstConsumer and the
+  # deployment is parked at 0 replicas; there is nothing to wait for.
+  wait: false
   targetNamespace: colibri
   dependsOn:
     - name: infrastructure
