@@ -1,0 +1,37 @@
+# glemmen50 - worker node, IBM System x with a ServeRAID M5014 (megaraid_sas):
+#   sda 599 GB ServeRAID virtual disk - system disk (wiped by the installer;
+#       matched by WWID so the install USB stick is never picked)
+#   no dedicated data disk - Longhorn only gets the /var/mnt/longhorn-system
+#   directory volume
+#
+# Networking: two Intel dual-port cards; only enp11s0f0 is cabled (the other
+# three ports are down), so the static address is configured directly on it.
+apiVersion: v1alpha1
+kind: HostnameConfig
+hostname: glemmen50
+---
+apiVersion: v1alpha1
+kind: LinkConfig
+name: enp11s0f0
+up: true
+addresses:
+    - address: 192.168.6.50/24
+routes:
+    - gateway: 192.168.6.1
+---
+# Install to the ServeRAID virtual disk (not /dev/sda: where the USB stick
+# shows up depends on enumeration order).
+apiVersion: v1alpha1
+kind: UnattendedInstallConfig
+reboot: true
+provisioning:
+    diskSelector:
+        match: 'disk.wwid == "naa.600605b00414a2402046ed000d54e2e3"'
+    wipe: true
+---
+apiVersion: v1alpha1
+kind: KubeNodeConfig
+labels:
+    node.longhorn.io/create-default-disk: config
+annotations:
+    node.longhorn.io/default-disks-config: '[{"name":"system","path":"/var/mnt/longhorn-system","allowScheduling":true,"storageReserved":170000000000}]'

@@ -1,18 +1,17 @@
 # glemmen60 - worker node, Dell PowerEdge R515 with a PERC H700 (hardware RAID):
-#   vd 558 GB  - system disk (wiped by the installer; matched by size, not by
-#                /dev/sdX, so enumeration order does not matter)
-#   vd 7.3 TB  - Longhorn data disk -> /var/mnt/hdd1
+#   sda 600 GB  - ServeRAID/PERC virtual disk, system disk (wiped by the
+#                 installer; matched by WWID - a size-based selector also
+#                 matches loop devices and the install media!)
+#   sdb 8.0 TB  - Longhorn data disk -> /var/mnt/hdd1
 #
 # Networking: single onboard Broadcom LOM (BCM5716, Dell/Quanta board) named
 # eno1 (altname enp3s0f0, confirmed from live media). The cable goes to USW Pro
 # 24 PoE port 4, a plain access port on the Servere VLAN (no LAG), so the
 # static address is configured directly on eno1 below.
 #
-# Note for the maintenance boot: the pre-built setup-glemmen60.iso in
-# generated/iso boots WITHOUT kernel arguments (DHCP) and gets an address from
-# the Servere VLAN - use `manage.sh apply glemmen60 <dhcp-address>` with that
-# address. If you rebuild the ISO, the static arguments derived from this file
-# are embedded automatically.
+# Note: the Broadcom NIC only works because the schematic now ships the
+# siderolabs/bnx2-bnx2x firmware extension - without it the interface never
+# comes up in maintenance mode (see talos/README.md).
 #
 # Before wiping this node its migration backups (/mnt/hdd1) were confirmed
 # expendable: the data has been restored on the new cluster, and Longhorn
@@ -30,14 +29,13 @@ addresses:
 routes:
     - gateway: 192.168.6.1
 ---
-# Install to the smaller (558 GB) PERC virtual disk; overrides the common
-# /dev/sda install target.
+# Install to the 600 GB PERC virtual disk.
 apiVersion: v1alpha1
 kind: UnattendedInstallConfig
 reboot: true
 provisioning:
     diskSelector:
-        match: 'disk.size < 1000u * GiB'
+        match: 'disk.wwid == "naa.6b8ca3a0f77e3f003260c7f61614887d"'
     wipe: true
 ---
 apiVersion: v1alpha1
@@ -45,7 +43,7 @@ kind: UserVolumeConfig
 name: hdd1
 provisioning:
     diskSelector:
-        match: '!system_disk && disk.size > 5000u * GiB'
+        match: 'disk.wwid == "naa.6b8ca3a0f77e3f003260ca1816169169"'
     minSize: 100GiB
     grow: true
 filesystem:
