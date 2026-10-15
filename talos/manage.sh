@@ -11,7 +11,9 @@
 #   kubeconfig [path]          Write the admin kubeconfig (default talos/generated/kubeconfig)
 #   health                     Run talosctl health
 #   services <node>            List Talos system services on a node
+#   links <node>               List network links (names, MACs) on a node
 #   disks <node>               List disks (for disk selectors)
+#   roles                      Label nodes: glemmen1xx control-plane+etcd+worker, others worker
 #   patch <node> <file>        Apply a machine config patch to a running node
 #   netbird                    Re-render and apply the Netbird config to all nodes
 #   vip on|off <nodes...>      Add/remove the Layer2 VIP config (192.168.6.98)
@@ -101,6 +103,64 @@ case "${cmd}" in
     services)
         node="${1:?usage: manage.sh services <node>}"
         "${TALOSCTL}" -n "$(node_ip "${node}")" service
+        ;;
+    links)
+        node="${1:?usage: manage.sh links <node>}"
+        "${TALOSCTL}" -n "$(node_ip "${node}")" get links
+        ;;
+    roles)
+        # Label the nodes following the role convention: the glemmen1xx
+        # machines carry all roles (control plane + etcd + worker, i.e. they
+        # are fully schedulable), every other node is a worker. Talos cannot
+        # set the node-role.kubernetes.io/* labels itself (the kubelet identity
+        # is restricted by NodeRestriction), so they are applied here
+        # (idempotent).
+        KUBECTL="${KUBECTL:-}"
+        if [[ -z "${KUBECTL}" ]]; then
+            if [[ -x "${SCRIPT_DIR}/../scripts/bin/kubectl" ]]; then
+                KUBECTL="${SCRIPT_DIR}/../scripts/bin/kubectl"
+            else
+                KUBECTL="$(command -v kubectl || true)"
+            fi
+        fi
+        if [[ -z "${KUBECTL}" ]]; then
+            echo "ERROR: kubectl not found (set KUBECTL)" >&2
+            exit 1
+        fi
+        export KUBECONFIG="${KUBECONFIG:-${GENERATED}/kubeconfig}"
+        cp_nodes=()
+        worker_nodes=()
+        for entry in ${TALOS_NODES}; do
+            name="${entry%%=*}"
+            case "${name}" in
+                glemmen1[0-9][0-9]) cp_nodes+=("${name}") ;;
+                *) worker_nodes+=("${name}") ;;
+            esac
+        done
+        # Nodes that have not joined yet are skipped (e.g. glemmen60 before its
+        # first install).
+        existing="$("${KUBECTL}" get nodes -o name | sed 's|^node/||')"
+        has_node() { grep -qx "$1" <<<"${existing}"; }
+        cp_present=()
+        for name in "${cp_nodes[@]}"; do
+            has_node "${name}" && cp_present+=("${name}") || echo "==> ${name}: not in the cluster yet, skipping"
+        done
+        echo "==> control-plane nodes (all roles): ${cp_present[*]}"
+        if [[ ${#cp_present[@]} -gt 0 ]]; then
+            "${KUBECTL}" label node "${cp_present[@]}" \
+                node-role.kubernetes.io/worker= node-role.kubernetes.io/etcd= --overwrite
+        fi
+        echo "==> worker nodes (worker role only)"
+        for name in "${worker_nodes[@]}"; do
+            if ! has_node "${name}"; then
+                echo "    ${name}: not in the cluster yet, skipping"
+                continue
+            fi
+            "${KUBECTL}" label node "${name}" node-role.kubernetes.io/worker= --overwrite
+            # make sure stray roles never linger on the workers
+            "${KUBECTL}" label node "${name}" \
+                node-role.kubernetes.io/etcd- node-role.kubernetes.io/control-plane- >/dev/null 2>&1 || true
+        done
         ;;
     disks)
         node="${1:?usage: manage.sh disks <node>}"

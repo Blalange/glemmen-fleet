@@ -77,11 +77,15 @@ for host in hosts:
     else:
         network = link
 
-    address = network["addresses"][0]["address"]      # primary address, CIDR
-    ip, prefix = address.split("/")
-    gateway = network["routes"][0]["gateway"]
-    # ip=<client-ip>:<server-ip>:<gw>:<netmask>:<hostname>:<device>:<autoconf>:<dns0>:<dns1>:<ntp0>
-    kernel_args.append(f"ip={ip}::{gateway}:{netmask(prefix)}:{hostname}:{network['name']}:off:192.168.6.1:1.1.1.1:")
+    if network:
+        address = network["addresses"][0]["address"]      # primary address, CIDR
+        ip, prefix = address.split("/")
+        gateway = network["routes"][0]["gateway"]
+        # ip=<client-ip>:<server-ip>:<gw>:<netmask>:<hostname>:<device>:<autoconf>:<dns0>:<dns1>:<ntp0>
+        kernel_args.append(f"ip={ip}::{gateway}:{netmask(prefix)}:{hostname}:{network['name']}:off:192.168.6.1:1.1.1.1:")
+    # No BondConfig/LinkConfig: the node relies on DHCP (e.g. glemmen60, which
+    # gets its address from a reservation on the Servere VLAN). Maintenance mode
+    # then uses DHCP on all links by default and no kernel arguments are needed.
 
     customization = dict(base.get("customization", {}))
     customization["extraKernelArgs"] = kernel_args
@@ -96,7 +100,14 @@ for spec in "${SPECS[@]}"; do
 
     if [[ "${PRINT}" -eq 1 ]]; then
         echo "==> ${host}:"
-        echo "${payload}" | base64 -d | python3 -c 'import json,sys; [print("    " + a) for a in json.load(sys.stdin)["extraKernelArgs"]]'
+        echo "${payload}" | base64 -d | python3 -c '
+import json, sys
+args = json.load(sys.stdin)["customization"].get("extraKernelArgs", [])
+if args:
+    [print("    " + a) for a in args]
+else:
+    print("    (no kernel arguments: DHCP by default)")
+'
         continue
     fi
 

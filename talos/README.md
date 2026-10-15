@@ -88,7 +88,10 @@ bond=bond0:eno8303,eno8403:mode=802.3ad,xmit_hash_policy=layer3+4,lacp_rate=slow
 ip=192.168.6.130::192.168.6.1:255.255.255.0:glemmen130:bond0:off:192.168.6.1:1.1.1.1:
 ```
 
-(For glemmen80 use `enp4s0f0` and glemmen60 `eno1` without `bond=`.)
+(For glemmen80 use `enp4s0f0` without `bond=`. glemmen60 needs no arguments:
+it has a single PCIe add-in NIC whose kernel name is not known in advance, so
+it uses DHCP - the Servere VLAN has a fixed reservation for its MAC that
+always hands out 192.168.6.60.)
 The machine configuration sets all of this permanently; these arguments only
 make the node reachable before the config is applied.
 
@@ -125,6 +128,8 @@ both are in the schematic / common patch. Node upgrades preserve the volumes.
 ```sh
 ./talos/manage.sh status                 # version, etcd members, machine status
 ./talos/manage.sh health                 # cluster health check
+./talos/manage.sh roles                  # node role labels (1xx = all roles, others = worker)
+./talos/manage.sh links glemmen60        # interface names/MACs of a node
 ./talos/manage.sh patch glemmen130 file.yaml
 ./talos/manage.sh vip off glemmen170 glemmen180 glemmen80   # remove the API VIP
 ./talos/manage.sh wipe glemmen170 /dev/sdb                  # wipe a data disk

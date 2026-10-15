@@ -25,13 +25,14 @@ persistence:
   # Match the 1-replica convention used by the btrix/monitoring SCs
   defaultClassReplicaCount: 1
 
-# Backup target used for the migration: NFS export on glemmen60 (not yet part of
-# the cluster). After the migration this switches to the in-cluster SeaweedFS S3
-# backupstore (endpoint configured through the restored longhorn-weed-credentials
-# secret, see the migration plan).
+# Backup target: disabled on 2026-10-15. The migration backed up to the NFS
+# export on glemmen60, which has since been wiped to join the cluster as a
+# worker. When a permanent backupstore exists (the planned in-cluster SeaweedFS
+# S3; credentials restored in the longhorn-weed-credentials secret), set
+# `defaultBackupStore.backupTarget` (and the credential secret) again and
+# re-create the recurring backup jobs.
 defaultBackupStore:
-  backupTarget: nfs://192.168.6.60:/mnt/hdd1/longhorn-backups
-  backupTargetCredentialSecret: ""
+  backupTarget: ""
 
 # Longhorn is managed by Flux/GitOps
 preUpgradeChecker:

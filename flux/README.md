@@ -66,12 +66,12 @@ Helm values live next to their HelmRelease and are turned into ConfigMaps with
   in the cluster only (Cloudflare tokens, `grafana-admin`, `unpoller-unifi`,
   `homepage-grafana`, `frigate-secrets`, `energisjappa-secrets`, `colibri-secrets`,
   `snipe-it-db`, `snipe-it-app-key` and the TLS certificates in `kube-system`).
-- **Backup target**: Longhorn currently uses the NFS export on glemmen60
-  (`nfs://192.168.6.60:/mnt/hdd1/longhorn-backups`). glemmen60 is the last node
-  still running the old OS; before wiping it, a permanent backupstore (the
-  planned in-cluster SeaweedFS S3) should be deployed and Longhorn's
-  `defaultBackupStore.backupTarget` switched to it.
-- The Rancher import installed `cattle-system`/`cattle-fleet-system`. Fleet is
-  unused (Flux does the GitOps); remove/disable it in Rancher if desired.
+- **Backup target**: disabled (2026-10-15). The migration backed up to the NFS
+  export on glemmen60; that machine has since been wiped to join the cluster as
+  a worker. Before relying on backups again, deploy the planned in-cluster
+  SeaweedFS S3 backupstore and set `defaultBackupStore.backupTarget` in
+  `infrastructure/longhorn/values.yaml`.
+- The Rancher import installed `cattle-system` (kept) and
+  `cattle-fleet-system` (Fleet removed on 2026-10-15 — Flux does the GitOps).
 - Future services can share `.99` on other ports with MetalLB (`autoAssign` is
   off, see `metallb/pool.yaml`), or get their own address from the pool.
