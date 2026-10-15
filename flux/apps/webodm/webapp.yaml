@@ -83,7 +83,7 @@ spec:
                   name: webodm-db
                   key: password
             # WebODM adds `node-odx-1:3000` as its default processing node on
-            # startup; the node-odx-1 Service points at ClusterODM.
+            # startup; the node-odx-1 Service points at ClusterODX.
             - name: WO_DEFAULT_NODES
               value: "1"
           ports:

@@ -1,4 +1,4 @@
-# WebODM (drone photogrammetry) with a ClusterODM front-end and one NodeODM
+# WebODM (drone photogrammetry) with a ClusterODX front-end and one NodeODX
 # processing node, translated from the upstream docker-compose.
 #
 # Secrets (create them before/while Flux rolls this out):
@@ -17,7 +17,7 @@ resources:
   - storageclass.yaml
   - db.yaml
   - broker.yaml
-  - nodeodm.yaml
-  - clusterodm.yaml
+  - nodeodx.yaml
+  - clusterodx.yaml
   - webapp.yaml
   - ingress.yaml

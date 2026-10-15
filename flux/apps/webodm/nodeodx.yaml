@@ -1,12 +1,13 @@
-# NodeODM processing node. Scratch data lives in an emptyDir on the node
-# (processing datasets are temporary and can be large).
+# NodeODX processing node (the WebODM/ODX successor of NodeODM). Scratch data
+# lives in an emptyDir on the node (processing datasets are temporary and can
+# be large).
 apiVersion: v1
 kind: Service
 metadata:
-  name: nodeodm
+  name: nodeodx
 spec:
   selector:
-    app.kubernetes.io/name: nodeodm
+    app.kubernetes.io/name: nodeodx
   ports:
     - name: api
       port: 3000
@@ -15,24 +16,25 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: nodeodm
+  name: nodeodx
   labels:
-    app.kubernetes.io/name: nodeodm
+    app.kubernetes.io/name: nodeodx
 spec:
   replicas: 1
   strategy:
     type: Recreate
   selector:
     matchLabels:
-      app.kubernetes.io/name: nodeodm
+      app.kubernetes.io/name: nodeodx
   template:
     metadata:
       labels:
-        app.kubernetes.io/name: nodeodm
+        app.kubernetes.io/name: nodeodx
     spec:
       containers:
-        - name: nodeodm
-          image: opendronemap/nodeodm:3.6.2
+        - name: nodeodx
+          # NodeODX publishes no version tags; `latest` tracks the ODX releases.
+          image: webodm/nodeodx:latest
           imagePullPolicy: IfNotPresent
           ports:
             - name: api
