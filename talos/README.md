@@ -1,6 +1,6 @@
 # Talos
 
-Talos Linux v1.14.2 configuration for the glemmen cluster (Kubernetes 1.36.5).
+Talos Linux v1.14.2 configuration for the glemmen cluster (Kubernetes 1.37.0).
 All nodes are control planes and workers at the same time (etcd + workload scheduling are enabled).
 
 ## Files
