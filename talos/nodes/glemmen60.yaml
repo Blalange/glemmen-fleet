@@ -3,14 +3,16 @@
 #                /dev/sdX, so enumeration order does not matter)
 #   vd 7.3 TB  - Longhorn data disk -> /var/mnt/hdd1
 #
-# Networking: the machine uses a single PCIe add-in NIC (OUI Quanta, MAC
-# 08:9e:01:d8:7b:f9) - NOT the onboard Broadcom LOMs - so the kernel name is a
-# PCI-style name (enpXsY) rather than eno1. The "Servere" VLAN has DHCP with a
-# fixed reservation for this MAC (192.168.6.60), so this node simply uses DHCP:
-# there is no LinkConfig on purpose. Once the interface name is known
-# (`./manage.sh links glemmen60`, e.g. right after a maintenance-mode boot) it
-# can be pinned with a static LinkConfig, but the reservation already has the
-# same effect.
+# Networking: single onboard Broadcom LOM (BCM5716, Dell/Quanta board) named
+# eno1 (altname enp3s0f0, confirmed from live media). The cable goes to USW Pro
+# 24 PoE port 4, a plain access port on the Servere VLAN (no LAG), so the
+# static address is configured directly on eno1 below.
+#
+# Note for the maintenance boot: the pre-built setup-glemmen60.iso in
+# generated/iso boots WITHOUT kernel arguments (DHCP) and gets an address from
+# the Servere VLAN - use `manage.sh apply glemmen60 <dhcp-address>` with that
+# address. If you rebuild the ISO, the static arguments derived from this file
+# are embedded automatically.
 #
 # Before wiping this node its migration backups (/mnt/hdd1) were confirmed
 # expendable: the data has been restored on the new cluster, and Longhorn
@@ -18,6 +20,15 @@
 apiVersion: v1alpha1
 kind: HostnameConfig
 hostname: glemmen60
+---
+apiVersion: v1alpha1
+kind: LinkConfig
+name: eno1
+up: true
+addresses:
+    - address: 192.168.6.60/24
+routes:
+    - gateway: 192.168.6.1
 ---
 # Install to the smaller (558 GB) PERC virtual disk; overrides the common
 # /dev/sda install target.

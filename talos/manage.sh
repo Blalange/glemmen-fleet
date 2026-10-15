@@ -4,8 +4,10 @@
 # Usage: ./manage.sh <command> [options]
 #
 #   status                     Version + cluster health
-#   apply <node>               Apply the generated config to a node booted from the ISO
-#                              (maintenance mode, --insecure). <node> is a hostname or IP.
+#   apply <node> [address]     Apply the generated config to a node booted from the ISO
+#                              (maintenance mode, --insecure). <node> is a hostname or IP;
+#                              [address] overrides the node's configured IP (e.g. the
+#                              DHCP address the node got in maintenance mode).
 #   apply-all                  Apply configs to all nodes in TALOS_NODES
 #   bootstrap                  Bootstrap etcd on the first node
 #   kubeconfig [path]          Write the admin kubeconfig (default talos/generated/kubeconfig)
@@ -74,9 +76,9 @@ case "${cmd}" in
         "${TALOSCTL}" -n "${BOOTSTRAP_NODE##*=}" get machinestatus 2>/dev/null || true
         ;;
     apply)
-        node="${1:?usage: manage.sh apply <node>}"
+        node="${1:?usage: manage.sh apply <node> [address]}"
         require_config "${node}"
-        ip="$(node_ip "${node}")"
+        ip="${2:-$(node_ip "${node}")}"
         echo "==> Applying ${GENERATED}/${node}.yaml to ${ip} (maintenance mode)"
         "${TALOSCTL}" apply-config --insecure --nodes "${ip}" --file "${GENERATED}/${node}.yaml"
         ;;

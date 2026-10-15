@@ -88,10 +88,10 @@ bond=bond0:eno8303,eno8403:mode=802.3ad,xmit_hash_policy=layer3+4,lacp_rate=slow
 ip=192.168.6.130::192.168.6.1:255.255.255.0:glemmen130:bond0:off:192.168.6.1:1.1.1.1:
 ```
 
-(For glemmen80 use `enp4s0f0` without `bond=`. glemmen60 needs no arguments:
-it has a single PCIe add-in NIC whose kernel name is not known in advance, so
-it uses DHCP - the Servere VLAN has a fixed reservation for its MAC that
-always hands out 192.168.6.60.)
+(For glemmen80 use `enp4s0f0` without `bond=`. glemmen60 uses `eno1` - a
+single onboard LOM on a plain access switch port - and its pre-built setup ISO
+boots without arguments, using DHCP on the Servere VLAN instead; apply the
+config with `./manage.sh apply glemmen60 <dhcp-address>`.)
 The machine configuration sets all of this permanently; these arguments only
 make the node reachable before the config is applied.
 
