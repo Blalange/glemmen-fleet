@@ -99,6 +99,7 @@ rm -rf "${GENERATED}/base"
     --install-disk /dev/sda \
     --output-dir "${GENERATED}/base" \
     --config-patch @"${PATCHES}/common.yaml" \
+    --config-patch-control-plane @"${PATCHES}/control-plane.yaml" \
     --config-patch @"${GENERATED}/patches/install.yaml" \
     --config-patch @"${GENERATED}/patches/netbird.yaml" \
     --with-docs=false \
@@ -108,11 +109,19 @@ rm -rf "${GENERATED}/base"
 echo "==> Merging node configs"
 for node_file in "${NODES_DIR}"/*.yaml; do
     node="$(basename "${node_file}" .yaml)"
-    "${TALOSCTL}" machineconfig patch "${GENERATED}/base/controlplane.yaml" \
+    base="${GENERATED}/base/controlplane.yaml"
+    role="control-plane"
+    for worker in ${TALOS_WORKERS}; do
+        if [[ "${node}" == "${worker}" ]]; then
+            base="${GENERATED}/base/worker.yaml"
+            role="worker"
+        fi
+    done
+    "${TALOSCTL}" machineconfig patch "${base}" \
         --patch @"${node_file}" \
         -o "${GENERATED}/${node}.yaml"
     "${TALOSCTL}" validate --config "${GENERATED}/${node}.yaml" --mode metal >/dev/null
-    echo "    ${node}.yaml OK"
+    echo "    ${node}.yaml OK (${role})"
 done
 
 # --- talosconfig ----------------------------------------------------------------

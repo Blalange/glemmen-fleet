@@ -5,8 +5,6 @@ metadata:
   name: snipe-it
   namespace: flux-system
 spec:
-  # suspended until the Longhorn volumes are restored (migration step 7), resume via flux/manage.sh
-  suspend: true
   interval: 1h
   retryInterval: 2m
   path: ./snipe-it

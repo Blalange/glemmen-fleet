@@ -1,0 +1,14 @@
+# Control-plane-only machine config patch.
+#
+# Pin etcd to the LAN: the netbird interface comes up early in boot and the
+# default "first routable address" selection would otherwise pick the 100.110.x/16
+# address for etcd (and kube-apiserver) traffic.
+#
+# Worker nodes must not receive this document ("etcd config is only allowed on
+# control plane machines"), so it is applied with --config-patch-control-plane.
+cluster:
+    etcd:
+        advertisedSubnets:
+            - 192.168.6.0/24
+        listenSubnets:
+            - 192.168.6.0/24

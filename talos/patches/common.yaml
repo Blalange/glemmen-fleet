@@ -47,16 +47,6 @@ nameservers:
     - address: 192.168.6.1
     - address: 1.1.1.1
 ---
-# Pin etcd to the LAN: the netbird interface comes up early in boot and the
-# default "first routable address" selection would otherwise pick the 100.110.x/16
-# address for etcd (and kube-apiserver) traffic.
-cluster:
-    etcd:
-        advertisedSubnets:
-            - 192.168.6.0/24
-        listenSubnets:
-            - 192.168.6.0/24
----
 # btrfs kernel module (btrfs user volumes for Longhorn).
 apiVersion: v1alpha1
 kind: KernelModuleConfig

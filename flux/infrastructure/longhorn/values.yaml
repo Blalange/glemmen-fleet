@@ -12,6 +12,9 @@
 defaultSettings:
   createDefaultDiskLabeledNodes: true
   defaultDataPath: /var/mnt/longhorn-system
+  # Annotation-created disks with storageReserved: 0 would otherwise get the
+  # default 30% reservation; the system disk has an explicit reservation.
+  storageReservedPercentageForDefaultDisk: 0
 
 # Storage class configuration
 persistence:

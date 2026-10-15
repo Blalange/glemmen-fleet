@@ -34,4 +34,6 @@ tlsStore:
 service:
   type: LoadBalancer
   annotations:
-    metallb.io/loadBalancerIPs: 192.168.6.97
+    # The IP the UniFi router forwards 80/443 (and future ports) to. The old
+    # cluster's keepalived no longer exists, so this cluster owns .99.
+    metallb.io/loadBalancerIPs: 192.168.6.99

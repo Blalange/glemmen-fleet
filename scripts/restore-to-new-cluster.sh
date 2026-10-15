@@ -57,7 +57,21 @@ if [[ -f "${BACKUP_DIR}/secrets/secrets.yaml" ]]; then
         [[ "${missing}" -eq 0 ]] && break
         sleep 5
     done
-    "${KUBECTL}" apply -f "${BACKUP_DIR}/secrets/secrets.yaml"
+    # Skip Rancher/Fleet namespaces (cattle-*): the Rancher import recreates its
+    # own credentials, and those namespaces do not exist before the import.
+    python3 - "${BACKUP_DIR}/secrets/secrets.yaml" > "${BACKUP_DIR}/secrets/secrets.filtered.yaml" <<'PYEOF'
+import sys, yaml
+
+for doc in yaml.safe_load_all(open(sys.argv[1])):
+    if not doc:
+        continue
+    ns = doc.get("metadata", {}).get("namespace", "")
+    if ns.startswith("cattle-"):
+        continue
+    print("---")
+    yaml.safe_dump(doc, sys.stdout, default_flow_style=False)
+PYEOF
+    "${KUBECTL}" apply -f "${BACKUP_DIR}/secrets/secrets.filtered.yaml"
 else
     echo "WARNING: ${BACKUP_DIR}/secrets/secrets.yaml not found, skipping secrets"
 fi
@@ -85,6 +99,8 @@ meta = json.load(open(sys.argv[1]))
 spec = {
     "size": meta["size"],
     "numberOfReplicas": meta.get("numberOfReplicas") or 1,
+    "frontend": "blockdev",
+    "accessMode": "rwo",
     "fromBackup": meta["backupURL"],
     "backupTargetName": "default",
 }

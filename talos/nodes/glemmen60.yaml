@@ -1,10 +1,10 @@
-# glemmen60 - Dell with PERC H700, single NIC:
+# glemmen60 - worker node, Dell with PERC H700, single NIC:
 #   sda PERC H700 558 GB - system disk (wiped by the installer)
 #   sdb PERC H700 7.3 TB - Longhorn data disk (/var/mnt/hdd1)
 #
-# Joined to the cluster last (step 8). Before wiping this node, the old
-# migration backups under /mnt/hdd1 are deleted per the migration plan.
-# The 7.3 TB disk may later host the permanent backup store (SeaweedFS S3).
+# Joined to the cluster last. Before wiping this node, the migration backups
+# under /mnt/hdd1 are no longer needed (the data has been restored on the new
+# cluster). The 7.3 TB disk may later host the permanent backup store.
 apiVersion: v1alpha1
 kind: HostnameConfig
 hostname: glemmen60
@@ -17,11 +17,6 @@ addresses:
     - address: 192.168.6.60/24
 routes:
     - gateway: 192.168.6.1
----
-apiVersion: v1alpha1
-kind: Layer2VIPConfig
-name: 192.168.6.98
-link: eno1
 ---
 apiVersion: v1alpha1
 kind: UserVolumeConfig
