@@ -1,0 +1,23 @@
+# WebODM (drone photogrammetry) with a ClusterODM front-end and one NodeODM
+# processing node, translated from the upstream docker-compose.
+#
+# Secrets (create them before/while Flux rolls this out):
+#
+#   kubectl -n webodm create secret generic webodm-db \
+#     --from-literal=password="$(openssl rand -base64 24)"
+#   kubectl -n webodm create secret generic webodm-secret-key \
+#     --from-literal=WO_SECRET_KEY="$(openssl rand -hex 32)"
+#
+# Services are named after the hostnames the upstream entrypoints and defaults
+# expect: db, broker, webapp and node-odx-1 (ClusterODM).
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: webodm
+resources:
+  - storageclass.yaml
+  - db.yaml
+  - broker.yaml
+  - nodeodm.yaml
+  - clusterodm.yaml
+  - webapp.yaml
+  - ingress.yaml

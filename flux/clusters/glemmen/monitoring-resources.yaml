@@ -1,0 +1,19 @@
+# Grafana dashboards, Prometheus alert rules and ServiceMonitors for components
+# outside the monitoring namespace. Separate from the monitoring group because
+# the monitoring.coreos.com CRDs are installed by kube-prometheus-stack.
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: monitoring-resources
+  namespace: flux-system
+spec:
+  interval: 1h
+  retryInterval: 2m
+  path: ./flux/monitoring/resources
+  prune: true
+  targetNamespace: monitoring
+  dependsOn:
+    - name: monitoring
+  sourceRef:
+    kind: GitRepository
+    name: flux-system

@@ -55,6 +55,7 @@ name: btrfs
 # NOTE: UnattendedInstallConfig is rendered by gen-config.sh
 # (generated/patches/install.yaml) because it embeds the schematic-specific
 # installer image. `provisioning` is replaced, not merged, by config patches.
+---
 # Directory user volume on the system disk (EPHEMERAL). Longhorn uses it as its
 # "system" disk. Directory volumes are bind-mounted and propagated into the
 # kubelet container automatically, so Longhorn's hostPath can reach them.

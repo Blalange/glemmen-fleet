@@ -1,0 +1,15 @@
+# Panel (external endpoint, no local storage).
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: panel
+  namespace: flux-system
+spec:
+  interval: 1h
+  retryInterval: 2m
+  path: ./flux/apps/panel
+  prune: true
+  targetNamespace: panel
+  sourceRef:
+    kind: GitRepository
+    name: flux-system

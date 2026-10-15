@@ -1,0 +1,15 @@
+# Grafana dashboards (discovered by the Grafana sidecar in kube-prometheus-stack).
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - grafana-dashboard-disk-health.yaml
+  - grafana-dashboard-flux-cluster.yaml
+  - grafana-dashboard-flux-control-plane.yaml
+  - grafana-dashboard-node-exporter.yaml
+  - grafana-dashboard-smartctl-exporter.yaml
+  - grafana-dashboard-unpoller-client-dpi.yaml
+  - grafana-dashboard-unpoller-client-insights.yaml
+  - grafana-dashboard-unpoller-network-sites.yaml
+  - grafana-dashboard-unpoller-uap-insights.yaml
+  - grafana-dashboard-unpoller-usg-insights.yaml
+  - grafana-dashboard-unpoller-usw-insights.yaml

@@ -1,0 +1,18 @@
+# tuppr metrics (its own chart ServiceMonitor is not usable here: this cluster
+# installs the Prometheus Operator CRDs after the infrastructure group).
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: tuppr
+  namespace: monitoring
+spec:
+  namespaceSelector:
+    matchNames:
+      - system-upgrade
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: tuppr
+      app.kubernetes.io/instance: tuppr
+  endpoints:
+    - port: metrics
+      interval: 30s

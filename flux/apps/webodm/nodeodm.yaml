@@ -1,0 +1,66 @@
+# NodeODM processing node. Scratch data lives in an emptyDir on the node
+# (processing datasets are temporary and can be large).
+apiVersion: v1
+kind: Service
+metadata:
+  name: nodeodm
+spec:
+  selector:
+    app.kubernetes.io/name: nodeodm
+  ports:
+    - name: api
+      port: 3000
+      targetPort: api
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nodeodm
+  labels:
+    app.kubernetes.io/name: nodeodm
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: nodeodm
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: nodeodm
+    spec:
+      containers:
+        - name: nodeodm
+          image: opendronemap/nodeodm:3.6.2
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: api
+              containerPort: 3000
+          readinessProbe:
+            httpGet:
+              path: /info
+              port: api
+            initialDelaySeconds: 15
+            periodSeconds: 15
+          livenessProbe:
+            httpGet:
+              path: /info
+              port: api
+            initialDelaySeconds: 60
+            periodSeconds: 30
+          volumeMounts:
+            - name: scratch
+              mountPath: /tmp
+          resources:
+            requests:
+              cpu: 500m
+              memory: 2Gi
+            limits:
+              # Leave room for the rest of the cluster; ODM tasks can use
+              # several threads. Bump if you have spare capacity.
+              cpu: "6"
+              memory: 16Gi
+      volumes:
+        - name: scratch
+          emptyDir: {}

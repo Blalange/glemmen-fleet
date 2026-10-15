@@ -1,0 +1,18 @@
+# Energisjappa (backend/admin/postgres), Longhorn volumes.
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: energisjappa
+  namespace: flux-system
+spec:
+  interval: 1h
+  retryInterval: 2m
+  path: ./flux/apps/energisjappa
+  prune: true
+  wait: true
+  targetNamespace: energisjappa
+  dependsOn:
+    - name: infrastructure
+  sourceRef:
+    kind: GitRepository
+    name: flux-system

@@ -12,3 +12,13 @@ cluster:
             - 192.168.6.0/24
         listenSubnets:
             - 192.168.6.0/24
+---
+# Allow controllers running in the cluster to drive the Talos API (tuppr uses
+# this for health-gated node upgrades). Talos v1.14 requires this document and
+# only allows it on control plane machines.
+apiVersion: v1alpha1
+kind: KubeTalosAPIAccessConfig
+allowedRoles:
+    - os:admin
+allowedKubernetesNamespaces:
+    - system-upgrade

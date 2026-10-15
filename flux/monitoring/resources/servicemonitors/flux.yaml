@@ -1,0 +1,18 @@
+# Flux controller metrics (source, kustomize, helm and notification
+# controllers all expose :8080 named http-prom). Feeds the two Flux Grafana
+# dashboards in ../dashboards.
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  name: flux-system
+  namespace: monitoring
+spec:
+  namespaceSelector:
+    matchNames:
+      - flux-system
+  selector:
+    matchLabels:
+      app.kubernetes.io/part-of: flux
+  podMetricsEndpoints:
+    - port: http-prom
+      interval: 30s

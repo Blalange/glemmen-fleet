@@ -1,0 +1,82 @@
+# PostgreSQL + PostGIS database (webodm/webodm_db image).
+apiVersion: v1
+kind: Service
+metadata:
+  name: db
+spec:
+  selector:
+    app.kubernetes.io/name: webodm-db
+  ports:
+    - name: postgresql
+      port: 5432
+      targetPort: postgresql
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: webodm-db
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: webodm
+  resources:
+    requests:
+      storage: 10Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: db
+  labels:
+    app.kubernetes.io/name: webodm-db
+spec:
+  replicas: 1
+  # One ReadWriteOnce volume: never run two pods at once.
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: webodm-db
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: webodm-db
+    spec:
+      containers:
+        - name: db
+          # webodm/webodm_db has no version tags; it tracks the WebODM release.
+          image: webodm/webodm_db:latest
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: POSTGRES_DB
+              value: webodm_dev
+            - name: POSTGRES_USER
+              value: postgres
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: webodm-db
+                  key: password
+            - name: PGDATA
+              value: /var/lib/postgresql/data/pgdata
+          ports:
+            - name: postgresql
+              containerPort: 5432
+          readinessProbe:
+            exec:
+              command: ["pg_isready", "-U", "postgres"]
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/postgresql/data
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              memory: 2Gi
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: webodm-db

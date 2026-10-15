@@ -1,7 +1,7 @@
 # Infrastructure building blocks, reconciled before anything else:
-# namespaces, Longhorn (storage classes + volumes), cert-manager (the chart, so
-# the issuers/certificates in the next stage can be created), MetalLB and
-# metrics-server.
+# namespaces, Longhorn, cert-manager (chart), MetalLB (chart), metrics-server
+# and tuppr. CRs that need the charts' CRDs live in subdirectories (resources/)
+# applied by their own Kustomizations.
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:
@@ -10,3 +10,4 @@ resources:
   - cert-manager/
   - metallb/
   - metrics-server/
+  - tuppr/
