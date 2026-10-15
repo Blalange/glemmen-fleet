@@ -1,11 +1,24 @@
-# NodeODX processing node (the WebODM/ODX successor of NodeODM). Scratch data
-# lives in an emptyDir on the node (processing datasets are temporary and can
-# be large).
+# NodeODX processing workers (the WebODM/ODX successor of NodeODM).
+#
+# StatefulSet, not Deployment: ClusterODX addresses each worker individually
+# (a task is submitted to one worker and its status is polled from that same
+# worker - behind a load-balanced Service those polls would hit the wrong
+# replica). The headless service gives every pod a stable DNS name
+# (nodeodx-0.nodeodx-hl.webodm.svc.cluster.local, ...) and ClusterODX's
+# registrar sidecar adds them all automatically, so:
+#
+#   To add/remove workers: change `replicas` below and push.
+#
+# Each worker gets its own /tmp scratch (emptyDir) and, like upstream ODX,
+# processes up to 2 tasks at a time (raise with `--parallel_queue_processing`
+# if the worker has the CPU/RAM). ODM tasks are CPU bound and use several
+# threads, so keep workers on nodes with spare cores.
 apiVersion: v1
 kind: Service
 metadata:
-  name: nodeodx
+  name: nodeodx-hl
 spec:
+  clusterIP: None
   selector:
     app.kubernetes.io/name: nodeodx
   ports:
@@ -14,15 +27,15 @@ spec:
       targetPort: api
 ---
 apiVersion: apps/v1
-kind: Deployment
+kind: StatefulSet
 metadata:
   name: nodeodx
   labels:
     app.kubernetes.io/name: nodeodx
 spec:
-  replicas: 1
-  strategy:
-    type: Recreate
+  serviceName: nodeodx-hl
+  replicas: 2
+  podManagementPolicy: Parallel
   selector:
     matchLabels:
       app.kubernetes.io/name: nodeodx
@@ -31,6 +44,17 @@ spec:
       labels:
         app.kubernetes.io/name: nodeodx
     spec:
+      # Prefer to spread workers over different machines (soft: scaling beyond
+      # the number of nodes still works).
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchLabels:
+                    app.kubernetes.io/name: nodeodx
+                topologyKey: kubernetes.io/hostname
       containers:
         - name: nodeodx
           # NodeODX publishes no version tags; `latest` tracks the ODX releases.
@@ -59,8 +83,8 @@ spec:
               cpu: 500m
               memory: 2Gi
             limits:
-              # Leave room for the rest of the cluster; ODM tasks can use
-              # several threads. Bump if you have spare capacity.
+              # Per worker. Leave room for the rest of the cluster; bump (or
+              # run fewer/larger workers) if you have spare capacity.
               cpu: "6"
               memory: 16Gi
       volumes:
