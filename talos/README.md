@@ -137,16 +137,18 @@ Patches are applied live (network/VIP changes are immediate, kubelet changes
 need a reboot). `talosctl` can be used directly with
 `TALOSCONFIG=talos/generated/talosconfig`.
 
-## Notes for the remaining nodes (step 8)
+## Notes for the remaining nodes
 
-* **glemmen80**: boot disk is a RAID1 mirror of `sda`+`sdb` (RAIDArrayConfig in
-  `nodes/glemmen80.yaml`). **SecureBoot is enabled on this machine** — disable it
-  in the BIOS (or build a SecureBoot-signed image) before installing.
-* **glemmen60**: the 7.3 TB disk (`hdd1` user volume) is where the migration
-  backups live while it is still running Ubuntu. Delete them (or accept that the
-  Talos installation reformats the disk) before installing, per the plan.
-* Nodes join by applying their config (they are control planes; no join token
-  needed beyond the shared PKI in `generated/secrets.yaml`).
+* **glemmen80** is a **worker** node. Its disk slots were shuffled: it boots from
+  the ST91000640NS disk (`naa.5000c500647fdfa5`) and uses the two WD 1 TB disks as
+  Longhorn data disks (`hdd1`/`hdd2`). **SecureBoot is enabled on this machine** —
+  disable it in the BIOS (or build a SecureBoot-signed image) before installing.
+* **glemmen60** is a **worker** node (config ready, not yet installed). The
+  7.3 TB disk (`hdd1` user volume) currently still serves the migration backups
+  over NFS; before wiping it, deploy the permanent backupstore and point
+  Longhorn's backup target at it.
+* Worker nodes join by applying their config; they do not run etcd.
+  Control plane nodes are the 1xx machines only.
 * After wiping a node, remove its old peer in the Netbird dashboard first, so
   the new Talos node can claim `<hostname>.blalange.intra` instead of getting a
   `-1` suffix.

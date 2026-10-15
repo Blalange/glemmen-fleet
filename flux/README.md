@@ -58,31 +58,20 @@ Helm values live next to their HelmRelease and are turned into ConfigMaps with
 
 ## Migration notes
 
-- **Secrets are not in Git.** Before the apps become healthy, restore the
-  secret dumps taken in the backup step (`scripts/restore-to-new-cluster.sh`):
-  Cloudflare tokens (cert-manager), `grafana-admin`, `unpoller-unifi`,
+- The migration from K3s/Fleet is done: the secrets and Longhorn volumes were
+  restored from the NFS backups (see the repository history for the backup and
+  restore scripts), the load balancer IP moved to `192.168.6.99`
+  (`flux/ingress/traefik/values.yaml`) and all workloads resumed.
+- **Secrets are not in Git**; they were restored from the old cluster and live
+  in the cluster only (Cloudflare tokens, `grafana-admin`, `unpoller-unifi`,
   `homepage-grafana`, `frigate-secrets`, `energisjappa-secrets`, `colibri-secrets`,
-  `snipe-it-db`, `snipe-it-app-key` and the TLS certificates in `kube-system`.
-- **Longhorn volumes are restored from the NFS backupstore** on glemmen60
-  (`scripts/restore-to-new-cluster.sh`), before the application Kustomizations
-  are resumed.
-- **Load balancer cutover.** Traefik currently advertises `192.168.6.97`
-  (`flux/ingress/traefik/values.yaml`). At cutover:
-  1. stop and disable keepalived on the old nodes (`glemmen170/180/80`),
-  2. change `metallb.io/loadBalancerIPs` to `192.168.6.99`,
-  3. `./flux/manage.sh sync` (or `flux reconcile kustomization ingress --with-source`),
-  4. verify `https://glem.men` and the other hosts, then raise the TTL/keep the
-     old cluster powered off but intact until the new cluster is proven.
-  The UniFi port forwards (80/443 -> 192.168.6.99) stay untouched. Future
-  services can share `.99` on other ports with MetalLB (`autoAssign` is off, so
-  they must ask for the IP explicitly, see `metallb/pool.yaml`).
-- **Disable Fleet before pushing this refactor.** The old cluster is still
-  managed by Fleet until its GitRepo is paused/deleted in Rancher; the commit
-  that deletes `fleet.yaml` must not be synced back to the old cluster, or the
-  Fleet bundles will fail to render (running workloads keep running, but the
-  bundles go NotReady).
-- **Permanent backup target.** The migration uses the NFS export on glemmen60.
-  Once the new cluster is established, switch Longhorn's
-  `defaultBackupStore.backupTarget` to the in-cluster SeaweedFS S3 store
-  (repo intent, `longhorn-weed-credentials` secret) — see the migration plan,
-  step 8.
+  `snipe-it-db`, `snipe-it-app-key` and the TLS certificates in `kube-system`).
+- **Backup target**: Longhorn currently uses the NFS export on glemmen60
+  (`nfs://192.168.6.60:/mnt/hdd1/longhorn-backups`). glemmen60 is the last node
+  still running the old OS; before wiping it, a permanent backupstore (the
+  planned in-cluster SeaweedFS S3) should be deployed and Longhorn's
+  `defaultBackupStore.backupTarget` switched to it.
+- The Rancher import installed `cattle-system`/`cattle-fleet-system`. Fleet is
+  unused (Flux does the GitOps); remove/disable it in Rancher if desired.
+- Future services can share `.99` on other ports with MetalLB (`autoAssign` is
+  off, see `metallb/pool.yaml`), or get their own address from the pool.
