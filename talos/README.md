@@ -80,6 +80,12 @@ The arguments are derived from `nodes/<host>.yaml` (`./setup-images.sh --print`
 shows them). Each ISO contains two boot entries: the default one and a
 "wipe" variant (`talos.experimental.wipe=system`); use the default.
 
+> **Broadcom NICs**: the schematic includes the `bnx2-bnx2x` firmware
+> extension. The stock Talos image ships the bnx2 kernel module but *not* its
+> firmware, so a Broadcom NetXtreme NIC (e.g. glemmen60's R515 LOM) gets no
+> interface at all — neither in maintenance mode nor after install. Any new
+> machine with such a NIC must boot an ISO built from this schematic.
+
 If you boot the generic ISO instead, press `e` in GRUB and append the arguments
 manually (example for glemmen130):
 

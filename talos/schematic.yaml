@@ -6,6 +6,10 @@
 #   btrfs           - btrfs kernel module + mkfs.btrfs for the data volumes
 #   netbird         - self-hosted Netbird client, keeps the nodes on the
 #                     blalange.intra mesh (management/SSH-less access via talosctl)
+#   bnx2-bnx2x      - firmware for Broadcom NetXtreme 1G/10G NICs (bnx2/bnx2x).
+#                     The bnx2 driver is in the kernel but the firmware blobs are
+#                     NOT part of the stock Talos image - without them the
+#                     Broadcom NIC (e.g. glemmen60's BCM5716) never comes up.
 #
 # gen-iso.sh turns this file into a schematic ID and prints the ISO/installer URLs.
 customization:
@@ -15,3 +19,4 @@ customization:
       - siderolabs/util-linux-tools
       - siderolabs/btrfs
       - siderolabs/netbird
+      - siderolabs/bnx2-bnx2x
