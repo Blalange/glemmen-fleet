@@ -37,3 +37,16 @@ defaultBackupStore:
 # Longhorn is managed by Flux/GitOps
 preUpgradeChecker:
   jobEnabled: false
+
+# The UI is stateless (it talks to longhorn-backend); run its two replicas on
+# different nodes so it stays reachable when one node fails. The chart default
+# is also two replicas, but with only preferred anti-affinity.
+longhornUI:
+  replicas: 2
+  affinity:
+    podAntiAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        - labelSelector:
+            matchLabels:
+              app: longhorn-ui
+          topologyKey: kubernetes.io/hostname

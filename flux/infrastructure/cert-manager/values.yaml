@@ -4,6 +4,23 @@
 crds:
   enabled: true
 
+# Run two replicas of the controller, webhook and cainjector so certificate
+# issuance/rotation survives one node failure. Required anti-affinity keeps each
+# pair on different machines; leader election serializes the active controllers.
+replicaCount: 2
+affinity:
+  podAntiAffinity:
+    requiredDuringSchedulingIgnoredDuringExecution:
+      - labelSelector:
+          matchLabels:
+            app.kubernetes.io/name: cert-manager
+            app.kubernetes.io/instance: cert-manager
+            app.kubernetes.io/component: controller
+        topologyKey: kubernetes.io/hostname
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 1
+
 # Scrape cert-manager metrics with kube-prometheus-stack.
 # Disabled here: the ServiceMonitor requires the Prometheus Operator CRDs, which
 # are installed later with kube-prometheus-stack (monitoring). The equivalent
@@ -23,6 +40,19 @@ resources:
     memory: 256Mi
 
 webhook:
+  replicaCount: 2
+  affinity:
+    podAntiAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        - labelSelector:
+            matchLabels:
+              app.kubernetes.io/name: webhook
+              app.kubernetes.io/instance: cert-manager
+              app.kubernetes.io/component: webhook
+          topologyKey: kubernetes.io/hostname
+  podDisruptionBudget:
+    enabled: true
+    minAvailable: 1
   resources:
     requests:
       cpu: 20m
@@ -32,6 +62,19 @@ webhook:
       memory: 128Mi
 
 cainjector:
+  replicaCount: 2
+  affinity:
+    podAntiAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        - labelSelector:
+            matchLabels:
+              app.kubernetes.io/name: cainjector
+              app.kubernetes.io/instance: cert-manager
+              app.kubernetes.io/component: cainjector
+          topologyKey: kubernetes.io/hostname
+  podDisruptionBudget:
+    enabled: true
+    minAvailable: 1
   resources:
     requests:
       cpu: 50m

@@ -7,6 +7,22 @@
 # The Service is a LoadBalancer served by MetalLB. During the migration it
 # advertises 192.168.6.97; at cutover change this single value to
 # 192.168.6.99 (the IP the UniFi router forwards 80/443 to).
+# Run two ingress pods on different nodes so one node failure does not take
+# all ingress traffic down. MetalLB moves the VIP to a surviving speaker node.
+deployment:
+  replicas: 2
+affinity:
+  podAntiAffinity:
+    requiredDuringSchedulingIgnoredDuringExecution:
+      - labelSelector:
+          matchLabels:
+            app.kubernetes.io/name: traefik
+            app.kubernetes.io/instance: traefik-kube-system
+        topologyKey: kubernetes.io/hostname
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 1
+
 ports:
   web:
     http:

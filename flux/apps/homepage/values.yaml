@@ -33,6 +33,24 @@ enableRbac: true
 serviceAccount:
   create: true
 
+# Two replicas so the dashboard stays available when one node fails. Homepage is
+# stateless (config comes from ConfigMaps), so both can serve and the required
+# anti-affinity below keeps them on different machines.
+controller:
+  replicas: 2
+  strategy: RollingUpdate
+  rollingUpdate:
+    surge: 1
+    unavailable: 0
+affinity:
+  podAntiAffinity:
+    requiredDuringSchedulingIgnoredDuringExecution:
+      - labelSelector:
+          matchLabels:
+            app.kubernetes.io/name: homepage
+            app.kubernetes.io/instance: homepage
+        topologyKey: kubernetes.io/hostname
+
 # Traefik terminates TLS with the *.glem.men wildcard certificate, which also
 # covers the apex domain.
 ingress:

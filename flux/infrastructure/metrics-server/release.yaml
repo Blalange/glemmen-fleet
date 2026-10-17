@@ -25,3 +25,17 @@ spec:
   values:
     args:
       - --kubelet-insecure-tls
+    # Two API-serving replicas on different nodes so resource metrics survive a
+    # node failure (the Service load-balances both).
+    replicas: 2
+    affinity:
+      podAntiAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchLabels:
+                app.kubernetes.io/name: metrics-server
+                app.kubernetes.io/instance: metrics-server
+            topologyKey: kubernetes.io/hostname
+    podDisruptionBudget:
+      enabled: true
+      minAvailable: 1
