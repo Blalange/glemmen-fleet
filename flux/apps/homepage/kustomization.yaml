@@ -3,6 +3,7 @@ kind: Kustomization
 namespace: homepage
 resources:
   - release.yaml
+  - assets/
 configMapGenerator:
   - name: homepage-values
     files:
