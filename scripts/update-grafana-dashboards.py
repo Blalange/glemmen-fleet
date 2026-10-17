@@ -33,6 +33,10 @@ DASHBOARDS = [
         "url": "https://grafana.com/api/dashboards/24922/revisions/latest/download",
     },
     {
+        "file": "longhorn.json",
+        "url": "https://grafana.com/api/dashboards/16888/revisions/latest/download",
+    },
+    {
         "file": "client-dpi.json",
         "url": "https://grafana.com/api/dashboards/11310/revisions/latest/download",
     },
@@ -110,6 +114,12 @@ def convert_inputs_to_variables(payload):
     file/ConfigMap provisioning ignores (the panels would fail with "Datasource
     ${DS_PROMETHEUS} was not found"). Giving the variable the same name makes
     Grafana resolve the provisioned Prometheus datasource at render time.
+
+    Some exports also contain their own datasource variable whose default value
+    is still the import placeholder (for example the Longhorn dashboard's
+    ${datasource}). Clear that stale current value so Grafana selects the
+    provisioned Prometheus datasource when the dashboard loads.
+
     Returns True when the payload was modified.
     """
     inputs = payload.get("__inputs") or []
@@ -119,20 +129,39 @@ def convert_inputs_to_variables(payload):
 
     templating = payload.setdefault("templating", {}).setdefault("list", [])
     names = {variable.get("name") for variable in templating}
+    added = []
     for item in datasources:
         if item["name"] in names:
             continue
-        templating.append(dict(
+        variable = dict(
             DATASOURCE_VARIABLE,
             name=item["name"],
             query=item.get("pluginId", "prometheus"),
-        ))
+        )
+        templating.append(variable)
+        added.append(variable)
+
+    import_placeholders = {"${%s}" % item["name"] for item in datasources}
+    for variable in templating:
+        if variable.get("type") != "datasource":
+            continue
+        current = variable.get("current")
+        if isinstance(current, dict) and current.get("value") in import_placeholders:
+            variable["current"] = {}
 
     remaining = [item for item in inputs if item.get("type") != "datasource"]
     if remaining:
         payload["__inputs"] = remaining
     else:
         payload.pop("__inputs")
+
+    # Drop import variables that no panel actually references. The Longhorn
+    # export, for example, keeps its own 'datasource' variable and no longer
+    # needs the DS_PROMETHEUS placeholder once its stale current value is gone.
+    serialized = json.dumps(payload)
+    for variable in added:
+        if "${%s}" % variable["name"] not in serialized:
+            templating.remove(variable)
     return True
 
 

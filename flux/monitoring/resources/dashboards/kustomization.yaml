@@ -17,6 +17,9 @@ configMapGenerator:
   - name: grafana-dashboard-flux-control-plane
     files:
       - flux-control-plane.json
+  - name: grafana-dashboard-longhorn
+    files:
+      - longhorn.json
   - name: grafana-dashboard-node-exporter
     files:
       - node-exporter-full.json

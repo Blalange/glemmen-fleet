@@ -1,7 +1,7 @@
 # Longhorn Manager metrics (node/disk capacity, volume state, ...) for the
-# cluster specs dashboard. The chart's own ServiceMonitor is not used because
-# this cluster installs the Prometheus Operator CRDs after the infrastructure
-# group (same reason as the tuppr ServiceMonitor).
+# cluster specs and Longhorn dashboards. The chart's own ServiceMonitor is not
+# used because this cluster installs the Prometheus Operator CRDs after the
+# infrastructure group (same reason as the tuppr ServiceMonitor).
 apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
