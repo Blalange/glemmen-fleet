@@ -1,15 +1,47 @@
 # Grafana dashboards (discovered by the Grafana sidecar in kube-prometheus-stack).
+# The dashboards are plain JSON files; configMapGenerator wraps each one in a
+# ConfigMap with the label the sidecar looks for. One ConfigMap per dashboard
+# keeps each object below the Kubernetes 1 MiB limit.
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
-resources:
-  - grafana-dashboard-disk-health.yaml
-  - grafana-dashboard-flux-cluster.yaml
-  - grafana-dashboard-flux-control-plane.yaml
-  - grafana-dashboard-node-exporter.yaml
-  - grafana-dashboard-smartctl-exporter.yaml
-  - grafana-dashboard-unpoller-client-dpi.yaml
-  - grafana-dashboard-unpoller-client-insights.yaml
-  - grafana-dashboard-unpoller-network-sites.yaml
-  - grafana-dashboard-unpoller-uap-insights.yaml
-  - grafana-dashboard-unpoller-usg-insights.yaml
-  - grafana-dashboard-unpoller-usw-insights.yaml
+configMapGenerator:
+  - name: grafana-dashboard-cluster-specs
+    files:
+      - cluster-specs.json
+  - name: grafana-dashboard-disk-health
+    files:
+      - disk-health.json
+  - name: grafana-dashboard-flux-cluster
+    files:
+      - flux-cluster.json
+  - name: grafana-dashboard-flux-control-plane
+    files:
+      - flux-control-plane.json
+  - name: grafana-dashboard-node-exporter
+    files:
+      - node-exporter-full.json
+  - name: grafana-dashboard-smartctl-exporter
+    files:
+      - smartctl-exporter.json
+  - name: grafana-dashboard-unpoller-client-dpi
+    files:
+      - client-dpi.json
+  - name: grafana-dashboard-unpoller-client-insights
+    files:
+      - client-insights.json
+  - name: grafana-dashboard-unpoller-network-sites
+    files:
+      - network-sites.json
+  - name: grafana-dashboard-unpoller-uap-insights
+    files:
+      - uap-insights.json
+  - name: grafana-dashboard-unpoller-usg-insights
+    files:
+      - usg-insights.json
+  - name: grafana-dashboard-unpoller-usw-insights
+    files:
+      - usw-insights.json
+generatorOptions:
+  disableNameSuffixHash: true
+  labels:
+    grafana_dashboard: "1"

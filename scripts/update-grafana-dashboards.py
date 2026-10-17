@@ -1,17 +1,18 @@
 #!/usr/bin/env python3
-"""Create or update Grafana dashboard ConfigMap manifests from upstream sources.
+"""Create or update Grafana dashboard JSON files from upstream sources.
 
-Downloads dashboard JSON files and writes them as Kubernetes ConfigMap YAML
-into the kube-prometheus-stack/dashboards/ Fleet bundle, matching the format of
-the other dashboards there (label grafana_dashboard: "1", namespace applied via
-fleet.yaml).
+Downloads dashboard JSON files into the Grafana dashboards directory. The
+Kustomization's configMapGenerator turns them into ConfigMaps labelled
+grafana_dashboard: "1", so no YAML is generated here. Dashboards that are
+maintained by hand (cluster-specs, disk-health and the Flux dashboards) are not
+listed in DASHBOARDS and are left untouched.
 
-Each entry in DASHBOARDS points at a raw dashboard JSON. The ConfigMap name and
-the YAML file name come from the "configmap" field; the dashboard is stored
-under a data key derived from the URL's file name (or an explicit "data_key").
-Grafana.com dashboards use the __inputs export format, which Grafana's file
-provisioning ignores; those inputs are rewritten to datasource template
-variables so the dashboards work when loaded from a ConfigMap.
+Each entry in DASHBOARDS points at a raw dashboard JSON and names the output
+file. When adding a dashboard here, also add its file to configMapGenerator in
+the dashboard kustomization.yaml. Grafana.com dashboards use the __inputs
+export format, which Grafana's file provisioning ignores; those inputs are
+rewritten to datasource template variables so the dashboards work when loaded
+from a ConfigMap.
 
 Stdlib only. Run:  python3 scripts/update-grafana-dashboards.py
 """
@@ -24,53 +25,41 @@ from pathlib import Path
 
 DASHBOARDS = [
     {
-        "configmap": "grafana-dashboard-node-exporter",
+        "file": "node-exporter-full.json",
         "url": "https://raw.githubusercontent.com/rfmoz/grafana-dashboards/master/prometheus/node-exporter-full.json",
     },
     {
-        "configmap": "grafana-dashboard-smartctl-exporter",
+        "file": "smartctl-exporter.json",
         "url": "https://grafana.com/api/dashboards/24922/revisions/latest/download",
-        "data_key": "smartctl-exporter.json",
     },
     {
-        "configmap": "grafana-dashboard-unpoller-client-dpi",
+        "file": "client-dpi.json",
         "url": "https://grafana.com/api/dashboards/11310/revisions/latest/download",
-        "data_key": "client-dpi.json",
     },
     {
-        "configmap": "grafana-dashboard-unpoller-network-sites",
+        "file": "network-sites.json",
         "url": "https://grafana.com/api/dashboards/11311/revisions/latest/download",
-        "data_key": "network-sites.json",
     },
     {
-        "configmap": "grafana-dashboard-unpoller-usw-insights",
+        "file": "usw-insights.json",
         "url": "https://grafana.com/api/dashboards/11312/revisions/latest/download",
-        "data_key": "usw-insights.json",
     },
     {
-        "configmap": "grafana-dashboard-unpoller-usg-insights",
+        "file": "usg-insights.json",
         "url": "https://grafana.com/api/dashboards/11313/revisions/latest/download",
-        "data_key": "usg-insights.json",
     },
     {
-        "configmap": "grafana-dashboard-unpoller-uap-insights",
+        "file": "uap-insights.json",
         "url": "https://grafana.com/api/dashboards/11314/revisions/latest/download",
-        "data_key": "uap-insights.json",
     },
     {
-        "configmap": "grafana-dashboard-unpoller-client-insights",
+        "file": "client-insights.json",
         "url": "https://grafana.com/api/dashboards/11315/revisions/latest/download",
-        "data_key": "client-insights.json",
     },
 ]
 
 DEFAULT_OUTPUT_DIR = Path(__file__).resolve().parent.parent / \
-    "kube-prometheus-stack" / "dashboards"
-
-
-def data_key(url):
-    """Derive the ConfigMap data key from the URL's file name."""
-    return Path(url.split("?", 1)[0]).name
+    "flux" / "monitoring" / "resources" / "dashboards"
 
 
 def fetch(url):
@@ -147,31 +136,9 @@ def convert_inputs_to_variables(payload):
     return True
 
 
-def render_block_scalar(text, indent):
-    """Render text as a YAML literal block scalar with each line prefixed by `indent` spaces."""
-    lines = [line.rstrip() for line in text.splitlines()]
-    while lines and not lines[0].strip():
-        lines.pop(0)
-    while lines and not lines[-1].strip():
-        lines.pop()
-    return "\n".join(" " * indent + line if line else "" for line in lines)
-
-
-def build_manifest(configmap_name, key, dashboard_text):
-    """Build a ConfigMap manifest YAML document for one dashboard."""
-    lines = [
-        "apiVersion: v1",
-        "kind: ConfigMap",
-        "metadata:",
-        "  name: {}".format(configmap_name),
-        "  labels:",
-        '    grafana_dashboard: "1"',
-        "data:",
-        "  {}: |".format(key),
-        render_block_scalar(dashboard_text, indent=4),
-        "",
-    ]
-    return "\n".join(lines)
+def render_json(payload):
+    """Render a dashboard payload as a stable, pretty-printed JSON document."""
+    return json.dumps(payload, indent=2, ensure_ascii=False) + "\n"
 
 
 def main():
@@ -180,7 +147,7 @@ def main():
         "--output-dir",
         type=Path,
         default=DEFAULT_OUTPUT_DIR,
-        help="directory to write ConfigMap manifests into (default: %(default)s)",
+        help="directory to write dashboard JSON files into (default: %(default)s)",
     )
     args = parser.parse_args()
 
@@ -188,25 +155,24 @@ def main():
 
     failed = False
     for dashboard in DASHBOARDS:
-        configmap_name = dashboard["configmap"]
+        filename = dashboard["file"]
         url = dashboard["url"]
-        key = dashboard.get("data_key", data_key(url))
-        path = args.output_dir / "{}.yaml".format(configmap_name)
+        path = args.output_dir / filename
         try:
             text = fetch(url)
             payload = validate_json(text, url)
         except RuntimeError as exc:
-            print("ERROR {}: {}".format(configmap_name, exc), file=sys.stderr)
+            print("ERROR {}: {}".format(filename, exc), file=sys.stderr)
             failed = True
             continue
 
-        if convert_inputs_to_variables(payload):
-            text = json.dumps(payload, indent=2, ensure_ascii=False)
-        manifest = build_manifest(configmap_name, key, text)
-        changed = not path.exists() or path.read_text() != manifest
-        path.write_text(manifest)
+        convert_inputs_to_variables(payload)
+        text = render_json(payload)
+        changed = not path.exists() or path.read_text() != text
+        if changed:
+            path.write_text(text)
         status = "updated" if changed else "unchanged"
-        print("{}: {} ({:,} bytes)".format(path.name, status, len(text)))
+        print("{}: {} ({:,} bytes)".format(filename, status, len(text)))
 
     if failed:
         sys.exit(1)
