@@ -33,23 +33,15 @@ enableRbac: true
 serviceAccount:
   create: true
 
-# Two replicas so the dashboard stays available when one node fails. Homepage is
-# stateless (config comes from ConfigMaps), so both can serve and the required
-# anti-affinity below keeps them on different machines.
+# Homepage keeps per-pod static HTML and watches its config. Behind a
+# non-sticky Service, two replicas can disagree about the generated state and
+# make clients reload continuously, so keep a single replica. Running more than
+# one would require sticky sessions on the Ingress/Service.
 controller:
-  replicas: 2
-  strategy: RollingUpdate
-  rollingUpdate:
-    surge: 1
-    unavailable: 0
-affinity:
-  podAntiAffinity:
-    requiredDuringSchedulingIgnoredDuringExecution:
-      - labelSelector:
-          matchLabels:
-            app.kubernetes.io/name: homepage
-            app.kubernetes.io/instance: homepage
-        topologyKey: kubernetes.io/hostname
+  replicas: 1
+  # Recreate also avoids briefly running old and new pods side by side during
+  # config updates.
+  strategy: Recreate
 
 # Traefik terminates TLS with the *.glem.men wildcard certificate, which also
 # covers the apex domain.
