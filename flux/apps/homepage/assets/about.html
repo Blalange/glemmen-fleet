@@ -2,9 +2,9 @@
   <h2>Hva er dette?</h2>
   <p>
     Denne siden viser sanntidsinformasjon for Kubernetes-clusteret til 2ITA på Glemmen VGS.
-    Clusteret består av seks fysiske servere som kjører Ubuntu 24.04 LTS og K3s,
-    og administreres med Rancher. All konfigurasjon ligger i Git og rulles ut
-    automatisk med Fleet.
+    Clusteret består av åtte fysiske maskiner som kjører Talos Linux og Kubernetes.
+    All konfigurasjon ligger i Git og rulles ut automatisk med Flux, og lagring
+    leveres av Longhorn.
   </p>
   <p>
     Clusteret er avhengig av enkelte systemer som Blålange drifter, men Blålange
@@ -21,15 +21,15 @@
   <dl>
     <div>
       <dt>Noder</dt>
-      <dd>glemmen80, glemmen130, glemmen150, glemmen160, glemmen170 og glemmen180</dd>
+      <dd>glemmen50, glemmen60, glemmen80, glemmen130, glemmen150, glemmen160, glemmen170 og glemmen180</dd>
     </div>
     <div>
       <dt>Maskinvare</dt>
-      <dd>5 × Intel Xeon E-2314, 32 GB RAM og 2 TB HDD. glemmen80: Intel Xeon E5-1650 v3, 192 GB RAM og 1 TB RAID 1.</dd>
+      <dd>1xx: 5 × Intel Xeon E-2314 og 32 GB RAM. glemmen80: Intel Xeon E5-1650 v3 og 192 GB RAM. glemmen60: AMD Opteron 4386 og 110 GB RAM. glemmen50: IBM System x med ServeRAID M5014.</dd>
     </div>
     <div>
       <dt>Plattform</dt>
-      <dd>Ubuntu 24.04 LTS, K3s og Rancher</dd>
+      <dd>Talos Linux, Kubernetes, Flux og Longhorn</dd>
     </div>
     <div>
       <dt>Kontakt</dt>
