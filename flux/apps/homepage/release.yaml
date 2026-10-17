@@ -20,6 +20,15 @@ spec:
       sourceRef:
         kind: HelmRepository
         name: homepage
+  # Retry a failed install/upgrade instead of leaving the release on the old
+  # revision (a missing homepage-assets ConfigMap did exactly that once).
+  install:
+    remediation:
+      retries: 3
+  upgrade:
+    remediation:
+      retries: 3
+      remediateLastFailure: true
   valuesFrom:
     - kind: ConfigMap
       name: homepage-values
