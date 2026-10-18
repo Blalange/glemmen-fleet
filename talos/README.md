@@ -154,10 +154,9 @@ need a reboot). `talosctl` can be used directly with
   the ST91000640NS disk (`naa.5000c500647fdfa5`) and uses the two WD 1 TB disks as
   Longhorn data disks (`hdd1`/`hdd2`). **SecureBoot is enabled on this machine** —
   disable it in the BIOS (or build a SecureBoot-signed image) before installing.
-* **glemmen60** is a **worker** node (config ready, not yet installed). The
-  7.3 TB disk (`hdd1` user volume) currently still serves the migration backups
-  over NFS; before wiping it, deploy the permanent backupstore and point
-  Longhorn's backup target at it.
+* **glemmen60** is a **worker** node (config ready, installed). The
+  7.3 TB disk (`hdd1` user volume) is used for Longhorn data; the old
+  migration NFS export was retired when the node was wiped and joined.
 * Worker nodes join by applying their config; they do not run etcd.
   Control plane nodes are the 1xx machines only.
 * After wiping a node, remove its old peer in the Netbird dashboard first, so

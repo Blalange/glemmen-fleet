@@ -1,0 +1,179 @@
+# rclone S3 gateway for the Longhorn backup target.
+#
+# Longhorn only speaks the S3 API for object-store backupstores, while the
+# actual remote is Google Drive. `rclone serve s3` exposes the `gdrive:` remote
+# as an S3 endpoint; the `longhorn-backup` directory in that remote becomes the
+# `longhorn-backup` bucket that Longhorn writes to.
+#
+# Everything secret comes from the pre-created `rclone-backup-config` Secret in
+# longhorn-system (not in Git, see flux/README.md):
+#   rclone.conf             [gdrive] remote definition
+#   AWS_ACCESS_KEY_ID       S3 access key, shared with Longhorn
+#   AWS_SECRET_ACCESS_KEY   S3 secret, shared with Longhorn
+#   AWS_ENDPOINTS           http://rclone-s3.longhorn-system.svc.cluster.local:9000
+#
+# The remote name (`gdrive`) and bucket (`longhorn-backup`) must match
+# `defaultBackupStore.backupTarget` in ../values.yaml.
+#
+# Keep this at one replica: multipart upload state is local to the rclone
+# process, so load-balancing one upload across two pods would break Longhorn
+# backups.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rclone-s3
+  labels:
+    app.kubernetes.io/name: rclone-s3
+    app.kubernetes.io/part-of: longhorn
+spec:
+  replicas: 1
+  # Do not run the old and the new pod at the same time while the backupstore
+  # is being written to.
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: rclone-s3
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: rclone-s3
+        app.kubernetes.io/part-of: longhorn
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1009
+        runAsGroup: 1009
+        fsGroup: 1009
+        seccompProfile:
+          type: RuntimeDefault
+      initContainers:
+        # Run rclone from a writable copy of the config: the Google Drive token
+        # is refreshed in place. Also create the bucket directory up front so
+        # Longhorn sees the target as soon as the pod is ready.
+        - name: prepare-config
+          image: rclone/rclone:1.75.2
+          workingDir: /tmp
+          command:
+            - /bin/sh
+            - -c
+            - |
+              cp /config-secret/rclone.conf /config/rclone.conf &&
+              rclone mkdir gdrive:longhorn-backup --config /config/rclone.conf
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32Mi
+            limits:
+              memory: 128Mi
+          volumeMounts:
+            - name: config-secret
+              mountPath: /config-secret
+              readOnly: true
+            - name: config
+              mountPath: /config
+            - name: tmp
+              mountPath: /tmp
+      containers:
+        - name: rclone
+          image: rclone/rclone:1.75.2
+          workingDir: /tmp
+          args:
+            - serve
+            - s3
+            - --addr=:9000
+            - --config=/config/rclone.conf
+            - --vfs-cache-mode=off
+            - --cache-dir=/tmp/rclone
+            - --temp-dir=/tmp/rclone
+            # Longhorn deletes old backup blocks. Keep the empty bucket
+            # directory so the backup target does not disappear with the last
+            # object.
+            - --no-cleanup
+            - --log-level=NOTICE
+            - "gdrive:"
+          env:
+            # Longhorn reads the same key pair from the Secret and signs its
+            # requests with it; rclone accepts those requests here.
+            - name: AWS_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: rclone-backup-config
+                  key: AWS_ACCESS_KEY_ID
+            - name: AWS_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: rclone-backup-config
+                  key: AWS_SECRET_ACCESS_KEY
+            # serve s3 wants one CSV field here, hence the literal quotes.
+            - name: RCLONE_AUTH_KEY
+              value: '"$(AWS_ACCESS_KEY_ID),$(AWS_SECRET_ACCESS_KEY)"'
+          ports:
+            - name: s3
+              containerPort: 9000
+          readinessProbe:
+            # A TCP probe is not enough: the S3 server can listen while the
+            # Google Drive token or the remote is broken.
+            exec:
+              command:
+                - /bin/sh
+                - -c
+                - rclone lsd gdrive: --config /config/rclone.conf --cache-dir /tmp/rclone --max-depth 1 >/dev/null
+            initialDelaySeconds: 10
+            periodSeconds: 30
+            timeoutSeconds: 20
+          livenessProbe:
+            tcpSocket:
+              port: s3
+            initialDelaySeconds: 10
+            periodSeconds: 30
+          resources:
+            requests:
+              cpu: 25m
+              memory: 64Mi
+            limits:
+              memory: 512Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          volumeMounts:
+            - name: config
+              mountPath: /config
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: config-secret
+          secret:
+            secretName: rclone-backup-config
+            items:
+              - key: rclone.conf
+                path: rclone.conf
+        - name: config
+          emptyDir: {}
+        - name: tmp
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: rclone-s3
+  labels:
+    app.kubernetes.io/name: rclone-s3
+    app.kubernetes.io/part-of: longhorn
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: rclone-s3
+  ports:
+    - name: s3
+      port: 9000
+      targetPort: s3
+      protocol: TCP

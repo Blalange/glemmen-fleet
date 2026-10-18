@@ -16,6 +16,10 @@ talos/secrets/*
 # Flux bootstrap token (if stored locally)
 flux/.env
 
+# Longhorn backup credentials (never commit the real rclone config/secret)
+rclone.conf
+rclone-backup-config.yaml
+
 # Migration helper state (kubeconfig, dumps, downloads)
 scripts/migration-backup/
 scripts/bin/

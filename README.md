@@ -50,7 +50,7 @@ Longhorn (v1.12) leverer alle PVC-ene. Datadiskene er btrfs-volumer som Talos mo
 | 80 | RAID1 sda+sdb | sdc (`/var/mnt/hdd1`) + systemdisken |
 | 60 | sda | sdb (`/var/mnt/hdd1`) + systemdisken |
 
-Backup av Longhorn-volumene går til backupstore på glemmen60 (NFS under migreringen, senere SeaweedFS S3 i clusteret).
+Backup av Longhorn-volumene går til en Google Drive-mappe via en rclone S3-bro i clusteret (`flux/infrastructure/longhorn/rclone/`). Longhorn bruker backup target `s3://longhorn-backup@us-east-1/`; `rclone.conf` og S3-nøklene ligger i secret `rclone-backup-config` i `longhorn-system`.
 
 ## GitOps og konfigurasjon
 

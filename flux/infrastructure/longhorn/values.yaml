@@ -25,14 +25,19 @@ persistence:
   # Match the 1-replica convention used by the btrix/monitoring SCs
   defaultClassReplicaCount: 1
 
-# Backup target: disabled on 2026-10-15. The migration backed up to the NFS
-# export on glemmen60, which has since been wiped to join the cluster as a
-# worker. When a permanent backupstore exists (the planned in-cluster SeaweedFS
-# S3; credentials restored in the longhorn-weed-credentials secret), set
-# `defaultBackupStore.backupTarget` (and the credential secret) again and
-# re-create the recurring backup jobs.
+# Backup target: the in-cluster rclone S3 bridge (flux/infrastructure/longhorn/
+# rclone/) serves the Google Drive remote from the rclone-backup-config Secret
+# as S3. Longhorn writes to the `longhorn-backup` bucket (a folder in that
+# remote; the rclone init container creates it).
+#
+# - the trailing slash is required by Longhorn's s3:// URL parser
+# - the region is part of Longhorn's target syntax; rclone ignores it
+# - AWS_ENDPOINTS and the S3 key pair are read from the same Secret, which must
+#   live in longhorn-system (see flux/README.md)
 defaultBackupStore:
-  backupTarget: ""
+  backupTarget: s3://longhorn-backup@us-east-1/
+  backupTargetCredentialSecret: rclone-backup-config
+  pollInterval: 300
 
 # Longhorn is managed by Flux/GitOps
 preUpgradeChecker:

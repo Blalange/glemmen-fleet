@@ -1,0 +1,25 @@
+# rclone S3 gateway for Longhorn backups (Google Drive served as S3).
+#
+# Kept separate from the `infrastructure` Kustomization on purpose: the
+# rclone-backup-config Secret is created by hand (it is not in Git), and if it
+# is missing only this Kustomization should be NotReady, not the whole
+# infrastructure group. The Longhorn backup target simply reports an error
+# until the bridge is up.
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: longhorn-backup
+  namespace: flux-system
+spec:
+  interval: 1h
+  retryInterval: 2m
+  timeout: 5m
+  path: ./flux/infrastructure/longhorn/rclone
+  prune: true
+  wait: true
+  targetNamespace: longhorn-system
+  dependsOn:
+    - name: infrastructure
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
