@@ -124,7 +124,7 @@ spec:
               command:
                 - /bin/sh
                 - -c
-                - rclone lsd gdrive: --config /config/rclone.conf --cache-dir /tmp/rclone --max-depth 1 >/dev/null
+                - 'rclone lsd gdrive: --config /config/rclone.conf --cache-dir /tmp/rclone --max-depth 1 >/dev/null'
             initialDelaySeconds: 10
             periodSeconds: 30
             timeoutSeconds: 20
