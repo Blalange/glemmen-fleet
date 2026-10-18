@@ -81,9 +81,9 @@ spec:
         # ClusterODX keeps its node list in memory (under the per-pod
         # /var/www/data emptyDir), so (re-)register every NodeODX worker
         # regularly. Worker pods are probed by their stable StatefulSet DNS
-        # names - only the ones that currently exist resolve, so scaling the
-        # StatefulSet up or down is picked up automatically (bump the probe
-        # range if more than 8 workers). Adding an existing node is harmless.
+        # names - only the ones that currently exist resolve, so a worker on a
+        # down/missing node is skipped. Keep this list in sync with the
+        # StatefulSets in nodeodx.yaml. Adding an existing node is harmless.
         - name: register-nodeodx
           image: busybox:1.36
           command:
@@ -91,8 +91,8 @@ spec:
             - -c
             - |
               while true; do
-                for i in 0 1 2 3 4 5 6 7; do
-                  host="nodeodx-${i}.nodeodx-hl.webodm.svc.cluster.local"
+                for worker in nodeodx-glemmen50 nodeodx-glemmen60 nodeodx-glemmen80; do
+                  host="${worker}-0.nodeodx-hl.webodm.svc.cluster.local"
                   if nslookup "$host" >/dev/null 2>&1; then
                     printf 'NODE ADD %s 3000\r\n' "$host" | nc -w 3 127.0.0.1 8080 >/dev/null 2>&1 || true
                   fi

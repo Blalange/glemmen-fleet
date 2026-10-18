@@ -1,18 +1,25 @@
 # NodeODX processing workers (the WebODM/ODX successor of NodeODM).
 #
+# One StatefulSet per worker node instead of one StatefulSet with a replica
+# count: the worker nodes are very different (24/16/12 threads and roughly
+# 141/110/188 GiB allocatable), while a StatefulSet has a single pod template.
+# With replicas every worker would get the same request/limit, wasting most of
+# glemmen50 and glemmen80. Each worker below is pinned to its node and sized to
+# use almost all of that node's memory and CPU.
+#
 # StatefulSet, not Deployment: ClusterODX addresses each worker individually
 # (a task is submitted to one worker and its status is polled from that same
 # worker - behind a load-balanced Service those polls would hit the wrong
 # replica). The headless service gives every pod a stable DNS name
-# (nodeodx-0.nodeodx-hl.webodm.svc.cluster.local, ...) and ClusterODX's
-# registrar sidecar adds them all automatically, so:
+# (<statefulset>-0.nodeodx-hl.webodm.svc.cluster.local) and ClusterODX's
+# registrar sidecar adds the names listed in clusterodx.yaml.
 #
-#   To add/remove workers: change `replicas` below and push.
+#   To add/remove a worker: add/remove a StatefulSet below and update the
+#   registrar loop in clusterodx.yaml to match.
 #
-# Each worker gets its own /tmp scratch (emptyDir) and, like upstream ODX,
-# processes up to 2 tasks at a time (raise with `--parallel_queue_processing`
-# if the worker has the CPU/RAM). ODM tasks are CPU bound and use several
-# threads, so keep workers on nodes with spare cores.
+# The requests/limits leave roughly one CPU core and 5-9 GiB per node for the
+# OS and system pods. Other workloads on the node are already accounted for in
+# the requests (glemmen80 runs the monitoring stack, Frigate, etc.).
 apiVersion: v1
 kind: Service
 metadata:
@@ -29,32 +36,25 @@ spec:
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
-  name: nodeodx
+  name: nodeodx-glemmen50
   labels:
     app.kubernetes.io/name: nodeodx
+    app.kubernetes.io/instance: nodeodx-glemmen50
 spec:
   serviceName: nodeodx-hl
-  replicas: 2
-  podManagementPolicy: Parallel
+  replicas: 1
   selector:
     matchLabels:
       app.kubernetes.io/name: nodeodx
+      app.kubernetes.io/instance: nodeodx-glemmen50
   template:
     metadata:
       labels:
         app.kubernetes.io/name: nodeodx
+        app.kubernetes.io/instance: nodeodx-glemmen50
     spec:
-      # Prefer to spread workers over different machines (soft: scaling beyond
-      # the number of nodes still works).
-      affinity:
-        podAntiAffinity:
-          preferredDuringSchedulingIgnoredDuringExecution:
-            - weight: 100
-              podAffinityTerm:
-                labelSelector:
-                  matchLabels:
-                    app.kubernetes.io/name: nodeodx
-                topologyKey: kubernetes.io/hostname
+      nodeSelector:
+        kubernetes.io/hostname: glemmen50
       containers:
         - name: nodeodx
           # NodeODX publishes no version tags; `latest` tracks the ODX releases.
@@ -78,13 +78,133 @@ spec:
           volumeMounts:
             - name: scratch
               mountPath: /tmp
+          # glemmen50: 24 threads, 141 GiB allocatable. Other pods request
+          # ~3.2 CPU and 0.3 GiB. NodeODX runs one task at a time by default
+          # and ODX sizes max-concurrency from the available cores, so this
+          # effectively dedicates the machine.
           resources:
             requests:
-              cpu: 4
-              memory: 24Gi
+              cpu: "20.5"
+              memory: 136Gi
             limits:
-              cpu: 8
-              memory: 24Gi
+              cpu: "23"
+              memory: 136Gi
+      volumes:
+        - name: scratch
+          emptyDir: {}
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: nodeodx-glemmen60
+  labels:
+    app.kubernetes.io/name: nodeodx
+    app.kubernetes.io/instance: nodeodx-glemmen60
+spec:
+  serviceName: nodeodx-hl
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: nodeodx
+      app.kubernetes.io/instance: nodeodx-glemmen60
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: nodeodx
+        app.kubernetes.io/instance: nodeodx-glemmen60
+    spec:
+      nodeSelector:
+        kubernetes.io/hostname: glemmen60
+      containers:
+        - name: nodeodx
+          image: webodm/nodeodx:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: api
+              containerPort: 3000
+          readinessProbe:
+            httpGet:
+              path: /info
+              port: api
+            initialDelaySeconds: 15
+            periodSeconds: 15
+          livenessProbe:
+            httpGet:
+              path: /info
+              port: api
+            initialDelaySeconds: 60
+            periodSeconds: 30
+          volumeMounts:
+            - name: scratch
+              mountPath: /tmp
+          # glemmen60: 16 threads, 110 GiB allocatable. Other pods request
+          # ~2.4 CPU and 0.6 GiB.
+          resources:
+            requests:
+              cpu: "13.4"
+              memory: 104Gi
+            limits:
+              cpu: "15"
+              memory: 104Gi
+      volumes:
+        - name: scratch
+          emptyDir: {}
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: nodeodx-glemmen80
+  labels:
+    app.kubernetes.io/name: nodeodx
+    app.kubernetes.io/instance: nodeodx-glemmen80
+spec:
+  serviceName: nodeodx-hl
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: nodeodx
+      app.kubernetes.io/instance: nodeodx-glemmen80
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: nodeodx
+        app.kubernetes.io/instance: nodeodx-glemmen80
+    spec:
+      nodeSelector:
+        kubernetes.io/hostname: glemmen80
+      containers:
+        - name: nodeodx
+          image: webodm/nodeodx:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: api
+              containerPort: 3000
+          readinessProbe:
+            httpGet:
+              path: /info
+              port: api
+            initialDelaySeconds: 15
+            periodSeconds: 15
+          livenessProbe:
+            httpGet:
+              path: /info
+              port: api
+            initialDelaySeconds: 60
+            periodSeconds: 30
+          volumeMounts:
+            - name: scratch
+              mountPath: /tmp
+          # glemmen80: 12 threads, 188 GiB allocatable. The monitoring stack,
+          # Frigate, Snipe-IT and WebODM's db/broker already request ~5.6 CPU
+          # and 4.5 GiB, leaving ~6.3 CPU for this worker. The CPU limit still
+          # lets NodeODX use 11 of the 12 cores when the other pods are idle.
+          resources:
+            requests:
+              cpu: "6.2"
+              memory: 180Gi
+            limits:
+              cpu: "11"
+              memory: 180Gi
       volumes:
         - name: scratch
           emptyDir: {}
