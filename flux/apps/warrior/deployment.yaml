@@ -52,6 +52,8 @@ spec:
                   key: password
             - name: CONCURRENT_ITEMS
               value: "6"
+            - name: SELECTED_PROJECT
+              value: "auto"
           ports:
             - name: http
               containerPort: 8001
