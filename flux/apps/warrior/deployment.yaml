@@ -42,7 +42,7 @@ spec:
           env:
             # Name shown on the ArchiveTeam leaderboards.
             - name: DOWNLOADER
-              value: "blålange"
+              value: "blalange.org"
             - name: HTTP_USERNAME
               value: admin
             - name: HTTP_PASSWORD
