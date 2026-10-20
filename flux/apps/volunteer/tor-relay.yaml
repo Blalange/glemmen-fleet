@@ -1,0 +1,150 @@
+# Tor guard/middle relay (non-exit). It contributes bandwidth to the Tor
+# network without carrying exit traffic. UniFi forwards TCP 9001 to the shared
+# MetalLB VIP; the long-term relay keys live on a small Longhorn volume.
+#
+# The container runs as the image's tor user (101:102), not root. An init
+# container makes the freshly provisioned volume private to that user.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: tor-relay-data
+  labels:
+    app.kubernetes.io/name: tor-relay
+    app.kubernetes.io/instance: volunteer
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: volunteer
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tor-relay
+  labels:
+    app.kubernetes.io/name: tor-relay
+    app.kubernetes.io/instance: volunteer
+spec:
+  replicas: 1
+  # One relay identity and one ORPort: never run two pods at once.
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: tor-relay
+      app.kubernetes.io/instance: volunteer
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: tor-relay
+        app.kubernetes.io/instance: volunteer
+    spec:
+      securityContext:
+        runAsUser: 101
+        runAsGroup: 102
+        runAsNonRoot: true
+        fsGroup: 102
+        fsGroupChangePolicy: OnRootMismatch
+        seccompProfile:
+          type: RuntimeDefault
+      initContainers:
+        # Tor refuses a DataDirectory owned by another user or readable by
+        # the group/world. Longhorn mounts a fresh root-owned volume.
+        - name: fix-data-permissions
+          image: docker.io/library/busybox:1.37
+          command:
+            - sh
+            - -c
+            - chown -R 101:102 /data && chmod 700 /data
+          securityContext:
+            runAsUser: 0
+            runAsGroup: 0
+            # The pod-level runAsNonRoot applies to init containers too; this
+            # one needs root only to chown the fresh volume.
+            runAsNonRoot: false
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+              add: ["CHOWN", "DAC_OVERRIDE", "FOWNER"]
+          resources:
+            requests:
+              cpu: 5m
+              memory: 8Mi
+            limits:
+              memory: 16Mi
+          volumeMounts:
+            - name: data
+              mountPath: /data
+      containers:
+        - name: tor
+          image: docker.io/dockurr/tor:0.4.9.14
+          imagePullPolicy: IfNotPresent
+          # Bypass the image entrypoint so Tor runs directly as uid 101; the
+          # entrypoint would run as root and chown the volume again.
+          command:
+            - tor
+          args:
+            - -f
+            - /etc/tor/torrc
+          ports:
+            - name: orport
+              containerPort: 9001
+          readinessProbe:
+            tcpSocket:
+              port: orport
+            initialDelaySeconds: 30
+            periodSeconds: 15
+            failureThreshold: 6
+          livenessProbe:
+            tcpSocket:
+              port: orport
+            initialDelaySeconds: 60
+            periodSeconds: 30
+            failureThreshold: 6
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              memory: 1Gi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/tor
+            - name: config
+              mountPath: /etc/tor/torrc
+              subPath: torrc
+              readOnly: true
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: tor-relay-data
+        - name: config
+          configMap:
+            name: tor-relay-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: tor-relay
+  labels:
+    app.kubernetes.io/name: tor-relay
+    app.kubernetes.io/instance: volunteer
+  annotations:
+    metallb.io/loadBalancerIPs: "192.168.6.99"
+    metallb.io/allow-shared-ip: glemmen-vip
+spec:
+  type: LoadBalancer
+  selector:
+    app.kubernetes.io/name: tor-relay
+    app.kubernetes.io/instance: volunteer
+  ports:
+    - name: orport
+      port: 9001
+      targetPort: orport
+      protocol: TCP

@@ -1,0 +1,14 @@
+# Small, replicated Longhorn volumes for the volunteer services. Three
+# replicas fits the cluster and keeps relay/bridge identities available when a
+# node is drained or fails. Retain prevents deleting keys with a PVC.
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: volunteer
+provisioner: driver.longhorn.io
+allowVolumeExpansion: true
+reclaimPolicy: Retain
+volumeBindingMode: Immediate
+parameters:
+  numberOfReplicas: "3"
+  staleReplicaTimeout: "2880"

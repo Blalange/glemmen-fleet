@@ -104,6 +104,33 @@ If the Longhorn target reports an error, check
 `kubectl -n longhorn-system logs deploy/rclone-s3`; an expired or revoked
 Google token needs a new `rclone.conf` in the Secret and a rollout restart.
 
+## Volunteer network services
+
+`apps/volunteer` runs Tor Snowflake (3 replicas), a Syncthing relay, a Tor
+WebTunnel bridge at `https://wt.glem.men/<secret path>` and a non-exit Tor
+guard/middle relay. The WebTunnel path comes from the hand-created
+`flux-system/volunteer-secrets` Secret and is substituted by Flux.
+
+Public forwards via the UniFi router to `192.168.6.99`:
+
+| Port | Service |
+| --- | --- |
+| TCP 22067 | Syncthing relay data |
+| TCP 22070 | Syncthing relay status |
+| TCP 9001 | Tor relay ORPort |
+
+WebTunnel uses the existing 443 forward, and Snowflake needs no inbound ports.
+The three small PVCs use the `volunteer` Longhorn StorageClass with three
+volume replicas. The stateful relay/bridge Deployments stay at one pod because
+each owns a single long-term identity; only Snowflake runs three pods.
+
+The Tor relay and Syncthing relay advertise the static WAN address
+`109.247.229.146`; update both manifests (and the WebTunnel DNS record) if the
+WAN address changes. If the Tor relay stays at "Bootstrapped 5%" or the
+WebTunnel bridge at 45%, the upstream network is filtering Tor relay
+destinations rather than the cluster services; check the ISP/UniFi threat
+settings before changing the manifests.
+
 ## Dependencies (was Fleet `dependsOn`)
 
 - `infrastructure` (namespaces, Longhorn, cert-manager chart, MetalLB, metrics-server)
@@ -123,9 +150,9 @@ Google token needs a new `rclone.conf` in the Secret and a rollout restart.
 - **Secrets are not in Git**; they live in the cluster only (restored from the
   old cluster: Cloudflare tokens, `grafana-admin`, `unpoller-unifi`,
   `homepage-grafana`, `frigate-secrets`, `energisjappa-secrets`, `colibri-secrets`,
-  `snipe-it-db`, `snipe-it-app-key`, `warrior-http-auth` and the TLS
-  certificates in `kube-system`; created for the rclone bridge:
-  `rclone-backup-config`).
+  `snipe-it-db`, `snipe-it-app-key`, `warrior-http-auth`,
+  `volunteer-secrets` and the TLS certificates in `kube-system`; created for
+  the rclone bridge: `rclone-backup-config`).
 - **Backup target**: Longhorn backs up to `s3://longhorn-backup@us-east-1/`,
   served by the in-cluster `rclone serve s3` bridge in
   `infrastructure/longhorn/rclone/`. The actual backupstore is a folder

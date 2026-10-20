@@ -21,7 +21,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 export KUBECONFIG="${KUBECONFIG:-${REPO_ROOT}/talos/generated/kubeconfig}"
 
-APP_KUSTOMIZATIONS=(colibri energisjappa frigate homepage homepage-assets panel snipe-it unifi warrior)
+APP_KUSTOMIZATIONS=(colibri energisjappa frigate homepage homepage-assets panel snipe-it unifi volunteer warrior)
 
 FLUX="${FLUX:-}"
 if [[ -z "${FLUX}" ]]; then

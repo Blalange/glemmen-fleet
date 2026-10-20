@@ -1,0 +1,136 @@
+# Public Syncthing relay. Clients that cannot connect directly use it as a
+# fallback; traffic is end-to-end encrypted, the relay only forwards it.
+#
+# UniFi forwards TCP 22067 (data) and 22070 (status) to the shared MetalLB VIP.
+# The relay keypair lives on a small Longhorn volume so the relay keeps the
+# same identity across restarts.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: syncthing-relay-keys
+  labels:
+    app.kubernetes.io/name: syncthing-relay
+    app.kubernetes.io/instance: volunteer
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: volunteer
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: syncthing-relay
+  labels:
+    app.kubernetes.io/name: syncthing-relay
+    app.kubernetes.io/instance: volunteer
+spec:
+  replicas: 1
+  # One identity on one volume: never run two relay pods at once.
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: syncthing-relay
+      app.kubernetes.io/instance: volunteer
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: syncthing-relay
+        app.kubernetes.io/instance: volunteer
+    spec:
+      securityContext:
+        runAsUser: 1000
+        runAsGroup: 1000
+        runAsNonRoot: true
+        fsGroup: 1000
+        fsGroupChangePolicy: OnRootMismatch
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: syncthing-relay
+          image: docker.io/syncthing/relaysrv:2.1.6
+          imagePullPolicy: IfNotPresent
+          # Bypass the image entrypoint: it expects root and su-exec, while
+          # this pod runs directly as the unprivileged uid above.
+          #
+          # The short sleep lets the Service endpoint appear before strelaysrv
+          # calls the pool for the first time. A failed pool check retries only
+          # after 48 minutes, so the endpoint must be ready first.
+          command:
+            - /bin/sh
+            - -c
+            - >-
+              sleep 8; exec /bin/strelaysrv
+              -listen=:22067
+              -status-srv=:22070
+              -keys=/var/strelaysrv
+              -ext-address=109.247.229.146:22067
+              -provided-by=blalange
+              -pools=https://relays.syncthing.net/endpoint
+              -global-rate=10485760
+              -per-session-rate=1048576
+          env:
+            - name: HOME
+              value: /var/strelaysrv
+          ports:
+            - name: relay
+              containerPort: 22067
+            - name: status
+              containerPort: 22070
+          # Mark ready while the shell sleeps so the Service endpoint exists
+          # before the relay joins the public pool. The liveness probe below
+          # still checks the real listener.
+          readinessProbe:
+            exec:
+              command: ["/bin/true"]
+          livenessProbe:
+            tcpSocket:
+              port: relay
+            initialDelaySeconds: 30
+            periodSeconds: 30
+            failureThreshold: 6
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              memory: 512Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+          volumeMounts:
+            - name: keys
+              mountPath: /var/strelaysrv
+      volumes:
+        - name: keys
+          persistentVolumeClaim:
+            claimName: syncthing-relay-keys
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: syncthing-relay
+  labels:
+    app.kubernetes.io/name: syncthing-relay
+    app.kubernetes.io/instance: volunteer
+  annotations:
+    metallb.io/loadBalancerIPs: "192.168.6.99"
+    metallb.io/allow-shared-ip: glemmen-vip
+spec:
+  type: LoadBalancer
+  selector:
+    app.kubernetes.io/name: syncthing-relay
+    app.kubernetes.io/instance: volunteer
+  ports:
+    - name: relay
+      port: 22067
+      targetPort: relay
+      protocol: TCP
+    - name: status
+      port: 22070
+      targetPort: status
+      protocol: TCP

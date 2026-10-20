@@ -10,5 +10,6 @@ resources:
   - panel.yaml
   - snipe-it.yaml
   - unifi.yaml
+  - volunteer.yaml
   - warrior.yaml
   - webodm.yaml

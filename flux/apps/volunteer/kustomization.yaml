@@ -1,0 +1,42 @@
+# Volunteer network services.
+#
+#   snowflake       Tor Snowflake proxy (3 stateless replicas, no inbound)
+#   syncthing-relay Syncthing relay pool member (TCP 22067 + 22070)
+#   webtunnel       Tor WebTunnel bridge behind Traefik on wt.glem.men
+#   tor-relay       Tor guard/middle relay (non-exit, TCP 9001)
+#
+# Secrets are not stored in Git. Create this before Flux reconciles the app:
+#
+#   kubectl -n flux-system create secret generic volunteer-secrets \
+#     --from-literal=WEBTUNNEL_PATH="$(openssl rand -hex 12)"
+#
+# The WebTunnel path is substituted into the Ingress and the bridge URL by the
+# Flux Kustomization (postBuild.substituteFrom in
+# flux/clusters/glemmen/apps/volunteer.yaml).
+#
+# Public ports (UniFi forwards to 192.168.6.99, MetalLB shares the VIP with
+# Traefik):
+#   TCP 22067  Syncthing relay data
+#   TCP 22070  Syncthing relay status
+#   TCP 9001   Tor relay ORPort
+# WebTunnel uses the existing 443 forward; Snowflake needs no inbound ports.
+#
+# Longhorn creates three replicas for each small PVC. The stateful services
+# (Syncthing relay, WebTunnel bridge, Tor relay) run one pod each because they
+# own a single long-term identity; Snowflake is stateless and runs three.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: volunteer
+resources:
+  - storageclass.yaml
+  - snowflake.yaml
+  - syncthing-relay.yaml
+  - webtunnel.yaml
+  - tor-relay.yaml
+configMapGenerator:
+  - name: webtunnel-decoy
+    files:
+      - index.html=assets/index.html
+  - name: tor-relay-config
+    files:
+      - torrc=torrc

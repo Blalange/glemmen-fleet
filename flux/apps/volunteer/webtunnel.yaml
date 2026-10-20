@@ -1,0 +1,211 @@
+# Tor WebTunnel bridge. WebTunnel disguises bridge traffic as ordinary HTTPS,
+# so it can use the existing Traefik 443 listener and wildcard certificate
+# instead of a dedicated public port.
+#
+# The public URL is https://wt.glem.men/${WEBTUNNEL_PATH}; the random path is
+# stored in the flux-system/volunteer-secrets Secret and substituted by Flux.
+# The bridge still runs a local Tor ORPort (44444); it is not exposed because
+# WebTunnel is the only advertised transport and AssumeReachable is set by the
+# upstream start script.
+#
+# A small decoy nginx serves "/" so the host looks like an ordinary website.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: webtunnel-data
+  labels:
+    app.kubernetes.io/name: webtunnel-bridge
+    app.kubernetes.io/instance: volunteer
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: volunteer
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: webtunnel-bridge
+  labels:
+    app.kubernetes.io/name: webtunnel-bridge
+    app.kubernetes.io/instance: volunteer
+spec:
+  replicas: 1
+  # One Tor bridge identity and one URL: never run two pods at once.
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: webtunnel-bridge
+      app.kubernetes.io/instance: volunteer
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: webtunnel-bridge
+        app.kubernetes.io/instance: volunteer
+    spec:
+      securityContext:
+        runAsUser: 101
+        runAsGroup: 101
+        runAsNonRoot: true
+        fsGroup: 101
+        fsGroupChangePolicy: OnRootMismatch
+        seccompProfile:
+          type: RuntimeDefault
+      initContainers:
+        # Tor insists on a private DataDirectory owned by its user.
+        - name: fix-data-permissions
+          image: docker.io/library/busybox:1.37
+          command:
+            - sh
+            - -c
+            - chown -R 101:101 /data && chmod 700 /data
+          securityContext:
+            runAsUser: 0
+            runAsGroup: 0
+            # The pod-level runAsNonRoot applies to init containers too; this
+            # one needs root only to chown the fresh volume.
+            runAsNonRoot: false
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+              add: ["CHOWN", "DAC_OVERRIDE", "FOWNER"]
+          resources:
+            requests:
+              cpu: 5m
+              memory: 8Mi
+            limits:
+              memory: 16Mi
+          volumeMounts:
+            - name: data
+              mountPath: /data
+      containers:
+        - name: webtunnel
+          image: docker.io/thetorproject/webtunnel-bridge:latest
+          imagePullPolicy: Always
+          env:
+            - name: NICKNAME
+              value: WTBrGlemmen
+            - name: OR_PORT
+              value: "44444"
+            - name: PT_PORT
+              value: "15000"
+            - name: EMAIL
+              value: hexahigh0@gmail.com
+            - name: WEBTUNNEL_URL
+              value: https://wt.glem.men/${WEBTUNNEL_PATH}
+          ports:
+            - name: webtunnel
+              containerPort: 15000
+          readinessProbe:
+            tcpSocket:
+              port: webtunnel
+            initialDelaySeconds: 15
+            periodSeconds: 10
+            failureThreshold: 6
+          livenessProbe:
+            tcpSocket:
+              port: webtunnel
+            initialDelaySeconds: 60
+            periodSeconds: 30
+            failureThreshold: 6
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              memory: 1Gi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/tor
+            # The upstream start script generates torrc here at startup.
+            - name: etc-tor
+              mountPath: /etc/tor
+            - name: logs
+              mountPath: /var/log/tor
+        - name: decoy
+          image: docker.io/nginxinc/nginx-unprivileged:1.29-alpine
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: decoy
+              containerPort: 8080
+          resources:
+            requests:
+              cpu: 10m
+              memory: 16Mi
+            limits:
+              memory: 64Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+          volumeMounts:
+            - name: decoy
+              mountPath: /usr/share/nginx/html
+              readOnly: true
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: webtunnel-data
+        - name: etc-tor
+          emptyDir: {}
+        - name: logs
+          emptyDir: {}
+        - name: decoy
+          configMap:
+            name: webtunnel-decoy
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: webtunnel-bridge
+  labels:
+    app.kubernetes.io/name: webtunnel-bridge
+    app.kubernetes.io/instance: volunteer
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: webtunnel-bridge
+    app.kubernetes.io/instance: volunteer
+  ports:
+    - name: webtunnel
+      port: 15000
+      targetPort: webtunnel
+    - name: decoy
+      port: 8080
+      targetPort: decoy
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: webtunnel
+  labels:
+    app.kubernetes.io/name: webtunnel-bridge
+    app.kubernetes.io/instance: volunteer
+spec:
+  ingressClassName: traefik
+  rules:
+    - host: wt.glem.men
+      http:
+        paths:
+          # Longest path wins: only this path goes to the WebTunnel transport.
+          - path: /${WEBTUNNEL_PATH}
+            pathType: Prefix
+            backend:
+              service:
+                name: webtunnel-bridge
+                port:
+                  number: 15000
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: webtunnel-bridge
+                port:
+                  number: 8080

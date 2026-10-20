@@ -1,0 +1,19 @@
+# Tor guard/middle relay. Not an exit.
+Nickname GlemmenTor
+ContactInfo hexahigh0@gmail.com
+# Behind the UniFi NAT, so Tor cannot auto-detect the public IPv4 address.
+Address 109.247.229.146
+
+ORPort 0.0.0.0:9001
+DirPort 0
+SocksPort 0
+HTTPTunnelPort 0
+DataDirectory /var/lib/tor
+Log notice stdout
+
+ExitRelay 0
+IPv6Exit 0
+
+# Keep the relay useful but do not let it saturate the WAN.
+RelayBandwidthRate 10485760
+RelayBandwidthBurst 20971520

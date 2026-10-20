@@ -1,0 +1,57 @@
+# Tor Snowflake standalone proxy. It needs no inbound ports and keeps no
+# state, so it runs as three independent replicas spread across nodes. Each
+# replica helps censored users reach the Tor network over WebRTC.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: snowflake-proxy
+  labels:
+    app.kubernetes.io/name: snowflake-proxy
+    app.kubernetes.io/instance: volunteer
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: snowflake-proxy
+      app.kubernetes.io/instance: volunteer
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: snowflake-proxy
+        app.kubernetes.io/instance: volunteer
+    spec:
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchLabels:
+                  app.kubernetes.io/name: snowflake-proxy
+                  app.kubernetes.io/instance: volunteer
+              topologyKey: kubernetes.io/hostname
+      securityContext:
+        runAsUser: 65534
+        runAsGroup: 65534
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: snowflake-proxy
+          image: docker.io/thetorproject/snowflake-proxy:v2.15.1
+          imagePullPolicy: IfNotPresent
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+            readOnlyRootFilesystem: true
+          resources:
+            requests:
+              cpu: 25m
+              memory: 64Mi
+            limits:
+              memory: 512Mi
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tmp
+          emptyDir: {}
