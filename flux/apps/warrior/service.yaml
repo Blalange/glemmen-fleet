@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: warrior
+  labels:
+    app.kubernetes.io/name: warrior
+    app.kubernetes.io/instance: warrior
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: warrior
+    app.kubernetes.io/instance: warrior
+  ports:
+    - name: http
+      port: 8001
+      targetPort: http

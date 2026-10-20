@@ -1,0 +1,77 @@
+# ArchiveTeam Warrior. The image runs as uid/gid 1000 and writes its data and
+# project config under /home/warrior; both are intentionally ephemeral, so the
+# pod has no volume and loses its current work item on restart/reschedule.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: warrior
+  labels:
+    app.kubernetes.io/name: warrior
+    app.kubernetes.io/instance: warrior
+spec:
+  # One warrior at a time: a second copy would download and upload the same
+  # items under the same downloader name. Recreate guarantees the old pod is
+  # gone before the replacement starts.
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: warrior
+      app.kubernetes.io/instance: warrior
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: warrior
+        app.kubernetes.io/instance: warrior
+    spec:
+      securityContext:
+        runAsUser: 1000
+        runAsGroup: 1000
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: warrior
+          image: atdr.meo.ws/archiveteam/warrior-dockerfile:latest
+          imagePullPolicy: Always
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+          env:
+            # Name shown on the ArchiveTeam leaderboards.
+            - name: DOWNLOADER
+              value: "blålange"
+            - name: HTTP_USERNAME
+              value: admin
+            - name: HTTP_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: warrior-http-auth
+                  key: password
+            - name: CONCURRENT_ITEMS
+              value: "6"
+          ports:
+            - name: http
+              containerPort: 8001
+          # The web UI is behind HTTP basic auth, so the probes only check that
+          # the server is listening.
+          readinessProbe:
+            tcpSocket:
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            failureThreshold: 3
+          livenessProbe:
+            tcpSocket:
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 30
+            failureThreshold: 6
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              memory: 2Gi

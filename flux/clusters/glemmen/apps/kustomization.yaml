@@ -10,4 +10,5 @@ resources:
   - panel.yaml
   - snipe-it.yaml
   - unifi.yaml
+  - warrior.yaml
   - webodm.yaml

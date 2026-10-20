@@ -123,8 +123,9 @@ Google token needs a new `rclone.conf` in the Secret and a rollout restart.
 - **Secrets are not in Git**; they live in the cluster only (restored from the
   old cluster: Cloudflare tokens, `grafana-admin`, `unpoller-unifi`,
   `homepage-grafana`, `frigate-secrets`, `energisjappa-secrets`, `colibri-secrets`,
-  `snipe-it-db`, `snipe-it-app-key` and the TLS certificates in `kube-system`;
-  created for the rclone bridge: `rclone-backup-config`).
+  `snipe-it-db`, `snipe-it-app-key`, `warrior-http-auth` and the TLS
+  certificates in `kube-system`; created for the rclone bridge:
+  `rclone-backup-config`).
 - **Backup target**: Longhorn backs up to `s3://longhorn-backup@us-east-1/`,
   served by the in-cluster `rclone serve s3` bridge in
   `infrastructure/longhorn/rclone/`. The actual backupstore is a folder

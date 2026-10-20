@@ -79,6 +79,11 @@ metadata:
 apiVersion: v1
 kind: Namespace
 metadata:
+  name: warrior
+---
+apiVersion: v1
+kind: Namespace
+metadata:
   name: webodm
 ---
 apiVersion: v1

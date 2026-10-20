@@ -1,0 +1,23 @@
+# ArchiveTeam Warrior (https://warriordocs.archiveteam.org) - runs archive
+# downloads for Archive.org and other ArchiveTeam projects, served at
+# https://warrior.glem.men.
+#
+# The HTTP password is deliberately not stored in Git. Create the Secret on the
+# cluster before (or while) Flux rolls this out:
+#
+#   kubectl -n warrior create secret generic warrior-http-auth \
+#     --from-literal=password='...'
+#
+# Only the password lives in the Secret; the username is in the Deployment.
+#
+# The Warrior keeps its work items and projects/config.json on the container
+# filesystem. There is no volume, so a new pod starts clean and the environment
+# variables in the Deployment seed the configuration again (env is ignored
+# once projects/config.json exists).
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: warrior
+resources:
+  - deployment.yaml
+  - service.yaml
+  - ingress.yaml
