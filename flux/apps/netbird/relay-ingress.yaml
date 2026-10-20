@@ -1,0 +1,21 @@
+# Traefik terminates TLS with the existing *.glem.men wildcard certificate and
+# forwards WebSocket upgrades to the relay. No separate certificate is needed.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: netbird-relay
+  annotations:
+    traefik.ingress.kubernetes.io/router.entrypoints: websecure
+spec:
+  ingressClassName: traefik
+  rules:
+    - host: nb-relay.glem.men
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: netbird-relay
+                port:
+                  number: 8080

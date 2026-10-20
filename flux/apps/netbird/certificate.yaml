@@ -1,0 +1,15 @@
+# Wildcard certificate for the NetBird reverse-proxy services.
+#
+# The certificate is issued with the Cloudflare DNS-01 issuer, so the proxy can
+# serve HTTPS over the NetBird overlay without exposing port 80/443 publicly.
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: netbird-proxy-wildcard
+spec:
+  secretName: netbird-proxy-wildcard-tls
+  issuerRef:
+    name: letsencrypt-prod-glem-men
+    kind: ClusterIssuer
+  dnsNames:
+    - "*.proxy.glem.men"

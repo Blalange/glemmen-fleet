@@ -74,6 +74,11 @@ metadata:
 apiVersion: v1
 kind: Namespace
 metadata:
+  name: netbird
+---
+apiVersion: v1
+kind: Namespace
+metadata:
   name: webodm
 ---
 apiVersion: v1

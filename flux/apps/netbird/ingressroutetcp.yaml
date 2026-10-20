@@ -1,0 +1,20 @@
+# TLS passthrough from Traefik to the NetBird reverse proxy.
+#
+# Only *.proxy.glem.men is passed through, so the normal *.glem.men Ingress
+# routes remain untouched. A NetBird service at <service>.proxy.glem.men is
+# terminated by the proxy.
+apiVersion: traefik.io/v1alpha1
+kind: IngressRouteTCP
+metadata:
+  name: netbird-reverse-proxy
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: >-
+        HostSNIRegexp(`^[a-zA-Z0-9-]+\.proxy\.glem\.men$`)
+      services:
+        - name: netbird-reverse-proxy
+          port: 443
+  tls:
+    passthrough: true

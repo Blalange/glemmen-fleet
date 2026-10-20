@@ -1,0 +1,109 @@
+# NetBird reverse proxy.
+#
+# NB_PROXY_DOMAIN is proxy.glem.men: private services are published as
+# <service>.proxy.glem.men. NetBird synthesizes the private DNS records for
+# peers, and Traefik passes the public *.proxy.glem.men SNI through to this
+# proxy.
+#
+# NB_PROXY_PRIVATE=true runs the proxy as an embedded NetBird peer, enabling
+# NetBird-Only Access / private services.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: netbird-reverse-proxy
+  labels:
+    app: netbird-reverse-proxy
+spec:
+  replicas: 1
+  # The proxy owns a certificate cache and a single embedded NetBird identity;
+  # don't run two pods at once.
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: netbird-reverse-proxy
+  template:
+    metadata:
+      labels:
+        app: netbird-reverse-proxy
+    spec:
+      containers:
+        - name: reverse-proxy
+          # Keep the proxy in step with the NetBird management/client version
+          # (netbird.blalange.org currently runs 0.78.1).
+          image: netbirdio/reverse-proxy:0.78.1
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: https
+              containerPort: 8443
+            - name: health
+              containerPort: 8080
+          env:
+            - name: NB_PROXY_CERTIFICATE_DIRECTORY
+              value: /certs
+            # Reuse the cert-manager wildcard instead of relying on public
+            # ACME challenges for the private *.glem.men names.
+            - name: NB_PROXY_WILDCARD_CERT_DIR
+              value: /certs/wildcard
+            - name: NB_PROXY_ALLOW_INSECURE
+              value: "true"
+            - name: NB_PROXY_MANAGEMENT_ADDRESS
+              value: "https://netbird.blalange.org"
+            - name: NB_PROXY_ACME_CERTIFICATES
+              value: "true"
+            - name: NB_PROXY_DOMAIN
+              value: "proxy.glem.men"
+            - name: NB_PROXY_LOG_LEVEL
+              value: info
+            - name: NB_PROXY_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: netbird-proxy-token
+                  key: token
+            - name: NB_PROXY_PRIVATE
+              value: "true"
+            - name: NB_PROXY_ADDRESS
+              value: "0.0.0.0:8443"
+            - name: NB_PROXY_HEALTH_ADDRESS
+              value: ":8080"
+            # Private service names are <service>.glem.men; the bare domain is
+            # reserved for the regular public ingress.
+            - name: NB_PROXY_REQUIRE_SUBDOMAIN
+              value: "true"
+          volumeMounts:
+            - name: certs
+              mountPath: /certs
+            - name: wildcard
+              mountPath: /certs/wildcard
+              readOnly: true
+          startupProbe:
+            httpGet:
+              path: /healthz/startup
+              port: health
+            periodSeconds: 5
+            failureThreshold: 30
+          readinessProbe:
+            httpGet:
+              path: /healthz/ready
+              port: health
+            periodSeconds: 10
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /healthz/live
+              port: health
+            periodSeconds: 30
+            failureThreshold: 3
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+      volumes:
+        - name: certs
+          emptyDir: {}
+        - name: wildcard
+          secret:
+            secretName: netbird-proxy-wildcard-tls

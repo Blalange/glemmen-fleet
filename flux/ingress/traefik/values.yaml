@@ -53,3 +53,5 @@ service:
     # The IP the UniFi router forwards 80/443 (and future ports) to. The old
     # cluster's keepalived no longer exists, so this cluster owns .99.
     metallb.io/loadBalancerIPs: 192.168.6.99
+    # Allow the NetBird relay's UDP 3478 Service to share this VIP.
+    metallb.io/allow-shared-ip: glemmen-vip

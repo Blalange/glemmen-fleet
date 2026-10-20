@@ -6,6 +6,7 @@ resources:
   - energisjappa.yaml
   - frigate.yaml
   - homepage.yaml
+  - netbird.yaml
   - panel.yaml
   - snipe-it.yaml
   - unifi.yaml

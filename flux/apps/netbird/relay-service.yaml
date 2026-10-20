@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: netbird-relay
+spec:
+  type: ClusterIP
+  selector:
+    app: netbird-relay
+  ports:
+    - name: http
+      port: 8080
+      targetPort: http
+    # STUN is available inside the cluster. Public use needs a UDP 3478
+    # forward, which the UniFi router does not currently have (only 80/443).
+    - name: stun
+      port: 3478
+      targetPort: stun
+      protocol: UDP

@@ -1,0 +1,14 @@
+# Reached through Traefik (192.168.6.99) with TLS passthrough. Only the public
+# ingress VIP is forwarded; the proxy does not need its own MetalLB address.
+apiVersion: v1
+kind: Service
+metadata:
+  name: netbird-reverse-proxy
+spec:
+  type: ClusterIP
+  selector:
+    app: netbird-reverse-proxy
+  ports:
+    - name: https
+      port: 443
+      targetPort: https

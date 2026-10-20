@@ -1,0 +1,32 @@
+# NetBird reverse proxy (private services under *.proxy.glem.men) and the
+# external relay at nb-relay.glem.men.
+#
+# The proxy registers with NetBird management using an account-scoped token.
+# Create the token Secret on the cluster before Flux rolls this out:
+#
+#   kubectl -n netbird create secret generic netbird-proxy-token \
+#     --from-literal=token=nbx_...
+#
+# The external relay needs the shared NetBird relay auth secret:
+#
+#   kubectl -n netbird create secret generic netbird-relay-auth \
+#     --from-literal=auth-secret='...'
+#
+# The secrets are deliberately not stored in Git.
+#
+# The proxy connects to https://netbird.blalange.org and completes its initial
+# mapping sync. The management endpoint is gRPC-only, so a plain HTTP GET to
+# /management.ProxyService/ returns 404 text/plain. Create private services in
+# the NetBird dashboard; unknown hosts intentionally return the proxy's 404.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: netbird
+resources:
+  - certificate.yaml
+  - deployment.yaml
+  - service.yaml
+  - ingressroutetcp.yaml
+  - relay-deployment.yaml
+  - relay-service.yaml
+  - relay-stun-service.yaml
+  - relay-ingress.yaml

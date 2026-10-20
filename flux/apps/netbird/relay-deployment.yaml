@@ -1,0 +1,65 @@
+# NetBird external relay, reached through Traefik at nb-relay.glem.men.
+#
+# Traefik terminates TLS and forwards WebSocket (HTTP/1.1 upgrade) traffic to
+# the relay on 8080. The relay itself does not do Let's Encrypt or QUIC here.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: netbird-relay
+  labels:
+    app: netbird-relay
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: netbird-relay
+  template:
+    metadata:
+      labels:
+        app: netbird-relay
+    spec:
+      containers:
+        - name: relay
+          image: netbirdio/relay:0.78.1
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8080
+            - name: stun
+              containerPort: 3478
+              protocol: UDP
+          env:
+            - name: NB_LOG_LEVEL
+              value: info
+            - name: NB_LISTEN_ADDRESS
+              value: ":8080"
+            - name: NB_EXPOSED_ADDRESS
+              value: "rels://nb-relay.glem.men:443"
+            - name: NB_AUTH_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: netbird-relay-auth
+                  key: auth-secret
+            # Traefik pods live in the cluster pod CIDR. The relay only uses
+            # this to trust X-Real-Ip/X-Real-Port from the proxy.
+            - name: NB_TRUSTED_PROXIES
+              value: "10.42.0.0/16"
+            - name: NB_ENABLE_STUN
+              value: "true"
+            - name: NB_STUN_PORTS
+              value: "3478"
+          readinessProbe:
+            tcpSocket:
+              port: http
+            periodSeconds: 10
+          livenessProbe:
+            tcpSocket:
+              port: http
+            periodSeconds: 30
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 200m
+              memory: 128Mi

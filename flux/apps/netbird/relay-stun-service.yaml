@@ -1,0 +1,20 @@
+# Public STUN listener for the NetBird relay.
+#
+# UniFi forwards UDP 3478 to 192.168.6.99. MetalLB shares that VIP with the
+# Traefik service via the matching metallb.io/allow-shared-ip annotation.
+apiVersion: v1
+kind: Service
+metadata:
+  name: netbird-relay-stun
+  annotations:
+    metallb.io/loadBalancerIPs: "192.168.6.99"
+    metallb.io/allow-shared-ip: glemmen-vip
+spec:
+  type: LoadBalancer
+  selector:
+    app: netbird-relay
+  ports:
+    - name: stun
+      port: 3478
+      targetPort: stun
+      protocol: UDP
