@@ -1,0 +1,82 @@
+# Second ArchiveTeam Warrior, pinned to the URLTeam 2 project.
+#
+# Same options and ephemeral storage as the warrior Deployment. The only
+# difference is SELECTED_PROJECT, which seeds projects/config.json on every new
+# pod; because there is no volume, a project chosen manually in the web UI is
+# discarded on restart and the pod returns to urlteam2.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: warrior2
+  labels:
+    app.kubernetes.io/name: warrior2
+    app.kubernetes.io/instance: warrior2
+spec:
+  # One warrior at a time: a second copy would download and upload the same
+  # items under the same downloader name. Recreate guarantees the old pod is
+  # gone before the replacement starts.
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: warrior2
+      app.kubernetes.io/instance: warrior2
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: warrior2
+        app.kubernetes.io/instance: warrior2
+    spec:
+      securityContext:
+        runAsUser: 1000
+        runAsGroup: 1000
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: warrior
+          image: atdr.meo.ws/archiveteam/warrior-dockerfile:latest
+          imagePullPolicy: Always
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+          env:
+            # Name shown on the ArchiveTeam leaderboards.
+            - name: DOWNLOADER
+              value: "blålange"
+            - name: HTTP_USERNAME
+              value: admin
+            - name: HTTP_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: warrior-http-auth
+                  key: password
+            - name: CONCURRENT_ITEMS
+              value: "6"
+            - name: SELECTED_PROJECT
+              value: urlteam2
+          ports:
+            - name: http
+              containerPort: 8001
+          # The web UI is behind HTTP basic auth, so the probes only check that
+          # the server is listening.
+          readinessProbe:
+            tcpSocket:
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            failureThreshold: 3
+          livenessProbe:
+            tcpSocket:
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 30
+            failureThreshold: 6
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              memory: 2Gi

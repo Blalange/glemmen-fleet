@@ -1,0 +1,22 @@
+# Traefik terminates TLS with the *.glem.men wildcard certificate and forwards
+# to the Warrior web UI, which enforces its own HTTP basic auth.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: warrior2
+  labels:
+    app.kubernetes.io/name: warrior2
+    app.kubernetes.io/instance: warrior2
+spec:
+  ingressClassName: traefik
+  rules:
+    - host: warrior2.glem.men
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: warrior2
+                port:
+                  number: 8001
