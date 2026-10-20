@@ -18,6 +18,39 @@ addresses:
 routes:
     - gateway: 192.168.6.1
 ---
+# APC Automatic Transfer Switch on eno1.
+#
+# eno1 is connected directly to the APC's network management port. The APC is
+# an untagged management interface (MAC 00:c0:b7:f4:7e:d0, vendor class
+# APC/G2ATS). Bridge it with a VLAN 4 subinterface on the 10G uplink so the
+# APC is switched onto the existing "Server tilbehør" VLAN
+# (192.168.4.0/24, gateway 192.168.4.1).
+#
+# The APC uses DHCP from the UniFi VLAN 4 server. Create a fixed-IP
+# reservation in UniFi Network for MAC 00:c0:b7:f4:7e:d0 -> 192.168.4.3, so
+# the address is stable without configuring the APC itself. No DHCP server
+# runs on glemmen80.
+#
+# br-apc gets 192.168.4.2/24 (outside the DHCP pool) so glemmen80 can reach
+# the APC directly. There is deliberately no default route on this interface;
+# the node keeps using 192.168.6.1.
+apiVersion: v1alpha1
+kind: VLANConfig
+name: enp4s0f0.4
+vlanID: 4
+parent: enp4s0f0
+up: true
+---
+apiVersion: v1alpha1
+kind: BridgeConfig
+name: br-apc
+links:
+    - eno1
+    - enp4s0f0.4
+up: true
+addresses:
+    - address: 192.168.4.2/24
+---
 # Install to the ST91000640NS (slot moved to sda); overrides the common install target.
 apiVersion: v1alpha1
 kind: UnattendedInstallConfig

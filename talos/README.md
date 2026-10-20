@@ -154,6 +154,14 @@ need a reboot). `talosctl` can be used directly with
   the ST91000640NS disk (`naa.5000c500647fdfa5`) and uses the two WD 1 TB disks as
   Longhorn data disks (`hdd1`/`hdd2`). **SecureBoot is enabled on this machine** —
   disable it in the BIOS (or build a SecureBoot-signed image) before installing.
+  The onboard `eno1` port is bridged (`br-apc`, address `192.168.4.2/24`) with
+  VLAN 4 on `enp4s0f0` (`.4`), connecting the APC automatic transfer switch to
+  the existing `Server tilbehør` VLAN (`192.168.4.0/24`, gateway
+  `192.168.4.1`). The APC uses DHCP from UniFi; create a fixed-IP reservation
+  in UniFi Network for MAC `00:c0:b7:f4:7e:d0` -> `192.168.4.3` (outside the
+  DHCP pool `.6`-`.254`). No DHCP server runs on glemmen80.
+  The USW port facing glemmen80 must allow tagged VLAN 4 (the current `auto`
+  tagged-VLAN setting does).
 * **glemmen60** is a **worker** node (config ready, installed). The
   7.3 TB disk (`hdd1` user volume) is used for Longhorn data; the old
   migration NFS export was retired when the node was wiped and joined.
