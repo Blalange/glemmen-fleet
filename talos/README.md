@@ -15,7 +15,7 @@ All nodes are control planes and workers at the same time (etcd + workload sched
 | `gen-iso.sh` | Creates the schematic (base image) and prints/downloads the generic ISO + installer image |
 | `setup-images.sh` | Per-node setup ISOs with the maintenance network baked in (`--print` shows the kernel args) |
 | `gen-config.sh` | Renders secrets + configs into `generated/` (gitignored) and validates them |
-| `manage.sh` | Day-2 operations (apply, bootstrap, health, vip, wipe, upgrades) |
+| `manage.sh` | Day-2 operations (apply, bootstrap, health, cordon/drain, shutdown, vip, wipe, upgrades) |
 | `secrets/netbird.env` | Netbird setup key (gitignored, see `secrets/README.md`) |
 | `generated/` | Derived PKI, kubeconfig, machine configs (gitignored — **back this up**) |
 
@@ -135,6 +135,10 @@ both are in the schematic / common patch. Node upgrades preserve the volumes.
 ./talos/manage.sh status                 # version, etcd members, machine status
 ./talos/manage.sh health                 # cluster health check
 ./talos/manage.sh roles                  # node role labels (1xx = all roles, others = worker)
+./talos/manage.sh cordon glemmen170      # mark a node unschedulable
+./talos/manage.sh drain glemmen170       # cordon + evict workloads
+./talos/manage.sh uncordon glemmen170    # make it schedulable again
+./talos/manage.sh shutdown glemmen170    # graceful Talos shutdown (cordons/drains first)
 ./talos/manage.sh links glemmen60        # interface names/MACs of a node
 ./talos/manage.sh patch glemmen130 file.yaml
 ./talos/manage.sh vip off glemmen170 glemmen180 glemmen80   # remove the API VIP

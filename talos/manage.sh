@@ -16,6 +16,11 @@
 #   links <node>               List network links (names, MACs) on a node
 #   disks <node>               List disks (for disk selectors)
 #   roles                      Label nodes: glemmen1xx control-plane+etcd+worker, others worker
+#   cordon <node...>           Mark Kubernetes nodes unschedulable
+#   uncordon <node...>         Mark Kubernetes nodes schedulable again
+#   drain <node> [args...]     Cordon and evict workloads from a node
+#                              (defaults: --ignore-daemonsets --delete-emptydir-data)
+#   shutdown <node...>         Gracefully shut down Talos nodes (Talos cordons/drains first)
 #   patch <node> <file>        Apply a machine config patch to a running node
 #   netbird                    Re-render and apply the Netbird config to all nodes
 #   vip on|off <nodes...>      Add/remove the Layer2 VIP config (192.168.6.98)
@@ -44,6 +49,23 @@ if [[ -z "${TALOSCTL}" ]]; then
         exit 1
     fi
 fi
+
+KUBECTL="${KUBECTL:-}"
+export KUBECONFIG="${KUBECONFIG:-${GENERATED}/kubeconfig}"
+
+resolve_kubectl() {
+    if [[ -n "${KUBECTL}" ]]; then
+        return 0
+    fi
+    if [[ -x "${SCRIPT_DIR}/../scripts/bin/kubectl" ]]; then
+        KUBECTL="${SCRIPT_DIR}/../scripts/bin/kubectl"
+    elif command -v kubectl >/dev/null 2>&1; then
+        KUBECTL="$(command -v kubectl)"
+    else
+        echo "ERROR: kubectl not found (set KUBECTL)" >&2
+        exit 1
+    fi
+}
 
 node_ip() {
     local name="$1" entry
@@ -117,19 +139,7 @@ case "${cmd}" in
         # set the node-role.kubernetes.io/* labels itself (the kubelet identity
         # is restricted by NodeRestriction), so they are applied here
         # (idempotent).
-        KUBECTL="${KUBECTL:-}"
-        if [[ -z "${KUBECTL}" ]]; then
-            if [[ -x "${SCRIPT_DIR}/../scripts/bin/kubectl" ]]; then
-                KUBECTL="${SCRIPT_DIR}/../scripts/bin/kubectl"
-            else
-                KUBECTL="$(command -v kubectl || true)"
-            fi
-        fi
-        if [[ -z "${KUBECTL}" ]]; then
-            echo "ERROR: kubectl not found (set KUBECTL)" >&2
-            exit 1
-        fi
-        export KUBECONFIG="${KUBECONFIG:-${GENERATED}/kubeconfig}"
+        resolve_kubectl
         cp_nodes=()
         worker_nodes=()
         for entry in ${TALOS_NODES}; do
@@ -162,6 +172,36 @@ case "${cmd}" in
             # make sure stray roles never linger on the workers
             "${KUBECTL}" label node "${name}" \
                 node-role.kubernetes.io/etcd- node-role.kubernetes.io/control-plane- >/dev/null 2>&1 || true
+        done
+        ;;
+    cordon)
+        : "${1:?usage: manage.sh cordon <node...>}"
+        resolve_kubectl
+        "${KUBECTL}" cordon "$@"
+        ;;
+    uncordon)
+        : "${1:?usage: manage.sh uncordon <node...>}"
+        resolve_kubectl
+        "${KUBECTL}" uncordon "$@"
+        ;;
+    drain)
+        node="${1:?usage: manage.sh drain <node> [kubectl drain flags...]}"
+        shift || true
+        resolve_kubectl
+        echo "==> Draining ${node} (cordon + evict)"
+        "${KUBECTL}" drain "${node}" \
+            --ignore-daemonsets --delete-emptydir-data --timeout=300s "$@"
+        ;;
+    shutdown)
+        nodes=("$@")
+        if [[ ${#nodes[@]} -eq 0 ]]; then
+            echo "usage: manage.sh shutdown <node...>" >&2
+            exit 1
+        fi
+        for node in "${nodes[@]}"; do
+            ip="$(node_ip "${node}")"
+            echo "==> Shutting down ${node} (${ip})"
+            "${TALOSCTL}" -n "${ip}" shutdown
         done
         ;;
     disks)
