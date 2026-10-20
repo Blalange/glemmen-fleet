@@ -8,7 +8,7 @@ The `glemmen1xx` machines run control plane + etcd + worker roles; `glemmen80`,
 
 | Path | Purpose |
 |------|---------|
-| `settings.env` | Versions, endpoint/VIP, node table — used by the scripts |
+| `settings.env` | Versions, endpoint/VIP, node table — used by the scripts, Tuppr and `check-updates.py` |
 | `schematic.yaml` | Image Factory extensions: iscsi-tools, util-linux-tools, btrfs, netbird |
 | `patches/common.yaml` | Common machine config patch (subnets, DNS, kubelet node IP, btrfs, Longhorn system disk) |
 | `patches/netbird.yaml.tpl` | Netbird extension config template (`NB_SETUP_KEY` filled in by `scripts/talos/gen-config.py`) |
@@ -137,6 +137,23 @@ check the node label/annotation and `talosctl -n <node> get mountstatus`.
 
 btrfs support needs the `siderolabs/btrfs` extension **and** the kernel module;
 both are in the schematic / common patch. Node upgrades preserve the volumes.
+
+## Checking for updates
+
+`scripts/check-updates.py` compares the pinned versions with upstream releases
+and scans the Flux manifests for Helm chart and container-image updates:
+
+```sh
+./scripts/check-updates.py
+./scripts/check-updates.py --no-images
+./scripts/check-updates.py --json
+```
+
+Tuppr's `TalosUpgrade` and `KubernetesUpgrade` versions are not separate pins:
+`flux/infrastructure/tuppr/resources/kustomization.yaml` generates them from
+`TALOS_VERSION` and `KUBERNETES_VERSION` in `settings.env` via Kustomize
+replacements. Change the settings file and let Flux reconcile; no Tuppr YAML
+edit is needed.
 
 ## Updating nodes after a config or schematic change
 

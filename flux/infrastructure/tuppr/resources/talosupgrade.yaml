@@ -1,7 +1,8 @@
 # Talos Linux upgrades. tuppr rolls the version across the control planes and
 # workers one healthy node at a time (drain, upgrade, reboot, health check).
-# Pinned to the running version: bump the version to trigger an upgrade.
-# Only one upgrade (Talos or Kubernetes) runs cluster-wide at a time.
+# The version is replaced from talos/settings.env (TALOS_VERSION) by
+# kustomization.yaml. Only one upgrade (Talos or Kubernetes) runs cluster-wide
+# at a time.
 apiVersion: tuppr.home-operations.com/v1alpha1
 kind: TalosUpgrade
 metadata:

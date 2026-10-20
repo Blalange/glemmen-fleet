@@ -52,6 +52,10 @@ Helm values live next to their HelmRelease and are turned into ConfigMaps with
 The pinned `flux`/`kubectl` binaries live in `scripts/bin/`; download them with
 `./scripts/download-tools.py` (see `scripts/README.md`).
 
+Tuppr's Talos/Kubernetes upgrade targets are generated from
+`talos/settings.env`; use `./scripts/check-updates.py` to see available
+Talos, Kubernetes, Flux, Helm and container-image updates.
+
 ## Longhorn backups (Google Drive via rclone)
 
 Longhorn's S3 backupstore is provided by an in-cluster `rclone serve s3`

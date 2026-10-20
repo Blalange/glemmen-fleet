@@ -1,0 +1,36 @@
+# Tuppr upgrade plans read their target versions from talos/settings.env.
+#
+# The ConfigMap is generated from the shared settings file and Kustomize
+# replacements inject the values into the cluster-scoped upgrade resources.
+# Flux runs kustomize with LoadRestrictionsNone, so the file outside this
+# directory is allowed.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - kubernetesupgrade.yaml
+  - talosupgrade.yaml
+configMapGenerator:
+  - name: tuppr-versions
+    envs:
+      - ../../../../talos/settings.env
+    options:
+      disableNameSuffixHash: true
+replacements:
+  - source:
+      kind: ConfigMap
+      name: tuppr-versions
+      fieldPath: data.TALOS_VERSION
+    targets:
+      - select:
+          kind: TalosUpgrade
+        fieldPaths:
+          - spec.talos.version
+  - source:
+      kind: ConfigMap
+      name: tuppr-versions
+      fieldPath: data.KUBERNETES_VERSION
+    targets:
+      - select:
+          kind: KubernetesUpgrade
+        fieldPaths:
+          - spec.kubernetes.version

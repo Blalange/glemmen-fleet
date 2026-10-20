@@ -1,5 +1,5 @@
-# Kubernetes version upgrades. Exactly one KubernetesUpgrade per cluster; edit
-# the version to upgrade again.
+# The version is replaced from talos/settings.env (KUBERNETES_VERSION) by
+# kustomization.yaml. Exactly one KubernetesUpgrade per cluster.
 apiVersion: tuppr.home-operations.com/v1alpha1
 kind: KubernetesUpgrade
 metadata:

@@ -57,7 +57,7 @@ Backup av Longhorn-volumene går til en Google Drive-mappe via en rclone S3-bro 
 
 - `flux/` – Flux v2 konfigurasjonen. `scripts/flux/setup.py` bootstrapper Flux mot dette repositoriet, `scripts/flux/manage.py` viser status og suspenderer/gjenopptar synken. Applikasjons-manifester ligger fortsatt i rot-katalogene (`frigate/`, `snipe-it/`, ...), Flux peker på dem.
 - `talos/` – Talos maskinkonfigurasjon: `schematic.yaml` (Image Factory extensions), `nodes/` (per-node dokumenter), `patches/` og en runbook i `talos/README.md`. Genererte konfigurasjoner og secrets ligger i `talos/generated/` (ikke i git).
-- `scripts/` – alle drifts- og genereringsskriptene: `scripts/talos/` (gen-iso, setup-images, gen-config, manage), `scripts/flux/` (setup, manage), `scripts/download-tools.py` (pinned `talosctl`/`kubectl`/`flux` til `scripts/bin/`), samt `network-test.py` og `update-grafana-dashboards.py`.
+- `scripts/` – alle drifts- og genereringsskriptene: `scripts/talos/` (gen-iso, setup-images, gen-config, manage), `scripts/flux/` (setup, manage), `scripts/download-tools.py` (pinned `talosctl`/`kubectl`/`flux` til `scripts/bin/`), `scripts/check-updates.py` (Talos/Kubernetes/Flux/Helm/image-oppdateringer), samt `network-test.py` og `update-grafana-dashboards.py`.
 
 ## Historikk
 

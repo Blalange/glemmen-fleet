@@ -39,3 +39,19 @@ export GITHUB_TOKEN=github_pat_...
 ```
 
 Both use `talos/generated/kubeconfig` by default; override with `KUBECONFIG`.
+
+## Updates
+
+```sh
+./scripts/check-updates.py                  # Talos, Kubernetes, Flux, Helm, images
+./scripts/check-updates.py --no-images      # skip registry lookups
+./scripts/check-updates.py --json           # machine-readable output
+./scripts/check-updates.py --fail-on-updates
+```
+
+The checker compares `TALOS_VERSION` and `KUBERNETES_VERSION` from
+`talos/settings.env`, reads HelmRelease/OCIRepository versions from the Flux
+manifests, and scans YAML for container image tags. `GITHUB_TOKEN` is optional
+but avoids GitHub API rate limits. Tuppr's `TalosUpgrade` and
+`KubernetesUpgrade` versions are generated from the same settings file via
+Kustomize replacements.
