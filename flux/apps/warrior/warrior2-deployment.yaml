@@ -45,7 +45,7 @@ spec:
           env:
             # Name shown on the ArchiveTeam leaderboards.
             - name: DOWNLOADER
-              value: "blålange"
+              value: "blalange"
             - name: HTTP_USERNAME
               value: admin
             - name: HTTP_PASSWORD
@@ -56,7 +56,7 @@ spec:
             - name: CONCURRENT_ITEMS
               value: "6"
             - name: SELECTED_PROJECT
-              value: urlteam2
+              value: "urlteam2"
           ports:
             - name: http
               containerPort: 8001
