@@ -22,3 +22,11 @@ allowedRoles:
     - os:admin
 allowedKubernetesNamespaces:
     - system-upgrade
+---
+# KubeNodeConfig contents are used as-is (unlike .machine.nodeLabels), so the
+# control-plane role label has to be set here as well. All control planes are
+# schedulable workers in this cluster, hence deliberately no NoSchedule taint.
+apiVersion: v1alpha1
+kind: KubeNodeConfig
+labels:
+    node-role.kubernetes.io/control-plane: ""

@@ -7,10 +7,10 @@
 # - v1.14 splits most settings into prefix-less config documents (kind: X). Patches
 #   merge per document (kind + name for named documents).
 # - `$patch: delete` removes a field/document from the generated defaults.
-# - We deliberately do NOT set node-role.kubernetes.io/* labels: Kubernetes
-#   NodeRestriction forbids the kubelet identity from setting them (Talos applies
-#   node labels/annotations with the kubelet identity). Longhorn's
-#   node.longhorn.io/* label+annotation are allowed and applied below per node.
+# - KubeNodeConfig contents are used as-is by Talos. The control-plane role
+#   label is set in control-plane.yaml; the etcd/worker role labels are applied
+#   after bootstrap by `manage.py roles`. Longhorn's node.longhorn.io/*
+#   label+annotation are set per node below.
 
 # Static hostnames: delete the generated `auto: stable` (the actual hostname is
 # set per node in talos/nodes/<host>.yaml).

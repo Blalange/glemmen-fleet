@@ -169,10 +169,14 @@ def generate_node_configs(
                 output,
             ]
         )
-        common.run(
+        validation = common.run(
             [talosctl, "validate", "--config", output, "--mode", "metal"],
             capture=True,
         )
+        # talosctl prints warnings (for example KubeNodeConfig role-label
+        # warnings) on stderr even when validation succeeds.
+        if validation.stderr.strip():
+            print(validation.stderr.rstrip(), file=sys.stderr)
         print(f"    {node}.yaml OK ({role})")
 
 
