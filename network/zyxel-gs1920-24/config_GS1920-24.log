@@ -1,0 +1,156 @@
+; Product Name = GS1920-24
+; Firmware Version = V4.10(AAOB.5) | 05/05/2015
+; SysConf Engine Version = 1.2
+vlan 1 
+  name 1 
+  normal 1-27 
+  fixed 28 
+  forbidden "" 
+  untagged 1-28 
+exit
+vlan 4 
+  name Server-tilbehor 
+  normal "" 
+  fixed 1-28 
+  forbidden "" 
+  untagged 1-27 
+  ip address default-management 192.168.4.2 255.255.255.0 
+  ip address default-gateway 192.168.4.1 
+exit
+interface port-channel 1 
+  pvid 4 
+  frame-type untagged 
+exit
+interface port-channel 2 
+  pvid 4 
+  frame-type untagged 
+exit
+interface port-channel 3 
+  pvid 4 
+  frame-type untagged 
+exit
+interface port-channel 4 
+  pvid 4 
+  frame-type untagged 
+exit
+interface port-channel 5 
+  pvid 4 
+  frame-type untagged 
+exit
+interface port-channel 6 
+  pvid 4 
+  frame-type untagged 
+exit
+interface port-channel 7 
+  pvid 4 
+  frame-type untagged 
+exit
+interface port-channel 8 
+  pvid 4 
+  frame-type untagged 
+exit
+interface port-channel 9 
+  pvid 4 
+  frame-type untagged 
+exit
+interface port-channel 10 
+  pvid 4 
+  frame-type untagged 
+exit
+interface port-channel 11 
+  pvid 4 
+  frame-type untagged 
+exit
+interface port-channel 12 
+  pvid 4 
+  frame-type untagged 
+exit
+interface port-channel 13 
+  pvid 4 
+  frame-type untagged 
+exit
+interface port-channel 14 
+  pvid 4 
+  frame-type untagged 
+exit
+interface port-channel 15 
+  pvid 4 
+  frame-type untagged 
+exit
+interface port-channel 16 
+  pvid 4 
+  frame-type untagged 
+exit
+interface port-channel 17 
+  pvid 4 
+  frame-type untagged 
+exit
+interface port-channel 18 
+  pvid 4 
+  frame-type untagged 
+exit
+interface port-channel 19 
+  pvid 4 
+  frame-type untagged 
+exit
+interface port-channel 20 
+  pvid 4 
+  frame-type untagged 
+exit
+interface port-channel 21 
+  pvid 4 
+  frame-type untagged 
+exit
+interface port-channel 22 
+  pvid 4 
+  frame-type untagged 
+exit
+interface port-channel 23 
+  pvid 4 
+  frame-type untagged 
+exit
+interface port-channel 24 
+  pvid 4 
+  frame-type untagged 
+exit
+interface port-channel 25 
+  pvid 4 
+  frame-type untagged 
+exit
+interface port-channel 26 
+  pvid 4 
+  frame-type untagged 
+exit
+interface port-channel 27 
+  pvid 4 
+  frame-type untagged 
+exit
+ip name-server 1.1.1.1 
+rmon statistics etherstats 1 port-channel 1   
+rmon statistics etherstats 2 port-channel 2   
+rmon statistics etherstats 3 port-channel 3   
+rmon statistics etherstats 4 port-channel 4   
+rmon statistics etherstats 5 port-channel 5   
+rmon statistics etherstats 6 port-channel 6   
+rmon statistics etherstats 7 port-channel 7   
+rmon statistics etherstats 8 port-channel 8   
+rmon statistics etherstats 9 port-channel 9   
+rmon statistics etherstats 10 port-channel 10   
+rmon statistics etherstats 11 port-channel 11   
+rmon statistics etherstats 12 port-channel 12   
+rmon statistics etherstats 13 port-channel 13   
+rmon statistics etherstats 14 port-channel 14   
+rmon statistics etherstats 15 port-channel 15   
+rmon statistics etherstats 16 port-channel 16   
+rmon statistics etherstats 17 port-channel 17   
+rmon statistics etherstats 18 port-channel 18   
+rmon statistics etherstats 19 port-channel 19   
+rmon statistics etherstats 20 port-channel 20   
+rmon statistics etherstats 21 port-channel 21   
+rmon statistics etherstats 22 port-channel 22   
+rmon statistics etherstats 23 port-channel 23   
+rmon statistics etherstats 24 port-channel 24   
+rmon statistics etherstats 25 port-channel 25   
+rmon statistics etherstats 26 port-channel 26   
+rmon statistics etherstats 27 port-channel 27   
+rmon statistics etherstats 28 port-channel 28   

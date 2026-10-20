@@ -37,6 +37,7 @@ Hardwaren på glemmen60:
 - **Kubernetes API**: `192.168.6.98` (Talos Layer2 VIP, annonseres av control plane-nodene).
 - **Ingress**: `192.168.6.99` (MetalLB L2-pool `.96-.99`). UniFi-routeren portvideresender 80/443 til denne. Traefik kjører i `kube-system` og terminerer TLS med cert-manager sine wildcard-sertifikater. Nye tjenester som skal ha egne porter på samme IP kan bruke MetalLB (sett `metallb.io/loadBalancerIPs: 192.168.6.99` og egen port).
 - **Netbird** kjører på alle nodene som Talos system-extension, slik at de fortsatt er tilgjengelige på mesh-nettet (`*.blalange.intra`). Kubernetes-trafikken går på LAN-adressene.
+- **Server-tilbehør (VLAN 4)**: Zyxel GS1920-24 på `192.168.4.2` har alle access-porter (1-27) i `192.168.4.0/24` (iDRAC, APC og lignende); port 28 er trunk mot UDM Pro port 8. UDM-en har gateway/DHCP på `192.168.4.1`, og APC-en har DHCP-reservasjon på `192.168.4.3`. Switchkonfigurasjonen ligger i `network/zyxel-gs1920-24/`.
 - Nodene administreres med `talosctl` (se `talos/`), ikke SSH.
 
 ### Lagring
