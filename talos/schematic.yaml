@@ -11,7 +11,8 @@
 #                     NOT part of the stock Talos image - without them the
 #                     Broadcom NIC (e.g. glemmen60's BCM5716) never comes up.
 #
-# gen-iso.sh turns this file into a schematic ID and prints the ISO/installer URLs.
+# scripts/talos/gen-iso.py turns this file into a schematic ID and prints the
+# ISO/installer URLs.
 customization:
   systemExtensions:
     officialExtensions:

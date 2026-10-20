@@ -6,7 +6,8 @@
 ## netbird.env
 
 The Netbird setup key used for the `ExtensionServiceConfig` rendered by
-`gen-config.sh`. Create a *reusable* setup key in the Netbird dashboard
+`scripts/talos/gen-config.py`. Create a *reusable* setup key in the Netbird
+dashboard
 (https://netbird.blalange.org) and put it in `netbird.env`:
 
 ```sh
@@ -15,7 +16,8 @@ NB_SETUP_KEY=XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX
 
 A setup key is a credential: anyone holding it can register peers in your
 Netbird network. If it leaks, revoke it in the dashboard and write a new one
-here, then re-run `./gen-config.sh` and re-apply the machine configs.
+here, then re-run `./scripts/talos/gen-config.py` and re-apply the machine
+configs.
 
 ## generated/
 

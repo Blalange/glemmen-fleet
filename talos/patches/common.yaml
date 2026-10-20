@@ -1,6 +1,6 @@
 # Common machine config patch, applied to every node.
 #
-# Applied by gen-config.sh via `talosctl gen config --config-patch`.
+# Applied by scripts/talos/gen-config.py via `talosctl gen config --config-patch`.
 # Node specific overrides live in talos/nodes/<hostname>.yaml and are merged on top.
 #
 # Notes:
@@ -52,7 +52,7 @@ apiVersion: v1alpha1
 kind: KernelModuleConfig
 name: btrfs
 ---
-# NOTE: UnattendedInstallConfig is rendered by gen-config.sh
+# NOTE: UnattendedInstallConfig is rendered by scripts/talos/gen-config.py
 # (generated/patches/install.yaml) because it embeds the schematic-specific
 # installer image. `provisioning` is replaced, not merged, by config patches.
 ---

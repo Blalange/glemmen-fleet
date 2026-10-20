@@ -1,7 +1,8 @@
 # Template for the Netbird extension service config.
 #
-# gen-config.sh renders this file to talos/generated/patches/netbird.yaml,
-# substituting @NB_SETUP_KEY@ with the value from talos/secrets/netbird.env.
+# scripts/talos/gen-config.py renders this file to
+# talos/generated/patches/netbird.yaml, substituting @NB_SETUP_KEY@ with the
+# value from talos/secrets/netbird.env.
 # The rendered file (containing the key) is gitignored.
 apiVersion: v1alpha1
 kind: ExtensionServiceConfig
