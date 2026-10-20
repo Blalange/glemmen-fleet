@@ -53,7 +53,7 @@
       }
     ]
   },
-  "description": "CPU power and energy consumption for the glemmen nodes, from Kepler. RAPL nodes use the highest-coverage package zone so overlapping zones are not double-counted; glemmen60's separate hwmon socket zones are summed. Pod values are Kepler's attribution and need not add up exactly to node power. glemmen50 and glemmen160 are excluded because they have no usable power sensor.",
+  "description": "CPU power and energy consumption for the glemmen nodes, from Kepler. RAPL nodes use the highest-coverage package zone so overlapping zones are not double-counted; glemmen60's separate hwmon socket zones are summed. Pod values are Kepler's attribution and need not add up exactly to node power. glemmen50 is excluded because it has no usable power sensor.",
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 1,
@@ -450,7 +450,7 @@
       ],
       "title": "Nodes reporting",
       "type": "stat",
-      "description": "Number of nodes that currently expose at least one Kepler CPU power zone. glemmen50 and glemmen160 are intentionally excluded because they have no usable power sensor."
+      "description": "Number of nodes that currently expose at least one Kepler CPU power zone. glemmen50 is intentionally excluded because it has no usable power sensor."
     },
     {
       "datasource": {
