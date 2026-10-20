@@ -1,0 +1,103 @@
+# Kepler - CPU power and energy metrics.
+#
+# Kepler runs as a privileged DaemonSet with hostPID, because it reads RAPL
+# zones from the host's /sys/class/powercap (or hwmon power sensors) and uses
+# eBPF against the host processes to attribute energy to pods and containers.
+# The monitoring namespace is already labelled pod-security.kubernetes.io/
+# enforce=privileged for node-exporter/smartctl-exporter.
+
+# Keep the chart's image defaults (the chart pins the image to its appVersion,
+# v0.12.0). Pin the chart version in release.yaml instead.
+image:
+  repository: quay.io/sustainable_computing_io/kepler
+  pullPolicy: IfNotPresent
+
+daemonset:
+  hostPID: true
+  securityContext:
+    privileged: true
+    runAsNonRoot: false
+
+  # Run on every node that actually has a power sensor. Kepler treats a missing
+  # CPU power meter as fatal, so it must not be scheduled on:
+  #   glemmen50  - Xeon E5645: no RAPL support and no hwmon power sensor.
+  #   glemmen160 - the intel_rapl_msr module is not loaded on this node and its
+  #                only hwmon power_meter reports 0 W, which would show bogus
+  #                data. Remove it from this list if RAPL becomes available.
+  # All other nodes have working RAPL (130/150/170/180/80) or the AMD
+  # fam15h_power hwmon sensor (60).
+  affinity:
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+          - matchExpressions:
+              - key: kubernetes.io/hostname
+                operator: NotIn
+                values:
+                  - glemmen50
+                  - glemmen160
+
+  # All nodes are schedulable and may carry taints (they all have the control
+  # plane role), so tolerate everything instead of relying on the chart's
+  # control-plane-only tolerations.
+  tolerations:
+    - operator: Exists
+
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+config:
+  log:
+    level: info
+    format: text
+
+  host:
+    # The host /sys and /proc are mounted under /host by the chart.
+    sysfs: /host/sys
+    procfs: /host/proc
+
+  monitor:
+    # Sample the power counters every 5 seconds. Prometheus scrapes every 15s,
+    # so this gives each scrape a fresh value without sampling needlessly fast.
+    interval: 5s
+
+  cpu:
+    # Use RAPL where the kernel exposes it, and fall back to hwmon power
+    # sensors (glemmen60's fam15h_power) elsewhere. Do not add "fake": it would
+    # invent power values on nodes without a real meter.
+    preferredMeters:
+      - rapl
+      - hwmon
+
+  kube:
+    # Do NOT set enabled: true here. Kepler validates the config file before
+    # it applies the command-line flags, and kube.enable requires a non-empty
+    # kube.node-name - which is only known at runtime. The chart already passes
+    # --kube.enable and --kube.node-name=$(NODE_NAME), so Kubernetes (pod)
+    # metrics are enabled without setting it here.
+    podInformer:
+      mode: kubelet
+      pollInterval: 15s
+
+  exporter:
+    prometheus:
+      enabled: true
+      # Process-level metrics are not used by the dashboard and would create a
+      # series for every process on every node. Keep node, container and pod
+      # metrics, which cover the power dashboard and the per-pod attribution.
+      metricsLevel:
+        - node
+        - container
+        - pod
+
+# The chart's ServiceMonitor is disabled because the monitoring.coreos.com
+# CRDs only exist after kube-prometheus-stack is installed. The equivalent
+# ServiceMonitor (with a node label for dashboards) is applied by the
+# monitoring-resources Kustomization in ../resources/servicemonitors/kepler.yaml.
+serviceMonitor:
+  enabled: false

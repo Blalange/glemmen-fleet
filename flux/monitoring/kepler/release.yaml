@@ -1,0 +1,30 @@
+# Kepler - Kubernetes-based Efficient Power Level Exporter.
+#
+# The chart is published as an OCI artifact (the old
+# sustainable-computing-io.github.io Helm repository is archived). It runs a
+# privileged DaemonSet on every supported node and exposes CPU power/energy
+# metrics on :28282.
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: OCIRepository
+metadata:
+  name: kepler
+spec:
+  interval: 1h
+  url: oci://quay.io/sustainable_computing_io/charts/kepler
+  ref:
+    tag: 0.12.0
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: kepler
+spec:
+  interval: 1h
+  timeout: 10m
+  chartRef:
+    kind: OCIRepository
+    name: kepler
+  valuesFrom:
+    - kind: ConfigMap
+      name: kepler-values
+      valuesKey: values.yaml

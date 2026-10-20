@@ -4,5 +4,6 @@ namespace: monitoring
 resources:
   - cert-manager.yaml
   - flux.yaml
+  - kepler.yaml
   - longhorn.yaml
   - tuppr.yaml

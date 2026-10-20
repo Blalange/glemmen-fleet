@@ -1,5 +1,5 @@
 # Monitoring stack: kube-prometheus-stack (+ the StorageClass/static Grafana
-# PVC), smartctl-exporter and unpoller. Dashboards, alert rules and
+# PVC), smartctl-exporter, kepler and unpoller. Dashboards, alert rules and
 # ServiceMonitors live in resources/ (applied after the CRDs exist).
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
@@ -7,4 +7,5 @@ resources:
   - pvc/
   - kube-prometheus-stack/
   - smartctl-exporter/
+  - kepler/
   - unpoller/

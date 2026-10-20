@@ -1,0 +1,29 @@
+# Kepler CPU power/energy metrics (kepler_node_cpu_watts,
+# kepler_pod_cpu_watts, ...). The chart's own ServiceMonitor is disabled in
+# ../kepler/values.yaml because the monitoring.coreos.com CRDs are installed
+# by kube-prometheus-stack in the monitoring Kustomization, while this file is
+# applied afterwards by monitoring-resources.
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: kepler
+  namespace: monitoring
+spec:
+  namespaceSelector:
+    matchNames:
+      - monitoring
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: kepler
+      app.kubernetes.io/instance: kepler
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: 15s
+      # Kepler already exports node_name on every metric; this adds the same
+      # 'node' label used by node-exporter and smartctl so the dashboards can
+      # use one consistent host label.
+      relabelings:
+        - sourceLabels: [__meta_kubernetes_pod_node_name]
+          targetLabel: node
+          action: replace
