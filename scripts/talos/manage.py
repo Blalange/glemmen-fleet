@@ -1067,9 +1067,12 @@ def cmd_upgrade_talos(args: argparse.Namespace) -> int:
         print(f"==> Waiting for {node.name} to come back")
         wait_for_nodes([node], args.node_timeout)
         if not args.no_health:
+            # Cluster-wide check via the control-plane endpoints. Do not pass the
+            # upgraded node as -n: after a worker upgrade that targets the worker,
+            # talosctl reads kubeconfig from it and fails with "kubeconfig is only
+            # available on control plane nodes".
             run_talos(
                 ["health", "--server=false", f"--wait-timeout={args.health_timeout}"],
-                nodes=node,
             )
     return 0
 
