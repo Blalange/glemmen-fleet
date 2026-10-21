@@ -3,7 +3,8 @@
 # Longhorn only speaks the S3 API for object-store backupstores, while the
 # actual remote is Google Drive. `rclone serve s3` exposes the `gdrive:` remote
 # as an S3 endpoint; the `longhorn-backup` directory in that remote becomes the
-# `longhorn-backup` bucket that Longhorn writes to.
+# `longhorn-backup` bucket that Longhorn writes to. The same bridge also serves
+# the `thanos` bucket used by the Prometheus Thanos sidecar.
 #
 # Everything secret comes from the pre-created `rclone-backup-config` Secret in
 # longhorn-system (not in Git, see flux/README.md):
@@ -13,7 +14,8 @@
 #   AWS_ENDPOINTS           http://rclone-s3.longhorn-system.svc.cluster.local:9000
 #
 # The remote name (`gdrive`) and bucket (`longhorn-backup`) must match
-# `defaultBackupStore.backupTarget` in ../values.yaml.
+# `defaultBackupStore.backupTarget` in ../values.yaml. `thanos` must match the
+# bucket in the `thanos-objstore-config` Secret used by monitoring.
 #
 # Keep this at one replica: multipart upload state is local to the rclone
 # process, so load-balancing one upload across two pods would break Longhorn
@@ -50,8 +52,8 @@ spec:
           type: RuntimeDefault
       initContainers:
         # Run rclone from a writable copy of the config: the Google Drive token
-        # is refreshed in place. Also create the bucket directory up front so
-        # Longhorn sees the target as soon as the pod is ready.
+        # is refreshed in place. Also create the bucket directories up front so
+        # Longhorn and Thanos see their targets as soon as the pod is ready.
         - name: prepare-config
           image: rclone/rclone:1.75.2
           workingDir: /tmp
@@ -60,7 +62,8 @@ spec:
             - -c
             - |
               cp /config-secret/rclone.conf /config/rclone.conf &&
-              rclone mkdir gdrive:longhorn-backup --config /config/rclone.conf
+              rclone mkdir gdrive:longhorn-backup --config /config/rclone.conf &&
+              rclone mkdir gdrive:thanos --config /config/rclone.conf
           securityContext:
             allowPrivilegeEscalation: false
             readOnlyRootFilesystem: true

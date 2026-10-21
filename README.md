@@ -53,6 +53,8 @@ Longhorn (v1.12) leverer alle PVC-ene. Datadiskene er btrfs-volumer som Talos mo
 
 Backup av Longhorn-volumene går til en Google Drive-mappe via en rclone S3-bro i clusteret (`flux/infrastructure/longhorn/rclone/`). Longhorn bruker backup target `s3://longhorn-backup@us-east-1/`; `rclone.conf` og S3-nøklene ligger i secret `rclone-backup-config` i `longhorn-system`.
 
+Prometheus beholder bare de nyeste metrikkene lokalt (15GiB, se `retentionSize`). Thanos-siden i `flux/monitoring/thanos/` laster opp blokkene til `thanos`-bøtta på samme rclone-bro, komprimerer/downsampler dem og gjør historikken tilgjengelig via en egen Grafana-datasource.
+
 ## GitOps og konfigurasjon
 
 - `flux/` – Flux v2 konfigurasjonen. `scripts/flux/setup.py` bootstrapper Flux mot dette repositoriet, `scripts/flux/manage.py` viser status og suspenderer/gjenopptar synken. Applikasjons-manifester ligger fortsatt i rot-katalogene (`frigate/`, `snipe-it/`, ...), Flux peker på dem.

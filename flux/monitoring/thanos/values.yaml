@@ -1,0 +1,86 @@
+# Thanos Query, Store Gateway and Compactor.
+#
+# Prometheus runs the sidecar (see ../kube-prometheus-stack/values.yaml) and
+# uploads TSDB blocks to the `thanos` bucket exposed by the rclone S3 bridge
+# (../../infrastructure/longhorn/rclone). These components read those blocks,
+# compact/downsample them and serve one query endpoint for Grafana.
+#
+# The object store credentials are not in Git. Create the
+# `thanos-objstore-config` Secret before reconciling this release; see
+# ../../README.md.
+
+global:
+  # The Secret contains the S3 config (`objstore.yml`) and is created by hand.
+  objstore:
+    createSecret: false
+    secretName: thanos-objstore-config
+    secretKey: objstore.yml
+
+  # Compactor and Store Gateway keep small cache/scratch volumes on Longhorn.
+  storageClass: monitoring
+
+  # Scrape the Thanos components and let the Prometheus instances pick up the
+  # chart's Thanos alert rules.
+  serviceMonitor:
+    enabled: true
+    labels:
+      release: kube-prometheus-stack
+  thanosRules:
+    labels:
+      release: kube-prometheus-stack
+
+# Prometheus uploads blocks through its sidecar; no remote-write receiver.
+receive:
+  enabled: false
+
+# Bucketweb is not needed, so the component group stays disabled.
+bucket:
+  enabled: false
+
+query:
+  # Single-node cluster; a second replica would only add resource use.
+  replicaCount: 1
+  endpoints:
+    # Created by prometheus.thanosService.enabled in kube-prometheus-stack.
+    static:
+      - dnssrv+_grpc._tcp.kube-prometheus-stack-thanos-discovery.monitoring.svc.cluster.local
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 1000m
+      memory: 2Gi
+
+storegateway:
+  replicaCount: 1
+  persistence:
+    size: 10Gi
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 1000m
+      memory: 2Gi
+
+compactor:
+  replicaCount: 1
+  # Scratch space for the blocks the compactor rewrites.
+  persistence:
+    size: 20Gi
+  # The chart enables a VPA by default, but this cluster has no VPA CRD.
+  vpa:
+    enabled: false
+  # Keep 30d at full resolution, then the downsampled series for longer.
+  retention:
+    resolutionRaw: 30d
+    resolution5m: 90d
+    resolution1h: 365d
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 1000m
+      memory: 2Gi

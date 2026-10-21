@@ -42,6 +42,20 @@ spec:
           annotations:
             summary: 'PersistentVolumeClaim {{ $labels.namespace }}/{{ $labels.persistentvolumeclaim }} is stuck in Pending'
             description: 'PersistentVolumeClaim {{ $labels.namespace }}/{{ $labels.persistentvolumeclaim }} has been Pending for more than 15 minutes, so its pods cannot start.'
+        - alert: PrometheusPVCAbove20GB
+          expr: |
+            kubelet_volume_stats_used_bytes{
+              job="kubelet",
+              metrics_path="/metrics",
+              namespace="monitoring",
+              persistentvolumeclaim=~"prometheus-.*-db-.*"
+            } > 20 * 1024^3
+          for: 1h
+          labels:
+            severity: warning
+          annotations:
+            summary: 'Prometheus PVC {{ $labels.persistentvolumeclaim }} is using more than 20 GB'
+            description: 'The local Prometheus volume uses {{ $value | humanize1024 }}B, above the 20 GB budget. Check that the Thanos sidecar uploads blocks and that retentionSize is applied.'
     - name: custom.certmanager
       rules:
         - alert: CertManagerCertificateExpiringSoon

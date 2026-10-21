@@ -9,3 +9,7 @@ configMapGenerator:
       - values.yaml
 generatorOptions:
   disableNameSuffixHash: true
+  # Without the fixed name (no hash suffix) the HelmRelease would not notice
+  # value changes unless the generated ConfigMap is watched by the controller.
+  labels:
+    reconcile.fluxcd.io/watch: Enabled

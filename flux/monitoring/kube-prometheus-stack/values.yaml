@@ -12,8 +12,17 @@ prometheus:
     # Scrape configuration
     scrapeInterval: 15s
 
+    # Thanos identifies uploaded blocks by their Prometheus external labels.
+    externalLabels:
+      cluster: glemmen
+
     # Storage configuration
+    # Keep the local volume below the 20Gi budget: Prometheus deletes the
+    # oldest blocks as soon as the block directory reaches 15GiB (the WAL and
+    # head chunks live on top of that). Older samples stay queryable through
+    # Thanos, which uploads blocks to object storage before they are deleted.
     retention: 30d
+    retentionSize: 15GiB
     storageSpec:
       volumeClaimTemplate:
         spec:
@@ -22,6 +31,23 @@ prometheus:
           resources:
             requests:
               storage: 20Gi
+
+    # Ship completed TSDB blocks to the Thanos object store (the `thanos`
+    # bucket served by the rclone S3 bridge) and expose the local Prometheus
+    # through the Thanos Store API.
+    thanos:
+      image: quay.io/thanos/thanos:v0.42.4
+      objectStorageConfig:
+        existingSecret:
+          name: thanos-objstore-config
+          key: objstore.yml
+      resources:
+        requests:
+          cpu: 100m
+          memory: 256Mi
+        limits:
+          cpu: 500m
+          memory: 1Gi
 
     # Resource limits
     resources:
@@ -39,6 +65,13 @@ prometheus:
     # Enable monitoring of all namespaces
     serviceMonitorNamespaceSelector: {}
     podMonitorNamespaceSelector: {}
+
+  # Headless service used by Thanos Query to discover the sidecar's gRPC
+  # Store API (port 10901), plus its ServiceMonitor.
+  thanosService:
+    enabled: true
+  thanosServiceMonitor:
+    enabled: true
 
 # Grafana configuration
 grafana:
@@ -95,8 +128,18 @@ grafana:
     hosts:
       - grafana.glem.men
 
-  # Additional data sources
-  additionalDataSources: []
+  # Additional data sources. Thanos Query includes the live Prometheus sidecar
+  # and the object-store blocks, so dashboards can use it for ranges beyond the
+  # local retention window. The built-in Prometheus data source stays the
+  # default; select "Thanos" in a dashboard's data source picker for old data.
+  additionalDataSources:
+    - name: Thanos
+      type: prometheus
+      uid: thanos
+      access: proxy
+      url: http://thanos-query.monitoring.svc.cluster.local:9090
+      jsonData:
+        timeInterval: 30s
 
 # Alertmanager configuration
 alertmanager:

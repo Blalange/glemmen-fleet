@@ -19,12 +19,12 @@ flux/
 │   ├── cert-manager-certificates.yaml -> cert-manager/certificates (-> kube-system)
 │   ├── ingress.yaml            -> flux/ingress (Traefik, depends on certificates)
 │   ├── monitoring-pvc.yaml     -> kube-prometheus-stack/pvc (Grafana volume + SC)
-│   ├── monitoring.yaml         -> flux/monitoring (KPS, smartctl, unpoller)
+│   ├── monitoring.yaml         -> flux/monitoring (KPS, Thanos, smartctl, unpoller)
 │   ├── monitoring-dashboards.yaml / monitoring-alerts.yaml
 │   └── apps.yaml               -> flux/apps (application Kustomizations)
 ├── infrastructure/             namespaces, Longhorn, cert-manager, MetalLB, metrics-server
 ├── ingress/                    Traefik HelmRelease + values
-├── monitoring/                 kube-prometheus-stack, smartctl-exporter, unpoller
+├── monitoring/                 kube-prometheus-stack, Thanos, smartctl-exporter, unpoller
 └── apps/                       Kustomization objects + Homepage HelmRelease
 ```
 
@@ -112,6 +112,60 @@ If the Longhorn target reports an error, check
 `kubectl -n longhorn-system logs deploy/rclone-s3`; an expired or revoked
 Google token needs a new `rclone.conf` in the Secret and a rollout restart.
 
+## Thanos and long-term metrics
+
+Prometheus is capped at 15GiB of local TSDB blocks (`retentionSize` in
+`monitoring/kube-prometheus-stack/values.yaml`), so its 20Gi PVC stays within
+the 20GB usage budget. The Thanos sidecar uploads completed blocks to the
+`thanos` bucket in Google Drive; the `thanos` HelmRelease runs Query, Store
+Gateway and Compactor against the same bucket. Grafana has an additional
+"Thanos" data source for ranges outside the local retention window.
+
+The rclone bridge creates the `thanos` bucket at startup (same `gdrive:`
+remote as the Longhorn backups). Thanos uses the same S3 key pair, so the
+object-store config is copied from the `rclone-backup-config` Secret into the
+monitoring namespace. Create it before reconciling monitoring, otherwise the
+Prometheus sidecar cannot start:
+
+```sh
+AWS_ACCESS_KEY_ID="$(kubectl -n longhorn-system get secret rclone-backup-config \
+  -o jsonpath='{.data.AWS_ACCESS_KEY_ID}' | base64 -d)"
+AWS_SECRET_ACCESS_KEY="$(kubectl -n longhorn-system get secret rclone-backup-config \
+  -o jsonpath='{.data.AWS_SECRET_ACCESS_KEY}' | base64 -d)"
+
+kubectl -n monitoring create secret generic thanos-objstore-config \
+  --from-literal=objstore.yml="$(cat <<EOF
+type: S3
+config:
+  bucket: thanos
+  endpoint: rclone-s3.longhorn-system.svc.cluster.local:9000
+  region: us-east-1
+  access_key: ${AWS_ACCESS_KEY_ID}
+  secret_key: ${AWS_SECRET_ACCESS_KEY}
+  insecure: true
+  bucket_lookup_type: path
+EOF
+)" --dry-run=client -o yaml | kubectl apply -f -
+```
+
+Then reconcile the bridge and monitoring:
+
+```sh
+./scripts/flux/manage.py reconcile infrastructure longhorn-backup monitoring
+kubectl -n monitoring get pods -l app.kubernetes.io/part-of=thanos
+```
+
+`PrometheusPVCAbove20GB` fires if the local volume stays above the budget.
+The usual cause is the sidecar not uploading (check the `thanos` container in
+the Prometheus pod) or the Prometheus retention update not being applied
+(HelmRelease values are watched through the generated ConfigMap label).
+
+The PVC of an existing cluster may already have been expanded beyond 20Gi;
+Kubernetes cannot shrink it in place. The usage cap still applies. Recreating
+it at 20Gi is a separate maintenance operation (stop Prometheus, delete the
+PVC, let the StatefulSet recreate it) and only makes sense after the sidecar
+has uploaded the local blocks that should be kept.
+
 ## Volunteer network services
 
 `apps/volunteer` runs Tor Snowflake (3 replicas), a Syncthing relay, a Tor
@@ -144,7 +198,7 @@ settings before changing the manifests.
 - `infrastructure` (namespaces, Longhorn, cert-manager chart, MetalLB, metrics-server)
 - `infrastructure` -> `longhorn-backup` (rclone S3 gateway for Google Drive)
 - `cert-manager-issuers` -> `cert-manager-certificates` -> `ingress` (Traefik)
-- `infrastructure` -> `monitoring-pvc` -> `monitoring` -> `monitoring-dashboards` / `monitoring-alerts`
+- `infrastructure` -> `monitoring-pvc` -> `monitoring` (kube-prometheus-stack -> Thanos) -> `monitoring-dashboards` / `monitoring-alerts`
 - `apps` waits for `infrastructure`, `monitoring` and `ingress`; the individual
   applications additionally wait for what they need (`homepage` for example
   waits for `homepage-assets`, `kube-prometheus-stack` and `infrastructure`).
@@ -160,7 +214,8 @@ settings before changing the manifests.
   `homepage-grafana`, `frigate-secrets`, `energisjappa-secrets`, `colibri-secrets`,
   `snipe-it-db`, `snipe-it-app-key`, `warrior-http-auth`,
   `volunteer-secrets` and the TLS certificates in `kube-system`; created for
-  the rclone bridge: `rclone-backup-config`).
+  the rclone bridge: `rclone-backup-config`, and `thanos-objstore-config` in
+  `monitoring` for Thanos).
 - **Backup target**: Longhorn backs up to `s3://longhorn-backup@us-east-1/`,
   served by the in-cluster `rclone serve s3` bridge in
   `infrastructure/longhorn/rclone/`. The actual backupstore is a folder
