@@ -1,0 +1,9 @@
+layer: manual
+
+ip_addresses:
+  - address: 192.168.6.98/24
+    status: active
+    description: Talos Kubernetes API Layer2 VIP.
+  - address: 192.168.6.99/24
+    status: active
+    description: MetalLB ingress VIP used by Traefik.

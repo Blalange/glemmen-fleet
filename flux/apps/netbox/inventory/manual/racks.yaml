@@ -1,0 +1,48 @@
+layer: manual
+
+racks:
+  - name: Glemmen rack
+    site: glemmen
+    status: active
+    width: 19
+    u_height: 42
+    desc_units: false
+    description: Physical Glemmen rack, ordered top to bottom.
+    # The layout is the physical order. Each entry is either a device name or
+    # a number of empty rack units. The sync job computes NetBox positions from
+    # the device type heights, so moving a device only means moving one line.
+    #
+    # The two switches are mounted facing the rear of the rack, so their front
+    # panels (and ports) point to the back of the rack.
+    layout:
+      - gap: 1
+      - device: Dream Machine Pro B bygg
+        face: rear
+      - device: USW Pro 24 PoE
+        face: rear
+      - gap: 2
+      - device: 240emy
+      - device: ubuntu-server
+      - device: server220
+      - device: glemmen210
+      - device: server200
+      - device: server190
+      - device: glemmen180
+      - device: glemmen170
+      - device: glemmen160
+      - device: glemmen150
+      - device: LeanderWin10
+      - device: glemmen130
+      - device: server120
+      - device: server110
+      - device: dellserver01
+      - device: apc-ats
+      - device: glemmen80
+      - device: server70
+      - device: glemmen50
+      - device: zyxel-gs1920-24
+      - gap: 4
+      - device: storwize-02
+      - device: storwize-01
+      - device: glemmen60
+      - gap: 4

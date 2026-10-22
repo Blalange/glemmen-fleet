@@ -1,0 +1,10 @@
+layer: manual
+
+cables:
+  - a_device: Dream Machine Pro B bygg
+    a_interface: Port 8
+    b_device: zyxel-gs1920-24
+    b_interface: Port 28
+    type: cat6
+    status: connected
+    description: Zyxel server-accessory uplink (VLAN 1 native, VLAN 4 tagged).

@@ -3,11 +3,19 @@
 [NetBox](https://netbox.dev) is the cluster's network documentation, DCIM and
 IPAM visualization. It is served at <https://netbox.glem.men>.
 
-Git is the source of truth. The inventory lives in
-`inventory/inventory.yaml`, and the `netbox-sync` CronJob reconciles it into
-NetBox every 10 minutes. Anonymous visitors get read-only access to the UI; the
-sync job is the only writer. Objects created by hand in NetBox are never
-deleted by the sync.
+Git is the source of truth. The inventory is split into two layers:
+
+- `inventory/generated/` is written by
+  `scripts/netbox/generate_inventory.py` from the live UniFi controller and the
+  Kubernetes/Talos nodes. Do not edit it by hand.
+- `inventory/manual/` is edited by hand. It owns everything that is not
+  discoverable: real device models, the physical rack layout, physical servers,
+  accessories, hand-documented cables and VIPs.
+
+The `netbox-sync` CronJob merges both layers every 10 minutes and reconciles
+the result into NetBox. Manual values win when the same object appears in both
+layers. Anonymous visitors get read-only access to the UI; the sync job is the
+only writer. Objects created by hand in NetBox are never deleted by the sync.
 
 ## Components
 
@@ -19,12 +27,129 @@ deleted by the sync.
 | `valkey.yaml` | Ephemeral Valkey `9.1.2` for the RQ queue and cache |
 | `sync-cronjob.yaml` | Runs `sync.py` every 10 minutes |
 | `sync.py` | The pynetbox reconciler |
-| `inventory/inventory.yaml` | Desired state, edited in Git |
+| `inventory/generated/` | UniFi, server and Talos facts from the collector |
+| `inventory/manual/` | Human-maintained inventory |
+| `inventory/images/` | Device-type front/rear/other images |
 | `storageclass.yaml` | `netbox` (RWO) and `netbox-media` (RWX) Longhorn classes |
 
 Media uploads use a 2Gi Longhorn **ReadWriteMany** volume. Longhorn implements
 RWX with its NFS share-manager, so the web and worker pods can run on different
 nodes and share the same media directory. Postgres uses a normal RWO volume.
+
+## Inventory layout
+
+```
+inventory/
+├── generated/
+│   ├── unifi.yaml       # adopted UniFi devices, VLANs, prefixes, uplinks
+│   ├── servers.yaml     # physical servers discovered through UniFi
+│   └── talos.yaml       # Talos nodes, interfaces, addresses, status
+├── manual/
+│   ├── site.yaml        # site, manufacturers, platforms, roles, collector settings
+│   ├── device-types.yaml# real models and image references
+│   ├── racks.yaml       # rack height and top-to-bottom layout
+│   ├── devices.yaml     # servers, nodes, accessories, unifi_ip/talos_node links
+│   ├── cables.yaml      # manual cables not discoverable from UniFi
+│   └── ipam.yaml        # VIPs and standalone addresses
+└── images/              # device-type images
+```
+
+Every YAML document declares its layer:
+
+```yaml
+layer: manual
+```
+
+The loader merges by natural key (device name, device-type slug, rack/site,
+VLAN/site+VID, prefix, IP address, cable endpoints). Duplicate keys inside one
+layer are an error; a manual object merges into the generated object with the
+same key.
+
+### Rack layout
+
+Racks use a top-to-bottom list instead of per-device `position` fields. The sync
+job computes NetBox positions from each device type's `u_height` and validates
+bounds and overlaps.
+
+```yaml
+racks:
+  - name: Glemmen rack
+    site: glemmen
+    u_height: 42
+    layout:
+      - gap: 1
+      - device: Dream Machine Pro B bygg
+        face: rear
+      - device: USW Pro 24 PoE
+        face: rear
+      - gap: 2
+      - device: 240emy
+      # ...
+      - device: glemmen60
+      - gap: 4
+```
+
+Each entry is a device name, or `gap: N` for empty units. An optional
+`face: front|rear` marks devices that are mounted facing the back of the rack
+(the two rack switches, for example).
+
+Moving a device is a one-line layout change; everything above/below follows.
+Changing the rack height means editing `u_height` and the layout together.
+
+### Physical servers and accessories
+
+`manual/devices.yaml` is the hardware catalogue. Entries with `unifi_ip` are
+enriched by the collector; entries with `talos_node` are merged with the Talos
+node data. Devices without either are created from the manual layer only.
+
+```yaml
+devices:
+  - name: server70
+    role: server
+    device_type: dell-poweredge-r630
+    unifi_ip: 192.168.6.70
+    uplinks:
+      - interface: Port 1
+        switch: USW Pro 24 PoE
+        port: 24
+        type: cat6
+
+  - name: server200
+    role: server
+    device_type: dell-poweredge-r250
+    status: failed
+    description: Physical server between glemmen210 and server190. Currently broken.
+```
+
+`uplinks` entries are expanded into cables, so a server's NIC-to-switch-port
+map lives next to the server instead of in Python. The collector creates the
+matching physical interfaces and the management address.
+
+### Device types and images
+
+Device types use real manufacturer/model names. `manual/device-types.yaml`
+references image files by name:
+
+```yaml
+device_types:
+  - manufacturer: dell
+    model: PowerEdge R250
+    slug: dell-poweredge-r250
+    u_height: 1
+    images:
+      front: images/dell-poweredge-r250-front.jpg
+      rear: images/dell-poweredge-r250-rear.jpg
+      other:
+        - name: Server front
+          file: images/dell-poweredge-r250-other.jpg
+          description: Front view with drive bays.
+```
+
+`sync.py` uploads `front_image` and `rear_image` through the NetBox multipart
+API and stores additional images as `dcim.devicetype` image attachments. NetBox
+renames uploaded files, so the sync uploads an image once and leaves it alone
+on later runs. Use `--force-images` (or `FORCE_IMAGES=true`) to replace an
+image after changing its file.
 
 ## Topology views
 
@@ -33,12 +158,12 @@ pod startup. An init container installs the wheel into a writable `/plugins`
 emptyDir and runs `collectstatic` into a writable static volume; the web and
 worker containers read both volumes through `PYTHONPATH=/plugins`. This keeps
 the upstream NetBox image pinned and avoids maintaining a custom registry
-image. The plugin adds **Topology Views** to the NetBox navigation; the
-existing cable data between the UniFi devices, the Zyxel switch and the UDM Pro
-supplies the graph. The graph's supporting models are in
-`exemptViewPermissions`, so anonymous viewers can open the map without an
-account. The default plugin menu link opens an empty canvas for anonymous
-users; the Homepage card links directly to the populated view:
+image. The plugin adds **Topology Views** to the NetBox navigation; the existing
+cable data between the UniFi devices, the Zyxel switch and the UDM Pro supplies
+the graph. The graph's supporting models are in `exemptViewPermissions`, so
+anonymous viewers can open the map without an account. The default plugin menu
+link opens an empty canvas for anonymous users; the Homepage card links
+directly to the populated view:
 
 <https://netbox.glem.men/plugins/netbox_topology_views/topology/?draw_init=true&show_cables=True&show_unconnected=True>
 
@@ -90,8 +215,7 @@ the Secret to match.
 
 ## Inventory sync
 
-The shipped inventory was generated from the live UniFi controller and the
-Kubernetes/Talos nodes:
+Collect live UniFi and Talos facts into `inventory/generated/`:
 
 ```sh
 uv run --with requests --with PyYAML \
@@ -100,18 +224,19 @@ uv run --with requests --with PyYAML \
 ```
 
 `--from-cluster` reads the `unpoller-unifi` credentials from the monitoring
-namespace; they are never written to the file. UniFi devices, ports, radios,
-management addresses and uplink cables are generated, as are the Talos node
-versions, roles, capacity, serials and addresses. Re-run it after changing the
-network, review the Git diff, and commit.
+namespace; they are never written to the file. The collector reads the manual
+`settings`, `unifi_models` and `devices` sections, then writes only the
+generated layer. It never edits `inventory/manual/`.
 
-The generator also adds the physical servers connected to the USW Pro 24 PoE
-and places the rack-mounted machines in the 42U `Glemmen rack`. The physical
-order and the server-NIC-to-switch-port map are defined near the top of
-`generate_inventory.py`; the 1xx nodes expose both `eno8303` and `eno8403` bond
-members so each of their two uplinks has its own cable. `glemmen50`,
-`glemmen60`, `glemmen80` and `MinecraftServer` are modeled as 2U; the rest of
-the racked devices are 1U.
+The generated layer contains:
+
+- UniFi adopted devices with ports/radios, management addresses and uplinks
+- VLANs and prefixes from UniFi
+- physical servers listed with `unifi_ip`, including their NIC/IP/uplink facts
+- Talos node versions, roles, capacity, serials, addresses and interfaces
+
+Manual files contain the rest: real models, device-type images, rack layout,
+physical devices, accessories, manual cables and VIPs.
 
 The CronJob tags every object it creates with `gitops`. With `PRUNE=true`, it
 deletes objects that still carry that tag but are no longer present in the
@@ -122,59 +247,28 @@ Supported top-level keys:
 
 | Key | Notes |
 |---|---|
+| `layer` | `generated` or `manual`; mandatory for deterministic merging |
+| `settings` | Collector settings (`site`, `default_tag`, `rack`); ignored by NetBox |
+| `unifi_models` | UniFi model code → device-type slug; ignored by NetBox |
+| `unifi_vlan_names` | UniFi VLAN ID → corrected name; ignored by NetBox |
 | `sites` | Required for devices, racks, VLANs and prefixes |
 | `manufacturers` | Referenced by device types and platforms |
 | `platforms` | Referenced by devices |
 | `device_roles` | Referenced by devices |
-| `device_types` | Referenced by devices |
-| `racks` | Optional; devices can be rack-mounted or rackless |
+| `device_types` | Referenced by devices; may declare `images` |
+| `racks` | Rack definitions plus declarative `layout` |
 | `vlans` | Site-scoped or global |
 | `prefixes` | Optionally attached to a site and VLAN |
-| `devices` | Nested `interfaces` and `ip_addresses` |
+| `devices` | Nested `interfaces`, `ip_addresses` and optional `uplinks` |
 | `ip_addresses` | Standalone/unassigned IPs (VIPs, for example) |
 | `cables` | One declaration per physical cable |
-| `defaults` | Inherited by every device (site, role, device type, tags, etc.) |
-
-Example:
-
-```yaml
-defaults:
-  site: glemmen
-  role: kubernetes-node
-  device_type: talos-node
-  status: active
-
-devices:
-  - name: glemmen130
-    interfaces:
-      - name: bond0
-        type: 1000base-t
-        ip_addresses:
-          - address: 192.168.6.130/24
-            primary: true
-
-  - name: zyxel-gs1920-24
-    role: switch
-    device_type: zyxel-gs1920-24
-    interfaces:
-      - name: Port 1
-        type: 1000base-t
-        untagged_vlan: 4
-
-cables:
-  - a_device: zyxel-gs1920-24
-    a_interface: Port 28
-    b_device: udm-pro
-    b_interface: Port 8
-    type: cat6
-```
+| `defaults` | Inherited by every device (site, tags, etc.) |
 
 Natural keys used for matching are slugs for sites, manufacturers, platforms,
-roles and device types; `(site, name)` for racks and devices; `(site, vid)` for
-VLANs; the prefix for prefixes; `(device, name)` for interfaces; the address
-for IPs; and the two terminations for cables. Adding a `slug` explicitly is
-recommended. Device names must be unique across the inventory; prefix them with
-the site name if you need the same hostname in multiple sites.
+roles and device types; `(site, name)` for racks; `(site, vid)` for VLANs; the
+prefix for prefixes; the device name for devices; `(device, name)` for
+interfaces; the address for IPs; and the two terminations for cables. Adding a
+`slug` explicitly is recommended.
 
 Not modelled yet: VRFs, tenants, virtual machines, modules, wireless, circuits,
 custom fields, device-type interface templates and multi-termination cables.
@@ -194,25 +288,27 @@ kubectl -n netbox logs -f job/netbox-sync-manual
 Validate or preview the inventory locally with `uv`:
 
 ```sh
-uv run --with pynetbox==7.9.0 --with PyYAML==6.0.3 \
+uv run --with pynetbox==7.9.0 --with PyYAML==6.0.3 --with requests==2.32.5 \
   python flux/apps/netbox/sync.py \
   --inventory flux/apps/netbox/inventory --check
 
 NETBOX_URL=https://netbox.glem.men \
 NETBOX_TOKEN="$(kubectl -n netbox get secret netbox-secrets \
-  -o jsonpath='{.data.api_token}' | base64 -d)" \
-uv run --with pynetbox==7.9.0 --with PyYAML==6.0.3 \
+  -o jsonpath='{.data.api_token_full}' | base64 -d)" \
+uv run --with pynetbox==7.9.0 --with PyYAML==6.0.3 --with requests==2.32.5 \
   python flux/apps/netbox/sync.py \
   --inventory flux/apps/netbox/inventory --dry-run --prune
 ```
 
-`--check` validates references and uniqueness without contacting NetBox.
-`--dry-run` prints the exact create/update/delete plan. `--prune` is required
-for deletions; without it the sync only creates and updates.
+`--check` validates references, unique keys, rack bounds and overlaps without
+contacting NetBox. `--dry-run` prints the exact create/update/delete plan.
+`--prune` is required for deletions; without it the sync only creates and
+updates. For rack moves that also delete an old device or cable, use `--prune`
+so the old reservations are released before the new objects are created.
 
 The CronJob is intentionally dependency-free apart from an init container that
-installs the two pinned Python packages into an emptyDir. This avoids
-maintaining a custom image for a short-lived job.
+installs the pinned Python packages into an emptyDir. This avoids maintaining a
+custom image for a short-lived job.
 
 ## First start and verification
 
@@ -221,7 +317,7 @@ maintaining a custom image for a short-lived job.
    `./scripts/flux/manage.py reconcile netbox`
 3. Wait for `netbox`, `netbox-worker`, `netbox-postgres` and `netbox-valkey`.
 4. Open <https://netbox.glem.men>, log in as `admin`, and confirm the site,
-   devices, interfaces, prefixes and cable.
+   devices, interfaces, prefixes and cables.
 5. Check the Prometheus target `netbox` in Grafana.
 6. Trigger a sync and inspect the result:
    `kubectl -n netbox logs job/netbox-sync-manual`.

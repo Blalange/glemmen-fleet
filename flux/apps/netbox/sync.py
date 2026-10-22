@@ -1,27 +1,38 @@
 #!/usr/bin/env python3
 """Reconcile the NetBox YAML inventory into the NetBox REST API.
 
-The inventory in this directory is the source of truth. Every object managed by
-this script is tagged with the ``gitops`` tag. Pruning is opt-in and only ever
-deletes objects that carry that tag, so objects created by hand in the NetBox UI
-are safe.
+The inventory has two layers:
 
-Run locally (uv fetches Python and the two pinned dependencies):
+  * ``inventory/generated`` is written by ``scripts/netbox/generate_inventory.py``
+    from the live UniFi controller and Kubernetes/Talos nodes;
+  * ``inventory/manual`` is edited by hand and owns models, rack layout,
+    physical servers, accessories, manual cables and VIPs.
 
-    uv run --with pynetbox==7.9.0 --with PyYAML==6.0.3 \
+This script merges both layers (manual values win), expands the declarative
+rack layout into NetBox positions, and reconciles the result. Every object it
+manages is tagged with the ``gitops`` tag. Pruning is opt-in and only ever
+deletes objects that carry that tag, so objects created by hand in the NetBox
+UI are safe.
+
+Run locally (uv fetches Python and the pinned dependencies):
+
+    uv run --with pynetbox==7.9.0 --with PyYAML==6.0.3 --with requests==2.32.5 \
       python sync.py --inventory inventory --check
 
     NETBOX_URL=https://netbox.glem.men NETBOX_TOKEN=... \
-    uv run --with pynetbox==7.9.0 --with PyYAML==6.0.3 \
+    uv run --with pynetbox==7.9.0 --with PyYAML==6.0.3 --with requests==2.32.5 \
       python sync.py --inventory inventory --dry-run --prune
 
-The CronJob runs the same script with DRY_RUN=false and PRUNE=true.
+The CronJob runs the same script with DRY_RUN=false and PRUNE=true and mounts
+the device-type images at /images.
 """
 
 from __future__ import annotations
 
 import argparse
+import copy
 import ipaddress
+import mimetypes
 import os
 import re
 import sys
@@ -31,6 +42,7 @@ from pathlib import Path
 from typing import Any, Callable, Iterable
 
 import pynetbox
+import requests
 import yaml
 
 MANAGED_TAG_NAME = "GitOps"
@@ -52,6 +64,11 @@ SECTIONS = (
     "ip_addresses",
     "cables",
 )
+
+# Keys that only configure the collector or sync behaviour and are not NetBox
+# objects. They are silently ignored by the inventory loader.
+AUXILIARY_KEYS = {"settings", "unifi_models", "unifi_vlan_names"}
+LAYER_ORDER = {"generated": 0, "manual": 1}
 
 class SyncError(RuntimeError):
     """A user-facing inventory or API error."""
@@ -174,14 +191,195 @@ def format_key(key: Any) -> str:
     return str(key)
 
 
+def _normalize_merge_value(key: str, current: Any, desired: Any) -> Any:
+    if key in {"tags", "tagged_vlans"}:
+        return sorted({*as_list(current), *as_list(desired)})
+    if key == "interfaces":
+        return _merge_named_list(current, desired, "name")
+    if key == "ip_addresses":
+        return _merge_named_list(current, desired, "address")
+    if key == "images":
+        return _merge_images(current, desired)
+    if isinstance(current, dict) and isinstance(desired, dict):
+        return _merge_mapping(current, desired)
+    return copy.deepcopy(desired)
+
+
+def _merge_mapping(base: dict[str, Any], override: dict[str, Any]) -> dict[str, Any]:
+    result = copy.deepcopy(base)
+    for key, value in override.items():
+        if key not in result:
+            result[key] = copy.deepcopy(value)
+        else:
+            result[key] = _normalize_merge_value(key, result[key], value)
+    return result
+
+
+def _merge_named_list(base: Any, override: Any, key: str) -> list[Any]:
+    items = [copy.deepcopy(item) for item in as_list(base)]
+    order = [str(item.get(key)) for item in items if isinstance(item, dict) and item.get(key) is not None]
+    by_key = {
+        str(item.get(key)): item
+        for item in items
+        if isinstance(item, dict) and item.get(key) is not None
+    }
+    for item in as_list(override):
+        if not isinstance(item, dict):
+            continue
+        item_key = str(item.get(key))
+        if item_key in by_key:
+            by_key[item_key] = _merge_mapping(by_key[item_key], item)
+        else:
+            by_key[item_key] = copy.deepcopy(item)
+            order.append(item_key)
+    return [by_key[item_key] for item_key in order]
+
+
+def _merge_images(base: Any, override: Any) -> dict[str, Any]:
+    result = copy.deepcopy(base or {})
+    for key, value in (override or {}).items():
+        if key == "other":
+            result[key] = _merge_named_list(result.get(key), value, "name")
+        else:
+            result[key] = copy.deepcopy(value)
+    return result
+
+
+def _inventory_key(section: str, item: dict[str, Any]) -> Any:
+    if section in {"sites", "manufacturers", "platforms", "device_roles", "device_types"}:
+        return str(item.get("slug") or slugify(item.get("name") or item.get("model") or ""))
+    if section == "racks":
+        return (str(item.get("site")), str(item.get("name")))
+    if section == "vlans":
+        return (str(item.get("site")), int(item.get("vid")))
+    if section == "prefixes":
+        return normalize_prefix(item.get("prefix"))
+    if section == "devices":
+        return str(item.get("name"))
+    if section == "ip_addresses":
+        return normalize_address(item.get("address"))
+    if section == "cables":
+        return tuple(
+            sorted(
+                [
+                    (str(item.get("a_device")), str(item.get("a_interface"))),
+                    (str(item.get("b_device")), str(item.get("b_interface"))),
+                ]
+            )
+        )
+    return None
+
+
+def _merge_section(section: str, generated: list[Any], manual: list[Any]) -> list[dict[str, Any]]:
+    merged: dict[Any, dict[str, Any]] = {}
+    layers: dict[Any, str] = {}
+    for layer, items in (("generated", generated), ("manual", manual)):
+        for raw in items:
+            if not isinstance(raw, dict):
+                raise SyncError(f"{section}: every entry must be a mapping")
+            key = _inventory_key(section, raw)
+            if key in merged:
+                if layers[key] == layer:
+                    raise SyncError(f"{section}: duplicate key {key!r} in the {layer} layer")
+                merged[key] = _merge_mapping(merged[key], raw)
+            else:
+                merged[key] = copy.deepcopy(raw)
+                layers[key] = layer
+    return list(merged.values())
+
+
+def _cable_key(item: dict[str, Any]) -> tuple[Any, Any]:
+    return tuple(
+        sorted(
+            [
+                (str(item.get("a_device")), str(item.get("a_interface"))),
+                (str(item.get("b_device")), str(item.get("b_interface"))),
+            ]
+        )
+    )
+
+
+def _expand_uplinks(inventory: dict[str, list[Any]]) -> None:
+    cables_by_key: dict[Any, dict[str, Any]] = {
+        _cable_key(cable): cable for cable in inventory["cables"]
+    }
+    for device in inventory["devices"]:
+        uplinks = device.pop("uplinks", None) or []
+        for uplink in uplinks:
+            cable = {
+                "a_device": device["name"],
+                "a_interface": str(uplink.get("interface") or "Port 1"),
+                "b_device": str(uplink.get("switch")),
+                "b_interface": f"Port {int(uplink.get('port'))}",
+                "type": str(uplink.get("type") or "cat6"),
+                "status": "connected",
+                "description": f"{device['name']} {uplink.get('interface')} to {uplink.get('switch')} Port {uplink.get('port')}",
+            }
+            key = _cable_key(cable)
+            if key in cables_by_key:
+                cables_by_key[key].update(cable)
+            else:
+                cables_by_key[key] = cable
+    inventory["cables"] = list(cables_by_key.values())
+
+
+def _expand_rack_layouts(inventory: dict[str, list[Any]]) -> None:
+    devices = {str(device.get("name")): device for device in inventory["devices"]}
+    device_types = {str(item.get("slug")): item for item in inventory["device_types"]}
+
+    for rack in inventory["racks"]:
+        layout = rack.pop("layout", None)
+        if not layout:
+            continue
+        if not isinstance(layout, list):
+            raise SyncError(f"rack {rack.get('name')!r}: layout must be a list")
+        cursor = int(rack.get("u_height", 42))
+        seen: set[str] = set()
+        for entry in layout:
+            if not isinstance(entry, dict):
+                raise SyncError(f"rack {rack.get('name')!r}: every layout entry must be a mapping")
+            gap = entry.get("gap", entry.get("empty"))
+            if gap is not None:
+                cursor -= int(gap)
+                if cursor < 0:
+                    raise SyncError(f"rack {rack.get('name')!r}: layout exceeds rack height")
+                continue
+            name = entry.get("device")
+            if not name:
+                raise SyncError(f"rack {rack.get('name')!r}: layout entry needs device or gap")
+            name = str(name)
+            if name in seen:
+                raise SyncError(f"rack {rack.get('name')!r}: device {name!r} appears more than once")
+            seen.add(name)
+            device = devices.get(name)
+            if device is None:
+                raise SyncError(f"rack {rack.get('name')!r}: unknown device {name!r}")
+            device_type = device_types.get(str(device.get("device_type")))
+            if device_type is None:
+                raise SyncError(f"device {name}: unknown device type {device.get('device_type')!r}")
+            height = int(device_type.get("u_height", 1))
+            position = cursor - height + 1
+            if position < 1:
+                raise SyncError(f"rack {rack.get('name')!r}: device {name!r} does not fit")
+            device["rack"] = rack["name"]
+            device["position"] = position
+            device["face"] = str(entry.get("face") or device.get("face") or "front")
+            cursor = position - 1
+        if cursor != 0:
+            raise SyncError(
+                f"rack {rack.get('name')!r}: layout uses {int(rack.get('u_height', 42)) - cursor} "
+                f"of {rack.get('u_height', 42)} units"
+            )
+
+
 def load_inventory(directory: Path) -> dict[str, list[Any]]:
     if not directory.is_dir():
         raise SyncError(f"inventory directory {directory} does not exist")
 
-    # A Kubernetes ConfigMap volume contains a visible symlink (inventory.yaml)
-    # plus the hidden ..data/..<timestamp>/ tree. rglob() would otherwise load
-    # the same file several times and report duplicate keys. Ignore hidden
-    # path components and de-duplicate resolved files.
+    # A Kubernetes ConfigMap volume contains a visible symlink plus the hidden
+    # ..data/..<timestamp>/ tree. rglob() would otherwise load the same file
+    # several times and report duplicate keys. Ignore hidden path components
+    # and de-duplicate resolved files.
     files: set[Path] = set()
     for pattern in ("*.yaml", "*.yml"):
         for path in directory.rglob(pattern):
@@ -195,7 +393,9 @@ def load_inventory(directory: Path) -> dict[str, list[Any]]:
     if not files:
         raise SyncError(f"no YAML files found under {directory}")
 
-    inventory: dict[str, list[Any]] = {section: [] for section in SECTIONS}
+    by_layer: dict[str, dict[str, list[Any]]] = {
+        layer: {section: [] for section in SECTIONS} for layer in LAYER_ORDER
+    }
     defaults: dict[str, Any] = {}
 
     for path in sorted(files):
@@ -208,33 +408,42 @@ def load_inventory(directory: Path) -> dict[str, list[Any]]:
                 continue
             if not isinstance(document, dict):
                 raise SyncError(f"{path}: every YAML document must be a mapping")
+            layer = str(document.get("layer") or "manual").strip().lower()
+            if layer not in LAYER_ORDER:
+                raise SyncError(f"{path}: unknown layer {layer!r}; expected generated or manual")
             for key, value in document.items():
+                if key == "layer":
+                    continue
                 if key == "defaults":
                     if not isinstance(value, dict):
                         raise SyncError(f"{path}: defaults must be a mapping")
                     defaults.update(value)
-                elif key in inventory:
+                elif key in AUXILIARY_KEYS:
+                    continue
+                elif key in by_layer[layer]:
                     if value is None:
                         continue
                     if not isinstance(value, list):
                         raise SyncError(f"{path}: {key} must be a list")
-                    inventory[key].extend(value)
+                    by_layer[layer][key].extend(value)
                 else:
                     print(f"WARNING: {path}: ignoring unknown top-level key {key!r}", file=sys.stderr)
 
-    devices: list[dict[str, Any]] = []
-    for raw in inventory["devices"]:
-        if not isinstance(raw, dict):
-            raise SyncError("devices: every entry must be a mapping")
-        device = dict(defaults)
-        for key, value in raw.items():
+    inventory: dict[str, list[Any]] = {}
+    for section in SECTIONS:
+        inventory[section] = _merge_section(
+            section, by_layer["generated"][section], by_layer["manual"][section]
+        )
+
+    for device in inventory["devices"]:
+        for key, value in defaults.items():
             if key == "tags":
                 device["tags"] = sorted({*as_list(device.get("tags")), *as_list(value)})
-            else:
-                device[key] = value
-        devices.append(device)
-    inventory["devices"] = devices
+            elif key not in device:
+                device[key] = copy.deepcopy(value)
 
+    _expand_uplinks(inventory)
+    _expand_rack_layouts(inventory)
     return inventory
 
 
@@ -362,6 +571,9 @@ def validate_inventory(inventory: dict[str, list[Any]]) -> None:
             raise SyncError(f"device {name}: position/face require a rack")
         if rack and device.get("position") is not None and not device.get("face"):
             raise SyncError(f"device {name}: a rack position also requires a face")
+        face = device.get("face")
+        if face and face not in {"front", "rear"}:
+            raise SyncError(f"device {name}: face must be 'front' or 'rear', not {face!r}")
 
         interfaces: dict[str, dict[str, Any]] = {}
         primaries: dict[int, str] = {}
@@ -387,6 +599,40 @@ def validate_inventory(inventory: dict[str, list[Any]]) -> None:
                             f"device {name}: more than one primary IPv{version} address"
                         )
                     primaries[version] = normalize_address(ip["address"])
+
+    # Validate rack occupancy. A 42U rack with a few devices is easy to get
+    # wrong by hand, so check bounds and overlaps before touching NetBox.
+    occupancy: dict[tuple[str, str], dict[int, str]] = {}
+    for device in inventory["devices"]:
+        rack_name = device.get("rack")
+        position = device.get("position")
+        if not rack_name or position is None:
+            continue
+        site = str(device["site"])
+        key = (site, str(rack_name))
+        rack_item = racks.get(key)
+        if rack_item is None:
+            raise SyncError(f"device {device['name']}: unknown rack {rack_name!r}")
+        device_type_item = device_types[str(device["device_type"])]
+        height = int(device_type_item.get("u_height", 1))
+        if height < 1:
+            raise SyncError(f"device {device['name']}: a racked device type must be at least 1U")
+        start = int(position)
+        end = start + height - 1
+        rack_height = int(require(rack_item, "u_height", "rack"))
+        if start < 1 or end > rack_height:
+            raise SyncError(
+                f"device {device['name']}: rack position {start}-{end} is outside "
+                f"rack {rack_name!r} (1-{rack_height})"
+            )
+        used = occupancy.setdefault(key, {})
+        for unit in range(start, end + 1):
+            if unit in used:
+                raise SyncError(
+                    f"rack {rack_name!r} unit {unit} is used by both "
+                    f"{used[unit]!r} and {device['name']!r}"
+                )
+            used[unit] = str(device["name"])
 
     for ip in inventory["ip_addresses"]:
         device_name = ip.get("device")
@@ -472,11 +718,19 @@ class Reconciler:
         inventory: dict[str, list[Any]],
         dry_run: bool = False,
         prune: bool = False,
+        url: str = "",
+        token: str = "",
+        images_dir: Path | None = None,
+        force_images: bool = False,
     ) -> None:
         self.nb = nb
         self.inventory = inventory
         self.dry_run = dry_run
         self.prune = prune
+        self.url = url.rstrip("/")
+        self.token = token
+        self.images_dir = images_dir
+        self.force_images = force_images
         self.counts: Counter[str] = Counter()
         self.tags: dict[str, Any] = {}
         self.sites: dict[str, Any] = {}
@@ -555,6 +809,11 @@ class Reconciler:
     # -------------------------------------------------------------- reconciling
 
     def get_one(self, endpoint: Any, lookup: dict[str, Any], kind: str) -> Any:
+        # A dry run resolves objects created earlier in the same run to
+        # negative mock IDs. Those IDs cannot exist in NetBox, so do not send
+        # them as filter values (the API rejects them with a 400).
+        if any(isinstance(value, int) and value < 0 for value in lookup.values()):
+            return None
         try:
             return endpoint.get(**lookup)
         except Exception as exc:  # noqa: BLE001 - pynetbox raises several types
@@ -758,6 +1017,158 @@ class Reconciler:
             )
             self.device_types[slug] = obj
             self.desired["device_types"].add(slug)
+            self.sync_device_type_images(obj, item)
+
+    # ----------------------------------------------------------- type images
+
+    def _auth_headers(self) -> dict[str, str]:
+        scheme = "Bearer" if self.token.startswith("nbt_") else "Token"
+        return {"Authorization": f"{scheme} {self.token}", "Accept": "application/json"}
+
+    def _image_path(self, reference: Any) -> Path:
+        if not reference:
+            raise SyncError("empty image reference")
+        if self.images_dir is None:
+            raise SyncError("no image directory configured")
+        path = self.images_dir / Path(str(reference)).name
+        if not path.is_file():
+            raise SyncError(f"image file {path} does not exist")
+        return path
+
+    @staticmethod
+    def _remote_basename(value: Any) -> str:
+        if not value:
+            return ""
+        return str(value).rstrip("/").split("/")[-1]
+
+    def _patch_device_type_image(self, obj: Any, field: str, path: Path) -> None:
+        current = getattr(obj, field, None)
+        # NetBox stores uploads under a generated filename, so the remote
+        # basename cannot be compared with the source file. Upload once and
+        # require --force-images to replace an existing image.
+        if not self.force_images and current:
+            return
+        if not isinstance(getattr(obj, "id", None), int) or obj.id < 0:
+            # The device type is created earlier in this dry run; its mock ID
+            # cannot be used for an upload URL.
+            self.counts["unchanged"] += 1
+            return
+        if not self.url or not self.token:
+            raise SyncError("NetBox URL/token are required to upload device-type images")
+        self.log("update", "device_type", f"{getattr(obj, 'slug', obj.id)} {field}", path.name)
+        if self.dry_run:
+            return
+        mime = mimetypes.guess_type(path.name)[0] or "application/octet-stream"
+        with path.open("rb") as handle:
+            response = requests.patch(
+                f"{self.url}/api/dcim/device-types/{obj.id}/",
+                headers=self._auth_headers(),
+                files={field: (path.name, handle, mime)},
+                timeout=60,
+            )
+        if response.status_code >= 300:
+            raise SyncError(
+                f"upload {field} for device type {getattr(obj, 'slug', obj.id)}: "
+                f"HTTP {response.status_code}: {response.text[:300]}"
+            )
+
+    def sync_device_type_images(self, obj: Any, item: dict[str, Any]) -> None:
+        images = item.get("images") or {}
+        for field in ("front", "rear"):
+            if images.get(field):
+                self._patch_device_type_image(obj, f"{field}_image", self._image_path(images[field]))
+
+        desired_other = images.get("other") or []
+        desired_names: set[str] = set()
+        existing = []
+        if self.url and self.token:
+            existing = list(
+                self.nb.extras.image_attachments.filter(
+                    object_type="dcim.devicetype", object_id=obj.id
+                )
+            )
+        by_name = {str(getattr(att, "name", "")): att for att in existing}
+
+        for entry in desired_other:
+            if not isinstance(entry, dict):
+                raise SyncError(f"device type {getattr(obj, 'slug', obj.id)}: image must be a mapping")
+            name = str(require(entry, "name", "device type image"))
+            path = self._image_path(entry.get("file"))
+            desired_names.add(name)
+            attachment = by_name.get(name)
+            # NetBox renames uploaded files; do not compare basenames. Replace
+            # an existing attachment only when --force-images is used.
+            if attachment and not self.force_images:
+                continue
+            if not self.url or not self.token:
+                raise SyncError("NetBox URL/token are required to upload device-type images")
+            if not isinstance(getattr(obj, "id", None), int) or obj.id < 0:
+                self.counts["unchanged"] += 1
+                continue
+            self.log(
+                "update" if attachment else "create",
+                "image_attachment",
+                f"{getattr(obj, 'slug', obj.id)}/{name}",
+                path.name,
+            )
+            if self.dry_run:
+                continue
+            mime = mimetypes.guess_type(path.name)[0] or "application/octet-stream"
+            description = f"GitOps: {entry.get('description', '')}".strip()
+            with path.open("rb") as handle:
+                if attachment:
+                    response = requests.patch(
+                        f"{self.url}/api/extras/image-attachments/{attachment.id}/",
+                        headers=self._auth_headers(),
+                        data={
+                            "object_type": "dcim.devicetype",
+                            "object_id": obj.id,
+                            "name": name,
+                            "description": description,
+                        },
+                        files={"image": (path.name, handle, mime)},
+                        timeout=60,
+                    )
+                else:
+                    response = requests.post(
+                        f"{self.url}/api/extras/image-attachments/",
+                        headers=self._auth_headers(),
+                        data={
+                            "object_type": "dcim.devicetype",
+                            "object_id": obj.id,
+                            "name": name,
+                            "description": description,
+                        },
+                        files={"image": (path.name, handle, mime)},
+                        timeout=60,
+                    )
+            if response.status_code >= 300:
+                raise SyncError(
+                    f"upload image {name!r} for device type {getattr(obj, 'slug', obj.id)}: "
+                    f"HTTP {response.status_code}: {response.text[:300]}"
+                )
+
+        for attachment in existing:
+            name = str(getattr(attachment, "name", ""))
+            if name in desired_names:
+                continue
+            if not str(getattr(attachment, "description", "") or "").startswith("GitOps:"):
+                continue
+            if not self.url or not self.token:
+                continue
+            self.log("delete", "image_attachment", f"{getattr(obj, 'slug', obj.id)}/{name}")
+            if self.dry_run:
+                continue
+            response = requests.delete(
+                f"{self.url}/api/extras/image-attachments/{attachment.id}/",
+                headers=self._auth_headers(),
+                timeout=60,
+            )
+            if response.status_code >= 300:
+                raise SyncError(
+                    f"delete image {name!r} for device type {getattr(obj, 'slug', obj.id)}: "
+                    f"HTTP {response.status_code}: {response.text[:300]}"
+                )
 
     def sync_racks(self) -> None:
         for item in self.inventory["racks"]:
@@ -865,7 +1276,50 @@ class Reconciler:
             self.desired["prefixes"].add(prefix)
 
     def sync_devices(self) -> None:
-        for item in self.inventory["devices"]:
+        # Remove the rack reservation of devices that are about to be pruned.
+        # Otherwise a new device can collide with the old device that still
+        # occupies its target unit until the prune phase runs.
+        desired_devices = {
+            (str(item.get("site")), str(item.get("name")))
+            for item in self.inventory["devices"]
+        }
+        for device in self.nb.dcim.devices.all():
+            if not self.is_managed(device):
+                continue
+            site_slug = (
+                self.site_slugs_by_id.get(device.site.id)
+                if getattr(device, "site", None)
+                else None
+            )
+            if (site_slug, str(getattr(device, "name", ""))) in desired_devices:
+                continue
+            changes: dict[str, Any] = {}
+            if getattr(device, "rack", None) or getattr(device, "position", None) is not None:
+                changes.update({"rack": None, "position": None, "face": ""})
+            if getattr(device, "primary_ip4", None) is not None:
+                changes["primary_ip4"] = None
+            if getattr(device, "primary_ip6", None) is not None:
+                changes["primary_ip6"] = None
+            if not changes:
+                continue
+            self.log("update", "device", f"{site_slug}/{device.name}", "clear before prune")
+            if not self.dry_run:
+                try:
+                    device.update(changes)
+                except Exception as exc:  # noqa: BLE001
+                    raise SyncError(f"device {device.name}: clear before prune: {exc}") from exc
+
+        # Rack positions are updated bottom-up. Moving a device down can
+        # otherwise collide with a device that has not moved out of the way yet.
+        devices = sorted(
+            self.inventory["devices"],
+            key=lambda item: (
+                item.get("position") is None,
+                int(item.get("position")) if item.get("position") is not None else 0,
+                str(item.get("name")),
+            ),
+        )
+        for item in devices:
             name = str(require(item, "name", "device"))
             site_slug = require(item, "site", "device")
             role_slug = require(item, "role", "device")
@@ -1081,7 +1535,8 @@ class Reconciler:
         return tuple(sorted(sides))
 
     def sync_cables(self) -> None:
-        existing = {self.cable_key(cable): cable for cable in self.nb.dcim.cables.all()}
+        resolved: list[tuple[dict[str, Any], tuple[Any, Any], Any, Any]] = []
+        desired: set[Any] = set()
         for item in self.inventory["cables"]:
             a_device = require(item, "a_device", "cable")
             a_interface = require(item, "a_interface", "cable")
@@ -1093,10 +1548,24 @@ class Reconciler:
                 raise SyncError(f"cable: unknown interface {a_device}/{a_interface}")
             if b is None:
                 raise SyncError(f"cable: unknown interface {b_device}/{b_interface}")
-
             a_terms = (("dcim.interface", int(a.id)),)
             b_terms = (("dcim.interface", int(b.id)),)
             key = tuple(sorted([a_terms, b_terms]))
+            resolved.append((item, key, a, b))
+            desired.add(key)
+
+        # Set the desired set first so prune_cables can remove stale cables
+        # before a new cable needs one of the same terminations.
+        self.desired["cables"] = desired
+        if self.prune:
+            self.prune_cables()
+
+        existing = {self.cable_key(cable): cable for cable in self.nb.dcim.cables.all()}
+        for item, key, a, b in resolved:
+            a_device = require(item, "a_device", "cable")
+            a_interface = require(item, "a_interface", "cable")
+            b_device = require(item, "b_device", "cable")
+            b_interface = require(item, "b_interface", "cable")
             data: dict[str, Any] = {
                 "a_terminations": [{"object_type": "dcim.interface", "object_id": a.id}],
                 "b_terminations": [{"object_type": "dcim.interface", "object_id": b.id}],
@@ -1116,7 +1585,6 @@ class Reconciler:
                 compare_fields=("type", "status", "label", "description", "color", "tags"),
             )
             self.cables[key] = cable
-            self.desired["cables"].add(key)
 
     # ------------------------------------------------------------------ pruning
 
@@ -1308,6 +1776,17 @@ def main(argv: list[str] | None = None) -> int:
         help="validate the inventory and exit without contacting NetBox",
     )
     parser.add_argument(
+        "--images",
+        default=os.environ.get("NETBOX_IMAGES_DIR"),
+        help="directory containing device-type images (default: <inventory>/images)",
+    )
+    parser.add_argument(
+        "--force-images",
+        action="store_true",
+        default=env_bool("FORCE_IMAGES", False),
+        help="re-upload device-type images even when the filename already matches",
+    )
+    parser.add_argument(
         "--wait",
         type=int,
         default=int(os.environ.get("NETBOX_WAIT_SECONDS", "120")),
@@ -1327,7 +1806,17 @@ def main(argv: list[str] | None = None) -> int:
 
     nb = pynetbox.api(args.url.rstrip("/"), token=args.token)
     wait_for_netbox(nb, args.url, args.wait)
-    Reconciler(nb, inventory, dry_run=args.dry_run, prune=args.prune).run()
+    images_dir = Path(args.images) if args.images else Path(args.inventory) / "images"
+    Reconciler(
+        nb,
+        inventory,
+        dry_run=args.dry_run,
+        prune=args.prune,
+        url=args.url,
+        token=args.token,
+        images_dir=images_dir,
+        force_images=args.force_images,
+    ).run()
     return 0
 
 

@@ -1,0 +1,80 @@
+layer: manual
+
+# Settings used by the collector and the sync job. These are not NetBox objects.
+settings:
+  site: glemmen
+  default_tag: production
+  rack: Glemmen rack
+
+# UniFi model code -> NetBox device-type slug. The collector reads this mapping
+# so new UniFi hardware does not need a Python change.
+unifi_models:
+  UDMPRO: ubiquiti-udm-pro
+  US24PRO: ubiquiti-usw-pro-24-poe
+  US8P150: ubiquiti-us-8-poe-150w
+  USWED35: ubiquiti-usw-flex-2-5g-5
+  USWED37: ubiquiti-usw-flex-2-5g-8-poe
+  USMINI: ubiquiti-usw-flex-mini
+  UAP6MP: ubiquiti-u6-pro
+
+# UniFi controller VLAN names that need a human correction.
+unifi_vlan_names:
+  4: Server tilbehør
+
+sites:
+  - name: Glemmen
+    slug: glemmen
+    status: active
+    description: 2ITA Kubernetes cluster and network at Glemmen.
+
+manufacturers:
+  - name: APC
+    slug: apc
+    description: APC by Schneider Electric power distribution equipment.
+  - name: Dell
+    slug: dell
+    description: Dell Technologies servers.
+  - name: IBM
+    slug: ibm
+    description: IBM System x servers and Storwize storage.
+  - name: Ubiquiti
+    slug: ubiquiti
+    description: UniFi network equipment.
+  - name: Zyxel
+    slug: zyxel
+    description: Zyxel network switches.
+
+platforms:
+  - name: Talos Linux
+    slug: talos-linux
+    description: Immutable Kubernetes operating system.
+  - name: UniFi
+    slug: unifi
+    manufacturer: ubiquiti
+    description: UniFi OS / UniFi Network firmware.
+
+device_roles:
+  - name: Kubernetes control plane
+    slug: control-plane
+    color: 326ce5
+  - name: Kubernetes worker
+    slug: worker
+    color: 6fa8dc
+  - name: Switch
+    slug: switch
+    color: 00a0d1
+  - name: Gateway
+    slug: gateway
+    color: f5a623
+  - name: Access point
+    slug: access-point
+    color: 7b61ff
+  - name: Server
+    slug: server
+    color: 9e9e9e
+  - name: Storage
+    slug: storage
+    color: 8e44ad
+  - name: Power distribution
+    slug: power
+    color: e67e22

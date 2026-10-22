@@ -48,10 +48,21 @@ uv run --with requests --with PyYAML \
   --kubectl ./scripts/bin/kubectl --kubeconfig talos/generated/kubeconfig
 ```
 
-Regenerates `flux/apps/netbox/inventory/inventory.yaml` from the live UniFi
-controller and Kubernetes/Talos nodes. `--from-cluster` reads the UniFi
-credentials from the `unpoller-unifi` Secret in `monitoring`; the credentials
-are never written to the inventory. Review the diff and commit the result.
+Writes the live UniFi/Talos facts to `flux/apps/netbox/inventory/generated/`.
+The hand-maintained inventory lives in `flux/apps/netbox/inventory/manual/`
+(site, device types and images, rack layout, physical servers, accessories,
+manual cables and VIPs). The collector reads the manual device list and never
+edits the manual layer. `--from-cluster` reads the UniFi credentials from the
+`unpoller-unifi` Secret in `monitoring`; they are never written to the
+inventory. Review the generated diff and commit the result.
+
+Validate the merged inventory before syncing:
+
+```sh
+uv run --with pynetbox==7.9.0 --with PyYAML==6.0.3 --with requests==2.32.5 \
+  python flux/apps/netbox/sync.py \
+  --inventory flux/apps/netbox/inventory --check
+```
 
 ## Updates
 

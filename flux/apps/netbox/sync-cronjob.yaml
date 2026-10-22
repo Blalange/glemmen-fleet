@@ -49,7 +49,7 @@ spec:
                 - -c
                 - >-
                   pip install --no-cache-dir --target /deps
-                  pynetbox==7.9.0 PyYAML==6.0.3
+                  pynetbox==7.9.0 PyYAML==6.0.3 requests==2.32.5
               securityContext:
                 allowPrivilegeEscalation: false
                 capabilities:
@@ -88,6 +88,8 @@ spec:
                       key: api_token_full
                 - name: NETBOX_INVENTORY_DIR
                   value: /inventory
+                - name: NETBOX_IMAGES_DIR
+                  value: /images
                 # Set to "true" for a plan-only run. The CronJob applies changes;
                 # use a local dry-run or a one-off Job with DRY_RUN=true to
                 # preview changes before merging inventory edits.
@@ -113,6 +115,9 @@ spec:
                 - name: inventory
                   mountPath: /inventory
                   readOnly: true
+                - name: images
+                  mountPath: /images
+                  readOnly: true
                 - name: tmp
                   mountPath: /tmp
               resources:
@@ -130,5 +135,8 @@ spec:
             - name: inventory
               configMap:
                 name: netbox-inventory
+            - name: images
+              configMap:
+                name: netbox-device-images
             - name: tmp
               emptyDir: {}
