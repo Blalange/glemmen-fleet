@@ -83,8 +83,8 @@ grafana:
   # still holds it (Multi-Attach error). Recreate terminates the old pod first.
   # rollingUpdate must be explicitly null, otherwise the API rejects the change
   # on the existing Deployment (spec.strategy.rollingUpdate is Forbidden when
-  # type is Recreate).
-  updateStrategy:
+  # type is Recreate). The Grafana subchart key is deploymentStrategy.
+  deploymentStrategy:
     type: Recreate
     rollingUpdate: null
 
