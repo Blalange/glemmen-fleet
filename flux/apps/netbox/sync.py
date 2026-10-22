@@ -114,8 +114,9 @@ def slugify(value: Any) -> str:
 
 
 def normalize_color(value: Any) -> str:
-    color = str(value).strip().lstrip("#").upper()
-    if not re.fullmatch(r"[0-9A-F]{6}", color):
+    # NetBox's ColorValidator only accepts lowercase six-digit hex values.
+    color = str(value).strip().lstrip("#").lower()
+    if not re.fullmatch(r"[0-9a-f]{6}", color):
         raise SyncError(f"invalid color {value!r}; expected six hex digits")
     return color
 
