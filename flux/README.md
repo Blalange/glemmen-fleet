@@ -22,7 +22,7 @@ flux/
 │   ├── monitoring.yaml         -> flux/monitoring (KPS, Thanos, smartctl, unpoller)
 │   ├── monitoring-dashboards.yaml / monitoring-alerts.yaml
 │   └── apps.yaml               -> flux/apps (application Kustomizations)
-├── infrastructure/             namespaces, Longhorn, cert-manager, MetalLB, metrics-server, PostgreSQL
+├── infrastructure/             namespaces, Longhorn, cert-manager, MetalLB, metrics-server, YugabyteDB
 ├── ingress/                    Traefik HelmRelease + values
 ├── monitoring/                 kube-prometheus-stack, Thanos, smartctl-exporter, unpoller
 └── apps/                       Kustomization objects, Homepage, NetBox + inventory sync
@@ -197,8 +197,9 @@ settings before changing the manifests.
 
 `apps/netbox` runs NetBox at <https://netbox.glem.men> as a read-only
 visualization of the network inventory. NetBox and Grafana share the
-single PostgreSQL instance in `infrastructure/postgres/`; Valkey runs in the NetBox
-namespace and uploaded media uses a Longhorn `ReadWriteMany` volume. The desired
+three-node YugabyteDB cluster in `infrastructure/yugabyte/` (two Grafana
+replicas); Valkey runs in the NetBox namespace and uploaded media uses a
+Longhorn `ReadWriteMany` volume. The desired
 inventory lives in `apps/netbox/inventory/inventory.yaml`, and the
 `netbox-sync` CronJob reconciles it into NetBox every 10 minutes. The
 `netbox-topology-views` plugin provides the cable/topology map at
@@ -207,9 +208,10 @@ created by the job carries the `gitops` tag; pruning is enabled in the CronJob
 and never touches objects created by hand. See `apps/netbox/README.md` for the
 schema, the `netbox-secrets` Secret and manual sync instructions.
 
-The shared database is documented in `infrastructure/postgres/README.md`. Its
-role passwords are in `postgres-auth` (`postgres` namespace), `netbox-secrets`
-(`netbox` namespace) and `grafana-db` (`monitoring` namespace).
+The Grafana database is documented in `infrastructure/yugabyte/README.md`. Its
+role passwords are in `yugabyte-auth` (`yugabyte` namespace) and `grafana-db`
+(`monitoring` namespace). NetBox keeps its own PostgreSQL and
+`netbox-secrets`.
 
 ## Dependencies (was Fleet `dependsOn`)
 
@@ -236,9 +238,9 @@ role passwords are in `postgres-auth` (`postgres` namespace), `netbox-secrets`
   the rclone bridge: `rclone-backup-config`; created for Thanos:
   `thanos-objstore-config` in `monitoring`; created for NetBox:
   `netbox-secrets` in `netbox` (superuser, YSQL/Valkey passwords, Django secret
-  and sync API token); created for the shared PostgreSQL: `postgres-auth` in
-  `postgres` (superuser, NetBox and Grafana role passwords); created for
-  Grafana's database user: `grafana-db` in `monitoring`).
+  and sync API token); created for Grafana's YugabyteDB: `yugabyte-auth` in
+  `yugabyte` (superuser and Grafana role passwords) and `grafana-db` in
+  `monitoring`).
 - **Backup target**: Longhorn backs up to `s3://longhorn-backup@us-east-1/`,
   served by the in-cluster `rclone serve s3` bridge in
   `infrastructure/longhorn/rclone/`. The actual backupstore is a folder

@@ -1,0 +1,151 @@
+# Startup wrapper and readiness helper for the three-node YugabyteDB cluster.
+#
+# Pod 0 is the seed. Pods 1 and 2 wait for its master port and start with
+# --join. Once all three tservers and masters are alive, pod 0 configures a
+# zone-fault-tolerant placement with replication factor 3 and creates the
+# Grafana role/database. The readiness probe for pod 0 only passes after that,
+# so the StatefulSet is not considered ready until RF3 is in place.
+#
+# Network connections use SCRAM-SHA-256. The local unix socket is trusted for
+# the yugabyte user, which is how the startup/init script connects.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: yugabyte-start
+  namespace: yugabyte
+  labels:
+    app.kubernetes.io/name: yugabyte
+data:
+  ysql-local.sh: |
+    #!/bin/bash
+    set -euo pipefail
+    # yugabyted puts the unix socket in /tmp/.yb.<host:port>/. The host part
+    # depends on the advertise address, so discover it instead of hardcoding.
+    sockdir=$(find /tmp -maxdepth 2 -name '.s.PGSQL.5433' -printf '%h\n' 2>/dev/null | head -n1)
+    if [ -z "${sockdir}" ]; then
+      echo "YSQL unix socket not found" >&2
+      exit 1
+    fi
+    exec /home/yugabyte/bin/ysqlsh -h "${sockdir}" "$@"
+
+  ready.sh: |
+    #!/bin/bash
+    set -euo pipefail
+    ordinal="${HOSTNAME##*-}"
+    if ! /opt/yugabyte/ysql-local.sh -U yugabyte -d yugabyte -tAc 'SELECT 1' >/dev/null 2>&1; then
+      exit 1
+    fi
+    if [ "${ordinal}" = "0" ]; then
+      /opt/yugabyte/ysql-local.sh -U yugabyte -d yugabyte -tAc \
+        "SELECT 1 FROM pg_database WHERE datname = 'grafana'" | grep -qx 1
+    fi
+
+  start.sh: |
+    #!/bin/bash
+    set -euo pipefail
+
+    BASE=/home/yugabyte
+    YSQL="/opt/yugabyte/ysql-local.sh"
+    YUGABYTED="${BASE}/bin/yugabyted"
+    YB_ADMIN="${BASE}/bin/yb-admin"
+    ORDINAL="${HOSTNAME##*-}"
+    ADVERTISE_ADDRESS="${HOSTNAME}.yugabyte.yugabyte.svc.cluster.local"
+    SEED_HOST="yugabyte-0.yugabyte.yugabyte.svc.cluster.local"
+    SEED_PORT=7100
+    SEED_ADDRESS="${SEED_HOST}:${SEED_PORT}"
+    MASTER_ADDRESSES="yugabyte-0.yugabyte.yugabyte.svc.cluster.local:7100,yugabyte-1.yugabyte.yugabyte.svc.cluster.local:7100,yugabyte-2.yugabyte.yugabyte.svc.cluster.local:7100"
+
+    JOIN_ARGS=()
+    if [ "${ORDINAL}" != "0" ]; then
+      echo "Waiting for seed master ${SEED_ADDRESS}"
+      for _ in $(seq 1 300); do
+        if (echo > "/dev/tcp/${SEED_HOST}/${SEED_PORT}") >/dev/null 2>&1; then
+          break
+        fi
+        sleep 2
+      done
+      # yugabyted's --join expects an IP address; resolve the seed's stable
+      # pod DNS name here so the join works across restarts.
+      SEED_IP=$(getent hosts "${SEED_HOST}" | awk '{print $1; exit}')
+      if [ -z "${SEED_IP}" ]; then
+        echo "Could not resolve ${SEED_HOST}" >&2
+        exit 1
+      fi
+      JOIN_ARGS=(--join="${SEED_IP}")
+    fi
+
+    echo "Starting YugabyteDB on ${ADVERTISE_ADDRESS} (zone z${ORDINAL})"
+    "${YUGABYTED}" start \
+      --advertise_address="${ADVERTISE_ADDRESS}" \
+      --cloud_location="onprem.no1.z${ORDINAL}" \
+      --base_dir="${BASE}/yb_data" \
+      --background=false \
+      "${JOIN_ARGS[@]}" \
+      --tserver_flags="memory_limit_hard_bytes=${YSQL_MEMORY_LIMIT_BYTES},ysql_enable_auth=true,ysql_auth_method=scram-sha-256,transaction_max_missed_heartbeat_periods=240" \
+      --master_flags="memory_limit_hard_bytes=1073741824" &
+    YBD_PID=$!
+    trap 'kill -TERM "${YBD_PID}" 2>/dev/null || true' TERM INT
+
+    ready=0
+    for _ in $(seq 1 300); do
+      if "${YSQL}" -U yugabyte -d yugabyte -tAc 'SELECT 1' >/dev/null 2>&1; then
+        ready=1
+        break
+      fi
+      sleep 2
+    done
+    if [ "${ready}" -ne 1 ]; then
+      echo "YSQL did not become ready" >&2
+      exit 1
+    fi
+
+    if [ "${ORDINAL}" = "0" ]; then
+      echo "Waiting for three masters and tservers"
+      cluster_ready=0
+      for _ in $(seq 1 240); do
+        ts_count=$("${YB_ADMIN}" --master_addresses="${MASTER_ADDRESSES}" list_all_tablet_servers 2>/dev/null | grep -c 'ALIVE' || true)
+        master_count=$("${YB_ADMIN}" --master_addresses="${MASTER_ADDRESSES}" list_all_masters 2>/dev/null | grep -c 'ALIVE' || true)
+        if [ "${ts_count}" -ge 3 ] && [ "${master_count}" -ge 3 ]; then
+          cluster_ready=1
+          break
+        fi
+        sleep 5
+      done
+      if [ "${cluster_ready}" -ne 1 ]; then
+        echo "Cluster did not reach three masters/tservers" >&2
+        exit 1
+      fi
+
+      echo "Configuring zone placement with replication factor 3"
+      configured=0
+      for _ in $(seq 1 60); do
+        if "${YUGABYTED}" configure data_placement \
+            --fault_tolerance=zone --rf=3 --base_dir="${BASE}/yb_data"; then
+          configured=1
+          break
+        fi
+        sleep 5
+      done
+      if [ "${configured}" -ne 1 ]; then
+        echo "Could not configure data placement" >&2
+        exit 1
+      fi
+
+      "${YSQL}" -U yugabyte -d yugabyte -v ON_ERROR_STOP=1 \
+        -c "ALTER ROLE yugabyte PASSWORD '${YUGABYTE_SUPERUSER_PASSWORD}'"
+      if ! "${YSQL}" -U yugabyte -d yugabyte -tAc \
+          "SELECT 1 FROM pg_roles WHERE rolname = 'grafana'" | grep -qx 1; then
+        "${YSQL}" -U yugabyte -d yugabyte -v ON_ERROR_STOP=1 \
+          -c "CREATE ROLE grafana LOGIN"
+      fi
+      "${YSQL}" -U yugabyte -d yugabyte -v ON_ERROR_STOP=1 \
+        -c "ALTER ROLE grafana PASSWORD '${GRAFANA_DB_PASSWORD}'"
+      if ! "${YSQL}" -U yugabyte -d yugabyte -tAc \
+          "SELECT 1 FROM pg_database WHERE datname = 'grafana'" | grep -qx 1; then
+        "${YSQL}" -U yugabyte -d yugabyte -v ON_ERROR_STOP=1 \
+          -c "CREATE DATABASE grafana OWNER grafana"
+      fi
+      echo "YugabyteDB initialization complete"
+    fi
+
+    wait "${YBD_PID}"

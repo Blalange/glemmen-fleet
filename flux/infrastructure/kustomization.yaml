@@ -11,4 +11,4 @@ resources:
   - metallb/
   - metrics-server/
   - tuppr/
-  - postgres/
+  - yugabyte/

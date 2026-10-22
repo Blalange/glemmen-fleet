@@ -1,0 +1,14 @@
+# Three YugabyteDB nodes, one Longhorn volume each. Each volume has two
+# Longhorn replicas so a node failure does not make the pod's data
+# unattachable. Retain keeps the database data if a PVC is deleted by mistake.
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: yugabyte
+provisioner: driver.longhorn.io
+allowVolumeExpansion: true
+reclaimPolicy: Retain
+volumeBindingMode: Immediate
+parameters:
+  numberOfReplicas: "2"
+  staleReplicaTimeout: "2880"
