@@ -9,17 +9,3 @@ parameters:
 allowVolumeExpansion: true
 reclaimPolicy: Retain
 volumeBindingMode: Immediate
----
-# Grafana PVC with specific volume name
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: monitoring-grafana
-spec:
-  accessModes:
-    - ReadWriteOnce
-  resources:
-    requests:
-      storage: 1Gi
-  storageClassName: "monitoring"
-  volumeName: "monitoring-grafana"

@@ -76,17 +76,24 @@ prometheus:
 # Grafana configuration
 grafana:
   enabled: true
-  replicas: 1
-
-  # Grafana mounts a ReadWriteOnce volume (monitoring-grafana), so a rolling
-  # update can deadlock: the new pod cannot attach the volume while the old pod
-  # still holds it (Multi-Attach error). Recreate terminates the old pod first.
-  # rollingUpdate must be explicitly null, otherwise the API rejects the change
-  # on the existing Deployment (spec.strategy.rollingUpdate is Forbidden when
-  # type is Recreate). The Grafana subchart key is deploymentStrategy.
+  # Two replicas share the YugabyteDB database. The local /var/lib/grafana is
+  # an emptyDir, so there is no RWO volume to serialize on and a rolling
+  # update can keep one replica serving.
+  replicas: 2
   deploymentStrategy:
-    type: Recreate
-    rollingUpdate: null
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+  affinity:
+    podAntiAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          podAffinityTerm:
+            labelSelector:
+              matchLabels:
+                app.kubernetes.io/name: grafana
+            topologyKey: kubernetes.io/hostname
 
   # Use secret for admin password
   admin:
@@ -94,15 +101,15 @@ grafana:
     userKey: admin-user
     passwordKey: admin-password
 
-  # Database password for the shared in-cluster PostgreSQL role.
+  # Database password for the in-cluster YugabyteDB grafana role.
   envValueFrom:
     GF_DATABASE_PASSWORD:
       secretKeyRef:
         name: grafana-db
         key: password
 
-  # Grafana's SQLite database is replaced by the shared in-cluster PostgreSQL
-  # in the `postgres` namespace (flux/infrastructure/postgres). The role
+  # Grafana's SQLite database is replaced by the three-node YugabyteDB (YSQL)
+  # in the `yugabyte` namespace (flux/infrastructure/yugabyte). The role
   # password is in the grafana-db Secret (created by hand, not in Git).
   # Dashboards, data sources and the admin user are provisioned from this
   # repository/the Secret, so the new database starts empty without losing
@@ -110,7 +117,7 @@ grafana:
   grafana.ini:
     database:
       type: postgres
-      host: postgres.postgres.svc.cluster.local:5432
+      host: yugabyte.yugabyte.svc.cluster.local:5433
       name: grafana
       user: grafana
       ssl_mode: disable
@@ -124,13 +131,11 @@ grafana:
       enabled: true
       org_role: Viewer
 
-  # Local storage for plugins and generated files. Dashboards, data sources
-  # and other metadata live in the shared PostgreSQL database.
+  # Grafana's state lives in YugabyteDB; the local volume is only used for
+  # plugins and generated files. An emptyDir lets both replicas run without a
+  # ReadWriteOnce volume, and plugins come from the image.
   persistence:
-    enabled: true
-    storageClassName: monitoring
-    size: 2Gi
-    existingClaim: monitoring-grafana
+    enabled: false
 
   # Grafana resources
   resources:
