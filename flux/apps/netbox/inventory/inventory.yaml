@@ -26,19 +26,19 @@ platforms:
 device_roles:
 - name: Kubernetes control plane
   slug: control-plane
-  color: 326CE5
+  color: 326ce5
 - name: Kubernetes worker
   slug: worker
-  color: 6FA8DC
+  color: 6fa8dc
 - name: Switch
   slug: switch
-  color: 00A0D1
+  color: 00a0d1
 - name: Gateway
   slug: gateway
-  color: F5A623
+  color: f5a623
 - name: Access point
   slug: access-point
-  color: 7B61FF
+  color: 7b61ff
 device_types:
 - manufacturer: generic
   model: Talos node
@@ -621,7 +621,7 @@ devices:
   - name: Port 2
     type: 2.5gbase-t
     enabled: true
-    description: Up, 1 Gbps
+    description: Down, no link
     mtu: null
     mode: ''
     untagged_vlan: null
