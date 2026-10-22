@@ -79,7 +79,7 @@ grafana:
   # Two replicas share the YugabyteDB database. The local /var/lib/grafana is
   # an emptyDir, so there is no RWO volume to serialize on and a rolling
   # update can keep one replica serving.
-  replicas: 1
+  replicas: 2
   deploymentStrategy:
     type: RollingUpdate
     rollingUpdate:
@@ -95,10 +95,17 @@ grafana:
                 app.kubernetes.io/name: grafana
             topologyKey: kubernetes.io/hostname
 
-  # The first Grafana startup migrates the whole schema into YugabyteDB. The
-  # liveness probe would restart the pod before those migrations finish, so it
-  # is disabled during the one-time migration and re-enabled afterwards.
-  livenessProbe: null
+  # The one-time YugabyteDB schema migration has completed. If the Grafana
+  # database is ever recreated, disable this probe until the migration has
+  # finished; otherwise the liveness probe restarts the pod mid-migration.
+  livenessProbe:
+    httpGet:
+      path: /api/health
+      port: grafana
+    initialDelaySeconds: 60
+    periodSeconds: 10
+    timeoutSeconds: 30
+    failureThreshold: 6
 
   # Use secret for admin password
   admin:

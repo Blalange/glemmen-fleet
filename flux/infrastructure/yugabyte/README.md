@@ -87,10 +87,28 @@ kubectl -n yugabyte exec yugabyte-0 -- \
 Grafana runs two replicas against this cluster. `/var/lib/grafana` is an
 emptyDir, so both replicas can start without a ReadWriteOnce volume; dashboards,
 data sources and the admin user live in YSQL. The first startup after switching
-to YSQL migrates Grafana's schema, which takes roughly 20 minutes on the
-three-node Longhorn-backed cluster. The liveness probe is disabled during that
-one-time migration (see `flux/monitoring/kube-prometheus-stack/values.yaml`) and
-is re-enabled once the schema is in place.
+to YSQL migrates Grafana's schema, which takes roughly 20-30 minutes on the
+three-node Longhorn-backed cluster. Keep the liveness probe relaxed (or
+temporarily disabled) during that one-time migration.
+
+Grafana 13 also runs a unified-storage data migration that locks the legacy
+`dashboard` table with `LOCK TABLE ... IN SHARE MODE`. YSQL does not support
+that lock mode. On a fresh database there are no legacy dashboards to migrate
+(the sidecars provision directly into unified storage), so mark the migration
+complete after the core schema exists:
+
+```sql
+INSERT INTO unifiedstorage_migration_log
+  (migration_id, sql, success, error, timestamp)
+VALUES
+  ('folders and dashboards migration',
+   'manually marked complete: YSQL does not support LOCK TABLE IN SHARE MODE',
+   true, '', now());
+```
+
+Run it as `yugabyte` in the `grafana` database, then restart the Grafana pods.
+Without this row Grafana exits with `failed to lock table "dashboard": pq: SHARE
+not supported yet`.
 
 ## Sizing
 
