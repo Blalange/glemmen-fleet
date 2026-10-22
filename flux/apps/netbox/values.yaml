@@ -52,8 +52,33 @@ csrf:
 
 # Anonymous users can read most objects but cannot change anything. This is
 # the intended "visualization only" mode; the admin account is for populating
-# and correcting data.
+# and correcting data. The topology-views plugin enforces explicit view
+# permissions on dcim.site/device, so those models are exempted (along with
+# the graph's supporting models) to let anonymous visitors open the map.
 loginRequired: false
+exemptViewPermissions:
+  - dcim.site
+  - dcim.location
+  - dcim.rack
+  - dcim.device
+  - dcim.devicerole
+  - dcim.devicetype
+  - dcim.manufacturer
+  - dcim.platform
+  - dcim.interface
+  - dcim.cable
+  - dcim.cabletermination
+  - dcim.frontport
+  - dcim.rearport
+  - dcim.powerpanel
+  - dcim.powerfeed
+  - ipam.ipaddress
+  - ipam.prefix
+  - ipam.vlan
+  - ipam.vrf
+  - circuits.circuit
+  - circuits.circuittermination
+  - wireless.wirelesslink
 
 timeZone: Europe/Oslo
 
