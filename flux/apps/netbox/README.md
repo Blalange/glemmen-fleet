@@ -26,6 +26,17 @@ Media uploads use a 2Gi Longhorn **ReadWriteMany** volume. Longhorn implements
 RWX with its NFS share-manager, so the web and worker pods can run on different
 nodes and share the same media directory. Postgres uses a normal RWO volume.
 
+## Topology views
+
+`netbox-topology-views` 5.0.0 (the release for NetBox 4.7.x) is installed at
+pod startup. An init container installs the wheel into a writable `/plugins`
+emptyDir and runs `collectstatic` into a writable static volume; the web and
+worker containers read both volumes through `PYTHONPATH=/plugins`. This keeps
+the upstream NetBox image pinned and avoids maintaining a custom registry
+image. The plugin adds **Topology Views** to the NetBox navigation; the
+existing cable data between the UniFi devices, the Zyxel switch and the UDM
+Pro supplies the graph.
+
 ## Secrets
 
 Nothing secret is stored in Git. Create the namespace and `netbox-secrets`

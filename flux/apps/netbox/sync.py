@@ -144,9 +144,12 @@ def normalize_prefix(value: Any) -> str:
 
 def same_value(current: Any, desired: Any) -> bool:
     """Compare API values (records, choice objects, lists) with desired values."""
-    # NetBox's ChoiceField serializes choices as {"value": ..., "label": ...}.
+    # NetBox's ChoiceField serializes choices as {"value": ..., "label": ...};
+    # pynetbox turns those dicts into Record objects with .value/.label.
     if isinstance(current, dict) and "value" in current:
         current = current["value"]
+    elif not isinstance(current, (str, int, float, bool, list, tuple, dict)) and hasattr(current, "value"):
+        current = current.value
     # Blank optional strings and null are equivalent for our purposes (NetBox
     # frequently stores "" as null).
     if desired == "" and current is None:

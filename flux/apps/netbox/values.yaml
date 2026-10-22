@@ -57,6 +57,12 @@ loginRequired: false
 
 timeZone: Europe/Oslo
 
+# netbox-topology-views 5.0.0 matches NetBox 4.7.x. The package is installed
+# into the writable /plugins emptyDir by the init container below; the NetBox
+# image itself stays unchanged.
+plugins:
+  - netbox_topology_views
+
 # The superuser Secret provides username, password, email and api_token. The
 # top-level existingSecret provides secret_key, api_token_peppers and
 # email_password. Both point at the hand-created netbox-secrets Secret.
@@ -76,6 +82,75 @@ extraEnvs:
       secretKeyRef:
         name: netbox-secrets
         key: api_token_key
+  - name: PYTHONPATH
+    value: /plugins
+
+# Runtime-installed plugin. The init container installs the wheel into
+# /plugins and runs collectstatic into a writable static volume; the main
+# container only reads both volumes. This keeps the upstream image pinned and
+# avoids maintaining a custom registry image for one plugin.
+extraVolumes:
+  - name: plugins
+    emptyDir: {}
+  - name: static
+    emptyDir: {}
+
+extraVolumeMounts:
+  - name: plugins
+    mountPath: /plugins
+    readOnly: true
+  - name: static
+    mountPath: /opt/netbox/netbox/static
+    readOnly: true
+
+initContainers:
+  - name: plugins
+    image: ghcr.io/netbox-community/netbox:v4.7.3
+    imagePullPolicy: IfNotPresent
+    command: ["sh", "-c"]
+    args:
+      - >-
+        /opt/netbox/venv/bin/pip install --no-cache-dir --no-deps
+        --target /plugins netbox-topology-views==5.0.0 &&
+        PYTHONPATH=/plugins /opt/netbox/venv/bin/python
+        /opt/netbox/netbox/manage.py collectstatic --noinput
+    env:
+      - name: HOME
+        value: /tmp
+      - name: PIP_NO_CACHE_DIR
+        value: "1"
+      - name: PYTHONPATH
+        value: /plugins
+    volumeMounts:
+      - name: plugins
+        mountPath: /plugins
+      - name: static
+        mountPath: /opt/netbox/netbox/static
+      - name: config
+        mountPath: /etc/netbox/config/configuration.py
+        subPath: configuration.py
+        readOnly: true
+      - name: config
+        mountPath: /run/config/netbox
+        readOnly: true
+      - name: secrets
+        mountPath: /run/secrets/netbox
+        readOnly: true
+      - name: netbox-tmp
+        mountPath: /tmp
+    securityContext:
+      runAsUser: 1000
+      runAsGroup: 1000
+      runAsNonRoot: true
+      allowPrivilegeEscalation: false
+      capabilities:
+        drop: ["ALL"]
+    resources:
+      requests:
+        cpu: 50m
+        memory: 128Mi
+      limits:
+        memory: 512Mi
 
 replicaCount: 1
 
@@ -117,6 +192,48 @@ worker:
     enabled: true
     fsGroup: 1000
     fsGroupChangePolicy: OnRootMismatch
+  extraEnvs:
+    - name: PYTHONPATH
+      value: /plugins
+  extraVolumes:
+    - name: plugins
+      emptyDir: {}
+  extraVolumeMounts:
+    - name: plugins
+      mountPath: /plugins
+      readOnly: true
+  initContainers:
+    - name: plugins
+      image: ghcr.io/netbox-community/netbox:v4.7.3
+      imagePullPolicy: IfNotPresent
+      command: ["sh", "-c"]
+      args:
+        - >-
+          /opt/netbox/venv/bin/pip install --no-cache-dir --no-deps
+          --target /plugins netbox-topology-views==5.0.0
+      env:
+        - name: HOME
+          value: /tmp
+        - name: PIP_NO_CACHE_DIR
+          value: "1"
+      volumeMounts:
+        - name: plugins
+          mountPath: /plugins
+        - name: netbox-tmp
+          mountPath: /tmp
+      securityContext:
+        runAsUser: 1000
+        runAsGroup: 1000
+        runAsNonRoot: true
+        allowPrivilegeEscalation: false
+        capabilities:
+          drop: ["ALL"]
+      resources:
+        requests:
+          cpu: 50m
+          memory: 64Mi
+        limits:
+          memory: 256Mi
   resources:
     requests:
       cpu: 100m
