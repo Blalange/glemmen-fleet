@@ -1,5 +1,4 @@
-# NetBox, Valkey and the Git inventory sync CronJob. NetBox uses the shared
-# in-cluster PostgreSQL instance.
+# NetBox, PostgreSQL, Valkey and the Git inventory sync CronJob.
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
@@ -8,8 +7,8 @@ metadata:
 spec:
   interval: 1h
   retryInterval: 2m
-  # The first rollout creates the whole NetBox schema.
-  timeout: 20m
+  # NetBox runs database migrations during the first rollout.
+  timeout: 15m
   path: ./flux/apps/netbox
   prune: true
   wait: true

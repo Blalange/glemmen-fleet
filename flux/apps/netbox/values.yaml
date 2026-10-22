@@ -4,12 +4,9 @@
 # inventory/inventory.yaml into NetBox, and anonymous visitors only get view
 # access. No API integrations or webhooks use NetBox as a management system.
 #
-# NetBox uses the shared in-cluster PostgreSQL in the `postgres` namespace
-# (flux/infrastructure/postgres). The database role password comes from
-# netbox-secrets; the old per-app PostgreSQL StatefulSet has been removed.
-#
-# The chart's bundled PostgreSQL and Valkey subcharts are disabled. Valkey runs
-# as a pinned official image (valkey.yaml) next to NetBox.
+# The chart's bundled PostgreSQL and Valkey subcharts are disabled. Their
+# Bitnami images are no longer published with stable, versioned tags, so
+# postgres.yaml and valkey.yaml run pinned official images next to NetBox.
 #
 # Secrets are never stored in Git. Create them before reconciling this app:
 #
@@ -277,19 +274,15 @@ postgresql:
 valkey:
   enabled: false
 
-# Shared in-cluster PostgreSQL. The headless Service `postgres` and its
-# StatefulSet live in the `postgres` namespace
-# (flux/infrastructure/postgres). The role password is in netbox-secrets key
-# db-password.
 externalDatabase:
-  host: postgres.postgres.svc.cluster.local
+  host: netbox-postgres
   port: 5432
   database: netbox
   username: netbox
   existingSecretName: netbox-secrets
   existingSecretKey: db-password
   options:
-    sslmode: disable
+    sslmode: prefer
     target_session_attrs: read-write
 
 # Redis/Valkey database 0 is the RQ task queue, database 1 is the cache.

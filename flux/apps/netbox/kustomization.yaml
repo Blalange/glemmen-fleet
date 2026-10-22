@@ -5,6 +5,7 @@ resources:
   - release.yaml
   - storageclass.yaml
   - media-pvc.yaml
+  - postgres.yaml
   - valkey.yaml
   - sync-cronjob.yaml
 configMapGenerator:

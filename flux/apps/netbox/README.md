@@ -14,25 +14,17 @@ deleted by the sync.
 | Resource | Purpose |
 |---|---|
 | `release.yaml` | Official NetBox Helm chart `8.3.93` (NetBox `v4.7.3`) |
+| `postgres.yaml` | PostgreSQL `18.6` StatefulSet with an 8Gi Longhorn volume |
 | `media-pvc.yaml` | 2Gi Longhorn RWX volume for uploaded media |
 | `valkey.yaml` | Ephemeral Valkey `9.1.2` for the RQ queue and cache |
 | `sync-cronjob.yaml` | Runs `sync.py` every 10 minutes |
 | `sync.py` | The pynetbox reconciler |
 | `inventory/inventory.yaml` | Desired state, edited in Git |
-| `storageclass.yaml` | `netbox-media` (RWX) Longhorn class |
+| `storageclass.yaml` | `netbox` (RWO) and `netbox-media` (RWX) Longhorn classes |
 
 Media uploads use a 2Gi Longhorn **ReadWriteMany** volume. Longhorn implements
 RWX with its NFS share-manager, so the web and worker pods can run on different
-nodes and share the same media directory.
-
-## Database
-
-NetBox uses the shared in-cluster PostgreSQL in the `postgres` namespace:
-`postgres.postgres.svc.cluster.local:5432`, database `netbox`, role `netbox`.
-Authentication is a SCRAM password stored in `netbox-secrets` key
-`db-password`; the same value must be present in the `postgres-auth` Secret
-(see `flux/infrastructure/postgres/README.md`). The PostgreSQL init script
-creates the role/database and the `ltree` extension on first start.
+nodes and share the same media directory. Postgres uses a normal RWO volume.
 
 ## Topology views
 
@@ -80,7 +72,7 @@ kubectl -n netbox create secret generic netbox-secrets \
 | `username`, `password`, `email`, `api_token`, `api_token_key` | NetBox superuser bootstrap (v2 token) |
 | `api_token_full` | Sync CronJob (`nbt_<key>.<secret>`) |
 | `secret_key`, `api_token_peppers`, `email_password` | NetBox Django config |
-| `db-password` | NetBox and the shared PostgreSQL `netbox` role |
+| `db-password` | PostgreSQL and NetBox |
 | `valkey-password` | Valkey and NetBox |
 
 Read the generated admin password with:
@@ -90,11 +82,11 @@ kubectl -n netbox get secret netbox-secrets \
   -o jsonpath='{.data.password}' | base64 -d
 ```
 
-The database password in `netbox-secrets` must match the `netbox` role password
-in the `postgres-auth` Secret. Rotate both together (the PostgreSQL init script
-only sets it on first boot; use `ALTER ROLE` for later rotations). The superuser
-password and API token are bootstrap values: rotate them in the NetBox UI/API
-and then update the Secret to match.
+The PostgreSQL entrypoint only creates the database and user while the data
+directory is empty. Changing `db-password` later does not change the password
+inside PostgreSQL; rotate it with SQL as well. The superuser password and API
+token are bootstrap values: rotate them in the NetBox UI/API and then update
+the Secret to match.
 
 ## Inventory sync
 
@@ -224,13 +216,10 @@ maintaining a custom image for a short-lived job.
 
 ## First start and verification
 
-1. Create `netbox-secrets`, then create `postgres-auth` and point
-   `netbox-secrets` at the same `netbox` role password (see
-   `flux/infrastructure/postgres/README.md`).
+1. Create `netbox-secrets`.
 2. Reconcile the app:
    `./scripts/flux/manage.py reconcile netbox`
-3. Wait for `netbox` and `netbox-worker`; follow the rollout with
-   `kubectl -n netbox rollout status deploy/netbox`.
+3. Wait for `netbox`, `netbox-worker`, `netbox-postgres` and `netbox-valkey`.
 4. Open <https://netbox.glem.men>, log in as `admin`, and confirm the site,
    devices, interfaces, prefixes and cable.
 5. Check the Prometheus target `netbox` in Grafana.
@@ -241,6 +230,6 @@ maintaining a custom image for a short-lived job.
 
 Bump `chart.spec.version` in `release.yaml`. NetBox runs database migrations
 during the web pod startup. Read the upstream release notes before a minor
-version jump, and take a logical backup of the `netbox` database first. The
-chart's bundled PostgreSQL/Valkey subcharts stay disabled; keep `valkey.yaml`
-on a supported upstream version.
+version jump, and take a Longhorn backup/snapshot of `netbox-postgres` first.
+The chart's bundled PostgreSQL/Valkey subcharts stay disabled; keep
+`postgres.yaml` and `valkey.yaml` on supported upstream versions.

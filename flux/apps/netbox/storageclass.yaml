@@ -1,10 +1,21 @@
-# Dedicated Longhorn StorageClass for the NetBox media volume. It must be
-# ReadWriteMany because the web and worker pods both mount it and may run on
-# different nodes. Longhorn implements RWX with an NFS share-manager, which
-# requires migratable=false. The class keeps the cluster convention: one
-# replica, Retain so deleting a PVC cannot delete the only copy, and Immediate
-# binding. NetBox's database lives on the shared PostgreSQL instance, so there
-# is no database volume here.
+# Dedicated Longhorn StorageClasses for NetBox. The database volume is a
+# normal ReadWriteOnce block volume; the media volume must be ReadWriteMany
+# because the web and worker pods both mount it and may run on different
+# nodes. Longhorn implements RWX with an NFS share-manager, which requires
+# migratable=false. Both classes keep the cluster convention: one replica,
+# Retain so deleting a PVC cannot delete the only copy, and Immediate binding.
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: netbox
+provisioner: driver.longhorn.io
+allowVolumeExpansion: true
+reclaimPolicy: Retain
+volumeBindingMode: Immediate
+parameters:
+  numberOfReplicas: "1"
+  staleReplicaTimeout: "2880"
+---
 apiVersion: storage.k8s.io/v1
 kind: StorageClass
 metadata:
