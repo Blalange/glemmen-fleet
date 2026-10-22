@@ -1,0 +1,18 @@
+# Uploaded NetBox media (device images, attachments). This PVC is a plain
+# Flux-managed resource rather than a Helm-managed chart resource so that
+# uninstalling or recreating the Helm release cannot delete it. The chart
+# mounts it through persistence.existingClaim in values.yaml.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: netbox-media
+  labels:
+    app.kubernetes.io/name: netbox-media
+    app.kubernetes.io/instance: netbox
+spec:
+  accessModes:
+    - ReadWriteMany
+  storageClassName: netbox-media
+  resources:
+    requests:
+      storage: 2Gi

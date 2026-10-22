@@ -40,6 +40,19 @@ export GITHUB_TOKEN=github_pat_...
 
 Both use `talos/generated/kubeconfig` by default; override with `KUBECONFIG`.
 
+## NetBox
+
+```sh
+uv run --with requests --with PyYAML \
+  python scripts/netbox/generate_inventory.py --from-cluster \
+  --kubectl ./scripts/bin/kubectl --kubeconfig talos/generated/kubeconfig
+```
+
+Regenerates `flux/apps/netbox/inventory/inventory.yaml` from the live UniFi
+controller and Kubernetes/Talos nodes. `--from-cluster` reads the UniFi
+credentials from the `unpoller-unifi` Secret in `monitoring`; the credentials
+are never written to the inventory. Review the diff and commit the result.
+
 ## Updates
 
 ```sh

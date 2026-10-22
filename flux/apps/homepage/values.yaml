@@ -238,6 +238,10 @@ config:
             icon: snipe-it.png
             href: https://snipe.glem.men
             description: Inventar og lån av IT-utstyr
+        - NetBox:
+            icon: netbox.png
+            href: https://netbox.glem.men
+            description: Nettverksdokumentasjon, rack og IP-plan
         - Pterodactyl:
             icon: pterodactyl.png
             href: https://panel.glem.men

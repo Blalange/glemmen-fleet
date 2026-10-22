@@ -1,0 +1,161 @@
+# NetBox (https://netbox.dev) - network documentation, DCIM and IPAM, served
+# at https://netbox.glem.men. It is used as a read-only visualization of the
+# inventory in this repository: the sync CronJob in this directory reconciles
+# inventory/inventory.yaml into NetBox, and anonymous visitors only get view
+# access. No API integrations or webhooks use NetBox as a management system.
+#
+# The chart's bundled PostgreSQL and Valkey subcharts are disabled. Their
+# Bitnami images are no longer published with stable, versioned tags, so
+# postgres.yaml and valkey.yaml run pinned official images next to NetBox.
+#
+# Secrets are never stored in Git. Create them before reconciling this app:
+#
+#   kubectl create namespace netbox --dry-run=client -o yaml | kubectl apply -f -
+#   kubectl -n netbox create secret generic netbox-secrets \
+#     --from-literal=username=admin \
+#     --from-literal=password="$(openssl rand -base64 24)" \
+#     --from-literal=email=admin@glem.men \
+#     --from-literal=api_token="$(openssl rand -hex 20)" \
+#     --from-literal=secret_key="$(openssl rand -hex 32)" \
+#     --from-literal=api_token_peppers="{\"1\":\"$(openssl rand -hex 32)\"}" \
+#     --from-literal=db-password="$(openssl rand -base64 24)" \
+#     --from-literal=valkey-password="$(openssl rand -base64 24)" \
+#     --from-literal=email_password="" \
+#     --dry-run=client -o yaml | kubectl apply -f -
+#
+# The same Secret is used by the chart (superuser/config), PostgreSQL
+# (db-password), Valkey (valkey-password) and the sync CronJob (api_token).
+
+# Use the image tag from the chart's appVersion (v4.7.3 for chart 8.3.93).
+image:
+  pullPolicy: IfNotPresent
+
+# NetBox only permits write access through the configured hostnames. The pod
+# IP is included so the chart's probes and direct port-forwards work.
+allowedHosts:
+  - netbox.glem.men
+  # The sync CronJob talks to the ClusterIP Service directly; its Host header
+  # is the service DNS name, which NetBox must accept as well.
+  - netbox.netbox.svc.cluster.local
+  - netbox
+allowedHostsIncludesPodIP: true
+
+csrf:
+  trustedOrigins:
+    - https://netbox.glem.men
+
+# Anonymous users can read most objects but cannot change anything. This is
+# the intended "visualization only" mode; the admin account is for populating
+# and correcting data.
+loginRequired: false
+
+timeZone: Europe/Oslo
+
+# The superuser Secret provides username, password, email and api_token. The
+# top-level existingSecret provides secret_key, api_token_peppers and
+# email_password. Both point at the hand-created netbox-secrets Secret.
+superuser:
+  name: admin
+  email: admin@glem.men
+  existingSecret: netbox-secrets
+existingSecret: netbox-secrets
+
+replicaCount: 1
+
+# A single media PVC and a single web pod. Recreate prevents an old pod from
+# holding the media volume while the new one starts.
+updateStrategy:
+  type: Recreate
+
+# Longhorn RWX volume for uploaded media (device images, attachments). The web
+# and worker pods can run on different nodes and share the same volume. The
+# PVC is created in media-pvc.yaml rather than by Helm, so removing the chart
+# release cannot delete it. The share-manager is created by Longhorn.
+persistence:
+  enabled: true
+  existingClaim: netbox-media
+  accessMode: ReadWriteMany
+  size: 2Gi
+
+# The NetBox image runs as uid/gid 1000. OnRootMismatch avoids a recursive
+# chown of the NFS-backed media volume on every pod start.
+podSecurityContext:
+  enabled: true
+  fsGroup: 1000
+  fsGroupChangePolicy: OnRootMismatch
+
+resources:
+  requests:
+    cpu: 200m
+    memory: 512Mi
+  limits:
+    memory: 2Gi
+
+worker:
+  enabled: true
+  replicaCount: 1
+  updateStrategy:
+    type: Recreate
+  podSecurityContext:
+    enabled: true
+    fsGroup: 1000
+    fsGroupChangePolicy: OnRootMismatch
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      memory: 1Gi
+
+# NetBox itself does not need the bundled Bitnami subcharts.
+postgresql:
+  enabled: false
+valkey:
+  enabled: false
+
+externalDatabase:
+  host: netbox-postgres
+  port: 5432
+  database: netbox
+  username: netbox
+  existingSecretName: netbox-secrets
+  existingSecretKey: db-password
+  options:
+    sslmode: prefer
+    target_session_attrs: read-write
+
+# Redis/Valkey database 0 is the RQ task queue, database 1 is the cache.
+# Both use the one valkey-password key because a single Valkey instance has a
+# single requirepass password.
+tasksDatabase:
+  host: netbox-valkey
+  port: 6379
+  database: 0
+  existingSecretName: netbox-secrets
+  existingSecretKey: valkey-password
+
+cachingDatabase:
+  host: netbox-valkey
+  port: 6379
+  database: 1
+  existingSecretName: netbox-secrets
+  existingSecretKey: valkey-password
+
+ingress:
+  enabled: true
+  className: traefik
+  hosts:
+    - host: netbox.glem.men
+      paths:
+        - /
+
+# Expose NetBox's own /metrics endpoint. Granian metrics are disabled to keep
+# one Service port and one target per pod; the application metrics are enough
+# for the cluster dashboards.
+metrics:
+  enabled: true
+  granian:
+    enabled: false
+  serviceMonitor:
+    enabled: true
+    interval: 30s

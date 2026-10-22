@@ -1,0 +1,132 @@
+# Reconcile the YAML inventory in this directory into NetBox. This is the only
+# writer to NetBox: the UI is anonymous read-only, and the superuser exists so
+# a human can correct data or use the web UI when needed.
+#
+# Every object created by this job is tagged "gitops". With PRUNE=true, objects
+# that carry that tag but are no longer in the inventory are deleted; anything
+# created by hand (without the tag) is never touched.
+#
+# The job is intentionally self-contained: the Python image is standard, and
+# an init container installs the two pinned dependencies into an emptyDir.
+# This avoids maintaining a custom image just for the sync script.
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: netbox-sync
+  labels:
+    app.kubernetes.io/name: netbox-sync
+    app.kubernetes.io/instance: netbox
+spec:
+  schedule: "*/10 * * * *"
+  concurrencyPolicy: Forbid
+  startingDeadlineSeconds: 120
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 1
+      # First rollout can coincide with NetBox's database migrations, so give
+      # the job enough time to wait for the API and finish.
+      activeDeadlineSeconds: 600
+      template:
+        metadata:
+          labels:
+            app.kubernetes.io/name: netbox-sync
+            app.kubernetes.io/instance: netbox
+        spec:
+          restartPolicy: Never
+          automountServiceAccountToken: false
+          securityContext:
+            fsGroup: 1000
+            seccompProfile:
+              type: RuntimeDefault
+          initContainers:
+            - name: dependencies
+              image: docker.io/library/python:3.13-alpine
+              imagePullPolicy: IfNotPresent
+              command:
+                - sh
+                - -c
+                - >-
+                  pip install --no-cache-dir --target /deps
+                  pynetbox==7.9.0 PyYAML==6.0.3
+              securityContext:
+                allowPrivilegeEscalation: false
+                capabilities:
+                  drop: ["ALL"]
+              volumeMounts:
+                - name: dependencies
+                  mountPath: /deps
+              resources:
+                requests:
+                  cpu: 10m
+                  memory: 64Mi
+                limits:
+                  memory: 512Mi
+          containers:
+            - name: sync
+              image: docker.io/library/python:3.13-alpine
+              imagePullPolicy: IfNotPresent
+              command: ["python", "-u", "/scripts/sync.py"]
+              securityContext:
+                runAsUser: 1000
+                runAsGroup: 1000
+                runAsNonRoot: true
+                readOnlyRootFilesystem: true
+                allowPrivilegeEscalation: false
+                capabilities:
+                  drop: ["ALL"]
+              env:
+                - name: NETBOX_URL
+                  value: http://netbox.netbox.svc.cluster.local
+                - name: NETBOX_TOKEN
+                  valueFrom:
+                    secretKeyRef:
+                      name: netbox-secrets
+                      key: api_token
+                - name: NETBOX_INVENTORY_DIR
+                  value: /inventory
+                # Set to "true" for a plan-only run. The CronJob applies changes;
+                # use a local dry-run or a one-off Job with DRY_RUN=true to
+                # preview changes before merging inventory edits.
+                - name: DRY_RUN
+                  value: "false"
+                - name: PRUNE
+                  value: "true"
+                - name: NETBOX_WAIT_SECONDS
+                  value: "240"
+                - name: PYTHONPATH
+                  value: /deps
+                - name: PYTHONDONTWRITEBYTECODE
+                  value: "1"
+                - name: HOME
+                  value: /tmp
+              volumeMounts:
+                - name: dependencies
+                  mountPath: /deps
+                  readOnly: true
+                - name: script
+                  mountPath: /scripts
+                  readOnly: true
+                - name: inventory
+                  mountPath: /inventory
+                  readOnly: true
+                - name: tmp
+                  mountPath: /tmp
+              resources:
+                requests:
+                  cpu: 10m
+                  memory: 64Mi
+                limits:
+                  memory: 256Mi
+          volumes:
+            - name: dependencies
+              emptyDir: {}
+            - name: script
+              configMap:
+                name: netbox-sync-script
+            - name: inventory
+              configMap:
+                name: netbox-inventory
+            - name: tmp
+              emptyDir: {}

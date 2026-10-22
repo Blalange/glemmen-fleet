@@ -69,6 +69,11 @@ metadata:
 apiVersion: v1
 kind: Namespace
 metadata:
+  name: netbox
+---
+apiVersion: v1
+kind: Namespace
+metadata:
   name: unifi
 ---
 apiVersion: v1

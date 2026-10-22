@@ -1,0 +1,107 @@
+# Valkey (Redis-compatible) for NetBox's RQ task queue and cache. It is
+# deliberately ephemeral: losing queued housekeeping jobs or cached pages when
+# the pod restarts is harmless for a read-only visualization instance. NetBox
+# remains fully usable while the queue is rebuilt.
+apiVersion: v1
+kind: Service
+metadata:
+  name: netbox-valkey
+  labels:
+    app.kubernetes.io/name: netbox-valkey
+    app.kubernetes.io/instance: netbox
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: netbox-valkey
+    app.kubernetes.io/instance: netbox
+  ports:
+    - name: valkey
+      port: 6379
+      targetPort: valkey
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: netbox-valkey
+  labels:
+    app.kubernetes.io/name: netbox-valkey
+    app.kubernetes.io/instance: netbox
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: netbox-valkey
+      app.kubernetes.io/instance: netbox
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: netbox-valkey
+        app.kubernetes.io/instance: netbox
+    spec:
+      securityContext:
+        fsGroup: 999
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: valkey
+          image: docker.io/valkey/valkey:9.1.2-alpine
+          imagePullPolicy: IfNotPresent
+          # The image entrypoint runs as root, chowns /data and drops to the
+          # valkey user. Keep that supported path; the pod is only reachable
+          # through the ClusterIP Service above.
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+          # Kubernetes expands $(VALKEY_PASSWORD) in args. Persistence is off:
+          # this instance is a cache and a short-lived job queue.
+          args:
+            - valkey-server
+            - --requirepass
+            - $(VALKEY_PASSWORD)
+            - --save
+            - ""
+            - --appendonly
+            - "no"
+          env:
+            - name: VALKEY_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: netbox-secrets
+                  key: valkey-password
+          ports:
+            - name: valkey
+              containerPort: 6379
+          volumeMounts:
+            - name: data
+              mountPath: /data
+          readinessProbe:
+            exec:
+              command:
+                - sh
+                - -c
+                - valkey-cli --no-auth-warning -a "$VALKEY_PASSWORD" ping | grep -q PONG
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          livenessProbe:
+            exec:
+              command:
+                - sh
+                - -c
+                - valkey-cli --no-auth-warning -a "$VALKEY_PASSWORD" ping | grep -q PONG
+            initialDelaySeconds: 30
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 6
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              memory: 256Mi
+      volumes:
+        - name: data
+          emptyDir: {}

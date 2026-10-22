@@ -25,7 +25,7 @@ flux/
 ├── infrastructure/             namespaces, Longhorn, cert-manager, MetalLB, metrics-server
 ├── ingress/                    Traefik HelmRelease + values
 ├── monitoring/                 kube-prometheus-stack, Thanos, smartctl-exporter, unpoller
-└── apps/                       Kustomization objects + Homepage HelmRelease
+└── apps/                       Kustomization objects, Homepage, NetBox + inventory sync
 ```
 
 The application manifests themselves stay in the repository root (`colibri/`,
@@ -193,6 +193,17 @@ WebTunnel bridge at 45%, the upstream network is filtering Tor relay
 destinations rather than the cluster services; check the ISP/UniFi threat
 settings before changing the manifests.
 
+## NetBox
+
+`apps/netbox` runs NetBox at <https://netbox.glem.men> as a read-only
+visualization of the network inventory. PostgreSQL and Valkey run in the
+namespace; uploaded media uses a Longhorn `ReadWriteMany` volume. The desired
+inventory lives in `apps/netbox/inventory/inventory.yaml`, and the
+`netbox-sync` CronJob reconciles it into NetBox every 10 minutes. Every object
+created by the job carries the `gitops` tag; pruning is enabled in the CronJob
+and never touches objects created by hand. See `apps/netbox/README.md` for the
+schema, the `netbox-secrets` Secret and manual sync instructions.
+
 ## Dependencies (was Fleet `dependsOn`)
 
 - `infrastructure` (namespaces, Longhorn, cert-manager chart, MetalLB, metrics-server)
@@ -201,7 +212,8 @@ settings before changing the manifests.
 - `infrastructure` -> `monitoring-pvc` -> `monitoring` (kube-prometheus-stack -> Thanos) -> `monitoring-dashboards` / `monitoring-alerts`
 - `apps` waits for `infrastructure`, `monitoring` and `ingress`; the individual
   applications additionally wait for what they need (`homepage` for example
-  waits for `homepage-assets`, `kube-prometheus-stack` and `infrastructure`).
+  waits for `homepage-assets`, `kube-prometheus-stack` and `infrastructure`;
+  `netbox` waits for `infrastructure` and `monitoring`).
 
 ## Migration notes
 
@@ -214,8 +226,10 @@ settings before changing the manifests.
   `homepage-grafana`, `frigate-secrets`, `energisjappa-secrets`, `colibri-secrets`,
   `snipe-it-db`, `snipe-it-app-key`, `warrior-http-auth`,
   `volunteer-secrets` and the TLS certificates in `kube-system`; created for
-  the rclone bridge: `rclone-backup-config`, and `thanos-objstore-config` in
-  `monitoring` for Thanos).
+  the rclone bridge: `rclone-backup-config`; created for Thanos:
+  `thanos-objstore-config` in `monitoring`; created for NetBox:
+  `netbox-secrets` in `netbox` (superuser, PostgreSQL/Valkey passwords, Django
+  secret and sync API token)).
 - **Backup target**: Longhorn backs up to `s3://longhorn-backup@us-east-1/`,
   served by the in-cluster `rclone serve s3` bridge in
   `infrastructure/longhorn/rclone/`. The actual backupstore is a folder

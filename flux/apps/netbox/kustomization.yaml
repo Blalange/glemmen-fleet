@@ -1,0 +1,22 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: netbox
+resources:
+  - release.yaml
+  - storageclass.yaml
+  - media-pvc.yaml
+  - postgres.yaml
+  - valkey.yaml
+  - sync-cronjob.yaml
+configMapGenerator:
+  - name: netbox-values
+    files:
+      - values.yaml
+  - name: netbox-sync-script
+    files:
+      - sync.py
+  - name: netbox-inventory
+    files:
+      - inventory/inventory.yaml
+generatorOptions:
+  disableNameSuffixHash: true
