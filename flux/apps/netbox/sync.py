@@ -164,14 +164,28 @@ def format_key(key: Any) -> str:
 def load_inventory(directory: Path) -> dict[str, list[Any]]:
     if not directory.is_dir():
         raise SyncError(f"inventory directory {directory} does not exist")
-    files = sorted({*directory.rglob("*.yaml"), *directory.rglob("*.yml")})
+
+    # A Kubernetes ConfigMap volume contains a visible symlink (inventory.yaml)
+    # plus the hidden ..data/..<timestamp>/ tree. rglob() would otherwise load
+    # the same file several times and report duplicate keys. Ignore hidden
+    # path components and de-duplicate resolved files.
+    files: set[Path] = set()
+    for pattern in ("*.yaml", "*.yml"):
+        for path in directory.rglob(pattern):
+            relative = path.relative_to(directory)
+            if any(part.startswith(".") for part in relative.parts):
+                continue
+            try:
+                files.add(path.resolve())
+            except OSError:
+                files.add(path)
     if not files:
         raise SyncError(f"no YAML files found under {directory}")
 
     inventory: dict[str, list[Any]] = {section: [] for section in SECTIONS}
     defaults: dict[str, Any] = {}
 
-    for path in files:
+    for path in sorted(files):
         try:
             documents = list(yaml.safe_load_all(path.read_text(encoding="utf-8")))
         except (OSError, yaml.YAMLError) as exc:
