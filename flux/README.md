@@ -199,7 +199,9 @@ settings before changing the manifests.
 visualization of the network inventory. PostgreSQL and Valkey run in the
 namespace; uploaded media uses a Longhorn `ReadWriteMany` volume. The desired
 inventory lives in `apps/netbox/inventory/inventory.yaml`, and the
-`netbox-sync` CronJob reconciles it into NetBox every 10 minutes. Every object
+`netbox-sync` CronJob reconciles it into NetBox every 10 minutes. The
+`netbox-topology-views` plugin provides the cable/topology map at
+<https://netbox.glem.men/plugins/netbox_topology_views/>. Every object
 created by the job carries the `gitops` tag; pruning is enabled in the CronJob
 and never touches objects created by hand. See `apps/netbox/README.md` for the
 schema, the `netbox-secrets` Secret and manual sync instructions.
