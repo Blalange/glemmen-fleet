@@ -95,6 +95,19 @@ grafana:
                 app.kubernetes.io/name: grafana
             topologyKey: kubernetes.io/hostname
 
+  # The first Grafana startup migrates the whole schema into YugabyteDB. The
+  # readiness probe gates traffic; the liveness probe must not kill the pod
+  # while those migrations are still running. The defaults (60s initial delay,
+  # 10 failures) are too short for the single-node YSQL instance.
+  livenessProbe:
+    httpGet:
+      path: /api/health
+      port: grafana
+    initialDelaySeconds: 120
+    periodSeconds: 10
+    timeoutSeconds: 30
+    failureThreshold: 120
+
   # Use secret for admin password
   admin:
     existingSecret: grafana-admin
