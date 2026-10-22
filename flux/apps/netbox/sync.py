@@ -143,7 +143,16 @@ def normalize_prefix(value: Any) -> str:
 
 
 def same_value(current: Any, desired: Any) -> bool:
-    """Compare API values (records, lists of records) with desired IDs/scalars."""
+    """Compare API values (records, choice objects, lists) with desired values."""
+    # NetBox's ChoiceField serializes choices as {"value": ..., "label": ...}.
+    if isinstance(current, dict) and "value" in current:
+        current = current["value"]
+    # Blank optional strings and null are equivalent for our purposes (NetBox
+    # frequently stores "" as null).
+    if desired == "" and current is None:
+        return True
+    if desired is None and current == "":
+        return True
     if isinstance(desired, int):
         return getattr(current, "id", current) == desired
     if isinstance(desired, list):
