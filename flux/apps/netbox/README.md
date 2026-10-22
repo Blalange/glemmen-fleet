@@ -33,11 +33,14 @@ pod startup. An init container installs the wheel into a writable `/plugins`
 emptyDir and runs `collectstatic` into a writable static volume; the web and
 worker containers read both volumes through `PYTHONPATH=/plugins`. This keeps
 the upstream NetBox image pinned and avoids maintaining a custom registry
-image. The plugin adds **Topology Views** to the NetBox navigation
-(<https://netbox.glem.men/plugins/netbox_topology_views/>); the existing cable
-data between the UniFi devices, the Zyxel switch and the UDM Pro supplies the
-graph. The graph's supporting models are in `exemptViewPermissions`, so
-anonymous viewers can open the map without an account.
+image. The plugin adds **Topology Views** to the NetBox navigation; the
+existing cable data between the UniFi devices, the Zyxel switch and the UDM Pro
+supplies the graph. The graph's supporting models are in
+`exemptViewPermissions`, so anonymous viewers can open the map without an
+account. The default plugin menu link opens an empty canvas for anonymous
+users; the Homepage card links directly to the populated view:
+
+<https://netbox.glem.men/plugins/netbox_topology_views/topology/?draw_init=true&show_cables=True&show_unconnected=True>
 
 ## Secrets
 

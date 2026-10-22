@@ -242,6 +242,10 @@ config:
             icon: netbox.png
             href: https://netbox.glem.men
             description: Nettverksdokumentasjon, rack og IP-plan
+        - NetBox topologi:
+            icon: netbox.png
+            href: "https://netbox.glem.men/plugins/netbox_topology_views/topology/?draw_init=true&show_cables=True&show_unconnected=True"
+            description: Nettverkstopologi og kabler
         - Pterodactyl:
             icon: pterodactyl.png
             href: https://panel.glem.men
