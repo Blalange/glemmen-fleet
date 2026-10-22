@@ -79,7 +79,7 @@ grafana:
   # Two replicas share the YugabyteDB database. The local /var/lib/grafana is
   # an emptyDir, so there is no RWO volume to serialize on and a rolling
   # update can keep one replica serving.
-  replicas: 2
+  replicas: 1
   deploymentStrategy:
     type: RollingUpdate
     rollingUpdate:
