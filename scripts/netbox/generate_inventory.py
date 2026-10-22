@@ -71,6 +71,11 @@ SERVER_NAME_OVERRIDES = {
     "192.168.6.70": "MinecraftServer",
 }
 
+# 2U machines in the bottom of the rack.
+TWO_U_NODES = {"glemmen50", "glemmen60", "glemmen80"}
+TWO_U_SERVER_IPS = {"192.168.6.70"}
+TWO_U_RACK_NAMES = {*TWO_U_NODES, "MinecraftServer"}
+
 # Server NIC -> USW Pro 24 PoE port. The 1xx nodes bond eno8303/eno8403.
 SERVER_PORTS = {
     "glemmen50": {"enp11s0f0": 3},
@@ -634,7 +639,9 @@ def build_servers(
                 "name": name,
                 "site": SITE_SLUG,
                 "role": "server",
-                "device_type": "dell-server",
+                "device_type": (
+                    "dell-server-2u" if ip in TWO_U_SERVER_IPS else "dell-server"
+                ),
                 "status": "active" if active else "offline",
                 "serial": "",
                 "description": (
@@ -736,7 +743,9 @@ def build_nodes(nodes: list[dict], talos_dir: Path) -> list[dict]:
                 "name": name,
                 "site": SITE_SLUG,
                 "role": role,
-                "device_type": "talos-node",
+                "device_type": (
+                    "talos-node-2u" if name in TWO_U_NODES else "talos-node"
+                ),
                 "platform": "talos-linux",
                 "status": "active" if ready else "offline",
                 "serial": node_info.get("systemUUID") or "",
@@ -862,6 +871,14 @@ def main(argv: list[str] | None = None) -> int:
             "description": "Generic x86 node running Talos Linux.",
         },
         {
+            "manufacturer": "generic",
+            "model": "Talos node (2U)",
+            "slug": "talos-node-2u",
+            "u_height": 2,
+            "is_full_depth": True,
+            "description": "Generic 2U x86 node running Talos Linux.",
+        },
+        {
             "manufacturer": "zyxel",
             "model": "GS1920-24",
             "slug": "zyxel-gs1920-24",
@@ -876,6 +893,14 @@ def main(argv: list[str] | None = None) -> int:
             "u_height": 1,
             "is_full_depth": True,
             "description": "Generic Dell rack server.",
+        },
+        {
+            "manufacturer": "dell",
+            "model": "Dell server (2U)",
+            "slug": "dell-server-2u",
+            "u_height": 2,
+            "is_full_depth": True,
+            "description": "Generic 2U Dell rack server.",
         },
     ]
     all_device_types = {d["slug"]: d for d in base_device_types}
@@ -983,14 +1008,18 @@ def main(argv: list[str] | None = None) -> int:
         )
         if name
     ]
-    for index, name in enumerate(rack_names):
+    cursor = RACK_TOP
+    for name in rack_names:
         device = devices_by_name.get(name)
         if device is None:
             print(f"WARNING: rack device {name!r} not found", file=sys.stderr)
             continue
+        height = 2 if name in TWO_U_RACK_NAMES else 1
         device["rack"] = RACK_NAME
-        device["position"] = RACK_TOP - index
+        # NetBox stores the lowest occupied unit as the rack position.
+        device["position"] = cursor - height + 1
         device["face"] = "front"
+        cursor -= height
 
     inventory = {
         "sites": [

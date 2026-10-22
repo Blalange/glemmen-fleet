@@ -51,6 +51,12 @@ device_types:
   u_height: 1
   is_full_depth: true
   description: Generic x86 node running Talos Linux.
+- manufacturer: generic
+  model: Talos node (2U)
+  slug: talos-node-2u
+  u_height: 2
+  is_full_depth: true
+  description: Generic 2U x86 node running Talos Linux.
 - manufacturer: zyxel
   model: GS1920-24
   slug: zyxel-gs1920-24
@@ -63,6 +69,12 @@ device_types:
   u_height: 1
   is_full_depth: true
   description: Generic Dell rack server.
+- manufacturer: dell
+  model: Dell server (2U)
+  slug: dell-server-2u
+  u_height: 2
+  is_full_depth: true
+  description: Generic 2U Dell rack server.
 - manufacturer: ubiquiti
   model: USW Flex 2.5G 5
   slug: ubiquiti-usw-flex-2-5g-5
@@ -490,7 +502,7 @@ devices:
 - name: glemmen50
   site: glemmen
   role: worker
-  device_type: talos-node
+  device_type: talos-node-2u
   platform: talos-linux
   status: active
   serial: 601b5291-fbf9-3108-b1e5-f33cca2a2fe5
@@ -508,12 +520,12 @@ devices:
       dns_name: glemmen50
       primary: true
   rack: Glemmen rack
-  position: 25
+  position: 22
   face: front
 - name: glemmen60
   site: glemmen
   role: worker
-  device_type: talos-node
+  device_type: talos-node-2u
   platform: talos-linux
   status: active
   serial: 4c4c4544-0056-4310-804a-cac04f475a31
@@ -531,12 +543,12 @@ devices:
       dns_name: glemmen60
       primary: true
   rack: Glemmen rack
-  position: 24
+  position: 20
   face: front
 - name: glemmen80
   site: glemmen
   role: worker
-  device_type: talos-node
+  device_type: talos-node-2u
   platform: talos-linux
   status: active
   serial: 4c4c4544-0053-5910-8044-b9c04f313332
@@ -554,7 +566,7 @@ devices:
       dns_name: glemmen80
       primary: true
   rack: Glemmen rack
-  position: 27
+  position: 26
   face: front
 - name: USW Flex 2.5G 5Lager
   site: glemmen
@@ -1994,7 +2006,7 @@ devices:
 - name: MinecraftServer
   site: glemmen
   role: server
-  device_type: dell-server
+  device_type: dell-server-2u
   status: active
   serial: ''
   description: Dell server at 192.168.6.70 (UniFi client MinecraftServer), USW Pro
@@ -2015,7 +2027,7 @@ devices:
     enabled: true
     description: Uplink to USW Pro 24 PoE Port 24
   rack: Glemmen rack
-  position: 26
+  position: 24
   face: front
 ip_addresses:
 - address: 192.168.6.98/24

@@ -109,7 +109,9 @@ The generator also adds the physical servers connected to the USW Pro 24 PoE
 and places the rack-mounted machines in the 42U `Glemmen rack`. The physical
 order and the server-NIC-to-switch-port map are defined near the top of
 `generate_inventory.py`; the 1xx nodes expose both `eno8303` and `eno8403` bond
-members so each of their two uplinks has its own cable.
+members so each of their two uplinks has its own cable. `glemmen50`,
+`glemmen60`, `glemmen80` and `MinecraftServer` are modeled as 2U; the rest of
+the racked devices are 1U.
 
 The CronJob tags every object it creates with `gitops`. With `PRUNE=true`, it
 deletes objects that still carry that tag but are no longer present in the
