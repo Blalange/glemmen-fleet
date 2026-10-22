@@ -41,17 +41,20 @@ spec:
         app.kubernetes.io/instance: netbox
     spec:
       securityContext:
-        fsGroup: 999
+        # valkey:valkey in the image is uid 999 / gid 1000. Running as that
+        # user avoids the entrypoint's root-only chown; fsGroup makes the
+        # emptyDir writable for the group.
+        fsGroup: 1000
         seccompProfile:
           type: RuntimeDefault
       containers:
         - name: valkey
           image: docker.io/valkey/valkey:9.1.2-alpine
           imagePullPolicy: IfNotPresent
-          # The image entrypoint runs as root, chowns /data and drops to the
-          # valkey user. Keep that supported path; the pod is only reachable
-          # through the ClusterIP Service above.
           securityContext:
+            runAsUser: 999
+            runAsGroup: 1000
+            runAsNonRoot: true
             allowPrivilegeEscalation: false
             capabilities:
               drop: ["ALL"]
