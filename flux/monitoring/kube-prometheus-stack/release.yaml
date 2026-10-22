@@ -13,7 +13,9 @@ metadata:
   name: kube-prometheus-stack
 spec:
   interval: 1h
-  timeout: 15m
+  # Grafana runs its SQLite -> PostgreSQL schema migrations during the first
+  # rollout after the database switch.
+  timeout: 30m
   chart:
     spec:
       chart: kube-prometheus-stack

@@ -1,8 +1,11 @@
 # NetBox chart repository and release. The chart handles migrations, the
 # superuser bootstrap, the web/worker processes and the ServiceMonitor; the
-# PostgreSQL and Valkey subcharts are disabled in values.yaml because the
-# Bitnami images are no longer version-pinned. PostgreSQL and Valkey run as
-# plain StatefulSet/Deployment resources in this namespace instead.
+# bundled PostgreSQL and Valkey subcharts are disabled in values.yaml. NetBox
+# uses the shared in-cluster PostgreSQL, and Valkey runs as a plain Deployment
+# in this namespace from a pinned official image.
+#
+# The first rollout against an empty database runs the full set of Django
+# migrations. The Helm timeout allows for the initial schema creation.
 apiVersion: source.toolkit.fluxcd.io/v1
 kind: HelmRepository
 metadata:
@@ -17,9 +20,8 @@ metadata:
   name: netbox
 spec:
   interval: 1h
-  # NetBox runs database migrations during startup; the first rollout can take
-  # a few minutes on a small cluster.
-  timeout: 15m
+  # NetBox runs database migrations during startup.
+  timeout: 20m
   chart:
     spec:
       chart: netbox

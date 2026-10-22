@@ -55,6 +55,11 @@ Backup av Longhorn-volumene går til en Google Drive-mappe via en rclone S3-bro 
 
 Prometheus beholder bare de nyeste metrikkene lokalt (15GiB, se `retentionSize`). Thanos-siden i `flux/monitoring/thanos/` laster opp blokkene til `thanos`-bøtta på samme rclone-bro, komprimerer/downsampler dem og gjør historikken tilgjengelig via en egen Grafana-datasource.
 
+### Database
+NetBox og Grafana bruker en felles PostgreSQL-instans som kjører i `postgres`-navnerommet (`flux/infrastructure/postgres/`). Den bruker én Longhorn-volum og klientene kobler til `postgres.postgres.svc.cluster.local:5432` med SCRAM-passord. Databasen er ikke eksponert utenfor clusteret.
+
+Init-scriptet i `flux/infrastructure/postgres/configmap.yaml` oppretter rollene `netbox` og `grafana`, databasene og `ltree`-utvidelsen. Passordene ligger i Kubernetes-secrets og ikke i Git: `postgres-auth` i `postgres` (superbruker, `netbox` og `grafana`), `db-password` i `netbox-secrets`, og `grafana-db` i `monitoring`. Se `flux/infrastructure/postgres/README.md` for oppsett og administrasjon.
+
 ## GitOps og konfigurasjon
 
 - `flux/` – Flux v2 konfigurasjonen. `scripts/flux/setup.py` bootstrapper Flux mot dette repositoriet, `scripts/flux/manage.py` viser status og suspenderer/gjenopptar synken. Applikasjons-manifester ligger fortsatt i rot-katalogene (`frigate/`, `snipe-it/`, ...), Flux peker på dem.

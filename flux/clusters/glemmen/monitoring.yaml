@@ -7,7 +7,9 @@ metadata:
 spec:
   interval: 1h
   retryInterval: 2m
-  timeout: 20m
+  # Grafana runs its schema migrations on the first rollout after switching
+  # from SQLite.
+  timeout: 30m
   path: ./flux/monitoring
   prune: true
   wait: true

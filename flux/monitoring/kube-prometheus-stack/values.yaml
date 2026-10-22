@@ -94,18 +94,38 @@ grafana:
     userKey: admin-user
     passwordKey: admin-password
 
-  # Let the Homepage dashboard at glem.men embed Grafana panels (the WAN
-  # traffic graph). Embedding needs allow_embedding, and anonymous Viewer
-  # access is what lets the panel render for visitors who are not logged in.
-  # Note: this makes all dashboards readable by anyone who can reach Grafana.
+  # Database password for the shared in-cluster PostgreSQL role.
+  envValueFrom:
+    GF_DATABASE_PASSWORD:
+      secretKeyRef:
+        name: grafana-db
+        key: password
+
+  # Grafana's SQLite database is replaced by the shared in-cluster PostgreSQL
+  # in the `postgres` namespace (flux/infrastructure/postgres). The role
+  # password is in the grafana-db Secret (created by hand, not in Git).
+  # Dashboards, data sources and the admin user are provisioned from this
+  # repository/the Secret, so the new database starts empty without losing
+  # managed state.
   grafana.ini:
+    database:
+      type: postgres
+      host: postgres.postgres.svc.cluster.local:5432
+      name: grafana
+      user: grafana
+      ssl_mode: disable
+    # Let the Homepage dashboard at glem.men embed Grafana panels (the WAN
+    # traffic graph). Embedding needs allow_embedding, and anonymous Viewer
+    # access is what lets the panel render for visitors who are not logged in.
+    # Note: this makes all dashboards readable by anyone who can reach Grafana.
     security:
       allow_embedding: true
     auth.anonymous:
       enabled: true
       org_role: Viewer
 
-  # Persistence for dashboards
+  # Local storage for plugins and generated files. Dashboards, data sources
+  # and other metadata live in the shared PostgreSQL database.
   persistence:
     enabled: true
     storageClassName: monitoring

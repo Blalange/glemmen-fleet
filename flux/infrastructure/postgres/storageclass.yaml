@@ -1,0 +1,14 @@
+# Single shared PostgreSQL volume. One Longhorn replica is enough for this
+# cluster; Retain keeps the database data if the PVC is ever deleted by
+# mistake. The StatefulSet runs one replica, so a normal RWO volume is enough.
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: postgres
+provisioner: driver.longhorn.io
+allowVolumeExpansion: true
+reclaimPolicy: Retain
+volumeBindingMode: Immediate
+parameters:
+  numberOfReplicas: "1"
+  staleReplicaTimeout: "2880"
