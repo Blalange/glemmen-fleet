@@ -1,7 +1,7 @@
-# PostgreSQL for NetBox. The cluster has no shared database, so it runs in
-# this namespace next to NetBox. The certificate/credentials are read from
-# netbox-secrets key db-password; that Secret is created by hand (see
-# values.yaml) and is not in Git.
+# PostgreSQL for NetBox. NetBox keeps its own database in this namespace; the
+# separate YugabyteDB cluster in flux/infrastructure/yugabyte is only used by
+# Grafana. The password is read from netbox-secrets key db-password; that
+# Secret is created by hand (see values.yaml) and is not in Git.
 #
 # The official postgres image only creates the database/user and sets the
 # password while the data directory is empty. Changing db-password later does
