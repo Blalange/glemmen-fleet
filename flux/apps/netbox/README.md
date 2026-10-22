@@ -105,6 +105,12 @@ management addresses and uplink cables are generated, as are the Talos node
 versions, roles, capacity, serials and addresses. Re-run it after changing the
 network, review the Git diff, and commit.
 
+The generator also adds the physical servers connected to the USW Pro 24 PoE
+and places the rack-mounted machines in the 42U `Glemmen rack`. The physical
+order and the server-NIC-to-switch-port map are defined near the top of
+`generate_inventory.py`; the 1xx nodes expose both `eno8303` and `eno8403` bond
+members so each of their two uplinks has its own cable.
+
 The CronJob tags every object it creates with `gitops`. With `PRUNE=true`, it
 deletes objects that still carry that tag but are no longer present in the
 inventory. Objects without the tag are left alone, so manual additions are

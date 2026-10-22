@@ -15,6 +15,8 @@ manufacturers:
   slug: zyxel
 - name: Ubiquiti
   slug: ubiquiti
+- name: Dell
+  slug: dell
 platforms:
 - name: Talos Linux
   slug: talos-linux
@@ -39,6 +41,9 @@ device_roles:
 - name: Access point
   slug: access-point
   color: 7b61ff
+- name: Server
+  slug: server
+  color: 9e9e9e
 device_types:
 - manufacturer: generic
   model: Talos node
@@ -52,6 +57,12 @@ device_types:
   u_height: 1
   is_full_depth: true
   description: 24 x 1G ports + 4 x SFP, firmware V4.10(AAOB.5).
+- manufacturer: dell
+  model: Dell server
+  slug: dell-server
+  u_height: 1
+  is_full_depth: true
+  description: Generic Dell rack server.
 - manufacturer: ubiquiti
   model: USW Flex 2.5G 5
   slug: ubiquiti-usw-flex-2-5g-5
@@ -94,6 +105,14 @@ device_types:
   u_height: 1
   is_full_depth: true
   description: UniFi model US24PRO.
+racks:
+- name: Glemmen rack
+  site: glemmen
+  status: active
+  width: 19
+  u_height: 42
+  desc_units: false
+  description: Physical Glemmen rack, ordered top to bottom.
 vlans:
 - vid: 1
   name: Default
@@ -325,14 +344,25 @@ devices:
   tags:
   - production
   interfaces:
-  - name: bond0
+  - name: eno8303
     type: 1000base-t
+    enabled: true
+    description: bond0 member (LACP)
+  - name: eno8403
+    type: 1000base-t
+    enabled: true
+    description: bond0 member (LACP)
+  - name: bond0
+    type: lag
     enabled: true
     description: In-band management and cluster traffic
     ip_addresses:
     - address: 192.168.6.130/24
       dns_name: glemmen130
       primary: true
+  rack: Glemmen rack
+  position: 30
+  face: front
 - name: glemmen150
   site: glemmen
   role: control-plane
@@ -345,14 +375,25 @@ devices:
   tags:
   - production
   interfaces:
-  - name: bond0
+  - name: eno8303
     type: 1000base-t
+    enabled: true
+    description: bond0 member (LACP)
+  - name: eno8403
+    type: 1000base-t
+    enabled: true
+    description: bond0 member (LACP)
+  - name: bond0
+    type: lag
     enabled: true
     description: In-band management and cluster traffic
     ip_addresses:
     - address: 192.168.6.150/24
       dns_name: glemmen150
       primary: true
+  rack: Glemmen rack
+  position: 32
+  face: front
 - name: glemmen160
   site: glemmen
   role: control-plane
@@ -365,14 +406,25 @@ devices:
   tags:
   - production
   interfaces:
-  - name: bond0
+  - name: eno8303
     type: 1000base-t
+    enabled: true
+    description: bond0 member (LACP)
+  - name: eno8403
+    type: 1000base-t
+    enabled: true
+    description: bond0 member (LACP)
+  - name: bond0
+    type: lag
     enabled: true
     description: In-band management and cluster traffic
     ip_addresses:
     - address: 192.168.6.160/24
       dns_name: glemmen160
       primary: true
+  rack: Glemmen rack
+  position: 33
+  face: front
 - name: glemmen170
   site: glemmen
   role: control-plane
@@ -385,14 +437,25 @@ devices:
   tags:
   - production
   interfaces:
-  - name: bond0
+  - name: eno8303
     type: 1000base-t
+    enabled: true
+    description: bond0 member (LACP)
+  - name: eno8403
+    type: 1000base-t
+    enabled: true
+    description: bond0 member (LACP)
+  - name: bond0
+    type: lag
     enabled: true
     description: In-band management and cluster traffic
     ip_addresses:
     - address: 192.168.6.170/24
       dns_name: glemmen170
       primary: true
+  rack: Glemmen rack
+  position: 34
+  face: front
 - name: glemmen180
   site: glemmen
   role: control-plane
@@ -405,14 +468,25 @@ devices:
   tags:
   - production
   interfaces:
-  - name: bond0
+  - name: eno8303
     type: 1000base-t
+    enabled: true
+    description: bond0 member (LACP)
+  - name: eno8403
+    type: 1000base-t
+    enabled: true
+    description: bond0 member (LACP)
+  - name: bond0
+    type: lag
     enabled: true
     description: In-band management and cluster traffic
     ip_addresses:
     - address: 192.168.6.180/24
       dns_name: glemmen180
       primary: true
+  rack: Glemmen rack
+  position: 35
+  face: front
 - name: glemmen50
   site: glemmen
   role: worker
@@ -433,6 +507,9 @@ devices:
     - address: 192.168.6.50/24
       dns_name: glemmen50
       primary: true
+  rack: Glemmen rack
+  position: 25
+  face: front
 - name: glemmen60
   site: glemmen
   role: worker
@@ -453,6 +530,9 @@ devices:
     - address: 192.168.6.60/24
       dns_name: glemmen60
       primary: true
+  rack: Glemmen rack
+  position: 24
+  face: front
 - name: glemmen80
   site: glemmen
   role: worker
@@ -466,13 +546,16 @@ devices:
   - production
   interfaces:
   - name: enp4s0f0
-    type: 1000base-t
+    type: 10gbase-x-sfpp
     enabled: true
     description: In-band management and cluster traffic
     ip_addresses:
     - address: 192.168.6.80/24
       dns_name: glemmen80
       primary: true
+  rack: Glemmen rack
+  position: 27
+  face: front
 - name: USW Flex 2.5G 5Lager
   site: glemmen
   role: switch
@@ -767,6 +850,9 @@ devices:
     ip_addresses:
     - address: 109.247.229.146/30
       description: WAN
+  rack: Glemmen rack
+  position: 42
+  face: front
 - name: USW Flex 2.5G 8 PoE
   site: glemmen
   role: switch
@@ -1612,6 +1698,9 @@ devices:
     mode: ''
     untagged_vlan: null
     tagged_vlans: []
+  rack: Glemmen rack
+  position: 41
+  face: front
 - name: USW Flex 2.5G 5 (228f)
   site: glemmen
   role: switch
@@ -1694,6 +1783,240 @@ devices:
     type: 1000base-t
     enabled: true
     description: Uplink Ethernet port
+- name: 240emy
+  site: glemmen
+  role: server
+  device_type: dell-server
+  status: active
+  serial: ''
+  description: Dell server at 192.168.6.181 (UniFi client 240emy), USW Pro 24 PoE
+    Port 19, MAC 6c:3c:8c:75:3e:84
+  tags:
+  - production
+  interfaces:
+  - name: mgmt
+    type: virtual
+    mgmt_only: true
+    enabled: true
+    description: Management address
+    ip_addresses:
+    - address: 192.168.6.181/24
+      primary: true
+  - name: Port 1
+    type: 1000base-t
+    enabled: true
+    description: Uplink to USW Pro 24 PoE Port 19
+  rack: Glemmen rack
+  position: 40
+  face: front
+- name: ubuntu-server
+  site: glemmen
+  role: server
+  device_type: dell-server
+  status: active
+  serial: ''
+  description: Dell server at 192.168.6.230 (UniFi client ubuntu-server), USW Pro
+    24 PoE Port 20, MAC 6c:3c:8c:75:3b:f4
+  tags:
+  - production
+  interfaces:
+  - name: mgmt
+    type: virtual
+    mgmt_only: true
+    enabled: true
+    description: Management address
+    ip_addresses:
+    - address: 192.168.6.230/24
+      primary: true
+  - name: Port 1
+    type: 1000base-t
+    enabled: true
+    description: Uplink to USW Pro 24 PoE Port 20
+  rack: Glemmen rack
+  position: 39
+  face: front
+- name: server220
+  site: glemmen
+  role: server
+  device_type: dell-server
+  status: active
+  serial: ''
+  description: Dell server at 192.168.6.133 (UniFi client server220), USW Pro 24 PoE
+    Port 23, MAC 6c:3c:8c:75:3c:3c
+  tags:
+  - production
+  interfaces:
+  - name: mgmt
+    type: virtual
+    mgmt_only: true
+    enabled: true
+    description: Management address
+    ip_addresses:
+    - address: 192.168.6.133/24
+      primary: true
+  - name: Port 1
+    type: 1000base-t
+    enabled: true
+    description: Uplink to USW Pro 24 PoE Port 23
+  rack: Glemmen rack
+  position: 38
+  face: front
+- name: glemmen210
+  site: glemmen
+  role: server
+  device_type: dell-server
+  status: active
+  serial: ''
+  description: Dell server at 192.168.6.68 (UniFi client glemmen210), USW Pro 24 PoE
+    Port 22, MAC 6c:3c:8c:75:3c:f4
+  tags:
+  - production
+  interfaces:
+  - name: mgmt
+    type: virtual
+    mgmt_only: true
+    enabled: true
+    description: Management address
+    ip_addresses:
+    - address: 192.168.6.68/24
+      primary: true
+  - name: Port 1
+    type: 1000base-t
+    enabled: true
+    description: Uplink to USW Pro 24 PoE Port 22
+  rack: Glemmen rack
+  position: 37
+  face: front
+- name: server190
+  site: glemmen
+  role: server
+  device_type: dell-server
+  status: active
+  serial: ''
+  description: Dell server at 192.168.6.190 (UniFi client server190), USW Pro 24 PoE
+    Port 21, MAC 6c:3c:8c:75:3c:c4
+  tags:
+  - production
+  interfaces:
+  - name: mgmt
+    type: virtual
+    mgmt_only: true
+    enabled: true
+    description: Management address
+    ip_addresses:
+    - address: 192.168.6.190/24
+      primary: true
+  - name: Port 1
+    type: 1000base-t
+    enabled: true
+    description: Uplink to USW Pro 24 PoE Port 21
+  rack: Glemmen rack
+  position: 36
+  face: front
+- name: LeanderWin10
+  site: glemmen
+  role: server
+  device_type: dell-server
+  status: active
+  serial: ''
+  description: Dell server at 192.168.6.140 (UniFi client LeanderWin10), USW Pro 24
+    PoE Port 18, MAC 6c:3c:8c:75:43:4c
+  tags:
+  - production
+  interfaces:
+  - name: mgmt
+    type: virtual
+    mgmt_only: true
+    enabled: true
+    description: Management address
+    ip_addresses:
+    - address: 192.168.6.140/24
+      primary: true
+  - name: Port 1
+    type: 1000base-t
+    enabled: true
+    description: Uplink to USW Pro 24 PoE Port 18
+  rack: Glemmen rack
+  position: 31
+  face: front
+- name: server120
+  site: glemmen
+  role: server
+  device_type: dell-server
+  status: active
+  serial: ''
+  description: Dell server at 192.168.6.120 (UniFi client server120), USW Pro 24 PoE
+    Port 17, MAC 6c:3c:8c:75:37:64
+  tags:
+  - production
+  interfaces:
+  - name: mgmt
+    type: virtual
+    mgmt_only: true
+    enabled: true
+    description: Management address
+    ip_addresses:
+    - address: 192.168.6.120/24
+      primary: true
+  - name: Port 1
+    type: 1000base-t
+    enabled: true
+    description: Uplink to USW Pro 24 PoE Port 17
+  rack: Glemmen rack
+  position: 29
+  face: front
+- name: dellserver01
+  site: glemmen
+  role: server
+  device_type: dell-server
+  status: active
+  serial: ''
+  description: Dell server at 192.168.6.100 (UniFi client dellserver01), USW Pro 24
+    PoE Port 16, MAC 6c:3c:8c:75:3a:44
+  tags:
+  - production
+  interfaces:
+  - name: mgmt
+    type: virtual
+    mgmt_only: true
+    enabled: true
+    description: Management address
+    ip_addresses:
+    - address: 192.168.6.100/24
+      primary: true
+  - name: Port 1
+    type: 1000base-t
+    enabled: true
+    description: Uplink to USW Pro 24 PoE Port 16
+  rack: Glemmen rack
+  position: 28
+  face: front
+- name: MinecraftServer
+  site: glemmen
+  role: server
+  device_type: dell-server
+  status: active
+  serial: ''
+  description: Dell server at 192.168.6.70 (UniFi client MinecraftServer), USW Pro
+    24 PoE Port 24, MAC b8:2a:72:d5:dd:04
+  tags:
+  - production
+  interfaces:
+  - name: mgmt
+    type: virtual
+    mgmt_only: true
+    enabled: true
+    description: Management address
+    ip_addresses:
+    - address: 192.168.6.70/24
+      primary: true
+  - name: Port 1
+    type: 1000base-t
+    enabled: true
+    description: Uplink to USW Pro 24 PoE Port 24
+  rack: Glemmen rack
+  position: 26
+  face: front
 ip_addresses:
 - address: 192.168.6.98/24
   status: active
@@ -1793,3 +2116,157 @@ cables:
   type: cat6
   status: connected
   description: Zyxel server-accessory uplink (VLAN 1 native, VLAN 4 tagged).
+- a_device: glemmen50
+  a_interface: enp11s0f0
+  b_device: USW Pro 24 PoE
+  b_interface: Port 3
+  type: cat6
+  status: connected
+  description: glemmen50 enp11s0f0 to USW Pro 24 PoE Port 3
+- a_device: glemmen60
+  a_interface: eno1
+  b_device: USW Pro 24 PoE
+  b_interface: Port 4
+  type: cat6
+  status: connected
+  description: glemmen60 eno1 to USW Pro 24 PoE Port 4
+- a_device: glemmen130
+  a_interface: eno8303
+  b_device: USW Pro 24 PoE
+  b_interface: Port 5
+  type: cat6
+  status: connected
+  description: glemmen130 eno8303 to USW Pro 24 PoE Port 5
+- a_device: glemmen130
+  a_interface: eno8403
+  b_device: USW Pro 24 PoE
+  b_interface: Port 6
+  type: cat6
+  status: connected
+  description: glemmen130 eno8403 to USW Pro 24 PoE Port 6
+- a_device: glemmen150
+  a_interface: eno8303
+  b_device: USW Pro 24 PoE
+  b_interface: Port 7
+  type: cat6
+  status: connected
+  description: glemmen150 eno8303 to USW Pro 24 PoE Port 7
+- a_device: glemmen150
+  a_interface: eno8403
+  b_device: USW Pro 24 PoE
+  b_interface: Port 8
+  type: cat6
+  status: connected
+  description: glemmen150 eno8403 to USW Pro 24 PoE Port 8
+- a_device: glemmen160
+  a_interface: eno8303
+  b_device: USW Pro 24 PoE
+  b_interface: Port 9
+  type: cat6
+  status: connected
+  description: glemmen160 eno8303 to USW Pro 24 PoE Port 9
+- a_device: glemmen160
+  a_interface: eno8403
+  b_device: USW Pro 24 PoE
+  b_interface: Port 10
+  type: cat6
+  status: connected
+  description: glemmen160 eno8403 to USW Pro 24 PoE Port 10
+- a_device: glemmen170
+  a_interface: eno8303
+  b_device: USW Pro 24 PoE
+  b_interface: Port 11
+  type: cat6
+  status: connected
+  description: glemmen170 eno8303 to USW Pro 24 PoE Port 11
+- a_device: glemmen170
+  a_interface: eno8403
+  b_device: USW Pro 24 PoE
+  b_interface: Port 12
+  type: cat6
+  status: connected
+  description: glemmen170 eno8403 to USW Pro 24 PoE Port 12
+- a_device: glemmen180
+  a_interface: eno8303
+  b_device: USW Pro 24 PoE
+  b_interface: Port 13
+  type: cat6
+  status: connected
+  description: glemmen180 eno8303 to USW Pro 24 PoE Port 13
+- a_device: glemmen180
+  a_interface: eno8403
+  b_device: USW Pro 24 PoE
+  b_interface: Port 14
+  type: cat6
+  status: connected
+  description: glemmen180 eno8403 to USW Pro 24 PoE Port 14
+- a_device: glemmen80
+  a_interface: enp4s0f0
+  b_device: USW Pro 24 PoE
+  b_interface: Port 26
+  type: dac-passive
+  status: connected
+  description: glemmen80 enp4s0f0 to USW Pro 24 PoE Port 26
+- a_device: 240emy
+  a_interface: Port 1
+  b_device: USW Pro 24 PoE
+  b_interface: Port 19
+  type: cat6
+  status: connected
+  description: 240emy Port 1 to USW Pro 24 PoE Port 19
+- a_device: ubuntu-server
+  a_interface: Port 1
+  b_device: USW Pro 24 PoE
+  b_interface: Port 20
+  type: cat6
+  status: connected
+  description: ubuntu-server Port 1 to USW Pro 24 PoE Port 20
+- a_device: server220
+  a_interface: Port 1
+  b_device: USW Pro 24 PoE
+  b_interface: Port 23
+  type: cat6
+  status: connected
+  description: server220 Port 1 to USW Pro 24 PoE Port 23
+- a_device: glemmen210
+  a_interface: Port 1
+  b_device: USW Pro 24 PoE
+  b_interface: Port 22
+  type: cat6
+  status: connected
+  description: glemmen210 Port 1 to USW Pro 24 PoE Port 22
+- a_device: server190
+  a_interface: Port 1
+  b_device: USW Pro 24 PoE
+  b_interface: Port 21
+  type: cat6
+  status: connected
+  description: server190 Port 1 to USW Pro 24 PoE Port 21
+- a_device: LeanderWin10
+  a_interface: Port 1
+  b_device: USW Pro 24 PoE
+  b_interface: Port 18
+  type: cat6
+  status: connected
+  description: LeanderWin10 Port 1 to USW Pro 24 PoE Port 18
+- a_device: server120
+  a_interface: Port 1
+  b_device: USW Pro 24 PoE
+  b_interface: Port 17
+  type: cat6
+  status: connected
+  description: server120 Port 1 to USW Pro 24 PoE Port 17
+- a_device: dellserver01
+  a_interface: Port 1
+  b_device: USW Pro 24 PoE
+  b_interface: Port 16
+  type: cat6
+  status: connected
+  description: dellserver01 Port 1 to USW Pro 24 PoE Port 16
+- a_device: MinecraftServer
+  a_interface: Port 1
+  b_device: USW Pro 24 PoE
+  b_interface: Port 24
+  type: cat6
+  status: connected
+  description: MinecraftServer Port 1 to USW Pro 24 PoE Port 24

@@ -42,6 +42,46 @@ import yaml
 SITE_NAME = "Glemmen"
 SITE_SLUG = "glemmen"
 DEFAULT_TAG = "production"
+RACK_NAME = "Glemmen rack"
+RACK_TOP = 42
+
+# Physical rack order, top to bottom. The 240..100 row is ordered by the
+# server number encoded in its UniFi name, followed by the remaining machines.
+RACK_SERVER_IPS = (
+    "192.168.6.181",  # 240emy
+    "192.168.6.230",  # ubuntu-server
+    "192.168.6.133",  # server220
+    "192.168.6.68",   # glemmen210
+    "192.168.6.190",  # server190
+    "192.168.6.140",  # LeanderWin10 (140)
+    "192.168.6.120",  # server120
+    "192.168.6.100",  # dellserver01
+)
+EXTRA_SERVER_IPS = (*RACK_SERVER_IPS, "192.168.6.70")
+
+SERVER_NAME_OVERRIDES = {
+    "192.168.6.181": "240emy",
+    "192.168.6.230": "ubuntu-server",
+    "192.168.6.133": "server220",
+    "192.168.6.68": "glemmen210",
+    "192.168.6.190": "server190",
+    "192.168.6.140": "LeanderWin10",
+    "192.168.6.120": "server120",
+    "192.168.6.100": "dellserver01",
+    "192.168.6.70": "MinecraftServer",
+}
+
+# Server NIC -> USW Pro 24 PoE port. The 1xx nodes bond eno8303/eno8403.
+SERVER_PORTS = {
+    "glemmen50": {"enp11s0f0": 3},
+    "glemmen60": {"eno1": 4},
+    "glemmen130": {"eno8303": 5, "eno8403": 6},
+    "glemmen150": {"eno8303": 7, "eno8403": 8},
+    "glemmen160": {"eno8303": 9, "eno8403": 10},
+    "glemmen170": {"eno8303": 11, "eno8403": 12},
+    "glemmen180": {"eno8303": 13, "eno8403": 14},
+    "glemmen80": {"enp4s0f0": 26},
+}
 
 MODELS: dict[str, dict[str, Any]] = {
     "UDMPRO": {
@@ -139,7 +179,7 @@ def read_cluster_secret(kubectl: str, kubeconfig: str | None) -> tuple[str, str]
     return username, password
 
 
-def unifi_get(base: str, username: str, password: str) -> tuple[list[dict], list[dict]]:
+def unifi_get(base: str, username: str, password: str) -> tuple[list[dict], list[dict], list[dict]]:
     session = requests.Session()
     session.headers.update({"User-Agent": "glemmen-fleet-netbox-import/1.0"})
     login = session.post(
@@ -158,9 +198,14 @@ def unifi_get(base: str, username: str, password: str) -> tuple[list[dict], list
         f"{base}/proxy/network/api/s/default/rest/networkconf", timeout=60
     )
     networks_response.raise_for_status()
+    clients_response = session.get(
+        f"{base}/proxy/network/api/s/default/stat/sta", timeout=60
+    )
+    clients_response.raise_for_status()
     return (
         devices_response.json().get("data") or [],
         networks_response.json().get("data") or [],
+        clients_response.json().get("data") or [],
     )
 
 
@@ -187,6 +232,16 @@ def node_link(node_name: str, talos_dir: Path) -> tuple[str, str] | None:
             if address:
                 return str(name), str(address)
     return None
+
+
+def node_bond_members(node_name: str, talos_dir: Path) -> list[str]:
+    path = talos_dir / f"{node_name}.yaml"
+    if not path.is_file():
+        return []
+    for document in yaml.safe_load_all(path.read_text(encoding="utf-8")):
+        if isinstance(document, dict) and document.get("kind") == "BondConfig":
+            return [str(item) for item in document.get("links") or []]
+    return []
 
 
 def cpu_cores(value: str | None) -> float:
@@ -539,6 +594,75 @@ def build_networks(
     return list(vlans.values()), list(prefixes.values())
 
 
+def build_servers(
+    clients: list[dict],
+    usw_name: str,
+    existing_names: set[str],
+    switch_ports_by_ip: dict[str, dict],
+) -> tuple[list[dict], dict[str, int]]:
+    clients_by_ip = {
+        str(client.get("ip")): client
+        for client in clients
+        if client.get("is_wired") and client.get("ip")
+    }
+    servers: list[dict] = []
+    server_ports: dict[str, int] = {}
+    for ip in EXTRA_SERVER_IPS:
+        client = clients_by_ip.get(ip)
+        port_info = switch_ports_by_ip.get(ip) or {}
+        if client is None and not port_info:
+            print(f"WARNING: no UniFi client or switch port for server {ip}", file=sys.stderr)
+            continue
+        name = str(
+            SERVER_NAME_OVERRIDES.get(ip)
+            or (client or {}).get("hostname")
+            or (client or {}).get("name")
+            or f"server{ip.rsplit('.', 1)[-1]}"
+        )
+        if name in existing_names:
+            name = f"{name}-{ip.rsplit('.', 1)[-1]}"
+        port = (client or {}).get("sw_port") or port_info.get("port")
+        if port is None:
+            print(f"WARNING: no switch port for server {name} ({ip})", file=sys.stderr)
+            continue
+        port = int(port)
+        server_ports[name] = port
+        mac = str((client or {}).get("mac") or port_info.get("mac") or "")
+        active = client is not None or bool(port_info.get("connected"))
+        servers.append(
+            {
+                "name": name,
+                "site": SITE_SLUG,
+                "role": "server",
+                "device_type": "dell-server",
+                "status": "active" if active else "offline",
+                "serial": "",
+                "description": (
+                    f"Dell server at {ip} (UniFi client {name}), "
+                    f"USW Pro 24 PoE Port {port}, MAC {mac}"
+                ),
+                "tags": [DEFAULT_TAG],
+                "interfaces": [
+                    {
+                        "name": "mgmt",
+                        "type": "virtual",
+                        "mgmt_only": True,
+                        "enabled": True,
+                        "description": "Management address",
+                        "ip_addresses": [{"address": f"{ip}/24", "primary": True}],
+                    },
+                    {
+                        "name": "Port 1",
+                        "type": "1000base-t",
+                        "enabled": True,
+                        "description": f"Uplink to {usw_name} Port {port}",
+                    },
+                ],
+            }
+        )
+    return servers, server_ports
+
+
 def build_nodes(nodes: list[dict], talos_dir: Path) -> list[dict]:
     result: list[dict] = []
     for node in nodes:
@@ -575,6 +699,38 @@ def build_nodes(nodes: list[dict], talos_dir: Path) -> list[dict]:
             f"{cpu_cores(capacity.get('cpu')):g} CPU, "
             f"{memory_gib(capacity.get('memory')):.1f} GiB RAM"
         )
+        interfaces: list[dict] = []
+        members = node_bond_members(name, talos_dir)
+        for member in members:
+            interfaces.append(
+                {
+                    "name": member,
+                    "type": "1000base-t",
+                    "enabled": True,
+                    "description": "bond0 member (LACP)",
+                }
+            )
+        if members:
+            iface_type = "lag"
+        elif name == "glemmen80":
+            iface_type = "10gbase-x-sfpp"
+        else:
+            iface_type = "1000base-t"
+        interfaces.append(
+            {
+                "name": iface_name,
+                "type": iface_type,
+                "enabled": True,
+                "description": "In-band management and cluster traffic",
+                "ip_addresses": [
+                    {
+                        "address": iface_address,
+                        "dns_name": name,
+                        "primary": True,
+                    }
+                ],
+            }
+        )
         result.append(
             {
                 "name": name,
@@ -586,21 +742,7 @@ def build_nodes(nodes: list[dict], talos_dir: Path) -> list[dict]:
                 "serial": node_info.get("systemUUID") or "",
                 "description": description,
                 "tags": [DEFAULT_TAG],
-                "interfaces": [
-                    {
-                        "name": iface_name,
-                        "type": "1000base-t",
-                        "enabled": True,
-                        "description": "In-band management and cluster traffic",
-                        "ip_addresses": [
-                            {
-                                "address": iface_address,
-                                "dns_name": name,
-                                "primary": True,
-                            }
-                        ],
-                    }
-                ],
+                "interfaces": interfaces,
             }
         )
     return result
@@ -682,11 +824,33 @@ def main(argv: list[str] | None = None) -> int:
     if not username or not password:
         raise SystemExit("set UNIFI_USER/UNIFI_PASS or use --from-cluster")
 
-    devices, networks = unifi_get(args.unifi_url.rstrip("/"), username, password)
+    devices, networks, clients = unifi_get(args.unifi_url.rstrip("/"), username, password)
     unifi_devices, device_types, cables = build_unifi(devices, networks)
     udm = next((d for d in devices if d.get("type") == "udm"), None)
     vlans, prefixes = build_networks(networks, udm)
     nodes = build_nodes(read_nodes(args.kubectl, args.kubeconfig, args.nodes_json), Path(args.talos_config_dir))
+    usw_name = next(
+        d["name"] for d in unifi_devices if d["device_type"] == "ubiquiti-usw-pro-24-poe"
+    )
+    usw = next(device for device in devices if device.get("model") == "US24PRO")
+    switch_ports_by_ip: dict[str, dict] = {}
+    for port in usw.get("port_table") or []:
+        last_connection = port.get("last_connection") or {}
+        if not last_connection.get("ip") or port.get("port_idx") is None:
+            continue
+        switch_ports_by_ip[str(last_connection["ip"])] = {
+            "port": int(port["port_idx"]),
+            "mac": last_connection.get("mac"),
+            "connected": last_connection.get("connected"),
+        }
+    existing_names = {
+        "zyxel-gs1920-24",
+        *(d["name"] for d in nodes),
+        *(d["name"] for d in unifi_devices),
+    }
+    extra_servers, server_ports = build_servers(
+        clients, usw_name, existing_names, switch_ports_by_ip
+    )
 
     base_device_types = [
         {
@@ -704,6 +868,14 @@ def main(argv: list[str] | None = None) -> int:
             "u_height": 1,
             "is_full_depth": True,
             "description": "24 x 1G ports + 4 x SFP, firmware V4.10(AAOB.5).",
+        },
+        {
+            "manufacturer": "dell",
+            "model": "Dell server",
+            "slug": "dell-server",
+            "u_height": 1,
+            "is_full_depth": True,
+            "description": "Generic Dell rack server.",
         },
     ]
     all_device_types = {d["slug"]: d for d in base_device_types}
@@ -725,7 +897,101 @@ def main(argv: list[str] | None = None) -> int:
             }
         )
 
-    devices_all = [build_zyxel(), *nodes, *unifi_devices]
+    seen_cables = {
+        frozenset(
+            {
+                (cable["a_device"], cable["a_interface"]),
+                (cable["b_device"], cable["b_interface"]),
+            }
+        )
+        for cable in known_cables
+    }
+
+    def add_cable(
+        a_device: str,
+        a_interface: str,
+        b_device: str,
+        b_interface: str,
+        cable_type: str,
+        description: str,
+    ) -> None:
+        key = frozenset({(a_device, a_interface), (b_device, b_interface)})
+        if key in seen_cables:
+            return
+        seen_cables.add(key)
+        known_cables.append(
+            {
+                "a_device": a_device,
+                "a_interface": a_interface,
+                "b_device": b_device,
+                "b_interface": b_interface,
+                "type": cable_type,
+                "status": "connected",
+                "description": description,
+            }
+        )
+
+    for device_name, members in SERVER_PORTS.items():
+        for interface_name, port in members.items():
+            add_cable(
+                device_name,
+                interface_name,
+                usw_name,
+                f"Port {port}",
+                "dac-passive" if port == 26 else "cat6",
+                f"{device_name} {interface_name} to {usw_name} Port {port}",
+            )
+
+    for server_name, port in server_ports.items():
+        add_cable(
+            server_name,
+            "Port 1",
+            usw_name,
+            f"Port {port}",
+            "cat6",
+            f"{server_name} Port 1 to {usw_name} Port {port}",
+        )
+
+    devices_all = [build_zyxel(), *nodes, *unifi_devices, *extra_servers]
+    devices_by_name = {device["name"]: device for device in devices_all}
+    server_by_ip = {
+        server["interfaces"][0]["ip_addresses"][0]["address"].split("/")[0]: server["name"]
+        for server in extra_servers
+    }
+    rack_names = [
+        name
+        for name in (
+            udm_name,
+            usw_name,
+            server_by_ip.get("192.168.6.181"),
+            server_by_ip.get("192.168.6.230"),
+            server_by_ip.get("192.168.6.133"),
+            server_by_ip.get("192.168.6.68"),
+            server_by_ip.get("192.168.6.190"),
+            "glemmen180",
+            "glemmen170",
+            "glemmen160",
+            "glemmen150",
+            server_by_ip.get("192.168.6.140"),
+            "glemmen130",
+            server_by_ip.get("192.168.6.120"),
+            server_by_ip.get("192.168.6.100"),
+            "glemmen80",
+            server_by_ip.get("192.168.6.70"),
+            "glemmen50",
+            "glemmen60",
+        )
+        if name
+    ]
+    for index, name in enumerate(rack_names):
+        device = devices_by_name.get(name)
+        if device is None:
+            print(f"WARNING: rack device {name!r} not found", file=sys.stderr)
+            continue
+        device["rack"] = RACK_NAME
+        device["position"] = RACK_TOP - index
+        device["face"] = "front"
+
     inventory = {
         "sites": [
             {
@@ -739,6 +1005,7 @@ def main(argv: list[str] | None = None) -> int:
             {"name": "Generic", "slug": "generic", "description": "Generic or custom hardware."},
             {"name": "Zyxel", "slug": "zyxel"},
             {"name": "Ubiquiti", "slug": "ubiquiti"},
+            {"name": "Dell", "slug": "dell"},
         ],
         "platforms": [
             {
@@ -759,8 +1026,20 @@ def main(argv: list[str] | None = None) -> int:
             {"name": "Switch", "slug": "switch", "color": "00a0d1"},
             {"name": "Gateway", "slug": "gateway", "color": "f5a623"},
             {"name": "Access point", "slug": "access-point", "color": "7b61ff"},
+            {"name": "Server", "slug": "server", "color": "9e9e9e"},
         ],
         "device_types": list(all_device_types.values()),
+        "racks": [
+            {
+                "name": RACK_NAME,
+                "site": SITE_SLUG,
+                "status": "active",
+                "width": 19,
+                "u_height": 42,
+                "desc_units": False,
+                "description": "Physical Glemmen rack, ordered top to bottom.",
+            }
+        ],
         "vlans": vlans,
         "prefixes": prefixes,
         "devices": devices_all,
@@ -792,8 +1071,10 @@ def main(argv: list[str] | None = None) -> int:
     )
     print(f"Wrote {output}")
     print(
-        f"  devices={len(devices_all)} ({len(nodes)} nodes, {len(unifi_devices)} UniFi, 1 Zyxel), "
-        f"cables={len(known_cables)}, vlans={len(vlans)}, prefixes={len(prefixes)}"
+        f"  devices={len(devices_all)} ({len(nodes)} nodes, {len(unifi_devices)} UniFi, "
+        f"{len(extra_servers)} servers, 1 Zyxel), "
+        f"cables={len(known_cables)}, vlans={len(vlans)}, prefixes={len(prefixes)}, "
+        f"racked={len(rack_names)}"
     )
     return 0
 
