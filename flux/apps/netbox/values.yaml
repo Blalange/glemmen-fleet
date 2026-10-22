@@ -110,15 +110,16 @@ initContainers:
     command: ["sh", "-c"]
     args:
       - >-
-        /opt/netbox/venv/bin/pip install --no-cache-dir --no-deps
-        --target /plugins netbox-topology-views==5.0.0 &&
+        /usr/local/bin/uv pip install --no-cache --no-deps
+        --python /opt/netbox/venv/bin/python --target /plugins
+        netbox-topology-views==5.0.0 &&
         PYTHONPATH=/plugins /opt/netbox/venv/bin/python
         /opt/netbox/netbox/manage.py collectstatic --noinput
     env:
       - name: HOME
         value: /tmp
-      - name: PIP_NO_CACHE_DIR
-        value: "1"
+      - name: UV_CACHE_DIR
+        value: /tmp/uv-cache
       - name: PYTHONPATH
         value: /plugins
     volumeMounts:
@@ -209,13 +210,14 @@ worker:
       command: ["sh", "-c"]
       args:
         - >-
-          /opt/netbox/venv/bin/pip install --no-cache-dir --no-deps
-          --target /plugins netbox-topology-views==5.0.0
+          /usr/local/bin/uv pip install --no-cache --no-deps
+          --python /opt/netbox/venv/bin/python --target /plugins
+          netbox-topology-views==5.0.0
       env:
         - name: HOME
           value: /tmp
-        - name: PIP_NO_CACHE_DIR
-          value: "1"
+        - name: UV_CACHE_DIR
+          value: /tmp/uv-cache
       volumeMounts:
         - name: plugins
           mountPath: /plugins
