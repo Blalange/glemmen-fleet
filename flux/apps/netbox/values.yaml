@@ -11,11 +11,15 @@
 # Secrets are never stored in Git. Create them before reconciling this app:
 #
 #   kubectl create namespace netbox --dry-run=client -o yaml | kubectl apply -f -
+#   API_TOKEN="$(openssl rand -hex 20)"
+#   API_TOKEN_KEY="$(openssl rand -hex 6)"
 #   kubectl -n netbox create secret generic netbox-secrets \
 #     --from-literal=username=admin \
 #     --from-literal=password="$(openssl rand -base64 24)" \
 #     --from-literal=email=admin@glem.men \
-#     --from-literal=api_token="$(openssl rand -hex 20)" \
+#     --from-literal=api_token="$API_TOKEN" \
+#     --from-literal=api_token_key="$API_TOKEN_KEY" \
+#     --from-literal=api_token_full="nbt_${API_TOKEN_KEY}.${API_TOKEN}" \
 #     --from-literal=secret_key="$(openssl rand -hex 32)" \
 #     --from-literal=api_token_peppers="{\"1\":\"$(openssl rand -hex 32)\"}" \
 #     --from-literal=db-password="$(openssl rand -base64 24)" \
@@ -24,7 +28,9 @@
 #     --dry-run=client -o yaml | kubectl apply -f -
 #
 # The same Secret is used by the chart (superuser/config), PostgreSQL
-# (db-password), Valkey (valkey-password) and the sync CronJob (api_token).
+# (db-password), Valkey (valkey-password) and the sync CronJob
+# (api_token_full). The chart's superuser bootstrap reads api_token as the v2
+# secret and api_token_key as the public key.
 
 # Use the image tag from the chart's appVersion (v4.7.3 for chart 8.3.93).
 image:
@@ -59,6 +65,17 @@ superuser:
   email: admin@glem.men
   existingSecret: netbox-secrets
 existingSecret: netbox-secrets
+
+# NetBox 4.7 creates v2 API tokens, which require both a public key and the
+# secret. The chart mounts api_token as the secret; provide the public key as
+# an extra environment variable so the first-boot superuser script creates a
+# usable token.
+extraEnvs:
+  - name: SUPERUSER_API_KEY
+    valueFrom:
+      secretKeyRef:
+        name: netbox-secrets
+        key: api_token_key
 
 replicaCount: 1
 

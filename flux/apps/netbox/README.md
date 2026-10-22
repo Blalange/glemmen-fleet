@@ -34,11 +34,15 @@ before reconciling the app:
 ```sh
 kubectl create namespace netbox --dry-run=client -o yaml | kubectl apply -f -
 
+API_TOKEN="$(openssl rand -hex 20)"
+API_TOKEN_KEY="$(openssl rand -hex 6)"
 kubectl -n netbox create secret generic netbox-secrets \
   --from-literal=username=admin \
   --from-literal=password="$(openssl rand -base64 24)" \
   --from-literal=email=admin@glem.men \
-  --from-literal=api_token="$(openssl rand -hex 20)" \
+  --from-literal=api_token="$API_TOKEN" \
+  --from-literal=api_token_key="$API_TOKEN_KEY" \
+  --from-literal=api_token_full="nbt_${API_TOKEN_KEY}.${API_TOKEN}" \
   --from-literal=secret_key="$(openssl rand -hex 32)" \
   --from-literal=api_token_peppers="{\"1\":\"$(openssl rand -hex 32)\"}" \
   --from-literal=db-password="$(openssl rand -base64 24)" \
@@ -49,7 +53,8 @@ kubectl -n netbox create secret generic netbox-secrets \
 
 | Key | Used by |
 |---|---|
-| `username`, `password`, `email`, `api_token` | NetBox superuser bootstrap |
+| `username`, `password`, `email`, `api_token`, `api_token_key` | NetBox superuser bootstrap (v2 token) |
+| `api_token_full` | Sync CronJob (`nbt_<key>.<secret>`) |
 | `secret_key`, `api_token_peppers`, `email_password` | NetBox Django config |
 | `db-password` | PostgreSQL and NetBox |
 | `valkey-password` | Valkey and NetBox |

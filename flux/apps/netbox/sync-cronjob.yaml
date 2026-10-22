@@ -83,7 +83,9 @@ spec:
                   valueFrom:
                     secretKeyRef:
                       name: netbox-secrets
-                      key: api_token
+                      # Full v2 token: nbt_<key>.<secret>. NetBox 4.7 creates
+                      # v2 tokens by default; pynetbox sends these as Bearer.
+                      key: api_token_full
                 - name: NETBOX_INVENTORY_DIR
                   value: /inventory
                 # Set to "true" for a plan-only run. The CronJob applies changes;
