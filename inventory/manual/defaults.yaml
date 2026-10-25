@@ -1,0 +1,6 @@
+layer: manual
+
+defaults:
+  site: glemmen
+  tags:
+    - production

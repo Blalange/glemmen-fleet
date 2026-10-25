@@ -1,0 +1,168 @@
+layer: manual
+
+devices:
+  - name: Dream Machine Pro B bygg
+    role: gateway
+    device_type: ubiquiti-udm-pro
+    status: active
+    unifi_serial: 245A4C7679D1
+
+  - name: USW Pro 24 PoE
+    role: switch
+    device_type: ubiquiti-usw-pro-24-poe
+    status: active
+    unifi_serial: AC8BA9B5F7E9
+
+  - name: zyxel-gs1920-24
+    role: switch
+    device_type: zyxel-gs1920-24
+    status: active
+    description: Zyxel GS1920-24, firmware V4.10(AAOB.5); server-accessory switch on VLAN 4.
+    interfaces:
+      - name: Port 1
+        type: 1000base-t
+        enabled: true
+        description: iDRAC DL51JZ3.
+        untagged_vlan: 4
+      - name: Port 2
+        type: 1000base-t
+        enabled: true
+        description: iDRAC FL51JZ3.
+        untagged_vlan: 4
+      - name: Port 3
+        type: 1000base-t
+        enabled: true
+        description: iDRAC 4L51JZ3.
+        untagged_vlan: 4
+      - name: Port 4
+        type: 1000base-t
+        enabled: true
+        description: iDRAC 6L51JZ3.
+        untagged_vlan: 4
+      - name: Port 5
+        type: 1000base-t
+        enabled: true
+        description: iDRAC 2L51JZ3.
+        untagged_vlan: 4
+      - name: Port 6
+        type: 1000base-t
+        enabled: true
+        description: Server accessory (MAC 5c:f3:fc:de:12:3d).
+        untagged_vlan: 4
+      - name: Port 7
+        type: 1000base-t
+        enabled: true
+        description: Spare access port (link up, no MAC learned).
+        untagged_vlan: 4
+      - name: Port 8
+        type: 1000base-t
+        enabled: true
+        description: Management laptop / access device.
+        untagged_vlan: 4
+      - name: Port 9
+        type: 1000base-t
+        enabled: true
+        description: Spare access port.
+        untagged_vlan: 4
+      - name: Port 10
+        type: 1000base-t
+        enabled: true
+        description: Spare access port.
+        untagged_vlan: 4
+      - name: Port 11
+        type: 1000base-t
+        enabled: true
+        description: Spare access port.
+        untagged_vlan: 4
+      - name: Port 12
+        type: 1000base-t
+        enabled: true
+        description: Spare access port.
+        untagged_vlan: 4
+      - name: Port 13
+        type: 1000base-t
+        enabled: true
+        description: Spare access port.
+        untagged_vlan: 4
+      - name: Port 14
+        type: 1000base-t
+        enabled: true
+        description: Spare access port.
+        untagged_vlan: 4
+      - name: Port 15
+        type: 1000base-t
+        enabled: true
+        description: Spare access port.
+        untagged_vlan: 4
+      - name: Port 16
+        type: 1000base-t
+        enabled: true
+        description: Spare access port.
+        untagged_vlan: 4
+      - name: Port 17
+        type: 1000base-t
+        enabled: true
+        description: Spare access port.
+        untagged_vlan: 4
+      - name: Port 18
+        type: 1000base-t
+        enabled: true
+        description: Spare access port.
+        untagged_vlan: 4
+      - name: Port 19
+        type: 1000base-t
+        enabled: true
+        description: Spare access port.
+        untagged_vlan: 4
+      - name: Port 20
+        type: 1000base-t
+        enabled: true
+        description: Spare access port.
+        untagged_vlan: 4
+      - name: Port 21
+        type: 1000base-t
+        enabled: true
+        description: Spare access port.
+        untagged_vlan: 4
+      - name: Port 22
+        type: 1000base-t
+        enabled: true
+        description: Spare access port.
+        untagged_vlan: 4
+      - name: Port 23
+        type: 1000base-t
+        enabled: true
+        description: Spare access port.
+        untagged_vlan: 4
+      - name: Port 24
+        type: 1000base-t
+        enabled: true
+        description: Spare access port.
+        untagged_vlan: 4
+      - name: Port 25
+        type: 1000base-x-sfp
+        enabled: true
+        description: Spare access port.
+        untagged_vlan: 4
+      - name: Port 26
+        type: 1000base-x-sfp
+        enabled: true
+        description: Spare access port.
+        untagged_vlan: 4
+      - name: Port 27
+        type: 1000base-x-sfp
+        enabled: true
+        description: Spare access port.
+        untagged_vlan: 4
+      - name: Port 28
+        type: 1000base-x-sfp
+        enabled: true
+        description: Uplink to UDM Pro Port 8 (VLAN 1 native, VLAN 4 tagged).
+        mode: tagged
+        untagged_vlan: 1
+        tagged_vlans:
+          - 4
+        ip_addresses:
+          - address: 192.168.4.2/24
+            dns_name: zyxel-gs1920-24
+            primary: true

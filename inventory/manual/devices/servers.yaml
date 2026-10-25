@@ -1,0 +1,117 @@
+layer: manual
+
+devices:
+  # --------------------------------------------------------------- physical servers
+  # Any server below may also set idrac_ip; Redfish components work without a
+  # talos_node and without a UniFi client address.
+  - name: 240emy
+    role: server
+    device_type: dell-poweredge-r250
+    unifi_mac: 6c:3c:8c:75:3e:84
+    unifi_ip: 192.168.6.181
+    uplinks:
+      - interface: Port 1
+        switch: USW Pro 24 PoE
+        port: 19
+        type: cat6
+
+  - name: ubuntu-server
+    role: server
+    device_type: dell-poweredge-r250
+    unifi_mac: 6c:3c:8c:75:3b:f4
+    unifi_ip: 192.168.6.230
+    uplinks:
+      - interface: Port 1
+        switch: USW Pro 24 PoE
+        port: 20
+        type: cat6
+
+  - name: server220
+    role: server
+    device_type: dell-poweredge-r250
+    unifi_mac: 6c:3c:8c:75:3c:3c
+    unifi_ip: 192.168.6.133
+    uplinks:
+      - interface: Port 1
+        switch: USW Pro 24 PoE
+        port: 23
+        type: cat6
+
+  - name: glemmen210
+    role: server
+    device_type: dell-poweredge-r250
+    unifi_mac: 6c:3c:8c:75:3c:f4
+    unifi_ip: 192.168.6.68
+    uplinks:
+      - interface: Port 1
+        switch: USW Pro 24 PoE
+        port: 22
+        type: cat6
+
+  - name: server200
+    role: server
+    device_type: dell-poweredge-r250
+    status: failed
+    description: Physical server between glemmen210 and server190. Currently broken; no management address.
+
+  - name: server190
+    role: server
+    device_type: dell-poweredge-r250
+    unifi_mac: 6c:3c:8c:75:3c:c4
+    unifi_ip: 192.168.6.190
+    uplinks:
+      - interface: Port 1
+        switch: USW Pro 24 PoE
+        port: 21
+        type: cat6
+
+  - name: LeanderWin10
+    role: server
+    device_type: dell-poweredge-r250
+    unifi_mac: 6c:3c:8c:75:43:4c
+    unifi_ip: 192.168.6.140
+    uplinks:
+      - interface: Port 1
+        switch: USW Pro 24 PoE
+        port: 18
+        type: cat6
+
+  - name: server120
+    role: server
+    device_type: dell-poweredge-r250
+    unifi_mac: 6c:3c:8c:75:37:64
+    unifi_ip: 192.168.6.120
+    uplinks:
+      - interface: Port 1
+        switch: USW Pro 24 PoE
+        port: 17
+        type: cat6
+
+  - name: server110
+    role: server
+    device_type: dell-poweredge-r250
+    status: offline
+    description: Physical server between server120 and dellserver01. No management address known.
+
+  - name: dellserver01
+    role: server
+    device_type: dell-poweredge-r250
+    unifi_mac: 6c:3c:8c:75:3a:44
+    unifi_ip: 192.168.6.100
+    uplinks:
+      - interface: Port 1
+        switch: USW Pro 24 PoE
+        port: 16
+        type: cat6
+
+  - name: server70
+    role: server
+    device_type: dell-poweredge-r630
+    unifi_mac: b8:2a:72:d5:dd:04
+    unifi_ip: 192.168.6.70
+    uplinks:
+      - interface: Port 1
+        switch: USW Pro 24 PoE
+        port: 24
+        type: cat6
+

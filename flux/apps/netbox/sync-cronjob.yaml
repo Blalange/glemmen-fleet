@@ -7,7 +7,7 @@
 # created by hand (without the tag) is never touched.
 #
 # The job is intentionally self-contained: the Python image is standard, and
-# an init container installs the two pinned dependencies into an emptyDir.
+# an init container installs the pinned dependencies into an emptyDir.
 # This avoids maintaining a custom image just for the sync script.
 apiVersion: batch/v1
 kind: CronJob
@@ -131,12 +131,12 @@ spec:
               emptyDir: {}
             - name: script
               configMap:
-                name: netbox-sync-script
+                name: netbox-sync-code
             - name: inventory
               configMap:
-                name: netbox-inventory
+                name: netbox-inventory-data
             - name: images
               configMap:
-                name: netbox-device-images
+                name: netbox-device-type-images
             - name: tmp
               emptyDir: {}

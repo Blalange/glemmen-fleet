@@ -1,4 +1,5 @@
-# Application Kustomizations. Each entry points at a directory under flux/apps/.
+# Application Kustomizations. Most point at flux/apps/; netbox-inventory
+# points at the repository-root inventory directory.
 # Helpers for suspending/resuming everything: scripts/flux/manage.py.
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
@@ -7,6 +8,7 @@ resources:
   - frigate.yaml
   - homepage.yaml
   - netbird.yaml
+  - netbox-inventory.yaml
   - netbox.yaml
   - panel.yaml
   - snipe-it.yaml

@@ -1,0 +1,78 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+configMapGenerator:
+  - name: netbox-sync-code
+    files:
+      - inventory_schema.py=scripts/inventory_schema.py
+      - inventory_util.py=scripts/inventory_util.py
+      - sync.py=scripts/sync.py
+      - sync_api.py=scripts/sync_api.py
+      - sync_context.py=scripts/sync_context.py
+      - sync_devices.py=scripts/sync_devices.py
+      - sync_images.py=scripts/sync_images.py
+      - sync_inventory.py=scripts/sync_inventory.py
+      - sync_meta.py=scripts/sync_meta.py
+      - sync_network.py=scripts/sync_network.py
+      - sync_prune.py=scripts/sync_prune.py
+      - sync_reconciler.py=scripts/sync_reconciler.py
+      - sync_validate.py=scripts/sync_validate.py
+  - name: netbox-inventory-data
+    files:
+      - 00-generated-unifi.yaml=generated/unifi.yaml
+      - 10-generated-compute.yaml=generated/compute.yaml
+      - 20-generated-module-types.yaml=generated/module-types.yaml
+      - 30-manual-defaults.yaml=manual/defaults.yaml
+      - 31-manual-site.yaml=manual/site.yaml
+      - 32-manual-device-types.yaml=manual/device-types.yaml
+      - 33-manual-module-types.yaml=manual/module-types.yaml
+      - 34-manual-racks.yaml=manual/racks.yaml
+      - 35-manual-cables.yaml=manual/cables.yaml
+      - 36-manual-ipam.yaml=manual/ipam.yaml
+      - 40-manual-devices-network.yaml=manual/devices/network.yaml
+      - 40-manual-devices-power.yaml=manual/devices/power.yaml
+      - 40-manual-devices-servers.yaml=manual/devices/servers.yaml
+      - 40-manual-devices-storage.yaml=manual/devices/storage.yaml
+      - 40-manual-devices-talos.yaml=manual/devices/talos.yaml
+  - name: netbox-device-type-images
+    files:
+      - apc-ap4423a-front.jpg=images/apc-ap4423a-front.jpg
+      - apc-ap4423a-rear.jpg=images/apc-ap4423a-rear.jpg
+      - dell-poweredge-r250-front.jpg=images/dell-poweredge-r250-front.jpg
+      - dell-poweredge-r250-other.jpg=images/dell-poweredge-r250-other.jpg
+      - dell-poweredge-r250-rear.jpg=images/dell-poweredge-r250-rear.jpg
+      - dell-poweredge-r515-front.jpg=images/dell-poweredge-r515-front.jpg
+      - dell-poweredge-r515-other.jpg=images/dell-poweredge-r515-other.jpg
+      - dell-poweredge-r515-rear.jpg=images/dell-poweredge-r515-rear.jpg
+      - dell-poweredge-r515-side.jpg=images/dell-poweredge-r515-side.jpg
+      - dell-poweredge-r630-front.jpg=images/dell-poweredge-r630-front.jpg
+      - dell-poweredge-r630-rear.jpg=images/dell-poweredge-r630-rear.jpg
+      - ibm-storwize-v5000-lff-expansion-front.jpg=images/ibm-storwize-v5000-lff-expansion-front.jpg
+      - ibm-storwize-v5000-lff-expansion-other.jpg=images/ibm-storwize-v5000-lff-expansion-other.jpg
+      - ibm-storwize-v5000-lff-expansion-rear.jpg=images/ibm-storwize-v5000-lff-expansion-rear.jpg
+      - ibm-system-x3650-m3-front.jpg=images/ibm-system-x3650-m3-front.jpg
+      - ibm-system-x3650-m3-other.jpg=images/ibm-system-x3650-m3-other.jpg
+      - ibm-system-x3650-m3-rear.jpg=images/ibm-system-x3650-m3-rear.jpg
+      - ubiquiti-u6-pro-front.jpg=images/ubiquiti-u6-pro-front.jpg
+      - ubiquiti-u6-pro-other.jpg=images/ubiquiti-u6-pro-other.jpg
+      - ubiquiti-u6-pro-rear.jpg=images/ubiquiti-u6-pro-rear.jpg
+      - ubiquiti-udm-pro-front.jpg=images/ubiquiti-udm-pro-front.jpg
+      - ubiquiti-udm-pro-rear.jpg=images/ubiquiti-udm-pro-rear.jpg
+      - ubiquiti-us-8-poe-150w-front.jpg=images/ubiquiti-us-8-poe-150w-front.jpg
+      - ubiquiti-us-8-poe-150w-other.jpg=images/ubiquiti-us-8-poe-150w-other.jpg
+      - ubiquiti-us-8-poe-150w-rear.jpg=images/ubiquiti-us-8-poe-150w-rear.jpg
+      - ubiquiti-usw-flex-2-5g-5-front.jpg=images/ubiquiti-usw-flex-2-5g-5-front.jpg
+      - ubiquiti-usw-flex-2-5g-5-other.jpg=images/ubiquiti-usw-flex-2-5g-5-other.jpg
+      - ubiquiti-usw-flex-2-5g-5-rear.jpg=images/ubiquiti-usw-flex-2-5g-5-rear.jpg
+      - ubiquiti-usw-flex-2-5g-8-poe-front.jpg=images/ubiquiti-usw-flex-2-5g-8-poe-front.jpg
+      - ubiquiti-usw-flex-2-5g-8-poe-other.jpg=images/ubiquiti-usw-flex-2-5g-8-poe-other.jpg
+      - ubiquiti-usw-flex-2-5g-8-poe-rear.jpg=images/ubiquiti-usw-flex-2-5g-8-poe-rear.jpg
+      - ubiquiti-usw-flex-mini-front.jpg=images/ubiquiti-usw-flex-mini-front.jpg
+      - ubiquiti-usw-flex-mini-other.jpg=images/ubiquiti-usw-flex-mini-other.jpg
+      - ubiquiti-usw-flex-mini-rear.jpg=images/ubiquiti-usw-flex-mini-rear.jpg
+      - ubiquiti-usw-pro-24-poe-front.jpg=images/ubiquiti-usw-pro-24-poe-front.jpg
+      - ubiquiti-usw-pro-24-poe-rear.jpg=images/ubiquiti-usw-pro-24-poe-rear.jpg
+      - zyxel-gs1920-24-front.jpg=images/zyxel-gs1920-24-front.jpg
+      - zyxel-gs1920-24-other.jpg=images/zyxel-gs1920-24-other.jpg
+      - zyxel-gs1920-24-rear.jpg=images/zyxel-gs1920-24-rear.jpg
+generatorOptions:
+  disableNameSuffixHash: true

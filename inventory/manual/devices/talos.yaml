@@ -1,0 +1,119 @@
+layer: manual
+
+devices:
+  # ------------------------------------------------------------------ Talos nodes
+  # iDRAC addresses are matched to each node's Dell service tag, not its
+  # rack/position number. talosctl get systeminformation shows the service tag.
+  - name: glemmen130
+    role: control-plane
+    device_type: dell-poweredge-r250
+    talos_node: glemmen130
+    service_tag: 6L51JZ3
+    idrac_ip: 192.168.4.130  # 6L51JZ3
+    uplinks:
+      - interface: eno8303
+        switch: USW Pro 24 PoE
+        port: 5
+        type: cat6
+      - interface: eno8403
+        switch: USW Pro 24 PoE
+        port: 6
+        type: cat6
+
+  - name: glemmen150
+    role: control-plane
+    device_type: dell-poweredge-r250
+    talos_node: glemmen150
+    service_tag: FL51JZ3
+    idrac_ip: 192.168.4.150  # FL51JZ3
+    uplinks:
+      - interface: eno8303
+        switch: USW Pro 24 PoE
+        port: 7
+        type: cat6
+      - interface: eno8403
+        switch: USW Pro 24 PoE
+        port: 8
+        type: cat6
+
+  - name: glemmen160
+    role: control-plane
+    device_type: dell-poweredge-r250
+    talos_node: glemmen160
+    service_tag: DL51JZ3
+    idrac_ip: 192.168.4.91  # DL51JZ3
+    uplinks:
+      - interface: eno8303
+        switch: USW Pro 24 PoE
+        port: 9
+        type: cat6
+      - interface: eno8403
+        switch: USW Pro 24 PoE
+        port: 10
+        type: cat6
+
+  - name: glemmen170
+    role: control-plane
+    device_type: dell-poweredge-r250
+    talos_node: glemmen170
+    service_tag: 4L51JZ3
+    idrac_ip: 192.168.4.247  # 4L51JZ3
+    uplinks:
+      - interface: eno8303
+        switch: USW Pro 24 PoE
+        port: 11
+        type: cat6
+      - interface: eno8403
+        switch: USW Pro 24 PoE
+        port: 12
+        type: cat6
+
+  - name: glemmen180
+    role: control-plane
+    device_type: dell-poweredge-r250
+    talos_node: glemmen180
+    service_tag: 2L51JZ3
+    idrac_ip: 192.168.4.135  # 2L51JZ3
+    uplinks:
+      - interface: eno8303
+        switch: USW Pro 24 PoE
+        port: 13
+        type: cat6
+      - interface: eno8403
+        switch: USW Pro 24 PoE
+        port: 14
+        type: cat6
+
+  - name: glemmen50
+    role: worker
+    device_type: ibm-system-x3650-m3
+    talos_node: glemmen50
+    service_tag: KD65TTR
+    uplinks:
+      - interface: enp11s0f0
+        switch: USW Pro 24 PoE
+        port: 3
+        type: cat6
+
+  - name: glemmen60
+    role: worker
+    device_type: dell-poweredge-r515
+    talos_node: glemmen60
+    service_tag: JVCJGZ1
+    uplinks:
+      - interface: eno1
+        switch: USW Pro 24 PoE
+        port: 4
+        type: cat6
+
+  - name: glemmen80
+    role: worker
+    device_type: dell-poweredge-r630
+    talos_node: glemmen80
+    service_tag: 9SYD132
+    uplinks:
+      - interface: enp4s0f0
+        switch: USW Pro 24 PoE
+        port: 26
+        type: dac-passive
+

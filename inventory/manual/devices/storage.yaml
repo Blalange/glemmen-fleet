@@ -1,0 +1,143 @@
+layer: manual
+
+devices:
+  - name: storwize-01
+    role: storage
+    device_type: ibm-storwize-v5000-lff-expansion
+    status: staged
+    description: IBM Storwize V5000 LFF expansion enclosure with 12 x 12 TB disks.
+    module_bays: &storwize_bays
+      - name: Drive 1
+        position: 1
+        bay_type: drive-3-5
+        description: 3.5-inch SAS/SATA drive bay 1.
+      - name: Drive 2
+        position: 2
+        bay_type: drive-3-5
+        description: 3.5-inch SAS/SATA drive bay 2.
+      - name: Drive 3
+        position: 3
+        bay_type: drive-3-5
+        description: 3.5-inch SAS/SATA drive bay 3.
+      - name: Drive 4
+        position: 4
+        bay_type: drive-3-5
+        description: 3.5-inch SAS/SATA drive bay 4.
+      - name: Drive 5
+        position: 5
+        bay_type: drive-3-5
+        description: 3.5-inch SAS/SATA drive bay 5.
+      - name: Drive 6
+        position: 6
+        bay_type: drive-3-5
+        description: 3.5-inch SAS/SATA drive bay 6.
+      - name: Drive 7
+        position: 7
+        bay_type: drive-3-5
+        description: 3.5-inch SAS/SATA drive bay 7.
+      - name: Drive 8
+        position: 8
+        bay_type: drive-3-5
+        description: 3.5-inch SAS/SATA drive bay 8.
+      - name: Drive 9
+        position: 9
+        bay_type: drive-3-5
+        description: 3.5-inch SAS/SATA drive bay 9.
+      - name: Drive 10
+        position: 10
+        bay_type: drive-3-5
+        description: 3.5-inch SAS/SATA drive bay 10.
+      - name: Drive 11
+        position: 11
+        bay_type: drive-3-5
+        description: 3.5-inch SAS/SATA drive bay 11.
+      - name: Drive 12
+        position: 12
+        bay_type: drive-3-5
+        description: 3.5-inch SAS/SATA drive bay 12.
+      - name: PSU 1
+        position: 13
+        bay_type: power-supply
+        description: Hot-swap power supply bay 1.
+      - name: PSU 2
+        position: 14
+        bay_type: power-supply
+        description: Hot-swap power supply bay 2.
+      - name: Canister 1
+        position: 15
+        bay_type: expansion-canister
+        description: Expansion canister bay 1.
+      - name: Canister 2
+        position: 16
+        bay_type: expansion-canister
+        description: Expansion canister bay 2.
+    modules: &storwize_modules
+      - bay: Drive 1
+        module_type: generic-12tb-sas-hdd
+        status: staged
+        description: 12 TB SAS HDD (bay 1)
+      - bay: Drive 2
+        module_type: generic-12tb-sas-hdd
+        status: staged
+        description: 12 TB SAS HDD (bay 2)
+      - bay: Drive 3
+        module_type: generic-12tb-sas-hdd
+        status: staged
+        description: 12 TB SAS HDD (bay 3)
+      - bay: Drive 4
+        module_type: generic-12tb-sas-hdd
+        status: staged
+        description: 12 TB SAS HDD (bay 4)
+      - bay: Drive 5
+        module_type: generic-12tb-sas-hdd
+        status: staged
+        description: 12 TB SAS HDD (bay 5)
+      - bay: Drive 6
+        module_type: generic-12tb-sas-hdd
+        status: staged
+        description: 12 TB SAS HDD (bay 6)
+      - bay: Drive 7
+        module_type: generic-12tb-sas-hdd
+        status: staged
+        description: 12 TB SAS HDD (bay 7)
+      - bay: Drive 8
+        module_type: generic-12tb-sas-hdd
+        status: staged
+        description: 12 TB SAS HDD (bay 8)
+      - bay: Drive 9
+        module_type: generic-12tb-sas-hdd
+        status: staged
+        description: 12 TB SAS HDD (bay 9)
+      - bay: Drive 10
+        module_type: generic-12tb-sas-hdd
+        status: staged
+        description: 12 TB SAS HDD (bay 10)
+      - bay: Drive 11
+        module_type: generic-12tb-sas-hdd
+        status: staged
+        description: 12 TB SAS HDD (bay 11)
+      - bay: Drive 12
+        module_type: generic-12tb-sas-hdd
+        status: staged
+        description: 12 TB SAS HDD (bay 12)
+      - bay: PSU 1
+        module_type: ibm-storwize-v5000-800w-psu
+        status: staged
+      - bay: PSU 2
+        module_type: ibm-storwize-v5000-800w-psu
+        status: staged
+      - bay: Canister 1
+        module_type: ibm-storwize-v5000-expansion-canister
+        status: staged
+      - bay: Canister 2
+        module_type: ibm-storwize-v5000-expansion-canister
+        status: staged
+
+  - name: storwize-02
+    role: storage
+    device_type: ibm-storwize-v5000-lff-expansion
+    status: staged
+    description: IBM Storwize V5000 LFF expansion enclosure with 12 x 12 TB disks.
+    module_bays: *storwize_bays
+    modules: *storwize_modules
+

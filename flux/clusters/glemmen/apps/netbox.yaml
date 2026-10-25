@@ -14,6 +14,7 @@ spec:
   wait: true
   targetNamespace: netbox
   dependsOn:
+    - name: netbox-inventory
     - name: infrastructure
     # The chart creates a ServiceMonitor for NetBox.
     - name: monitoring

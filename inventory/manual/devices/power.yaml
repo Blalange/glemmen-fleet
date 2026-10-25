@@ -1,0 +1,19 @@
+layer: manual
+
+devices:
+  # --------------------------------------------------------------- accessories
+  - name: apc-ats
+    role: power
+    device_type: apc-ap4423a
+    status: active
+    description: APC automatic transfer switch between server80 and server100.
+    interfaces:
+      - name: mgmt
+        type: 1000base-t
+        mgmt_only: true
+        enabled: true
+        description: APC management port.
+        ip_addresses:
+          - address: 192.168.4.3/24
+            primary: true
+
