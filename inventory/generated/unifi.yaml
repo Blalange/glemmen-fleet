@@ -233,6 +233,7 @@ devices:
     mode: ''
     untagged_vlan: null
     tagged_vlans: []
+    mac_address: 24:5a:4c:76:79:d3
   - name: Port 3
     type: 1000base-t
     enabled: true
@@ -241,6 +242,7 @@ devices:
     mode: ''
     untagged_vlan: null
     tagged_vlans: []
+    mac_address: 24:5a:4c:76:79:d4
   - name: Port 4
     type: 1000base-t
     enabled: true
@@ -249,6 +251,7 @@ devices:
     mode: ''
     untagged_vlan: null
     tagged_vlans: []
+    mac_address: 24:5a:4c:76:79:d5
   - name: Port 5
     type: 1000base-t
     enabled: true
@@ -257,6 +260,7 @@ devices:
     mode: ''
     untagged_vlan: null
     tagged_vlans: []
+    mac_address: 24:5a:4c:76:79:d6
   - name: Port 6
     type: 1000base-t
     enabled: true
@@ -265,6 +269,7 @@ devices:
     mode: ''
     untagged_vlan: null
     tagged_vlans: []
+    mac_address: 24:5a:4c:76:79:d7
   - name: Port 7
     type: 1000base-t
     enabled: true
@@ -273,6 +278,7 @@ devices:
     mode: ''
     untagged_vlan: null
     tagged_vlans: []
+    mac_address: 24:5a:4c:76:79:d8
   - name: Port 8
     type: 1000base-t
     enabled: true
@@ -281,6 +287,7 @@ devices:
     mode: ''
     untagged_vlan: null
     tagged_vlans: []
+    mac_address: 24:5a:4c:76:79:d9
   - name: Port 9
     type: 1000base-t
     enabled: true
@@ -756,73 +763,100 @@ devices:
     enabled: true
     description: Down, no link PoE
     mtu: null
-    mode: ''
-    untagged_vlan: null
-    tagged_vlans: []
+    mode: tagged
+    untagged_vlan: 1
+    tagged_vlans:
+    - 3
+    - 4
+    - 5
   - name: Port 2
     type: 1000base-t
     enabled: true
     description: Up, 1 Gbps PoE
     mtu: null
-    mode: ''
-    untagged_vlan: null
-    tagged_vlans: []
+    mode: tagged
+    untagged_vlan: 1
+    tagged_vlans:
+    - 3
+    - 4
+    - 5
   - name: Port 3
     type: 1000base-t
     enabled: true
     description: Up, 1 Gbps PoE
     mtu: null
-    mode: ''
-    untagged_vlan: null
-    tagged_vlans: []
+    mode: tagged
+    untagged_vlan: 1
+    tagged_vlans:
+    - 3
+    - 4
+    - 5
   - name: Port 4
     type: 1000base-t
     enabled: true
     description: Up, 1 Gbps PoE
     mtu: null
-    mode: ''
-    untagged_vlan: null
-    tagged_vlans: []
+    mode: tagged
+    untagged_vlan: 1
+    tagged_vlans:
+    - 3
+    - 4
+    - 5
   - name: Port 5
     type: 1000base-t
     enabled: true
     description: Down, no link PoE
     mtu: null
-    mode: ''
-    untagged_vlan: null
-    tagged_vlans: []
+    mode: tagged
+    untagged_vlan: 1
+    tagged_vlans:
+    - 3
+    - 4
+    - 5
   - name: Port 6
     type: 1000base-t
     enabled: true
     description: Up, 0.1 Gbps PoE
     mtu: null
-    mode: ''
-    untagged_vlan: null
-    tagged_vlans: []
+    mode: tagged
+    untagged_vlan: 3
+    tagged_vlans:
+    - 1
+    - 4
+    - 5
   - name: Port 7
     type: 1000base-t
     enabled: true
     description: Down, no link PoE
     mtu: null
-    mode: ''
-    untagged_vlan: null
-    tagged_vlans: []
+    mode: tagged
+    untagged_vlan: 1
+    tagged_vlans:
+    - 3
+    - 4
+    - 5
   - name: Port 8
     type: 1000base-t
     enabled: true
     description: Down, no link PoE
     mtu: null
-    mode: ''
-    untagged_vlan: null
-    tagged_vlans: []
+    mode: tagged
+    untagged_vlan: 1
+    tagged_vlans:
+    - 3
+    - 4
+    - 5
   - name: Port 9
     type: 1000base-x-sfp
     enabled: true
     description: Up, 1 Gbps
     mtu: null
-    mode: ''
-    untagged_vlan: null
-    tagged_vlans: []
+    mode: tagged
+    untagged_vlan: 1
+    tagged_vlans:
+    - 3
+    - 4
+    - 5
     mac_address: d8:b3:70:6d:22:18
     ip_addresses:
     - address: 192.168.50.145/24
@@ -833,9 +867,12 @@ devices:
     enabled: true
     description: Down, no link
     mtu: null
-    mode: ''
-    untagged_vlan: null
-    tagged_vlans: []
+    mode: tagged
+    untagged_vlan: 1
+    tagged_vlans:
+    - 3
+    - 4
+    - 5
 - name: USW Flex 2.5G 5 (22c8)
   site: glemmen
   role: switch
@@ -910,9 +947,12 @@ devices:
     enabled: true
     description: Up, 1 Gbps PoE
     mtu: null
-    mode: ''
-    untagged_vlan: null
-    tagged_vlans: []
+    mode: tagged
+    untagged_vlan: 1
+    tagged_vlans:
+    - 3
+    - 4
+    - 5
     mac_address: ac:8b:a9:b5:f7:e9
     ip_addresses:
     - address: 192.168.50.178/24
@@ -923,201 +963,273 @@ devices:
     enabled: true
     description: Up, 1 Gbps PoE
     mtu: null
-    mode: ''
-    untagged_vlan: null
-    tagged_vlans: []
+    mode: tagged
+    untagged_vlan: 1
+    tagged_vlans:
+    - 3
+    - 4
+    - 5
   - name: Port 3
     type: 1000base-t
     enabled: true
     description: Up, 1 Gbps PoE
     mtu: null
-    mode: ''
-    untagged_vlan: null
+    mode: access
+    untagged_vlan: 3
     tagged_vlans: []
   - name: Port 4
     type: 1000base-t
     enabled: true
     description: Up, 1 Gbps PoE
     mtu: null
-    mode: ''
-    untagged_vlan: null
-    tagged_vlans: []
+    mode: tagged
+    untagged_vlan: 3
+    tagged_vlans:
+    - 1
+    - 4
+    - 5
   - name: Port 5
     type: 1000base-t
     enabled: true
     description: Up, 1 Gbps PoE
     mtu: null
-    mode: ''
-    untagged_vlan: null
-    tagged_vlans: []
+    mode: tagged
+    untagged_vlan: 1
+    tagged_vlans:
+    - 3
+    - 4
+    - 5
   - name: Port 6
     type: 1000base-t
     enabled: true
     description: Up, 1 Gbps PoE
     mtu: null
-    mode: ''
-    untagged_vlan: null
-    tagged_vlans: []
+    mode: tagged
+    untagged_vlan: 1
+    tagged_vlans:
+    - 3
+    - 4
+    - 5
   - name: Port 7
     type: 1000base-t
     enabled: true
     description: Up, 1 Gbps PoE
     mtu: null
-    mode: ''
-    untagged_vlan: null
-    tagged_vlans: []
+    mode: tagged
+    untagged_vlan: 3
+    tagged_vlans:
+    - 1
+    - 4
+    - 5
   - name: Port 8
     type: 1000base-t
     enabled: true
     description: Up, 1 Gbps PoE
     mtu: null
-    mode: ''
-    untagged_vlan: null
-    tagged_vlans: []
+    mode: tagged
+    untagged_vlan: 3
+    tagged_vlans:
+    - 1
+    - 4
+    - 5
   - name: Port 9
     type: 1000base-t
     enabled: true
     description: Up, 1 Gbps PoE
     mtu: null
-    mode: ''
-    untagged_vlan: null
-    tagged_vlans: []
+    mode: tagged
+    untagged_vlan: 3
+    tagged_vlans:
+    - 1
+    - 4
+    - 5
   - name: Port 10
     type: 1000base-t
     enabled: true
     description: Up, 1 Gbps PoE
     mtu: null
-    mode: ''
-    untagged_vlan: null
-    tagged_vlans: []
+    mode: tagged
+    untagged_vlan: 3
+    tagged_vlans:
+    - 1
+    - 4
+    - 5
   - name: Port 11
     type: 1000base-t
     enabled: true
     description: Up, 1 Gbps PoE
     mtu: null
-    mode: ''
-    untagged_vlan: null
-    tagged_vlans: []
+    mode: tagged
+    untagged_vlan: 3
+    tagged_vlans:
+    - 1
+    - 4
+    - 5
   - name: Port 12
     type: 1000base-t
     enabled: true
     description: Up, 1 Gbps PoE
     mtu: null
-    mode: ''
-    untagged_vlan: null
-    tagged_vlans: []
+    mode: tagged
+    untagged_vlan: 3
+    tagged_vlans:
+    - 1
+    - 4
+    - 5
   - name: Port 13
     type: 1000base-t
     enabled: true
     description: Up, 1 Gbps PoE
     mtu: null
-    mode: ''
-    untagged_vlan: null
-    tagged_vlans: []
+    mode: tagged
+    untagged_vlan: 3
+    tagged_vlans:
+    - 1
+    - 4
+    - 5
   - name: Port 14
     type: 1000base-t
     enabled: true
     description: Up, 1 Gbps PoE
     mtu: null
-    mode: ''
-    untagged_vlan: null
-    tagged_vlans: []
+    mode: tagged
+    untagged_vlan: 3
+    tagged_vlans:
+    - 1
+    - 4
+    - 5
   - name: Port 15
     type: 1000base-t
     enabled: true
     description: Up, 1 Gbps PoE
     mtu: null
-    mode: ''
-    untagged_vlan: null
-    tagged_vlans: []
+    mode: tagged
+    untagged_vlan: 3
+    tagged_vlans:
+    - 1
+    - 4
+    - 5
   - name: Port 16
     type: 1000base-t
     enabled: true
     description: Up, 1 Gbps PoE
     mtu: null
-    mode: ''
-    untagged_vlan: null
-    tagged_vlans: []
+    mode: tagged
+    untagged_vlan: 3
+    tagged_vlans:
+    - 1
+    - 4
+    - 5
   - name: Port 17
     type: 1000base-t
     enabled: true
     description: Up, 1 Gbps PoE
     mtu: null
-    mode: ''
-    untagged_vlan: null
-    tagged_vlans: []
+    mode: tagged
+    untagged_vlan: 3
+    tagged_vlans:
+    - 1
+    - 4
+    - 5
   - name: Port 18
     type: 1000base-t
     enabled: true
     description: Up, 1 Gbps PoE
     mtu: null
-    mode: ''
-    untagged_vlan: null
-    tagged_vlans: []
+    mode: tagged
+    untagged_vlan: 3
+    tagged_vlans:
+    - 1
+    - 4
+    - 5
   - name: Port 19
     type: 1000base-t
     enabled: true
     description: Up, 1 Gbps PoE
     mtu: null
-    mode: ''
-    untagged_vlan: null
-    tagged_vlans: []
+    mode: tagged
+    untagged_vlan: 3
+    tagged_vlans:
+    - 1
+    - 4
+    - 5
   - name: Port 20
     type: 1000base-t
     enabled: true
     description: Up, 1 Gbps PoE
     mtu: null
-    mode: ''
-    untagged_vlan: null
-    tagged_vlans: []
+    mode: tagged
+    untagged_vlan: 3
+    tagged_vlans:
+    - 1
+    - 4
+    - 5
   - name: Port 21
     type: 1000base-t
     enabled: true
     description: Up, 1 Gbps PoE
     mtu: null
-    mode: ''
-    untagged_vlan: null
-    tagged_vlans: []
+    mode: tagged
+    untagged_vlan: 3
+    tagged_vlans:
+    - 1
+    - 4
+    - 5
   - name: Port 22
     type: 1000base-t
     enabled: true
     description: Up, 1 Gbps PoE
     mtu: null
-    mode: ''
-    untagged_vlan: null
-    tagged_vlans: []
+    mode: tagged
+    untagged_vlan: 3
+    tagged_vlans:
+    - 1
+    - 4
+    - 5
   - name: Port 23
     type: 1000base-t
     enabled: true
     description: Up, 1 Gbps PoE
     mtu: null
-    mode: ''
-    untagged_vlan: null
-    tagged_vlans: []
+    mode: tagged
+    untagged_vlan: 3
+    tagged_vlans:
+    - 1
+    - 4
+    - 5
   - name: Port 24
     type: 1000base-t
     enabled: true
     description: Up, 1 Gbps PoE
     mtu: null
-    mode: ''
-    untagged_vlan: null
-    tagged_vlans: []
+    mode: tagged
+    untagged_vlan: 3
+    tagged_vlans:
+    - 1
+    - 4
+    - 5
   - name: Port 25
     type: 10gbase-x-sfpp
     enabled: true
     description: Up, 1 Gbps
     mtu: null
-    mode: ''
-    untagged_vlan: null
-    tagged_vlans: []
+    mode: tagged
+    untagged_vlan: 1
+    tagged_vlans:
+    - 3
+    - 4
+    - 5
   - name: Port 26
     type: 10gbase-x-sfpp
     enabled: true
     description: Up, 10 Gbps
     mtu: null
-    mode: ''
-    untagged_vlan: null
-    tagged_vlans: []
+    mode: tagged
+    untagged_vlan: 3
+    tagged_vlans:
+    - 1
+    - 4
+    - 5
 - name: USW Flex 2.5G 5 (228f)
   site: glemmen
   role: switch

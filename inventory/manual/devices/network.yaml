@@ -6,18 +6,21 @@ devices:
     device_type: ubiquiti-udm-pro
     status: active
     unifi_serial: 245A4C7679D1
+    snmp_ip: 192.168.50.1
 
   - name: USW Pro 24 PoE
     role: switch
     device_type: ubiquiti-usw-pro-24-poe
     status: active
     unifi_serial: AC8BA9B5F7E9
+    snmp_ip: 192.168.50.178
 
   - name: zyxel-gs1920-24
     role: switch
     device_type: zyxel-gs1920-24
     status: active
     description: Zyxel GS1920-24, firmware V4.10(AAOB.5); server-accessory switch on VLAN 4.
+    snmp_ip: 192.168.4.2
     interfaces:
       - name: Port 1
         type: 1000base-t

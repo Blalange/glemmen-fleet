@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import asyncio
 import os
 import sys
 from pathlib import Path
@@ -21,7 +22,9 @@ from .identity import DeviceResolver, MappingError
 from .manual import load_manual
 from .process import read_cluster_secret
 from .render import write_yaml
+from .snmp_merge import merge_snmp_observations
 from .sources.redfish import read_redfish
+from .sources.snmp import collect_snmp, write_snmp_report
 from .sources.talos import node_system_info, read_nodes
 from .sources.unifi import build_unifi, unifi_get
 
@@ -132,6 +135,84 @@ def _collect_redfish(
     return result
 
 
+SNMP_UNIFI_DEVICE_TYPES = {
+    "ubiquiti-udm-pro",
+    "ubiquiti-usw-pro-24-poe",
+    "ubiquiti-us-8-poe-150w",
+    "ubiquiti-u6-pro",
+}
+
+
+def _unifi_ip(device: dict[str, Any]) -> str:
+    return str(
+        device.get("lan_ip")
+        or device.get("ip")
+        or (device.get("config_network") or {}).get("ip")
+        or ""
+    ).strip()
+
+
+def _register_unifi_devices(
+    resolver: DeviceResolver,
+    devices: list[dict[str, Any]],
+    names: dict[str, str],
+) -> None:
+    for device in devices:
+        mac = str(device.get("mac") or "").upper()
+        name = names.get(mac)
+        if not name:
+            continue
+        resolver.register_generated_device(
+            name,
+            {
+                "snmp_mac": {mac},
+                "snmp_serial": {str(device.get("serial") or "")},
+                "snmp_ip": {_unifi_ip(device)},
+                "snmp_name": {name},
+            },
+        )
+
+
+def _snmp_targets(
+    manual: dict[str, Any],
+    devices: list[dict[str, Any]],
+    names: dict[str, str],
+    unifi_devices: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    targets: dict[str, dict[str, Any]] = {}
+    device_types = {
+        str(device.get("name")): str(device.get("device_type") or "")
+        for device in unifi_devices
+    }
+    for device in manual["devices"]:
+        address = str(device.get("snmp_ip") or "").strip()
+        if address:
+            targets[address] = {
+                "ip": address,
+                "name": str(device.get("name") or ""),
+                "source": "manual",
+            }
+    for device in devices:
+        if device.get("state") != 1:
+            continue
+        address = _unifi_ip(device)
+        if not address:
+            continue
+        mac = str(device.get("mac") or "").upper()
+        name = names.get(mac, str(device.get("name") or ""))
+        if device_types.get(name) not in SNMP_UNIFI_DEVICE_TYPES:
+            continue
+        targets.setdefault(
+            address,
+            {
+                "ip": address,
+                "name": name,
+                "source": "unifi",
+            },
+        )
+    return list(targets.values())
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--manual-dir", default=DEFAULT_MANUAL_DIR)
@@ -162,6 +243,32 @@ def main(argv: list[str] | None = None) -> int:
         default=os.environ.get("IDRAC_PASS", DEFAULT_IDRAC_PASS),
         help="iDRAC password for Redfish (default: IDRAC_PASS or readonly)",
     )
+    parser.add_argument(
+        "--snmp-community",
+        default=os.environ.get("SNMP_COMMUNITY", "public"),
+        help="SNMP v2c community (default: SNMP_COMMUNITY or public)",
+    )
+    parser.add_argument(
+        "--snmp-timeout",
+        type=float,
+        default=float(os.environ.get("SNMP_TIMEOUT", "2")),
+        help="SNMP timeout in seconds (default: 2)",
+    )
+    parser.add_argument(
+        "--snmp-retries",
+        type=int,
+        default=int(os.environ.get("SNMP_RETRIES", "1")),
+        help="SNMP retry count (default: 1)",
+    )
+    parser.add_argument(
+        "--no-snmp",
+        action="store_true",
+        help="disable SNMP collection",
+    )
+    parser.add_argument(
+        "--snmp-report",
+        help="write LLDP/FDB and interface observations to a JSON report",
+    )
     args = parser.parse_args(argv)
 
     manual = load_manual(Path(args.manual_dir))
@@ -177,6 +284,29 @@ def main(argv: list[str] | None = None) -> int:
 
     devices, networks, clients = unifi_get(args.unifi_url.rstrip("/"), username, password)
     unifi_devices, cables, vlans, prefixes, _names = build_unifi(devices, networks, manual)
+    _register_unifi_devices(resolver, devices, _names)
+    snmp_matches: dict[str, str] = {}
+    if not args.no_snmp:
+        targets = _snmp_targets(manual, devices, _names, unifi_devices)
+        if targets:
+            observations = asyncio.run(
+                collect_snmp(
+                    targets,
+                    community=args.snmp_community,
+                    timeout=args.snmp_timeout,
+                    retries=args.snmp_retries,
+                )
+            )
+            snmp_matches = merge_snmp_observations(
+                unifi_devices, vlans, observations, resolver, manual
+            )
+            print(
+                f"SNMP: targets={len(targets)}, observed={len(observations)}, "
+                f"matched={len(snmp_matches)}",
+                file=sys.stderr,
+            )
+            if args.snmp_report:
+                write_snmp_report(Path(args.snmp_report), observations, snmp_matches)
     switch_name = next(
         (
             device["name"]

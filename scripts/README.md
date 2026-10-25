@@ -48,7 +48,7 @@ The NetBox inventory, collector, sync code and usage instructions live in
 ```sh
 # collect live sources into inventory/generated
 env -u IDRAC_USER -u IDRAC_PASS \
-  uv run --with requests --with PyYAML \
+  uv run --with pysnmp==7.1.22 --with requests --with PyYAML \
   python inventory/scripts/collect.py --from-cluster \
   --kubectl ./scripts/bin/kubectl --kubeconfig talos/generated/kubeconfig \
   --talosctl ./scripts/bin/talosctl --talosconfig talos/generated/talosconfig
@@ -57,6 +57,10 @@ env -u IDRAC_USER -u IDRAC_PASS \
 uv run --with pynetbox==7.9.0 --with PyYAML==6.0.3 --with requests==2.32.5 \
   python inventory/scripts/sync.py --inventory inventory --check
 ```
+
+The collector also polls SNMP v2c network devices (default community
+`public`) for interfaces, VLANs and LLDP/FDB diagnostics. Use
+`--snmp-community`, `--no-snmp` or `--snmp-report PATH` as needed.
 
 ## Updates
 

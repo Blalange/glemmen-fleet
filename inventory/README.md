@@ -6,8 +6,8 @@ IPAM visualization. It is served at <https://netbox.glem.men>.
 Git is the source of truth. The inventory is split into two layers:
 
 - `inventory/generated/` is written by
-  `inventory/scripts/collect.py` from the live UniFi controller, Kubernetes/Talos nodes
-  and iDRAC Redfish endpoints. Do not edit it by hand.
+  `inventory/scripts/collect.py` from the live UniFi controller, Kubernetes/Talos
+  nodes, iDRAC Redfish endpoints and SNMP network devices. Do not edit it by hand.
 - `inventory/manual/` is edited by hand. It owns everything that is not
   discoverable: real device models, the physical rack layout, physical servers,
   accessories, hand-documented cables and VIPs.
@@ -27,7 +27,7 @@ only writer. Objects created by hand in NetBox are never deleted by the sync.
 | `flux/apps/netbox/valkey.yaml` | Ephemeral Valkey `9.1.2` for the RQ queue and cache |
 | `flux/apps/netbox/sync-cronjob.yaml` | Runs the inventory sync every 10 minutes |
 | `inventory/scripts/sync.py` | NetBox reconciler entrypoint |
-| `inventory/generated/` | Canonical compute and UniFi facts from the collector |
+| `inventory/generated/` | Canonical compute and network facts from the collector |
 | `inventory/manual/` | Human-maintained inventory |
 | `inventory/scripts/` | Collector and sync code |
 | `inventory/images/` | Device-type front/rear/other images |
@@ -90,13 +90,17 @@ The collector merges live sources into a canonical generated inventory:
 - **Talos** supplies node status, addresses, NIC MACs, CPUs, memory and disks.
 - **iDRAC Redfish** supplies richer compute components: CPU, memory, disks,
   fans and PSUs where exposed.
+- **SNMP v2c** supplies network-device identity, interfaces, VLAN membership,
+  LLDP neighbors and forwarding-table observations. The default community is
+  `public`; known SNMP-capable UniFi models are discovered automatically, and
+  other devices can set `snmp_ip`.
 
 The manual device entry is the identity registry. Matching uses hardware
 identifiers first, then bootstrap locators:
 
-1. Dell service tag / system UUID
-2. UniFi MAC or serial
-3. Talos node name, UniFi IP or iDRAC IP
+1. Dell service tag / system UUID / SNMP serial
+2. UniFi or bridge MAC / SNMP sysName
+3. Talos node name, UniFi IP, iDRAC IP or SNMP IP
 
 A source observation that maps to more than one manual device is an error. This
 prevents an iDRAC or DHCP address from silently assigning components to the
@@ -108,6 +112,9 @@ wrong server. Optional stable identifiers can be added to manual devices:
   service_tag: DL51JZ3
   idrac_ip: 192.168.4.91
   unifi_mac: 6c:3c:8c:75:45:0c
+
+- name: zyxel-gs1920-24
+  snmp_ip: 192.168.4.2
 ```
 
 `talos_node`, `unifi_ip` and `idrac_ip` remain supported for compatibility.
@@ -115,8 +122,14 @@ wrong server. Optional stable identifiers can be added to manual devices:
 make the mapping more robust.
 
 The collector performs **source merging**: Redfish is preferred over Talos for
-compute components, and Talos is the fallback. The sync job performs the
-**layer merge** of generated and manual YAML; manual values win.
+compute components, Talos is the fallback, and SNMP only fills network fields
+that are missing from UniFi/manual data. The sync job performs the **layer
+merge** of generated and manual YAML; manual values win.
+
+SNMP observations are intentionally supplemental: VLAN membership and
+per-interface MACs are added when missing, while manual descriptions, types and
+VLAN assignments are never overwritten. LLDP/FDB data is available through
+`--snmp-report` for validation before any automatic cable creation.
 
 ### Rack layout
 
@@ -334,12 +347,18 @@ Collect live UniFi, Talos and iDRAC facts into `inventory/generated/`:
 ```sh
 # Optional; the collector defaults to the read-only iDRAC account.
 IDRAC_USER=... IDRAC_PASS=... \
-uv run --with requests --with PyYAML \
+uv run --with pysnmp==7.1.22 --with requests --with PyYAML \
   python inventory/scripts/collect.py --from-cluster \
   --kubectl ./scripts/bin/kubectl --kubeconfig talos/generated/kubeconfig \
   --talosctl ./scripts/bin/talosctl \
   --talosconfig talos/generated/talosconfig
 ```
+
+SNMP defaults to v2c community `public` and the known SNMP-capable UniFi
+models (`udm-pro`, `usw-pro-24-poe`, `us-8-poe-150w`, `u6-pro`). Override the
+community with `--snmp-community` or `SNMP_COMMUNITY`; disable polling with
+`--no-snmp`; write LLDP/FDB details with `--snmp-report PATH`. Manual devices
+can set `snmp_ip` when they are not discovered through UniFi.
 
 `--from-cluster` reads the `unpoller-unifi` credentials from the monitoring
 namespace; they are never written to the file. The collector reads the manual
@@ -352,12 +371,14 @@ written to Git.
 The generated layer contains:
 
 - `unifi.yaml`: adopted UniFi devices with ports/radios, management addresses,
-  VLANs, prefixes and uplinks
+  VLANs, prefixes and uplinks; SNMP-enriched interface MACs/VLAN membership
 - `compute.yaml`: one canonical entry per physical server or Talos node, with
   interfaces and discovered modules merged across sources
 - `module-types.yaml`: module types discovered across all compute sources
 - CPU, memory and disk modules from Talos, enriched by Redfish where available
 - fan and PSU modules and richer attributes from iDRAC Redfish where exposed
+- SNMP system, interface, VLAN, LLDP and FDB observations; `--snmp-report`
+  writes the detailed report as JSON
 
 Manual files contain the rest: real models, device-type images, module types,
 rack layout, physical devices, accessories, manual cables and VIPs.

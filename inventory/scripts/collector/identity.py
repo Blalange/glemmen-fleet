@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import ipaddress
+import re
 from collections.abc import Iterable
 from typing import Any
 
@@ -28,8 +29,10 @@ def normalize_ref(kind: str, value: Any) -> str:
             return text.lower()
     if kind == "system_uuid":
         return text.lower()
-    if kind in {"service_tag", "serial"}:
+    if kind in {"service_tag", "serial", "snmp_serial"}:
         return text.upper()
+    if kind == "snmp_name":
+        return re.sub(r"[^a-z0-9]", "", text.lower())
     return text
 
 
@@ -50,10 +53,15 @@ class DeviceResolver:
         "system_uuid": "system_uuid",
         "unifi_mac": "unifi_mac",
         "unifi_serial": "unifi_serial",
+        "snmp_ip": "snmp_ip",
+        "snmp_mac": "snmp_mac",
+        "snmp_serial": "snmp_serial",
+        "snmp_name": "snmp_name",
     }
 
     def __init__(self, manual: dict[str, Any]) -> None:
         self.manual_by_name: dict[str, dict[str, Any]] = {}
+        self.generated_by_name: dict[str, dict[str, Any]] = {}
         self.claims: dict[tuple[str, str], str] = {}
         for device in manual["devices"]:
             name = str(device.get("name") or "")
@@ -77,6 +85,20 @@ class DeviceResolver:
                 f"{kind} {value!r} is claimed by both {existing!r} and {device_name!r}"
             )
         self.claims[key] = device_name
+
+    def register_generated_device(
+        self, name: str, refs: dict[str, Iterable[Any]]
+    ) -> None:
+        """Register a canonical device that exists only in a source snapshot."""
+        if not name:
+            return
+        self.generated_by_name.setdefault(name, {"name": name, "source_only": True})
+        self.add_claim("name", name, name)
+        self.add_claim("snmp_name", name, name)
+        for kind, values in refs.items():
+            for value in values:
+                if value:
+                    self.add_claim(kind, value, name)
 
     def add_observation_claims(
         self, device: dict[str, Any], refs: dict[str, Iterable[Any]]
@@ -116,4 +138,5 @@ class DeviceResolver:
             )
         if not candidates:
             return None
-        return self.manual_by_name.get(next(iter(candidates)))
+        name = next(iter(candidates))
+        return self.manual_by_name.get(name) or self.generated_by_name.get(name)
