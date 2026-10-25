@@ -25,6 +25,7 @@ configMapGenerator:
       - 20-generated-talos.yaml=inventory/generated/talos.yaml
       - 30-manual-site.yaml=inventory/manual/site.yaml
       - 40-manual-device-types.yaml=inventory/manual/device-types.yaml
+      - 45-manual-module-types.yaml=inventory/manual/module-types.yaml
       - 50-manual-racks.yaml=inventory/manual/racks.yaml
       - 60-manual-devices.yaml=inventory/manual/devices.yaml
       - 70-manual-cables.yaml=inventory/manual/cables.yaml
@@ -39,6 +40,7 @@ configMapGenerator:
       - inventory/images/dell-poweredge-r515-front.jpg
       - inventory/images/dell-poweredge-r515-other.jpg
       - inventory/images/dell-poweredge-r515-rear.jpg
+      - inventory/images/dell-poweredge-r515-side.jpg
       - inventory/images/dell-poweredge-r630-front.jpg
       - inventory/images/dell-poweredge-r630-rear.jpg
       - inventory/images/ibm-storwize-v5000-lff-expansion-front.jpg

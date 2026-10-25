@@ -57,6 +57,8 @@ SECTIONS = (
     "platforms",
     "device_roles",
     "device_types",
+    "module_bay_types",
+    "module_types",
     "racks",
     "vlans",
     "prefixes",
@@ -64,6 +66,8 @@ SECTIONS = (
     "ip_addresses",
     "cables",
 )
+
+# NetBox component kinds that can be nested under a device.
 
 # Keys that only configure the collector or sync behaviour and are not NetBox
 # objects. They are silently ignored by the inventory loader.
@@ -167,6 +171,17 @@ def same_value(current: Any, desired: Any) -> bool:
         current = current["value"]
     elif not isinstance(current, (str, int, float, bool, list, tuple, dict)) and hasattr(current, "value"):
         current = current.value
+    # pynetbox wraps JSON objects such as ModuleType.attributes in a Record.
+    # Normalize it before comparing with the plain inventory dictionary. Only
+    # do this when the desired value is a dict, so foreign-key fields are not
+    # expanded into their full serialized object.
+    if isinstance(desired, dict) and not isinstance(current, (dict, type(None))) and hasattr(
+        current, "serialize"
+    ):
+        try:
+            current = current.serialize()
+        except Exception:  # noqa: BLE001 - fall back to the raw object
+            pass
     # Blank optional strings and null are equivalent for our purposes (NetBox
     # frequently stores "" as null).
     if desired == "" and current is None:
@@ -198,6 +213,10 @@ def _normalize_merge_value(key: str, current: Any, desired: Any) -> Any:
         return _merge_named_list(current, desired, "name")
     if key == "ip_addresses":
         return _merge_named_list(current, desired, "address")
+    if key == "module_bays":
+        return _merge_named_list(current, desired, "name")
+    if key == "modules":
+        return _merge_named_list(current, desired, "bay")
     if key == "images":
         return _merge_images(current, desired)
     if isinstance(current, dict) and isinstance(desired, dict):
@@ -246,7 +265,21 @@ def _merge_images(base: Any, override: Any) -> dict[str, Any]:
 
 
 def _inventory_key(section: str, item: dict[str, Any]) -> Any:
-    if section in {"sites", "manufacturers", "platforms", "device_roles", "device_types"}:
+    if section == "module_types":
+        return str(
+            item.get("slug")
+            or slugify(
+                f"{item.get('manufacturer')}-{item.get('model') or item.get('name') or ''}"
+            )
+        )
+    if section in {
+        "sites",
+        "manufacturers",
+        "platforms",
+        "device_roles",
+        "device_types",
+        "module_bay_types",
+    }:
         return str(item.get("slug") or slugify(item.get("name") or item.get("model") or ""))
     if section == "racks":
         return (str(item.get("site")), str(item.get("name")))
@@ -492,12 +525,22 @@ def validate_inventory(inventory: dict[str, list[Any]]) -> None:
         "racks",
         lambda item: (require(item, "site", "rack"), require(item, "name", "rack")),
     )
+    module_bay_types = index(
+        inventory["module_bay_types"],
+        "module_bay_types",
+        lambda item: item.get("slug") or slugify(require(item, "name", "module bay type")),
+    )
+    module_types = index(
+        inventory["module_types"],
+        "module_types",
+        lambda item: item.get("slug")
+        or slugify(f"{require(item, 'manufacturer', 'module type')}-{require(item, 'model', 'module type')}"),
+    )
     vlans = index(
         inventory["vlans"],
         "vlans",
         lambda item: (item.get("site"), int(require(item, "vid", "VLAN"))),
     )
-
     for item in inventory["platforms"]:
         manufacturer = item.get("manufacturer")
         if manufacturer and manufacturer not in manufacturers:
@@ -507,6 +550,24 @@ def validate_inventory(inventory: dict[str, list[Any]]) -> None:
         manufacturer = require(item, "manufacturer", "device type")
         if manufacturer not in manufacturers:
             raise SyncError(f"device type {item.get('model')!r}: unknown manufacturer {manufacturer!r}")
+
+    for item in inventory["module_bay_types"]:
+        manufacturer = item.get("manufacturer")
+        if manufacturer and manufacturer not in manufacturers:
+            raise SyncError(
+                f"module bay type {item.get('name')!r}: unknown manufacturer {manufacturer!r}"
+            )
+
+    for item in inventory["module_types"]:
+        manufacturer = require(item, "manufacturer", "module type")
+        if manufacturer not in manufacturers:
+            raise SyncError(f"module type {item.get('model')!r}: unknown manufacturer {manufacturer!r}")
+        require(item, "profile", "module type")
+        for bay_type in as_list(item.get("bay_types")):
+            if bay_type not in module_bay_types:
+                raise SyncError(
+                    f"module type {item.get('model')!r}: unknown module bay type {bay_type!r}"
+                )
 
     for item in inventory["racks"]:
         site = require(item, "site", "rack")
@@ -599,6 +660,36 @@ def validate_inventory(inventory: dict[str, list[Any]]) -> None:
                             f"device {name}: more than one primary IPv{version} address"
                         )
                     primaries[version] = normalize_address(ip["address"])
+
+        module_bays: dict[str, dict[str, Any]] = {}
+        for item in device.get("module_bays", []) or []:
+            if not isinstance(item, dict):
+                raise SyncError(f"device {name}: every module bay must be a mapping")
+            bay_name = str(require(item, "name", f"module bay on {name}"))
+            if bay_name in module_bays:
+                raise SyncError(f"device {name}: duplicate module bay {bay_name!r}")
+            bay_type = item.get("bay_type")
+            if bay_type and bay_type not in module_bay_types:
+                raise SyncError(
+                    f"device {name} module bay {bay_name}: unknown module bay type {bay_type!r}"
+                )
+            module_bays[bay_name] = item
+
+        modules: dict[str, dict[str, Any]] = {}
+        for item in device.get("modules", []) or []:
+            if not isinstance(item, dict):
+                raise SyncError(f"device {name}: every module must be a mapping")
+            bay_name = str(require(item, "bay", f"module on {name}"))
+            if bay_name in modules:
+                raise SyncError(f"device {name}: more than one module in bay {bay_name!r}")
+            if bay_name not in module_bays:
+                raise SyncError(f"device {name}: module references unknown bay {bay_name!r}")
+            module_type = str(require(item, "module_type", f"module in {bay_name} on {name}"))
+            if module_type not in module_types:
+                raise SyncError(
+                    f"device {name} module {bay_name}: unknown module type {module_type!r}"
+                )
+            modules[bay_name] = item
 
     # Validate rack occupancy. A 42U rack with a few devices is easy to get
     # wrong by hand, so check bounds and overlaps before touching NetBox.
@@ -739,11 +830,16 @@ class Reconciler:
         self.platforms: dict[str, Any] = {}
         self.roles: dict[str, Any] = {}
         self.device_types: dict[str, Any] = {}
+        self.module_bay_types: dict[str, Any] = {}
+        self.module_profiles: dict[str, Any] = {}
+        self.module_types: dict[str, Any] = {}
         self.racks: dict[tuple[str, str], Any] = {}
         self.vlans: dict[tuple[str | None, int], Any] = {}
         self.devices: dict[str, Any] = {}
         self.device_sites: dict[str, str] = {}
         self.interfaces: dict[tuple[str, str], Any] = {}
+        self.module_bays: dict[tuple[str, str], Any] = {}
+        self.modules: dict[tuple[str, str], Any] = {}
         self.ip_addresses: dict[str, Any] = {}
         self.cables: dict[Any, Any] = {}
         self.device_primary: dict[str, dict[int, str]] = {}
@@ -752,6 +848,8 @@ class Reconciler:
         # Interfaces are nested under devices rather than being a top-level
         # inventory section, but pruning still needs their desired keys.
         self.desired["interfaces"] = set()
+        self.desired["module_bays"] = set()
+        self.desired["modules"] = set()
 
     # ------------------------------------------------------------------ logging
 
@@ -987,6 +1085,36 @@ class Reconciler:
             self.roles[slug] = obj
             self.desired["device_roles"].add(slug)
 
+    def sync_module_bay_types(self) -> None:
+        for item in self.inventory["module_bay_types"]:
+            name = require(item, "name", "module bay type")
+            slug = item.get("slug") or slugify(name)
+            manufacturer = None
+            manufacturer_slug = item.get("manufacturer")
+            if manufacturer_slug:
+                manufacturer = self.manufacturers.get(manufacturer_slug)
+                if manufacturer is None:
+                    raise SyncError(
+                        f"module bay type {name!r}: unknown manufacturer {manufacturer_slug!r}"
+                    )
+            data: dict[str, Any] = {
+                "name": name,
+                "slug": slug,
+                "manufacturer": manufacturer.id if manufacturer else None,
+                "description": item.get("description", ""),
+                "comments": item.get("comments", ""),
+            }
+            obj = self.ensure(
+                "module_bay_type",
+                self.nb.dcim.module_bay_types,
+                {"slug": slug},
+                data,
+                tags=item.get("tags"),
+                label=f"module_bay_type/{slug}",
+            )
+            self.module_bay_types[slug] = obj
+            self.desired["module_bay_types"].add(slug)
+
     def sync_device_types(self) -> None:
         for item in self.inventory["device_types"]:
             manufacturer = require(item, "manufacturer", "device type")
@@ -1018,6 +1146,52 @@ class Reconciler:
             self.device_types[slug] = obj
             self.desired["device_types"].add(slug)
             self.sync_device_type_images(obj, item)
+
+    def sync_module_types(self) -> None:
+        if not self.module_profiles:
+            self.module_profiles = {
+                profile.name: profile for profile in self.nb.dcim.module_type_profiles.all()
+            }
+        for item in self.inventory["module_types"]:
+            manufacturer = require(item, "manufacturer", "module type")
+            model = require(item, "model", "module type")
+            profile_name = str(require(item, "profile", "module type"))
+            if manufacturer not in self.manufacturers:
+                raise SyncError(f"module type {model!r}: unknown manufacturer {manufacturer!r}")
+            profile = self.module_profiles.get(profile_name)
+            if profile is None:
+                raise SyncError(f"module type {model!r}: unknown module type profile {profile_name!r}")
+            slug = item.get("slug") or slugify(f"{manufacturer}-{model}")
+            bay_type_ids: list[int] = []
+            for bay_type in as_list(item.get("bay_types")):
+                bay_type_obj = self.module_bay_types.get(str(bay_type))
+                if bay_type_obj is None:
+                    raise SyncError(
+                        f"module type {model!r}: unknown module bay type {bay_type!r}"
+                    )
+                bay_type_ids.append(bay_type_obj.id)
+            data: dict[str, Any] = {
+                "manufacturer": self.manufacturers[manufacturer].id,
+                "model": model,
+                "part_number": item.get("part_number", ""),
+                "profile": profile.id,
+                "attributes": item.get("attributes") or {},
+                "description": item.get("description", ""),
+                "comments": item.get("comments", ""),
+                "weight": item.get("weight"),
+                "weight_unit": item.get("weight_unit") or "",
+                "module_bay_types": bay_type_ids,
+            }
+            obj = self.ensure(
+                "module_type",
+                self.nb.dcim.module_types,
+                {"manufacturer_id": self.manufacturers[manufacturer].id, "model": model},
+                data,
+                tags=item.get("tags"),
+                label=f"module_type/{slug}",
+            )
+            self.module_types[slug] = obj
+            self.desired["module_types"].add((manufacturer, model))
 
     # ----------------------------------------------------------- type images
 
@@ -1381,6 +1555,10 @@ class Reconciler:
 
             for interface in item.get("interfaces", []) or []:
                 self.sync_interface(device, name, site_slug, interface)
+            for module_bay in item.get("module_bays", []) or []:
+                self.sync_module_bay(device, name, module_bay)
+            for module in item.get("modules", []) or []:
+                self.sync_module(device, name, module)
 
     def sync_interface(self, device: Any, device_name: str, site_slug: str, item: dict[str, Any]) -> None:
         name = str(require(item, "name", f"interface on {device_name}"))
@@ -1429,6 +1607,73 @@ class Reconciler:
         for ip in item.get("ip_addresses", []) or []:
             self.sync_ip(ip, device, device_name, interface)
 
+    def sync_module_bay(self, device: Any, device_name: str, item: dict[str, Any]) -> None:
+        name = str(require(item, "name", f"module bay on {device_name}"))
+        key = (device_name, name)
+        if key in self.module_bays:
+            raise SyncError(f"device {device_name}: duplicate module bay {name!r}")
+        bay_type_ids: list[int] = []
+        for bay_type in as_list(item.get("bay_types") or item.get("bay_type")):
+            bay_type_obj = self.module_bay_types.get(str(bay_type))
+            if bay_type_obj is None:
+                raise SyncError(
+                    f"device {device_name} module bay {name}: unknown module bay type {bay_type!r}"
+                )
+            bay_type_ids.append(bay_type_obj.id)
+        data: dict[str, Any] = {
+            "device": device.id,
+            "name": name,
+            "label": item.get("label", ""),
+            "position": str(item.get("position", "")) or "",
+            "enabled": bool(item.get("enabled", True)),
+            "description": item.get("description", ""),
+            "module_bay_types": bay_type_ids,
+        }
+        bay = self.ensure(
+            "module_bay",
+            self.nb.dcim.module_bays,
+            {"device_id": device.id, "name": name},
+            data,
+            tags=item.get("tags"),
+            label=f"module_bay/{device_name}/{name}",
+        )
+        self.module_bays[key] = bay
+        self.desired["module_bays"].add(key)
+
+    def sync_module(self, device: Any, device_name: str, item: dict[str, Any]) -> None:
+        bay_name = str(require(item, "bay", f"module on {device_name}"))
+        key = (device_name, bay_name)
+        if key in self.modules:
+            raise SyncError(f"device {device_name}: more than one module in bay {bay_name!r}")
+        bay = self.module_bays.get(key)
+        if bay is None:
+            raise SyncError(f"device {device_name}: unknown module bay {bay_name!r}")
+        module_type_slug = str(require(item, "module_type", f"module in {bay_name} on {device_name}"))
+        module_type = self.module_types.get(module_type_slug)
+        if module_type is None:
+            raise SyncError(
+                f"device {device_name} module {bay_name}: unknown module type {module_type_slug!r}"
+            )
+        data: dict[str, Any] = {
+            "device": device.id,
+            "module_bay": bay.id,
+            "module_type": module_type.id,
+            "status": item.get("status", DEFAULT_STATUS),
+            "serial": item.get("serial", ""),
+            "asset_tag": item.get("asset_tag"),
+            "description": item.get("description", ""),
+        }
+        module = self.ensure(
+            "module",
+            self.nb.dcim.modules,
+            {"device_id": device.id, "module_bay_id": bay.id},
+            data,
+            tags=item.get("tags"),
+            label=f"module/{device_name}/{bay_name}",
+        )
+        self.modules[key] = module
+        self.desired["modules"].add(key)
+
     def sync_ip(
         self,
         item: dict[str, Any],
@@ -1440,7 +1685,8 @@ class Reconciler:
         data: dict[str, Any] = {
             "address": address,
             "status": item.get("status", DEFAULT_STATUS),
-            "dns_name": item.get("dns_name", ""),
+            # NetBox lowercases DNS names, so compare against the normalized form.
+            "dns_name": str(item.get("dns_name", "")).lower(),
             "description": item.get("description", ""),
             "role": item.get("role") or "",
         }
@@ -1663,6 +1909,32 @@ class Reconciler:
             skip=skip,
         )
 
+    def prune_modules(self) -> None:
+        def skip(module: Any) -> bool:
+            device = getattr(module, "device", None)
+            return getattr(device, "name", None) in self.planned_delete_devices
+
+        self.prune_model(
+            "module",
+            self.nb.dcim.modules,
+            self.desired["modules"],
+            lambda module: (module.device.name, module.module_bay.name),
+            skip=skip,
+        )
+
+    def prune_module_bays(self) -> None:
+        def skip(bay: Any) -> bool:
+            device = getattr(bay, "device", None)
+            return getattr(device, "name", None) in self.planned_delete_devices
+
+        self.prune_model(
+            "module_bay",
+            self.nb.dcim.module_bays,
+            self.desired["module_bays"],
+            lambda bay: (bay.device.name, bay.name),
+            skip=skip,
+        )
+
     def prune_ip_addresses(self) -> None:
         self.prune_model("ip_address", self.nb.ipam.ip_addresses, self.desired["ip_addresses"], lambda ip: ip.address)
 
@@ -1698,6 +1970,25 @@ class Reconciler:
     def prune_device_types(self) -> None:
         self.prune_model("device_type", self.nb.dcim.device_types, self.desired["device_types"], lambda item: item.slug)
 
+    def prune_module_types(self) -> None:
+        self.prune_model(
+            "module_type",
+            self.nb.dcim.module_types,
+            self.desired["module_types"],
+            lambda item: (
+                getattr(getattr(item, "manufacturer", None), "slug", None),
+                item.model,
+            ),
+        )
+
+    def prune_module_bay_types(self) -> None:
+        self.prune_model(
+            "module_bay_type",
+            self.nb.dcim.module_bay_types,
+            self.desired["module_bay_types"],
+            lambda item: item.slug,
+        )
+
     def prune_platforms(self) -> None:
         self.prune_model("platform", self.nb.dcim.platforms, self.desired["platforms"], lambda item: item.slug)
 
@@ -1719,13 +2010,17 @@ class Reconciler:
         self.prune_cables()
         self.prune_devices()
         self.prune_interfaces()
+        self.prune_modules()
+        self.prune_module_bays()
         self.prune_ip_addresses()
         self.prune_racks()
         self.prune_prefixes()
         self.prune_vlans()
         self.prune_device_types()
+        self.prune_module_types()
         self.prune_platforms()
         self.prune_device_roles()
+        self.prune_module_bay_types()
         self.prune_manufacturers()
         self.prune_sites()
 
@@ -1737,7 +2032,9 @@ class Reconciler:
         self.sync_manufacturers()
         self.sync_platforms()
         self.sync_device_roles()
+        self.sync_module_bay_types()
         self.sync_device_types()
+        self.sync_module_types()
         self.sync_racks()
         self.sync_vlans()
         self.sync_prefixes()

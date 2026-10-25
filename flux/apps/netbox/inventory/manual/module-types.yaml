@@ -1,0 +1,35 @@
+layer: manual
+
+module_types:
+  - manufacturer: generic
+    model: 12 TB SAS HDD
+    slug: generic-12tb-sas-hdd
+    part_number: 12TB-SAS
+    profile: Hard disk
+    attributes:
+      size: 12000
+      type: HD
+      speed: 7200
+    bay_types:
+      - drive-3-5
+
+  - manufacturer: ibm
+    model: Storwize V5000 800W PSU
+    slug: ibm-storwize-v5000-800w-psu
+    profile: Power supply
+    attributes:
+      wattage: 800
+      input_current: AC
+      input_voltage: 230
+      hot_swappable: true
+    bay_types:
+      - power-supply
+
+  - manufacturer: ibm
+    model: Storwize V5000 Expansion Canister
+    slug: ibm-storwize-v5000-expansion-canister
+    profile: Expansion card
+    attributes:
+      connector_type: SAS
+    bay_types:
+      - expansion-canister

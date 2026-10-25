@@ -43,12 +43,13 @@ inventory/
 ├── generated/
 │   ├── unifi.yaml       # adopted UniFi devices, VLANs, prefixes, uplinks
 │   ├── servers.yaml     # physical servers discovered through UniFi
-│   └── talos.yaml       # Talos nodes, interfaces, addresses, status
+│   └── talos.yaml       # Talos nodes, interfaces, addresses, status, modules
 ├── manual/
-│   ├── site.yaml        # site, manufacturers, platforms, roles, collector settings
+│   ├── site.yaml        # site, manufacturers, platforms, roles, module bay types
 │   ├── device-types.yaml# real models and image references
+│   ├── module-types.yaml# module types for manually modelled components
 │   ├── racks.yaml       # rack height and top-to-bottom layout
-│   ├── devices.yaml     # servers, nodes, accessories, unifi_ip/talos_node links
+│   ├── devices.yaml     # servers, nodes, accessories, unifi_ip/talos_node/idrac_ip links
 │   ├── cables.yaml      # manual cables not discoverable from UniFi
 │   └── ipam.yaml        # VIPs and standalone addresses
 └── images/              # device-type images
@@ -123,7 +124,68 @@ devices:
 
 `uplinks` entries are expanded into cables, so a server's NIC-to-switch-port
 map lives next to the server instead of in Python. The collector creates the
-matching physical interfaces and the management address.
+matching physical interfaces; the management address is assigned to the
+physical uplink interface rather than a virtual `mgmt` interface. The same
+applies to UniFi switches: their management IP goes on the uplink port. The
+UDM's LAN/VPN gateway addresses use a virtual `lan` interface because they are
+logical L3 interfaces, while its WAN address stays on Port 9.
+
+### Device components
+
+Field-replaceable components are modelled as NetBox **modules**, not
+inventory items (inventory items are deprecated in NetBox). Each component
+installed in a physical slot is represented by a module type, a module bay on
+the device, and a module instance in that bay.
+
+The collector discovers CPU, memory and disk modules from Talos. Any manual
+device with an `idrac_ip` also uses the Redfish API for richer component data
+(exact memory manufacturer/part number, disk RPM and cooling fans). This works
+for Talos nodes, UniFi-discovered servers and servers that exist only in the
+manual layer. Redfish uses the read-only `readonly` account (password
+`readonly`) by default; override it with `IDRAC_USER` / `IDRAC_PASS`. The
+default is a read-only account; any override stays in the environment and is
+never written to Git.
+
+`idrac_ip` can be added to any manual device, including servers that have no
+`unifi_ip` and no `talos_node`. If an iDRAC is unreachable or rejects the
+credentials, Talos nodes fall back to Talos hardware data and non-Talos servers
+simply keep their manually modelled components.
+
+Manual devices can declare their own components:
+
+```yaml
+module_bay_types:
+  - name: 3.5in drive
+    slug: drive-3-5
+
+module_types:
+  - manufacturer: generic
+    model: 12 TB SAS HDD
+    slug: generic-12tb-sas-hdd
+    profile: Hard disk
+    attributes:
+      size: 12000
+      type: HD
+      speed: 7200
+    bay_types:
+      - drive-3-5
+
+devices:
+  - name: storwize-01
+    module_bays:
+      - name: Drive 1
+        position: 1
+        bay_type: drive-3-5
+    modules:
+      - bay: Drive 1
+        module_type: generic-12tb-sas-hdd
+        status: staged
+```
+
+Module types use the built-in profiles (`CPU`, `Memory`, `Hard disk`, `Fan`,
+`Power supply`, `Expansion card`, …). Their typed attributes are validated by
+NetBox, and module bay types enforce compatibility (for example, a 3.5in drive
+cannot be installed in a 2.5in bay).
 
 ### Device types and images
 
@@ -218,15 +280,22 @@ the Secret to match.
 Collect live UniFi and Talos facts into `inventory/generated/`:
 
 ```sh
+# Optional; the collector defaults to the read-only iDRAC account.
+IDRAC_USER=... IDRAC_PASS=... \
 uv run --with requests --with PyYAML \
   python scripts/netbox/generate_inventory.py --from-cluster \
-  --kubectl ./scripts/bin/kubectl --kubeconfig talos/generated/kubeconfig
+  --kubectl ./scripts/bin/kubectl --kubeconfig talos/generated/kubeconfig \
+  --talosctl ./scripts/bin/talosctl \
+  --talosconfig talos/generated/talosconfig
 ```
 
 `--from-cluster` reads the `unpoller-unifi` credentials from the monitoring
 namespace; they are never written to the file. The collector reads the manual
 `settings`, `unifi_models` and `devices` sections, then writes only the
-generated layer. It never edits `inventory/manual/`.
+generated layer. It never edits `inventory/manual/`. Devices with `idrac_ip`
+use the Redfish credentials from `IDRAC_USER` / `IDRAC_PASS` (default
+`readonly` / `readonly`) for additional components; overrides are never
+written to Git.
 
 The generated layer contains:
 
@@ -234,9 +303,11 @@ The generated layer contains:
 - VLANs and prefixes from UniFi
 - physical servers listed with `unifi_ip`, including their NIC/IP/uplink facts
 - Talos node versions, roles, capacity, serials, addresses and interfaces
+- NIC MAC addresses and CPU, memory and disk modules for every Talos node
+- fan modules and richer component attributes from iDRAC Redfish where configured
 
-Manual files contain the rest: real models, device-type images, rack layout,
-physical devices, accessories, manual cables and VIPs.
+Manual files contain the rest: real models, device-type images, module types,
+rack layout, physical devices, accessories, manual cables and VIPs.
 
 The CronJob tags every object it creates with `gitops`. With `PRUNE=true`, it
 deletes objects that still carry that tag but are no longer present in the
@@ -255,23 +326,26 @@ Supported top-level keys:
 | `manufacturers` | Referenced by device types and platforms |
 | `platforms` | Referenced by devices |
 | `device_roles` | Referenced by devices |
+| `module_bay_types` | Referenced by module types and device module bays |
+| `module_types` | Referenced by device modules; uses a built-in profile |
 | `device_types` | Referenced by devices; may declare `images` |
 | `racks` | Rack definitions plus declarative `layout` |
 | `vlans` | Site-scoped or global |
 | `prefixes` | Optionally attached to a site and VLAN |
-| `devices` | Nested `interfaces`, `ip_addresses` and optional `uplinks` |
+| `devices` | Nested `interfaces`, `module_bays`, `modules`, `ip_addresses` and optional `uplinks` |
 | `ip_addresses` | Standalone/unassigned IPs (VIPs, for example) |
 | `cables` | One declaration per physical cable |
 | `defaults` | Inherited by every device (site, tags, etc.) |
 
 Natural keys used for matching are slugs for sites, manufacturers, platforms,
-roles and device types; `(site, name)` for racks; `(site, vid)` for VLANs; the
-prefix for prefixes; the device name for devices; `(device, name)` for
-interfaces; the address for IPs; and the two terminations for cables. Adding a
-`slug` explicitly is recommended.
+roles, module bay types and device types; `(site, name)` for racks;
+`(site, vid)` for VLANs; the prefix for prefixes; the device name for devices;
+`(device, name)` for interfaces and module bays; `(device, bay)` for modules;
+the address for IPs; and the two terminations for cables. Adding a `slug`
+explicitly is recommended.
 
-Not modelled yet: VRFs, tenants, virtual machines, modules, wireless, circuits,
-custom fields, device-type interface templates and multi-termination cables.
+Not modelled yet: VRFs, tenants, virtual machines, wireless, circuits, custom
+fields, device-type interface templates and multi-termination cables.
 IP addresses are global (no VRF). Add those objects in the UI if needed; they
 will not carry the `gitops` tag and will not be pruned.
 

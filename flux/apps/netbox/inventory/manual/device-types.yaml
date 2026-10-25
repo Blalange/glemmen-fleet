@@ -36,6 +36,9 @@ device_types:
         - name: Server front with bezel
           file: images/dell-poweredge-r515-other.jpg
           description: Dell PowerEdge R515 front view with 12 hot-swap drive bays.
+        - name: Left side view
+          file: images/dell-poweredge-r515-side.jpg
+          description: Dell PowerEdge R515 left side view.
 
   - manufacturer: dell
     model: PowerEdge R630

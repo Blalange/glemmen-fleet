@@ -31,15 +31,39 @@ manufacturers:
   - name: APC
     slug: apc
     description: APC by Schneider Electric power distribution equipment.
+  - name: AMD
+    slug: amd
+    description: AMD processors.
   - name: Dell
     slug: dell
     description: Dell Technologies servers.
+  - name: Generic
+    slug: generic
+    description: Components whose manufacturer is not recorded.
   - name: IBM
     slug: ibm
     description: IBM System x servers and Storwize storage.
+  - name: Intel
+    slug: intel
+    description: Intel processors and controllers.
+  - name: Micron
+    slug: micron
+    description: Micron memory modules.
+  - name: Seagate
+    slug: seagate
+    description: Seagate disk drives.
+  - name: Samsung
+    slug: samsung
+    description: Samsung memory modules and drives.
+  - name: SK hynix
+    slug: sk-hynix
+    description: SK hynix memory modules.
   - name: Ubiquiti
     slug: ubiquiti
     description: UniFi network equipment.
+  - name: Western Digital
+    slug: western-digital
+    description: Western Digital disk drives.
   - name: Zyxel
     slug: zyxel
     description: Zyxel network switches.
@@ -78,3 +102,32 @@ device_roles:
   - name: Power distribution
     slug: power
     color: e67e22
+
+module_bay_types:
+  - name: CPU socket
+    slug: cpu-socket
+    description: Processor socket.
+  - name: DDR3 DIMM
+    slug: dimm-ddr3
+    description: DDR3 memory slot.
+  - name: DDR4 DIMM
+    slug: dimm-ddr4
+    description: DDR4 memory slot.
+  - name: 3.5in drive
+    slug: drive-3-5
+    description: 3.5-inch SAS/SATA drive bay.
+  - name: 2.5in drive
+    slug: drive-2-5
+    description: 2.5-inch SAS/SATA drive bay.
+  - name: Fan
+    slug: fan
+    description: Chassis cooling fan.
+  - name: Power supply
+    slug: power-supply
+    description: Hot-swap power supply bay.
+  - name: Expansion canister
+    slug: expansion-canister
+    description: Storage expansion canister bay.
+  - name: PCIe slot
+    slug: pcie-slot
+    description: PCI Express expansion slot.

@@ -43,16 +43,25 @@ Both use `talos/generated/kubeconfig` by default; override with `KUBECONFIG`.
 ## NetBox
 
 ```sh
+# Optional; defaults to the read-only iDRAC account (readonly/readonly).
+IDRAC_USER=... IDRAC_PASS=... \
 uv run --with requests --with PyYAML \
   python scripts/netbox/generate_inventory.py --from-cluster \
-  --kubectl ./scripts/bin/kubectl --kubeconfig talos/generated/kubeconfig
+  --kubectl ./scripts/bin/kubectl --kubeconfig talos/generated/kubeconfig \
+  --talosctl ./scripts/bin/talosctl \
+  --talosconfig talos/generated/talosconfig
 ```
 
 Writes the live UniFi/Talos facts to `flux/apps/netbox/inventory/generated/`.
 The hand-maintained inventory lives in `flux/apps/netbox/inventory/manual/`
 (site, device types and images, rack layout, physical servers, accessories,
 manual cables and VIPs). The collector reads the manual device list and never
-edits the manual layer. `--from-cluster` reads the UniFi credentials from the
+edits the manual layer. `--talosctl` discovers node NIC MACs, CPUs, memory and
+physical disks, which are written as NetBox modules. Any manual device with an
+`idrac_ip` (Talos or non-Talos) also gets Redfish components: fan modules,
+exact memory/disk attributes, and PSUs when exposed. The default Redfish
+account is `readonly` / `readonly`; set `IDRAC_USER` and `IDRAC_PASS` to
+override it. `--from-cluster` reads the UniFi credentials from the
 `unpoller-unifi` Secret in `monitoring`; they are never written to the
 inventory. Review the generated diff and commit the result.
 
