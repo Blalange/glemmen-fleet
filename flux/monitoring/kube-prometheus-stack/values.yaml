@@ -9,8 +9,9 @@ prometheus:
     # or OnDelete (the CRD rejects Recreate). With one replica the old pod is
     # terminated before the new one is created, so the RWO volume is never
     # attached to two pods at once.
-    # Scrape configuration
-    scrapeInterval: 15s
+    # Scrape configuration. 30s halves ingestion while still matching the
+    # Grafana/Thanos data source interval.
+    scrapeInterval: 30s
 
     # Thanos identifies uploaded blocks by their Prometheus external labels.
     externalLabels:
@@ -56,7 +57,8 @@ prometheus:
         memory: 2Gi
       limits:
         cpu: 2000m
-        memory: 4Gi
+        # Peak usage was already ~3.8Gi with the old scrape volume.
+        memory: 6Gi
 
     # Service monitors selector - match all
     serviceMonitorSelectorNilUsesHelmValues: false
@@ -219,6 +221,34 @@ prometheus-node-exporter:
 kubeStateMetrics:
   enabled: true
 
+# Keep the chart's default apiserver bucket filter and drop the high-cardinality
+# watch/cache/body/response/storage-list metrics that no dashboard or alert
+# uses. This removes roughly 100k series.
+# Defining metricRelabelings replaces the chart's list, so the chart's existing
+# noisy-bucket rule is repeated here.
+kubeApiServer:
+  serviceMonitor:
+    metricRelabelings:
+      - action: drop
+        regex: '(etcd_request|apiserver_request_slo|apiserver_request_sli|apiserver_request)_duration_seconds_bucket;(0\.15|0\.2|0\.3|0\.35|0\.4|0\.45|0\.6|0\.7|0\.8|0\.9|1\.25|1\.5|1\.75|2|3|3\.5|4|4\.5|6|7|8|9|15|20|40|45|50)(\.0)?'
+        sourceLabels:
+          - __name__
+          - le
+      - action: drop
+        regex: 'apiserver_watch_.*'
+        sourceLabels:
+          - __name__
+      - action: drop
+        regex: 'apiserver_(request_body_size_bytes|response_sizes|storage_list_duration_seconds).*'
+        sourceLabels:
+          - __name__
+
+# Scrape cAdvisor at the same 30s resolution as the rest of the cluster. The
+# chart default is 10s, which is a large share of the sample volume.
+kubelet:
+  serviceMonitor:
+    cAdvisorInterval: 30s
+
 # Prometheus operator
 prometheusOperator:
   resources:
@@ -239,7 +269,11 @@ defaultRules:
     general: true
     k8s: true
     kubeApiserverAvailability: true
-    kubeApiserverSlos: true
+    # The burnrate group evaluates 1d/3d rate windows every 30s and takes ~8s
+    # on average over the high-cardinality apiserver metrics. The SLO alerts
+    # depend on it, so both are disabled together.
+    kubeApiserverBurnrate: false
+    kubeApiserverSlos: false
     kubelet: true
     kubeProxy: true
     kubePrometheusGeneral: true

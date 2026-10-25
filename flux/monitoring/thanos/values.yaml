@@ -44,6 +44,11 @@ query:
     # Created by prometheus.thanosService.enabled in kube-prometheus-stack.
     static:
       - dnssrv+_grpc._tcp.kube-prometheus-stack-thanos-discovery.monitoring.svc.cluster.local
+  # Use the compactor's 5m/1h blocks for long ranges instead of fetching raw
+  # chunks from object storage.
+  extraArgs:
+    - --log.level=info
+    - --query.auto-downsampling
   resources:
     requests:
       cpu: 100m
@@ -56,6 +61,12 @@ storegateway:
   replicaCount: 1
   persistence:
     size: 10Gi
+  # Only serve blocks older than the local Prometheus retention window. This
+  # keeps recent Grafana queries from duplicating every read through the slow
+  # rclone/Google Drive object store. Move to -7d once the 30s scrape interval
+  # has grown local retention past 7 days.
+  extraArgs:
+    - --max-time=-4d
   resources:
     requests:
       cpu: 100m

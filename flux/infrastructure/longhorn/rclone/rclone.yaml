@@ -139,9 +139,12 @@ spec:
           resources:
             requests:
               cpu: 25m
-              memory: 64Mi
+              memory: 256Mi
             limits:
-              memory: 512Mi
+              # Thanos Store Gateway issues many concurrent range reads. The
+              # old 512Mi limit was hit and the pod was OOMKilled, taking
+              # Thanos queries and Longhorn backups down with it.
+              memory: 2Gi
           securityContext:
             allowPrivilegeEscalation: false
             readOnlyRootFilesystem: true
