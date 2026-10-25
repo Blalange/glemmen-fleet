@@ -118,6 +118,35 @@ class DevicesMixin:
                 self.sync_module_bay(device, name, module_bay)
             for module in item.get("modules", []) or []:
                 self.sync_module(device, name, module)
+            self.sync_oob_ip(device, name, item)
+
+    def sync_oob_ip(self, device: Any, device_name: str, item: dict[str, Any]) -> None:
+        raw = item.get("oob_ip")
+        if not raw:
+            return
+        address = normalize_address(raw)
+        host = str(ipaddress.ip_interface(address).ip)
+        matches = [
+            ip
+            for key, ip in self.ip_addresses.items()
+            if str(ipaddress.ip_interface(key).ip) == host
+        ]
+        if len(matches) != 1:
+            raise SyncError(
+                f"device {device_name}: oob_ip {raw!r} must resolve to exactly one "
+                f"declared interface address"
+            )
+        oob_ip = matches[0]
+        current = getattr(device, "oob_ip", None)
+        current_id = getattr(current, "id", None) if current is not None else None
+        if current_id == oob_ip.id:
+            return
+        self.log("update", "device", f"{device_name} oob_ip", address)
+        if not self.dry_run:
+            try:
+                device.update({"oob_ip": oob_ip.id})
+            except Exception as exc:  # noqa: BLE001
+                raise SyncError(f"device {device_name}: set oob_ip: {exc}") from exc
 
     def sync_interface(self, device: Any, device_name: str, site_slug: str, item: dict[str, Any]) -> None:
         name = str(require(item, "name", f"interface on {device_name}"))

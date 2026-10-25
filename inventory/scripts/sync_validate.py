@@ -174,6 +174,7 @@ def validate_inventory(inventory: dict[str, list[Any]]) -> None:
 
         interfaces: dict[str, dict[str, Any]] = {}
         primaries: dict[int, str] = {}
+        device_addresses: set[str] = set()
         for interface in device.get("interfaces", []) or []:
             if not isinstance(interface, dict):
                 raise SyncError(f"device {name}: every interface must be a mapping")
@@ -188,6 +189,8 @@ def validate_inventory(inventory: dict[str, list[Any]]) -> None:
                         f"in site {site!r}"
                     )
             for ip in interface.get("ip_addresses", []) or []:
+                address = normalize_address(ip["address"])
+                device_addresses.add(address)
                 add_ip(ip, name, interface_name)
                 if ip.get("primary"):
                     version = ipaddress.ip_interface(normalize_address(ip["address"])).version
@@ -226,6 +229,18 @@ def validate_inventory(inventory: dict[str, list[Any]]) -> None:
                     f"device {name} module {bay_name}: unknown module type {module_type!r}"
                 )
             modules[bay_name] = item
+
+        if device.get("oob_ip"):
+            oob = normalize_address(device["oob_ip"])
+            oob_host = str(ipaddress.ip_interface(oob).ip)
+            if not any(
+                str(ipaddress.ip_interface(address).ip) == oob_host
+                for address in device_addresses
+            ):
+                raise SyncError(
+                    f"device {name}: oob_ip {device['oob_ip']!r} is not assigned "
+                    "to an interface on the same device"
+                )
 
     # Validate rack occupancy. A 42U rack with a few devices is easy to get
     # wrong by hand, so check bounds and overlaps before touching NetBox.

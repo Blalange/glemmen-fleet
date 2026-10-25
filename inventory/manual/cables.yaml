@@ -8,3 +8,43 @@ cables:
     type: cat6
     status: connected
     description: Zyxel server-accessory uplink (VLAN 1 native, VLAN 4 tagged).
+
+  - a_device: glemmen160
+    a_interface: iDRAC
+    b_device: zyxel-gs1920-24
+    b_interface: Port 1
+    type: cat6
+    status: connected
+    description: iDRAC DL51JZ3 to Zyxel port 1.
+
+  - a_device: glemmen150
+    a_interface: iDRAC
+    b_device: zyxel-gs1920-24
+    b_interface: Port 2
+    type: cat6
+    status: connected
+    description: iDRAC FL51JZ3 to Zyxel port 2.
+
+  - a_device: glemmen170
+    a_interface: iDRAC
+    b_device: zyxel-gs1920-24
+    b_interface: Port 3
+    type: cat6
+    status: connected
+    description: iDRAC 4L51JZ3 to Zyxel port 3.
+
+  - a_device: glemmen130
+    a_interface: iDRAC
+    b_device: zyxel-gs1920-24
+    b_interface: Port 4
+    type: cat6
+    status: connected
+    description: iDRAC 6L51JZ3 to Zyxel port 4.
+
+  - a_device: glemmen180
+    a_interface: iDRAC
+    b_device: zyxel-gs1920-24
+    b_interface: Port 5
+    type: cat6
+    status: connected
+    description: iDRAC 2L51JZ3 to Zyxel port 5.

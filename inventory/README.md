@@ -111,6 +111,7 @@ wrong server. Optional stable identifiers can be added to manual devices:
   talos_node: glemmen160
   service_tag: DL51JZ3
   idrac_ip: 192.168.4.91
+  oob_ip: 192.168.4.91
   unifi_mac: 6c:3c:8c:75:45:0c
 
 - name: zyxel-gs1920-24
@@ -164,7 +165,7 @@ Changing the rack height means editing `u_height` and the layout together.
 
 ### Physical servers and accessories
 
-`manual/devices.yaml` is the hardware catalogue. Entries with `unifi_ip` are
+`manual/devices/` is the hardware catalogue. Entries with `unifi_ip` are
 enriched by the collector; entries with `talos_node` are merged with the Talos
 node data. Devices without either are created from the manual layer only.
 
@@ -215,6 +216,31 @@ never written to Git.
 `unifi_ip` and no `talos_node`. If an iDRAC is unreachable or rejects the
 credentials, Talos nodes fall back to Talos hardware data and non-Talos servers
 simply keep their manually modelled components.
+
+The five R250 servers with iDRACs model the out-of-band port explicitly. The
+device gets `oob_ip`, and an `iDRAC` interface carries the VLAN 4 address and
+MAC. The iDRAC interfaces are cabled to the Zyxel ports that already document
+the matching service tags:
+
+```yaml
+- name: glemmen130
+  idrac_ip: 192.168.4.130
+  oob_ip: 192.168.4.130
+  interfaces:
+    - name: iDRAC
+      type: 1000base-t
+      enabled: true
+      mgmt_only: true
+      description: Dell iDRAC 6L51JZ3 out-of-band management.
+      mac_address: 6c:3c:8c:75:3d:8e
+      untagged_vlan: 4
+      ip_addresses:
+        - address: 192.168.4.130/24
+          dns_name: idrac-6l51jz3
+```
+
+The NetBox device `oob_ip` is resolved from the interface address, while the
+in-band primary IP remains on the server's normal NIC/bond.
 
 Manual devices can declare their own components:
 
