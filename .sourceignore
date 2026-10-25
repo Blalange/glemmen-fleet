@@ -1,0 +1,6 @@
+# Flux source-controller excludes common binary image extensions from Git
+# artifacts by default. NetBox device-type images are part of the desired
+# inventory, so explicitly include them again.
+!inventory/images/*.jpg
+!inventory/images/*.jpeg
+!inventory/images/*.png
