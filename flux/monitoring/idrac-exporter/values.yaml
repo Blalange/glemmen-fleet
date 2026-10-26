@@ -1,0 +1,65 @@
+# idrac-exporter - Dell iDRAC / Redfish metrics.
+#
+# The exporter is stateless: Prometheus calls /metrics?target=<bmc-address>
+# for every BMC on each scrape, and the exporter logs in to that BMC with the
+# default credentials below. The target list and the exporter address live in
+# the ScrapeConfig at ../resources/scrapeconfigs/idrac-exporter.yaml.
+#
+# The username/password come from the hand-created `idrac-exporter` Secret in
+# the monitoring namespace (see flux/README.md). The exporter's environment
+# overrides its config file, so no credentials are stored in Git.
+
+replicaCount: 1
+
+env:
+  - name: CONFIG_DEFAULT_USERNAME
+    valueFrom:
+      secretKeyRef:
+        name: idrac-exporter
+        key: username
+  - name: CONFIG_DEFAULT_PASSWORD
+    valueFrom:
+      secretKeyRef:
+        name: idrac-exporter
+        key: password
+
+# Enable the metric groups used by the BMC dashboards. Everything else
+# (manager, extra) is not queried and would only make the on-demand scrapes
+# slower. Events are limited to warnings/criticals from the last 7 days.
+idracConfig: |
+  address: 0.0.0.0
+  port: 9348
+  timeout: 10
+  metrics:
+    system: true
+    sensors: true
+    power: true
+    storage: true
+    memory: true
+    network: true
+    processors: true
+    events: true
+  events:
+    severity: warning
+    maxage: 7d
+
+resources:
+  requests:
+    cpu: 20m
+    memory: 64Mi
+  limits:
+    cpu: 500m
+    memory: 256Mi
+
+# The chart's own ServiceMonitor/ScrapeConfig are disabled because Prometheus
+# only gets a target from the `target` query parameter, which a plain
+# ServiceMonitor cannot provide. The equivalent ScrapeConfig is applied by the
+# monitoring-resources Kustomization after kube-prometheus-stack (and its
+# CRDs) is ready.
+prometheus:
+  monitor:
+    enabled: false
+  rules:
+    enabled: false
+  scrapeConfig:
+    enabled: false

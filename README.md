@@ -48,6 +48,10 @@ The 1xx nodes are Dell PowerEdge R250 servers:
 - 144 GB DDR3 RAM
 - 598 GB virtual disk
 
+The Dell iDRACs are scraped over Redfish by `idrac-exporter`
+(`flux/monitoring/idrac-exporter/`). The `BMC` and `BMC overview` dashboards in
+Grafana show per-server health, power, temperature, fans and disks.
+
 ### Networking
 
 The 1xx nodes have two 1 Gbit/s NICs in an LACP bond (`bond0`, 802.3ad, layer3+4). `glemmen80` has a 10 Gbit/s link and `glemmen60` has a 1 Gbit/s link. All nodes have static addresses in `192.168.6.0/24`.

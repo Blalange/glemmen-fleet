@@ -17,6 +17,12 @@ configMapGenerator:
   - name: grafana-dashboard-flux-control-plane
     files:
       - flux-control-plane.json
+  - name: grafana-dashboard-idrac-exporter
+    files:
+      - idrac-exporter.json
+  - name: grafana-dashboard-idrac-overview
+    files:
+      - idrac-overview.json
   - name: grafana-dashboard-kepler
     files:
       - kepler.json

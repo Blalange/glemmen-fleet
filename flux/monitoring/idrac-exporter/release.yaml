@@ -1,0 +1,26 @@
+# idrac-exporter - Prometheus exporter for Dell iDRAC (and other Redfish BMCs).
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: HelmRepository
+metadata:
+  name: idrac-exporter
+spec:
+  interval: 1h
+  url: https://mrlhansen.github.io/idrac_exporter
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: idrac-exporter
+spec:
+  interval: 1h
+  chart:
+    spec:
+      chart: idrac-exporter
+      version: 2.6.3
+      sourceRef:
+        kind: HelmRepository
+        name: idrac-exporter
+  valuesFrom:
+    - kind: ConfigMap
+      name: idrac-exporter-values
+      valuesKey: values.yaml

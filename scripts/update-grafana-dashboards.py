@@ -33,6 +33,14 @@ DASHBOARDS = [
         "url": "https://grafana.com/api/dashboards/24922/revisions/latest/download",
     },
     {
+        "file": "idrac-exporter.json",
+        "url": "https://raw.githubusercontent.com/mrlhansen/idrac_exporter/master/grafana/idrac.json",
+    },
+    {
+        "file": "idrac-overview.json",
+        "url": "https://raw.githubusercontent.com/mrlhansen/idrac_exporter/master/grafana/idrac_overview.json",
+    },
+    {
         "file": "longhorn.json",
         "url": "https://grafana.com/api/dashboards/16888/revisions/latest/download",
     },
@@ -165,6 +173,25 @@ def convert_inputs_to_variables(payload):
     return True
 
 
+def clear_datasource_current(payload):
+    """Remove pinned datasource choices from template variables.
+
+    Some exports (for example the iDRAC BMC overview) remember a datasource
+    that does not exist in this cluster. Leaving the current value set makes
+    the panels show "Datasource not found" until someone picks one manually.
+    An empty current value lets Grafana use the default data source of the
+    requested type.
+
+    Returns True when the payload was modified.
+    """
+    changed = False
+    for variable in payload.get("templating", {}).get("list", []):
+        if variable.get("type") == "datasource" and variable.get("current"):
+            variable["current"] = {}
+            changed = True
+    return changed
+
+
 def render_json(payload):
     """Render a dashboard payload as a stable, pretty-printed JSON document."""
     return json.dumps(payload, indent=2, ensure_ascii=False) + "\n"
@@ -196,6 +223,7 @@ def main():
             continue
 
         convert_inputs_to_variables(payload)
+        clear_datasource_current(payload)
         text = render_json(payload)
         changed = not path.exists() or path.read_text() != text
         if changed:

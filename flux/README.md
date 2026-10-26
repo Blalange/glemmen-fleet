@@ -19,12 +19,12 @@ flux/
 │   ├── cert-manager-certificates.yaml -> cert-manager/certificates (-> kube-system)
 │   ├── ingress.yaml            -> flux/ingress (Traefik, depends on certificates)
 │   ├── monitoring-pvc.yaml     -> kube-prometheus-stack/pvc (Grafana volume + SC)
-│   ├── monitoring.yaml         -> flux/monitoring (KPS, Thanos, smartctl, unpoller)
+│   ├── monitoring.yaml         -> flux/monitoring (KPS, Thanos, smartctl, iDRAC, unpoller)
 │   ├── monitoring-dashboards.yaml / monitoring-alerts.yaml
 │   └── apps.yaml               -> flux/apps (application Kustomizations)
 ├── infrastructure/             namespaces, Longhorn, cert-manager, MetalLB, metrics-server, YugabyteDB
 ├── ingress/                    Traefik HelmRelease + values
-├── monitoring/                 kube-prometheus-stack, Thanos, smartctl-exporter, unpoller
+├── monitoring/                 kube-prometheus-stack, Thanos, smartctl-exporter, idrac-exporter, unpoller
 └── apps/                       Kustomization objects, Homepage, NetBox + inventory sync
 ```
 
@@ -166,6 +166,32 @@ it at 20Gi is a separate maintenance operation (stop Prometheus, delete the
 PVC, let the StatefulSet recreate it) and only makes sense after the sidecar
 has uploaded the local blocks that should be kept.
 
+## iDRAC hardware metrics
+
+`monitoring/idrac-exporter` runs mrlhansen's Redfish exporter and Prometheus
+scrapes it every minute for every iDRAC in VLAN 4. Prometheus passes the BMC
+address as the `target` parameter, so the exporter is stateless. The target
+list and the server-name relabeling live in
+`monitoring/resources/scrapeconfigs/idrac-exporter.yaml`. The `BMC` and
+`BMC overview` Grafana dashboards come from the upstream `grafana/` directory
+and are refreshed by `scripts/update-grafana-dashboards.py`.
+
+The exporter uses the read-only BMC account, which is stored in the
+hand-created `idrac-exporter` Secret in `monitoring` (the same account as the
+inventory collector):
+
+```sh
+kubectl -n monitoring create secret generic idrac-exporter \
+  --from-literal=username=readonly \
+  --from-literal=password=readonly \
+  --dry-run=client -o yaml | kubectl apply -f -
+
+./scripts/flux/manage.py reconcile monitoring monitoring-resources
+```
+
+The BMC list is not discovered automatically. When a server's `redfish_ip`
+changes in `inventory/manual/devices/`, update the ScrapeConfig as well.
+
 ## Volunteer network services
 
 `apps/volunteer` runs Tor Snowflake (3 replicas), a Syncthing relay, a Tor
@@ -239,7 +265,7 @@ role passwords are in `yugabyte-auth` (`yugabyte` namespace) and `grafana-db`
   `netbox-secrets` in `netbox` (superuser, YSQL/Valkey passwords, Django secret
   and sync API token); created for Grafana's YugabyteDB: `yugabyte-auth` in
   `yugabyte` (superuser and Grafana role passwords) and `grafana-db` in
-  `monitoring`).
+  `monitoring`; created for iDRAC metrics: `idrac-exporter` in `monitoring`).
 - **Backup target**: Longhorn backs up to `s3://longhorn-backup@us-east-1/`,
   served by the in-cluster `rclone serve s3` bridge in
   `infrastructure/longhorn/rclone/`. The actual backupstore is a folder

@@ -1,0 +1,76 @@
+# iDRAC/Redfish scrape targets for idrac-exporter.
+#
+# Prometheus cannot pass a different `target` query parameter from a plain
+# ServiceMonitor, so the BMC addresses are listed here. `instance` is
+# rewritten to the server name (and kept as the `node` label) so the Grafana
+# dashboards show hostnames instead of BMC addresses.
+#
+# Keep this list in sync with the `redfish_ip` entries in
+# inventory/manual/devices/servers.yaml and inventory/manual/devices/talos.yaml.
+apiVersion: monitoring.coreos.com/v1alpha1
+kind: ScrapeConfig
+metadata:
+  name: idrac-exporter
+  namespace: monitoring
+  labels:
+    release: kube-prometheus-stack
+spec:
+  jobName: idrac-exporter
+  scrapeInterval: 60s
+  scrapeTimeout: 55s
+  staticConfigs:
+    - targets: ["192.168.4.80"]
+      labels:
+        node: glemmen80
+    - targets: ["192.168.4.100"]
+      labels:
+        node: dellserver01
+    - targets: ["192.168.4.110"]
+      labels:
+        node: server110
+    - targets: ["192.168.4.120"]
+      labels:
+        node: server120
+    - targets: ["192.168.4.130"]
+      labels:
+        node: glemmen130
+    - targets: ["192.168.4.140"]
+      labels:
+        node: LeanderWin10
+    - targets: ["192.168.4.150"]
+      labels:
+        node: glemmen150
+    - targets: ["192.168.4.160"]
+      labels:
+        node: glemmen160
+    - targets: ["192.168.4.170"]
+      labels:
+        node: glemmen170
+    - targets: ["192.168.4.180"]
+      labels:
+        node: glemmen180
+    - targets: ["192.168.4.190"]
+      labels:
+        node: server190
+    - targets: ["192.168.4.210"]
+      labels:
+        node: glemmen210
+    - targets: ["192.168.4.220"]
+      labels:
+        node: server220
+    - targets: ["192.168.4.230"]
+      labels:
+        node: ubuntu-server
+    - targets: ["192.168.4.240"]
+      labels:
+        node: 240emy
+  relabelings:
+    # Prometheus queries the exporter with ?target=<BMC address>.
+    - sourceLabels: [__address__]
+      targetLabel: __param_target
+    # Show the server name rather than the BMC address in Grafana.
+    - sourceLabels: [node]
+      targetLabel: instance
+    # All scrapes go to the exporter, not to the BMC directly.
+    - targetLabel: __address__
+      replacement: idrac-exporter.monitoring.svc.cluster.local:9348

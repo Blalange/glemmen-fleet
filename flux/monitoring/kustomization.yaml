@@ -1,7 +1,7 @@
 # Monitoring stack: kube-prometheus-stack (+ the StorageClass/static Grafana
-# PVC), Thanos for long-term metrics, smartctl-exporter, kepler and unpoller.
-# Dashboards, alert rules and ServiceMonitors live in resources/ (applied after
-# the CRDs exist).
+# PVC), Thanos for long-term metrics, smartctl-exporter, idrac-exporter, kepler
+# and unpoller. Dashboards, alert rules, ServiceMonitors and ScrapeConfigs live
+# in resources/ (applied after the CRDs exist).
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:
@@ -9,5 +9,6 @@ resources:
   - kube-prometheus-stack/
   - thanos/
   - smartctl-exporter/
+  - idrac-exporter/
   - kepler/
   - unpoller/

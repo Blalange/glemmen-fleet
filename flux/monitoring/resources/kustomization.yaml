@@ -4,3 +4,4 @@ resources:
   - dashboards/
   - alerts/
   - servicemonitors/
+  - scrapeconfigs/
