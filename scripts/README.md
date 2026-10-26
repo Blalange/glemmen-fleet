@@ -62,6 +62,12 @@ The collector also polls SNMP v2c network devices (default community
 `public`) for interfaces, VLANs and LLDP/FDB diagnostics. Use
 `--snmp-community`, `--no-snmp` or `--snmp-report PATH` as needed.
 
+The sync enriches device and module types from the Apache-2.0 NetBox Device
+Type Library (`--dtl`, enabled by default). Definitions and elevation images
+are fetched at runtime and cached outside Git; manual inventory values and
+components always win. The CronJob enables this with `DTL_ENABLED=true` and
+caches under the NetBox media volume.
+
 ## Updates
 
 ```sh

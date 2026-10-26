@@ -90,6 +90,25 @@ spec:
                   value: /inventory
                 - name: NETBOX_IMAGES_DIR
                   value: /images
+                # Device Type Library definitions and elevation images are
+                # fetched at runtime and cached on the media volume; no DTL
+                # data is committed to Git. Manual inventory always wins.
+                - name: DTL_ENABLED
+                  value: "true"
+                - name: DTL_REPO
+                  value: netbox-community/devicetype-library
+                - name: DTL_REF
+                  value: master
+                - name: DTL_CACHE_DIR
+                  value: /media/dtl-cache
+                - name: DTL_CACHE_TTL_HOURS
+                  value: "24"
+                - name: DTL_TOKEN
+                  valueFrom:
+                    secretKeyRef:
+                      name: netbox-secrets
+                      key: dtl_token
+                      optional: true
                 # Set to "true" for a plan-only run. The CronJob applies changes;
                 # use a local dry-run or a one-off Job with DRY_RUN=true to
                 # preview changes before merging inventory edits.
@@ -118,6 +137,8 @@ spec:
                 - name: images
                   mountPath: /images
                   readOnly: true
+                - name: media
+                  mountPath: /media
                 - name: tmp
                   mountPath: /tmp
               resources:
@@ -138,5 +159,8 @@ spec:
             - name: images
               configMap:
                 name: netbox-device-type-images
+            - name: media
+              persistentVolumeClaim:
+                claimName: netbox-media
             - name: tmp
               emptyDir: {}

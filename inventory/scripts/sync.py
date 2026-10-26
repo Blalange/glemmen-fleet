@@ -36,8 +36,10 @@ from pathlib import Path
 import pynetbox
 
 from inventory_util import SyncError, env_bool
+from dtl_catalog import DtlCatalog
 from sync_api import wait_for_netbox
 from sync_inventory import load_inventory
+from sync_catalog import enrich_inventory
 from sync_reconciler import Reconciler
 from sync_validate import validate_inventory
 
@@ -80,6 +82,24 @@ def main(argv: list[str] | None = None) -> int:
         help="re-upload device-type images even when the filename already matches",
     )
     parser.add_argument(
+        "--dtl",
+        dest="dtl",
+        action="store_true",
+        default=env_bool("DTL_ENABLED", True),
+        help="enrich device and module types from the NetBox Device Type Library",
+    )
+    parser.add_argument(
+        "--no-dtl",
+        dest="dtl",
+        action="store_false",
+        help="disable Device Type Library enrichment",
+    )
+    parser.add_argument(
+        "--dtl-cache",
+        default=os.environ.get("DTL_CACHE_DIR"),
+        help="optional DTL definition/image cache directory (default: DTL_CACHE_DIR)",
+    )
+    parser.add_argument(
         "--wait",
         type=int,
         default=int(os.environ.get("NETBOX_WAIT_SECONDS", "120")),
@@ -88,6 +108,29 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     inventory = load_inventory(Path(args.inventory))
+    if args.dtl:
+        catalog = DtlCatalog.from_env()
+        if args.dtl_cache:
+            catalog.cache_dir = Path(args.dtl_cache)
+        manufacturers = {
+            str(item.get("slug")): str(item.get("name"))
+            for item in inventory.get("manufacturers", []) or []
+            if isinstance(item, dict) and item.get("slug") and item.get("name")
+        }
+        report = enrich_inventory(
+            inventory,
+            catalog,
+            manufacturers=manufacturers,
+            fetch_images=not args.check,
+        )
+        print(f"DTL: {report.summary()}", file=sys.stderr)
+    else:
+        # Preserve previously applied catalog metadata/images when enrichment
+        # is explicitly disabled or unavailable.
+        for section in ("device_types", "module_types"):
+            for item in inventory.get(section, []) or []:
+                if isinstance(item, dict) and item.get("dtl"):
+                    item["_dtl_failed"] = True
     validate_inventory(inventory)
     if args.check:
         return 0

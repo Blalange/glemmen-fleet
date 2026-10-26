@@ -4,6 +4,7 @@ device_types:
   - manufacturer: dell
     model: PowerEdge R250
     slug: dell-poweredge-r250
+    dtl: device-types/Dell/PowerEdge-R250.yml
     u_height: 1
     is_full_depth: true
     part_number: R250
@@ -43,6 +44,7 @@ device_types:
   - manufacturer: dell
     model: PowerEdge R630
     slug: dell-poweredge-r630
+    dtl: device-types/Dell/PowerEdge-R630.yaml
     u_height: 1
     is_full_depth: true
     part_number: R630
@@ -92,6 +94,7 @@ device_types:
   - manufacturer: apc
     model: AP4423A
     slug: apc-ap4423a
+    dtl: device-types/APC/AP4423A.yaml
     u_height: 1
     is_full_depth: false
     part_number: AP4423A
@@ -106,6 +109,7 @@ device_types:
   - manufacturer: zyxel
     model: GS1920-24
     slug: zyxel-gs1920-24
+    dtl: device-types/Zyxel/GS1920-24.yaml
     u_height: 1
     is_full_depth: false
     part_number: GS1920-24
@@ -124,6 +128,7 @@ device_types:
   - manufacturer: ubiquiti
     model: UniFi Dream Machine Pro
     slug: ubiquiti-udm-pro
+    dtl: device-types/Ubiquiti/UniFi-Dream-Machine-Pro.yaml
     u_height: 1
     is_full_depth: false
     part_number: UDM-PRO
@@ -138,6 +143,7 @@ device_types:
   - manufacturer: ubiquiti
     model: UniFi Switch 24 Pro PoE Gen2
     slug: ubiquiti-usw-pro-24-poe
+    dtl: device-types/Ubiquiti/USW-Pro-24-PoE.yaml
     u_height: 1
     is_full_depth: false
     part_number: USW-Pro-24-POE
@@ -152,6 +158,7 @@ device_types:
   - manufacturer: ubiquiti
     model: UniFi Switch Flex Mini 2.5G
     slug: ubiquiti-usw-flex-2-5g-5
+    dtl: device-types/Ubiquiti/USW-Flex-2-5G-5.yaml
     u_height: 0
     is_full_depth: false
     part_number: USW-Flex-2-5G-5
@@ -170,6 +177,7 @@ device_types:
   - manufacturer: ubiquiti
     model: UniFi Switch Flex 2.5G 8 PoE
     slug: ubiquiti-usw-flex-2-5g-8-poe
+    dtl: device-types/Ubiquiti/USW-Flex-2-5G-8-PoE.yaml
     u_height: 0
     is_full_depth: false
     part_number: USW-Flex-2-5G-8-PoE
@@ -188,6 +196,7 @@ device_types:
   - manufacturer: ubiquiti
     model: UniFi Switch Flex Mini
     slug: ubiquiti-usw-flex-mini
+    dtl: device-types/Ubiquiti/USW-Flex-Mini.yaml
     u_height: 0
     is_full_depth: false
     part_number: USW-Flex-Mini
@@ -206,6 +215,7 @@ device_types:
   - manufacturer: ubiquiti
     model: US-8-150W
     slug: ubiquiti-us-8-poe-150w
+    dtl: device-types/Ubiquiti/US-8-150W.yaml
     u_height: 0
     is_full_depth: false
     part_number: US-8-150W
@@ -224,6 +234,7 @@ device_types:
   - manufacturer: ubiquiti
     model: U6 Pro
     slug: ubiquiti-u6-pro
+    dtl: device-types/Ubiquiti/U6-Pro.yaml
     u_height: 0
     is_full_depth: false
     part_number: U6-Pro

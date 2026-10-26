@@ -22,3 +22,6 @@ rclone-backup-config.yaml
 # Migration helper state (kubeconfig, dumps, downloads)
 scripts/migration-backup/
 scripts/bin/
+
+# Device Type Library runtime cache (never commit catalog data)
+inventory/.dtl-cache/

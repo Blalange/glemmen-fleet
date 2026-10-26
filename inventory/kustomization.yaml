@@ -5,6 +5,7 @@ configMapGenerator:
     files:
       - inventory_schema.py=scripts/inventory_schema.py
       - inventory_util.py=scripts/inventory_util.py
+      - dtl_catalog.py=scripts/dtl_catalog.py
       - sync.py=scripts/sync.py
       - sync_api.py=scripts/sync_api.py
       - sync_context.py=scripts/sync_context.py
@@ -13,7 +14,9 @@ configMapGenerator:
       - sync_inventory.py=scripts/sync_inventory.py
       - sync_meta.py=scripts/sync_meta.py
       - sync_network.py=scripts/sync_network.py
+      - sync_catalog.py=scripts/sync_catalog.py
       - sync_prune.py=scripts/sync_prune.py
+      - sync_templates.py=scripts/sync_templates.py
       - sync_reconciler.py=scripts/sync_reconciler.py
       - sync_validate.py=scripts/sync_validate.py
   - name: netbox-inventory-data

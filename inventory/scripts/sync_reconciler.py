@@ -9,11 +9,13 @@ from sync_images import ImagesMixin
 from sync_meta import MetaMixin
 from sync_network import NetworkMixin
 from sync_prune import PruneMixin
+from sync_templates import TemplatesMixin
 
 
 class Reconciler(
     MetaMixin,
     ImagesMixin,
+    TemplatesMixin,
     NetworkMixin,
     DevicesMixin,
     PruneMixin,

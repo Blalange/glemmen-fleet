@@ -17,9 +17,14 @@ class ImagesMixin:
     def _image_path(self, reference: Any) -> Path:
         if not reference:
             raise SyncError("empty image reference")
+        raw = Path(str(reference))
+        if raw.is_absolute():
+            if not raw.is_file():
+                raise SyncError(f"image file {raw} does not exist")
+            return raw
         if self.images_dir is None:
             raise SyncError("no image directory configured")
-        path = self.images_dir / Path(str(reference)).name
+        path = self.images_dir / raw.name
         if not path.is_file():
             raise SyncError(f"image file {path} does not exist")
         return path
@@ -63,9 +68,13 @@ class ImagesMixin:
 
     def sync_device_type_images(self, obj: Any, item: dict[str, Any]) -> None:
         images = item.get("images") or {}
+        catalog_images = item.get("_catalog_images") or {}
         for field in ("front", "rear"):
-            if images.get(field):
-                self._patch_device_type_image(obj, f"{field}_image", self._image_path(images[field]))
+            reference = images.get(field) or catalog_images.get(field)
+            if reference:
+                self._patch_device_type_image(
+                    obj, f"{field}_image", self._image_path(reference)
+                )
 
         desired_other = images.get("other") or []
         desired_names: set[str] = set()
@@ -137,9 +146,14 @@ class ImagesMixin:
                     f"HTTP {response.status_code}: {response.text[:300]}"
                 )
 
+        preserve_catalog_images = bool(item.get("_dtl_failed"))
         for attachment in existing:
             name = str(getattr(attachment, "name", ""))
             if name in desired_names:
+                continue
+            if preserve_catalog_images and name.startswith("DTL "):
+                # The catalog was unavailable this run; keep the previously
+                # uploaded elevation images instead of deleting them.
                 continue
             if not str(getattr(attachment, "description", "") or "").startswith("GitOps:"):
                 continue

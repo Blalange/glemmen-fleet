@@ -96,12 +96,12 @@ Flux is the source of truth for the cluster. Changes are made in Git and reconci
 - `inventory/generated/` is written by `inventory/scripts/collect.py` from UniFi, Talos, iDRAC Redfish and SNMP. Do not edit it by hand.
 - `inventory/manual/` is maintained by hand and owns models, rack layout, physical servers, accessories, manual cables and VIPs.
 
-The `netbox-sync` CronJob merges both layers, with manual values winning, and reconciles the result into NetBox. Every object created by the job carries the `gitops` tag; pruning only removes tagged objects and never touches objects created manually in NetBox.
+The `netbox-sync` CronJob merges both layers, with manual values winning, enriches device and module types from the public NetBox Device Type Library at runtime, and reconciles the result into NetBox. Every object created by the job carries the `gitops` tag; pruning only removes tagged objects and never touches objects created manually in NetBox.
 
 The collector and sync are separate processes:
 
 - The collector runs locally with access to UniFi, Talos, iDRAC and SNMP and commits the generated inventory.
-- The sync runs in Kubernetes with only the committed inventory, device images and a NetBox API token.
+- The sync runs in Kubernetes with the committed inventory, device images, a NetBox API token and an optional DTL definition/image cache on the media volume.
 
 ## History
 

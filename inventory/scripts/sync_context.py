@@ -136,10 +136,12 @@ class SyncContext:
         tags: Any = None,
         label: Any = None,
         compare_fields: Iterable[str] | None = None,
+        manage_tags: bool = True,
     ) -> Any:
         label = label if label is not None else kind
         data = dict(data)
-        data["tags"] = self.tag_ids(tags)
+        if manage_tags:
+            data["tags"] = self.tag_ids(tags)
 
         if existing is None:
             self.log("create", kind, label)
@@ -178,9 +180,18 @@ class SyncContext:
         data: dict[str, Any],
         tags: Any = None,
         label: Any = None,
+        manage_tags: bool = True,
     ) -> Any:
         existing = self.get_one(endpoint, lookup, kind)
-        return self.reconcile(kind, endpoint, existing, data, tags=tags, label=label or lookup)
+        return self.reconcile(
+            kind,
+            endpoint,
+            existing,
+            data,
+            tags=tags,
+            label=label or lookup,
+            manage_tags=manage_tags,
+        )
 
     def find_global_vlan(self, vid: int) -> Any:
         matches = [vlan for vlan in self.nb.ipam.vlans.filter(vid=vid) if vlan.site is None]

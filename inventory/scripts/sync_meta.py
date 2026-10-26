@@ -149,13 +149,26 @@ class MetaMixin:
                 "slug": slug,
                 "u_height": item.get("u_height", 1),
                 "is_full_depth": bool(item.get("is_full_depth", True)),
-                "part_number": item.get("part_number", ""),
-                "description": item.get("description", ""),
-                "comments": item.get("comments", ""),
-                "airflow": item.get("airflow") or "",
-                "weight": item.get("weight"),
-                "weight_unit": item.get("weight_unit") or "",
             }
+            # DTL enrichment is fetched at sync time. If the catalog is
+            # temporarily unavailable, keep the last NetBox values instead of
+            # clearing optional metadata just because the inventory item has no
+            # local copy.
+            managed_by_catalog = bool(item.get("dtl"))
+            optional = {
+                "part_number": "",
+                "description": "",
+                "comments": "",
+                "airflow": "",
+                "weight": None,
+                "weight_unit": "",
+                "subdevice_role": "",
+            }
+            for key, default in optional.items():
+                if managed_by_catalog and key not in item:
+                    continue
+                value = item.get(key, default)
+                data[key] = value or "" if key in {"airflow", "weight_unit"} else value
             obj = self.ensure(
                 "device_type",
                 self.nb.dcim.device_types,
@@ -167,6 +180,7 @@ class MetaMixin:
             self.device_types[slug] = obj
             self.desired["device_types"].add(slug)
             self.sync_device_type_images(obj, item)
+            self.sync_device_type_components(obj, item)
 
     def sync_module_types(self) -> None:
         if not self.module_profiles:
@@ -194,15 +208,23 @@ class MetaMixin:
             data: dict[str, Any] = {
                 "manufacturer": self.manufacturers[manufacturer].id,
                 "model": model,
-                "part_number": item.get("part_number", ""),
                 "profile": profile.id,
                 "attributes": item.get("attributes") or {},
-                "description": item.get("description", ""),
-                "comments": item.get("comments", ""),
-                "weight": item.get("weight"),
-                "weight_unit": item.get("weight_unit") or "",
                 "module_bay_types": bay_type_ids,
             }
+            managed_by_catalog = bool(item.get("dtl"))
+            optional = {
+                "part_number": "",
+                "description": "",
+                "comments": "",
+                "weight": None,
+                "weight_unit": "",
+            }
+            for key, default in optional.items():
+                if managed_by_catalog and key not in item:
+                    continue
+                value = item.get(key, default)
+                data[key] = value or "" if key == "weight_unit" else value
             obj = self.ensure(
                 "module_type",
                 self.nb.dcim.module_types,
@@ -213,6 +235,7 @@ class MetaMixin:
             )
             self.module_types[slug] = obj
             self.desired["module_types"].add((manufacturer, model))
+            self.sync_module_type_components(obj, item)
 
     def sync_racks(self) -> None:
         for item in self.inventory["racks"]:

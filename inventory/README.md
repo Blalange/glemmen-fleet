@@ -27,6 +27,7 @@ only writer. Objects created by hand in NetBox are never deleted by the sync.
 | `flux/apps/netbox/valkey.yaml` | Ephemeral Valkey `9.1.2` for the RQ queue and cache |
 | `flux/apps/netbox/sync-cronjob.yaml` | Runs the inventory sync every 10 minutes |
 | `inventory/scripts/sync.py` | NetBox reconciler entrypoint |
+| `inventory/scripts/dtl_catalog.py` | Runtime NetBox Device Type Library client |
 | `inventory/generated/` | Canonical compute and network facts from the collector |
 | `inventory/manual/` | Human-maintained inventory |
 | `inventory/scripts/` | Collector and sync code |
@@ -64,8 +65,9 @@ inventory/
 ├── scripts/
 │   ├── collect.py       # collector entrypoint
 │   ├── sync.py          # NetBox reconciler entrypoint
+│   ├── dtl_catalog.py   # Device Type Library runtime client
 │   ├── collector/       # source adapters, identity resolver, builders
-│   └── sync_*.py        # inventory merge, validation, NetBox resources
+│   └── sync_*.py        # merge, validation, templates and NetBox resources
 ├── images/              # device-type images
 └── tests/               # identity, merge and rendering tests
 ```
@@ -281,13 +283,14 @@ cannot be installed in a 2.5in bay).
 ### Device types and images
 
 Device types use real manufacturer/model names. `manual/device-types.yaml`
-references image files by name:
+can reference the community Device Type Library and image files by name:
 
 ```yaml
 device_types:
   - manufacturer: dell
     model: PowerEdge R250
     slug: dell-poweredge-r250
+    dtl: device-types/Dell/PowerEdge-R250.yml
     u_height: 1
     images:
       front: images/dell-poweredge-r250-front.jpg
@@ -303,6 +306,62 @@ API and stores additional images as `dcim.devicetype` image attachments. NetBox
 renames uploaded files, so the sync uploads an image once and leaves it alone
 on later runs. Use `--force-images` (or `FORCE_IMAGES=true`) to replace an
 image after changing its file.
+
+### Device Type Library enrichment
+
+The sync enriches device and module types from the Apache-2.0
+[NetBox Device Type Library](https://github.com/netbox-community/devicetype-library)
+at runtime. Definitions and elevation images are fetched into `DTL_CACHE_DIR`;
+no DTL data is committed to this repository.
+
+Set `dtl:` to the exact repository path when the model/path differs from our
+slug or when the DTL model name differs from ours:
+
+```yaml
+device_types:
+  - manufacturer: dell
+    model: PowerEdge R250
+    slug: dell-poweredge-r250
+    dtl: device-types/Dell/PowerEdge-R250.yml
+
+  - manufacturer: ubiquiti
+    model: U6 Pro
+    slug: ubiquiti-u6-pro
+    dtl: device-types/Ubiquiti/U6-Pro.yaml
+
+module_types:
+  - manufacturer: intel
+    model: E810-CQDA2
+    slug: intel-e810-cqda2
+    profile: Expansion card
+    dtl: module-types/Intel/E810-CQDA2.yaml
+```
+
+When `dtl` is omitted, the sync tries an exact manufacturer/model match against
+the DTL tree. DTL fills missing top-level metadata (`comments`, `description`,
+`part_number`, `weight`, `airflow`, etc.) and creates device/module component
+templates: interfaces, console ports, power ports, module bays and related
+ports. Manual values and manually declared components always win; DTL only
+fills gaps and adds components that are not already present.
+
+DTL elevation images are downloaded too. Manual `front`/`rear` images always
+win; DTL images fill a missing face. When a manual front/rear image already
+exists, the DTL elevation is still attached as an additional
+`DTL front elevation` / `DTL rear elevation` image attachment, so the catalog
+image is included without replacing curated images. The image cache lives
+under `DTL_CACHE_DIR/images`.
+
+Current DTL coverage is 11 of 14 device types. R515, IBM x3650 M3 and IBM
+Storwize V5000 have no exact DTL entries and remain manual. The current server
+CPU/RAM/disk module types are not in DTL either; module type enrichment works
+when a matching DTL module type is referenced.
+
+Enable it locally with `--dtl` (the default) or disable it with `--no-dtl`.
+The CronJob sets `DTL_ENABLED=true`. Controls are `DTL_REPO`, `DTL_REF`
+(default `master`), `DTL_CACHE_DIR`, `DTL_CACHE_TTL_HOURS` (default 24),
+`DTL_AUTO_LOOKUP`, `DTL_AUTO_MODULE_TYPES` (both default true) and
+`DTL_TOKEN` (optional; a GitHub token raises the API limit for the tree
+lookup).
 
 ## Topology views
 
@@ -352,6 +411,7 @@ kubectl -n netbox create secret generic netbox-secrets \
 | `secret_key`, `api_token_peppers`, `email_password` | NetBox Django config |
 | `db-password` | PostgreSQL and NetBox |
 | `valkey-password` | Valkey and NetBox |
+| `dtl_token` | Optional; GitHub token for DTL tree lookups |
 
 Read the generated admin password with:
 
@@ -427,8 +487,8 @@ Supported top-level keys:
 | `platforms` | Referenced by devices |
 | `device_roles` | Referenced by devices |
 | `module_bay_types` | Referenced by module types and device module bays |
-| `module_types` | Referenced by device modules; uses a built-in profile |
-| `device_types` | Referenced by devices; may declare `images` |
+| `module_types` | Referenced by device modules; may declare `dtl` and component templates |
+| `device_types` | Referenced by devices; may declare `dtl`, `images` and component templates |
 | `racks` | Rack definitions plus declarative `layout` |
 | `vlans` | Site-scoped or global |
 | `prefixes` | Optionally attached to a site and VLAN |
@@ -445,7 +505,8 @@ the address for IPs; and the two terminations for cables. Adding a `slug`
 explicitly is recommended.
 
 Not modelled yet: VRFs, tenants, virtual machines, wireless, circuits, custom
-fields, device-type interface templates and multi-termination cables.
+fields and multi-termination cables. Device-type and module-type component
+templates are synced from the manual layer and the Device Type Library.
 IP addresses are global (no VRF). Add those objects in the UI if needed; they
 will not carry the `gitops` tag and will not be pruned.
 
@@ -475,7 +536,8 @@ uv run --with pynetbox==7.9.0 --with PyYAML==6.0.3 --with requests==2.32.5 \
 ```
 
 `--check` validates references, unique keys, rack bounds and overlaps without
-contacting NetBox. `--dry-run` prints the exact create/update/delete plan.
+contacting NetBox (DTL enrichment is enabled by default; add `--no-dtl` for an offline check).
+`--dry-run` prints the exact create/update/delete plan.
 `--prune` is required for deletions; without it the sync only creates and
 updates. For rack moves that also delete an old device or cable, use `--prune`
 so the old reservations are released before the new objects are created.
