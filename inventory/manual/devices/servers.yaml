@@ -7,6 +7,9 @@ devices:
   - name: 240emy
     role: server
     device_type: dell-poweredge-r250
+    service_tag: HL51JZ3
+    redfish_ip: 192.168.4.240 # HL51JZ3
+    oob_ip: 192.168.4.240
     unifi_mac: 6c:3c:8c:75:3e:84
     unifi_ip: 192.168.6.181
     uplinks:
@@ -15,9 +18,24 @@ devices:
         port: 19
         type: cat6
 
+    interfaces:
+      - name: iDRAC
+        type: 1000base-t
+        enabled: true
+        mgmt_only: true
+        description: Dell iDRAC HL51JZ3 out-of-band management.
+        mac_address: 6c:3c:8c:75:3e:7e
+        untagged_vlan: 4
+        ip_addresses:
+          - address: 192.168.4.240/24
+            dns_name: idrac-hl51jz3
+
   - name: ubuntu-server
     role: server
     device_type: dell-poweredge-r250
+    service_tag: 8L51JZ3
+    redfish_ip: 192.168.4.230 # 8L51JZ3
+    oob_ip: 192.168.4.230
     unifi_mac: 6c:3c:8c:75:3b:f4
     unifi_ip: 192.168.6.230
     uplinks:
@@ -26,9 +44,24 @@ devices:
         port: 20
         type: cat6
 
+    interfaces:
+      - name: iDRAC
+        type: 1000base-t
+        enabled: true
+        mgmt_only: true
+        description: Dell iDRAC 8L51JZ3 out-of-band management.
+        mac_address: 6c:3c:8c:75:3b:ee
+        untagged_vlan: 4
+        ip_addresses:
+          - address: 192.168.4.230/24
+            dns_name: idrac-8l51jz3
+
   - name: server220
     role: server
     device_type: dell-poweredge-r250
+    service_tag: 7L51JZ3
+    redfish_ip: 192.168.4.220 # 7L51JZ3
+    oob_ip: 192.168.4.220
     unifi_mac: 6c:3c:8c:75:3c:3c
     unifi_ip: 192.168.6.133
     uplinks:
@@ -37,9 +70,24 @@ devices:
         port: 23
         type: cat6
 
+    interfaces:
+      - name: iDRAC
+        type: 1000base-t
+        enabled: true
+        mgmt_only: true
+        description: Dell iDRAC 7L51JZ3 out-of-band management.
+        mac_address: 6c:3c:8c:75:3c:36
+        untagged_vlan: 4
+        ip_addresses:
+          - address: 192.168.4.220/24
+            dns_name: idrac-7l51jz3
+
   - name: glemmen210
     role: server
     device_type: dell-poweredge-r250
+    service_tag: BL51JZ3
+    redfish_ip: 192.168.4.210 # BL51JZ3
+    oob_ip: 192.168.4.210
     unifi_mac: 6c:3c:8c:75:3c:f4
     unifi_ip: 192.168.6.68
     uplinks:
@@ -47,6 +95,18 @@ devices:
         switch: USW Pro 24 PoE
         port: 22
         type: cat6
+
+    interfaces:
+      - name: iDRAC
+        type: 1000base-t
+        enabled: true
+        mgmt_only: true
+        description: Dell iDRAC BL51JZ3 out-of-band management.
+        mac_address: 6c:3c:8c:75:3c:ee
+        untagged_vlan: 4
+        ip_addresses:
+          - address: 192.168.4.210/24
+            dns_name: idrac-bl51jz3
 
   - name: server200
     role: server
@@ -57,6 +117,9 @@ devices:
   - name: server190
     role: server
     device_type: dell-poweredge-r250
+    service_tag: 3L51JZ3
+    redfish_ip: 192.168.4.190 # 3L51JZ3
+    oob_ip: 192.168.4.190
     unifi_mac: 6c:3c:8c:75:3c:c4
     unifi_ip: 192.168.6.190
     uplinks:
@@ -65,9 +128,24 @@ devices:
         port: 21
         type: cat6
 
+    interfaces:
+      - name: iDRAC
+        type: 1000base-t
+        enabled: true
+        mgmt_only: true
+        description: Dell iDRAC 3L51JZ3 out-of-band management.
+        mac_address: 6c:3c:8c:75:3c:be
+        untagged_vlan: 4
+        ip_addresses:
+          - address: 192.168.4.190/24
+            dns_name: idrac-3l51jz3
+
   - name: LeanderWin10
     role: server
     device_type: dell-poweredge-r250
+    service_tag: 9L51JZ3
+    redfish_ip: 192.168.4.140 # 9L51JZ3
+    oob_ip: 192.168.4.140
     contacts:
       - contact: Eric
         role: technical-contact
@@ -79,9 +157,24 @@ devices:
         port: 18
         type: cat6
 
+    interfaces:
+      - name: iDRAC
+        type: 1000base-t
+        enabled: true
+        mgmt_only: true
+        description: Dell iDRAC 9L51JZ3 out-of-band management.
+        mac_address: 6c:3c:8c:75:43:46
+        untagged_vlan: 4
+        ip_addresses:
+          - address: 192.168.4.140/24
+            dns_name: idrac-9l51jz3
+
   - name: server120
     role: server
     device_type: dell-poweredge-r250
+    service_tag: JL51JZ3
+    redfish_ip: 192.168.4.120 # JL51JZ3
+    oob_ip: 192.168.4.120
     unifi_mac: 6c:3c:8c:75:37:64
     unifi_ip: 192.168.6.120
     uplinks:
@@ -90,15 +183,46 @@ devices:
         port: 17
         type: cat6
 
+    interfaces:
+      - name: iDRAC
+        type: 1000base-t
+        enabled: true
+        mgmt_only: true
+        description: Dell iDRAC JL51JZ3 out-of-band management.
+        mac_address: 6c:3c:8c:75:37:5e
+        untagged_vlan: 4
+        ip_addresses:
+          - address: 192.168.4.120/24
+            dns_name: idrac-jl51jz3
+
   - name: server110
     role: server
     device_type: dell-poweredge-r250
+    service_tag: CL51JZ3
+    redfish_ip: 192.168.4.110 # CL51JZ3
+    oob_ip: 192.168.4.110
     status: offline
-    description: Physical server between server120 and dellserver01. No management address known.
+    description: Physical server between server120 and dellserver01.
+    unifi_mac: 6c:3c:8c:75:37:84
+
+    interfaces:
+      - name: iDRAC
+        type: 1000base-t
+        enabled: true
+        mgmt_only: true
+        description: Dell iDRAC CL51JZ3 out-of-band management.
+        mac_address: 6c:3c:8c:75:47:86
+        untagged_vlan: 4
+        ip_addresses:
+          - address: 192.168.4.110/24
+            dns_name: idrac-cl51jz3
 
   - name: dellserver01
     role: server
     device_type: dell-poweredge-r250
+    service_tag: 5L51JZ3
+    redfish_ip: 192.168.4.100 # 5L51JZ3
+    oob_ip: 192.168.4.100
     unifi_mac: 6c:3c:8c:75:3a:44
     unifi_ip: 192.168.6.100
     uplinks:
@@ -106,6 +230,18 @@ devices:
         switch: USW Pro 24 PoE
         port: 16
         type: cat6
+
+    interfaces:
+      - name: iDRAC
+        type: 1000base-t
+        enabled: true
+        mgmt_only: true
+        description: Dell iDRAC 5L51JZ3 out-of-band management.
+        mac_address: 6c:3c:8c:75:3a:3e
+        untagged_vlan: 4
+        ip_addresses:
+          - address: 192.168.4.100/24
+            dns_name: idrac-5l51jz3
 
   - name: server70
     role: server

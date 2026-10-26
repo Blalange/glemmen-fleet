@@ -26,10 +26,16 @@ the UDM Pro's inter-VLAN routing (same firewall zone, no rules).
 | 3 | iDRAC `4L51JZ3` | 4, untagged |
 | 4 | iDRAC `6L51JZ3` | 4, untagged |
 | 5 | iDRAC `2L51JZ3` | 4, untagged |
-| 6 | server accessory (MAC `5c:f3:fc:de:12:3d`) | 4, untagged |
+| 6 | iDRAC `9L51JZ3` | 4, untagged |
 | 7 | link up, no MAC learned yet | 4, untagged |
 | 8 | management laptop / access device | 4, untagged (PVID 4) |
-| 9-27 | spare access ports | 4, untagged (PVID 4) |
+| 9 | iDRAC `CL51JZ3` | 4, untagged |
+| 10 | iDRAC `JL51JZ3` | 4, untagged |
+| 11 | iDRAC `8L51JZ3` | 4, untagged |
+| 12 | iDRAC `7L51JZ3` | 4, untagged |
+| 13 | iDRAC `BL51JZ3` | 4, untagged |
+| 14 | iDRAC `3L51JZ3` | 4, untagged |
+| 15-27 | spare access ports | 4, untagged (PVID 4) |
 | 28 | UDM Pro port 8 | 1 untagged (PVID 1) + 4 tagged |
 
 The UDM Pro port 8 is configured with the **Default** network as its native
@@ -57,7 +63,8 @@ Access ports use `frame-type untagged`; the uplink uses the default
 - The APC automatic transfer switch has a fixed DHCP reservation at
   `192.168.4.3` (UniFi Network -> client MAC `00:c0:b7:f4:7e:d0`).
 - The iDRACs and IBM IMM are on VLAN 4 at `192.168.4.50`, `.60`, `.80`,
-  `.130`, `.150`, `.160`, `.170` and `.180`.
+  `.100`, `.110`, `.120`, `.130`, `.140`, `.150`, `.160`, `.170`, `.180`,
+  `.190`, `.210`, `.220`, `.230` and `.240`.
 - The switch itself is static at `192.168.4.2`.
 
 ## Configuration backup
