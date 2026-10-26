@@ -42,7 +42,7 @@ metadata:
     app.kubernetes.io/instance: nodeodx-glemmen50
 spec:
   serviceName: nodeodx-hl
-  replicas: 1
+  replicas: 0
   selector:
     matchLabels:
       app.kubernetes.io/name: nodeodx
@@ -102,7 +102,7 @@ metadata:
     app.kubernetes.io/instance: nodeodx-glemmen60
 spec:
   serviceName: nodeodx-hl
-  replicas: 1
+  replicas: 0
   selector:
     matchLabels:
       app.kubernetes.io/name: nodeodx
@@ -159,7 +159,7 @@ metadata:
     app.kubernetes.io/instance: nodeodx-glemmen80
 spec:
   serviceName: nodeodx-hl
-  replicas: 1
+  replicas: 0
   selector:
     matchLabels:
       app.kubernetes.io/name: nodeodx
