@@ -10,7 +10,7 @@ Git is the source of truth. The inventory is split into two layers:
   nodes, iDRAC Redfish endpoints and SNMP network devices. Do not edit it by hand.
 - `inventory/manual/` is edited by hand. It owns everything that is not
   discoverable: real device models, the physical rack layout, physical servers,
-  accessories, hand-documented cables and VIPs.
+  accessories, hand-documented cables, VIPs and ownership.
 
 The `netbox-sync` CronJob merges both layers every 10 minutes and reconciles
 the result into NetBox. Manual values win when the same object appears in both
@@ -61,7 +61,8 @@ inventory/
 │   ├── racks.yaml       # rack height and top-to-bottom layout
 │   ├── devices/         # Talos, servers, network, storage and power devices
 │   ├── cables.yaml      # manual cables not discoverable from UniFi
-│   └── ipam.yaml        # VIPs and standalone addresses
+│   ├── ipam.yaml        # VIPs and standalone addresses
+│   └── owners.yaml      # manual owner groups and owners
 ├── scripts/
 │   ├── collect.py       # collector entrypoint
 │   ├── sync.py          # NetBox reconciler entrypoint
@@ -164,6 +165,30 @@ Each entry is a device name, or `gap: N` for empty units. An optional
 
 Moving a device is a one-line layout change; everything above/below follows.
 Changing the rack height means editing `u_height` and the layout together.
+
+### Ownership
+
+Owners and owner groups are maintained only in the manual inventory; the
+collector never discovers them. NetBox stores them in the users app, and every
+owner can optionally belong to one owner group:
+
+```yaml
+owner_groups:
+  - name: Elev
+
+owners:
+  - name: Simon Bråten
+    group: Elev
+
+devices:
+  - name: glemmen130
+    owner: Simon Bråten
+```
+
+Owner groups only organize owners; they do not inherit ownership. The sync
+creates owner groups before owners and resolves each device `owner` by name.
+Owners and owner groups cannot carry NetBox tags, so the sync creates and
+updates them but never prunes them.
 
 ### Physical servers and accessories
 
@@ -467,12 +492,13 @@ The generated layer contains:
   writes the detailed report as JSON
 
 Manual files contain the rest: real models, device-type images, module types,
-rack layout, physical devices, accessories, manual cables and VIPs.
+rack layout, physical devices, accessories, manual cables, VIPs and owners.
 
-The CronJob tags every object it creates with `gitops`. With `PRUNE=true`, it
-deletes objects that still carry that tag but are no longer present in the
-inventory. Objects without the tag are left alone, so manual additions are
-safe.
+The CronJob tags every taggable object it creates with `gitops`. With
+`PRUNE=true`, it deletes objects that still carry that tag but are no longer
+present in the inventory. Objects without the tag are left alone, so manual
+additions are safe. Owner groups and owners are not taggable and are therefore
+never pruned.
 
 Supported top-level keys:
 
@@ -486,6 +512,8 @@ Supported top-level keys:
 | `manufacturers` | Referenced by device types and platforms |
 | `platforms` | Referenced by devices |
 | `device_roles` | Referenced by devices |
+| `owner_groups` | Optional groups for owners; manual-only |
+| `owners` | Referenced by devices via `owner`; manual-only |
 | `module_bay_types` | Referenced by module types and device module bays |
 | `module_types` | Referenced by device modules; may declare `dtl` and component templates |
 | `device_types` | Referenced by devices; may declare `dtl`, `images` and component templates |
@@ -498,11 +526,11 @@ Supported top-level keys:
 | `defaults` | Inherited by every device (site, tags, etc.) |
 
 Natural keys used for matching are slugs for sites, manufacturers, platforms,
-roles, module bay types and device types; `(site, name)` for racks;
-`(site, vid)` for VLANs; the prefix for prefixes; the device name for devices;
-`(device, name)` for interfaces and module bays; `(device, bay)` for modules;
-the address for IPs; and the two terminations for cables. Adding a `slug`
-explicitly is recommended.
+roles, module bay types and device types; names for owner groups and owners;
+`(site, name)` for racks; `(site, vid)` for VLANs; the prefix for prefixes; the
+device name for devices; `(device, name)` for interfaces and module bays;
+`(device, bay)` for modules; the address for IPs; and the two terminations for
+cables. Adding a `slug` explicitly is recommended.
 
 Not modelled yet: VRFs, tenants, virtual machines, wireless, circuits, custom
 fields and multi-termination cables. Device-type and module-type component

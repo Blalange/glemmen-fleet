@@ -7,9 +7,10 @@ devices:
   - name: glemmen130
     role: control-plane
     device_type: dell-poweredge-r250
+    owner: Simon Bråten
     talos_node: glemmen130
     service_tag: 6L51JZ3
-    idrac_ip: 192.168.4.130  # 6L51JZ3
+    idrac_ip: 192.168.4.130 # 6L51JZ3
     oob_ip: 192.168.4.130
     uplinks:
       - interface: eno8303
@@ -35,9 +36,10 @@ devices:
   - name: glemmen150
     role: control-plane
     device_type: dell-poweredge-r250
+    owner: Simon Bråten
     talos_node: glemmen150
     service_tag: FL51JZ3
-    idrac_ip: 192.168.4.150  # FL51JZ3
+    idrac_ip: 192.168.4.150 # FL51JZ3
     oob_ip: 192.168.4.150
     uplinks:
       - interface: eno8303
@@ -63,10 +65,11 @@ devices:
   - name: glemmen160
     role: control-plane
     device_type: dell-poweredge-r250
+    owner: Simon Bråten
     talos_node: glemmen160
     service_tag: DL51JZ3
-    idrac_ip: 192.168.4.91  # DL51JZ3
-    oob_ip: 192.168.4.91
+    idrac_ip: 192.168.4.160 # DL51JZ3
+    oob_ip: 192.168.4.160
     uplinks:
       - interface: eno8303
         switch: USW Pro 24 PoE
@@ -86,15 +89,16 @@ devices:
         mac_address: 6c:3c:8c:75:45:06
         untagged_vlan: 4
         ip_addresses:
-          - address: 192.168.4.91/24
+          - address: 192.168.4.160/24
             dns_name: idrac-dl51jz3
   - name: glemmen170
     role: control-plane
     device_type: dell-poweredge-r250
+    owner: Simon Bråten
     talos_node: glemmen170
     service_tag: 4L51JZ3
-    idrac_ip: 192.168.4.247  # 4L51JZ3
-    oob_ip: 192.168.4.247
+    idrac_ip: 192.168.4.170 # 4L51JZ3
+    oob_ip: 192.168.4.170
     uplinks:
       - interface: eno8303
         switch: USW Pro 24 PoE
@@ -114,15 +118,16 @@ devices:
         mac_address: 6c:3c:8c:75:3c:ae
         untagged_vlan: 4
         ip_addresses:
-          - address: 192.168.4.247/24
+          - address: 192.168.4.170/24
             dns_name: idrac-4l51jz3
   - name: glemmen180
     role: control-plane
     device_type: dell-poweredge-r250
+    owner: Simon Bråten
     talos_node: glemmen180
     service_tag: 2L51JZ3
-    idrac_ip: 192.168.4.135  # 2L51JZ3
-    oob_ip: 192.168.4.135
+    idrac_ip: 192.168.4.180 # 2L51JZ3
+    oob_ip: 192.168.4.180
     uplinks:
       - interface: eno8303
         switch: USW Pro 24 PoE
@@ -142,11 +147,12 @@ devices:
         mac_address: 6c:3c:8c:75:3c:3e
         untagged_vlan: 4
         ip_addresses:
-          - address: 192.168.4.135/24
+          - address: 192.168.4.180/24
             dns_name: idrac-2l51jz3
   - name: glemmen50
     role: worker
     device_type: ibm-system-x3650-m3
+    owner: Simon Bråten
     talos_node: glemmen50
     service_tag: KD65TTR
     uplinks:
@@ -158,6 +164,7 @@ devices:
   - name: glemmen60
     role: worker
     device_type: dell-poweredge-r515
+    owner: Simon Bråten
     talos_node: glemmen60
     service_tag: JVCJGZ1
     uplinks:
@@ -169,6 +176,7 @@ devices:
   - name: glemmen80
     role: worker
     device_type: dell-poweredge-r630
+    owner: Simon Bråten
     talos_node: glemmen80
     service_tag: 9SYD132
     uplinks:
@@ -176,4 +184,3 @@ devices:
         switch: USW Pro 24 PoE
         port: 26
         type: dac-passive
-

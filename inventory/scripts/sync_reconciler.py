@@ -27,6 +27,8 @@ class Reconciler(
         self.sync_manufacturers()
         self.sync_platforms()
         self.sync_device_roles()
+        self.sync_owner_groups()
+        self.sync_owners()
         self.sync_module_bay_types()
         self.sync_device_types()
         self.sync_module_types()

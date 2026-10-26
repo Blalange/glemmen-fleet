@@ -27,8 +27,9 @@ kubectl -n netbox get secret netbox-secrets \
 ## Sync job
 
 `sync-cronjob.yaml` runs the entrypoint from the `netbox-sync-code` ConfigMap
-every 10 minutes. `PRUNE=true` removes only objects tagged `gitops`; objects
-created manually in NetBox are never touched.
+every 10 minutes. `PRUNE=true` removes only taggable objects tagged `gitops`;
+objects created manually in NetBox are never touched. Owners and owner groups
+are not taggable and are never pruned.
 
 The job reads public NetBox Device Type Library definitions and elevation
 images at runtime (`DTL_ENABLED`) and caches them under `/media/dtl-cache` on

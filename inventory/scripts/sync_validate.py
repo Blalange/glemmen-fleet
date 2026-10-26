@@ -50,6 +50,16 @@ def validate_inventory(inventory: dict[str, list[Any]]) -> None:
         "device_roles",
         lambda item: item.get("slug") or slugify(require(item, "name", "device role")),
     )
+    owner_groups = index(
+        inventory["owner_groups"],
+        "owner_groups",
+        lambda item: require(item, "name", "owner group"),
+    )
+    owners = index(
+        inventory["owners"],
+        "owners",
+        lambda item: require(item, "name", "owner"),
+    )
     device_types = index(
         inventory["device_types"],
         "device_types",
@@ -81,6 +91,11 @@ def validate_inventory(inventory: dict[str, list[Any]]) -> None:
         manufacturer = item.get("manufacturer")
         if manufacturer and manufacturer not in manufacturers:
             raise SyncError(f"platform {item.get('name')!r}: unknown manufacturer {manufacturer!r}")
+
+    for item in inventory["owners"]:
+        group = item.get("group")
+        if group and group not in owner_groups:
+            raise SyncError(f"owner {item.get('name')!r}: unknown owner group {group!r}")
 
     for item in inventory["device_types"]:
         manufacturer = require(item, "manufacturer", "device type")
@@ -162,6 +177,9 @@ def validate_inventory(inventory: dict[str, list[Any]]) -> None:
             raise SyncError(f"device {name}: unknown device type {device_type!r}")
         if platform and platform not in platforms:
             raise SyncError(f"device {name}: unknown platform {platform!r}")
+        owner = device.get("owner")
+        if owner and owner not in owners:
+            raise SyncError(f"device {name}: unknown owner {owner!r}")
         if rack and (site, rack) not in racks:
             raise SyncError(f"device {name}: unknown rack {rack!r} in site {site!r}")
         if not rack and (device.get("position") is not None or device.get("face")):

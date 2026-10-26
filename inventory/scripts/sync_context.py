@@ -45,6 +45,8 @@ class SyncContext:
         self.manufacturers: dict[str, Any] = {}
         self.platforms: dict[str, Any] = {}
         self.roles: dict[str, Any] = {}
+        self.owner_groups: dict[str, Any] = {}
+        self.owners: dict[str, Any] = {}
         self.device_types: dict[str, Any] = {}
         self.module_bay_types: dict[str, Any] = {}
         self.module_profiles: dict[str, Any] = {}

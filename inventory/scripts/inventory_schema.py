@@ -13,6 +13,8 @@ SECTIONS = (
     "manufacturers",
     "platforms",
     "device_roles",
+    "owner_groups",
+    "owners",
     "device_types",
     "module_bay_types",
     "module_types",

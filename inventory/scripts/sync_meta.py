@@ -106,6 +106,51 @@ class MetaMixin:
             self.roles[slug] = obj
             self.desired["device_roles"].add(slug)
 
+    def sync_owner_groups(self) -> None:
+        # Owners and owner groups are administrative models in NetBox and are
+        # not taggable, so they are created/updated but never pruned.
+        for item in self.inventory["owner_groups"]:
+            name = str(require(item, "name", "owner group"))
+            data: dict[str, Any] = {
+                "name": name,
+                "description": item.get("description", ""),
+            }
+            obj = self.ensure(
+                "owner_group",
+                self.nb.users.owner_groups,
+                {"name": name},
+                data,
+                label=f"owner_group/{name}",
+                manage_tags=False,
+            )
+            self.owner_groups[name] = obj
+            self.desired["owner_groups"].add(name)
+
+    def sync_owners(self) -> None:
+        for item in self.inventory["owners"]:
+            name = str(require(item, "name", "owner"))
+            group = None
+            group_name = item.get("group")
+            if group_name:
+                group = self.owner_groups.get(str(group_name))
+                if group is None:
+                    raise SyncError(f"owner {name!r}: unknown owner group {group_name!r}")
+            data: dict[str, Any] = {
+                "name": name,
+                "description": item.get("description", ""),
+                "group": group.id if group else None,
+            }
+            obj = self.ensure(
+                "owner",
+                self.nb.users.owners,
+                {"name": name},
+                data,
+                label=f"owner/{name}",
+                manage_tags=False,
+            )
+            self.owners[name] = obj
+            self.desired["owners"].add(name)
+
     def sync_module_bay_types(self) -> None:
         for item in self.inventory["module_bay_types"]:
             name = require(item, "name", "module bay type")

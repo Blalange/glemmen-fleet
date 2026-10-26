@@ -2,9 +2,10 @@
 # writer to NetBox: the UI is anonymous read-only, and the superuser exists so
 # a human can correct data or use the web UI when needed.
 #
-# Every object created by this job is tagged "gitops". With PRUNE=true, objects
-# that carry that tag but are no longer in the inventory are deleted; anything
-# created by hand (without the tag) is never touched.
+# Every taggable object created by this job is tagged "gitops". With PRUNE=true,
+# objects that carry that tag but are no longer in the inventory are deleted;
+# anything created by hand (without the tag) is never touched. Owner groups and
+# owners cannot be tagged, so they are created/updated but never pruned.
 #
 # The job is intentionally self-contained: the Python image is standard, and
 # an init container installs the pinned dependencies into an emptyDir.

@@ -18,6 +18,7 @@ devices:
   - name: zyxel-gs1920-24
     role: switch
     device_type: zyxel-gs1920-24
+    owner: Simon Bråten
     status: active
     description: Zyxel GS1920-24, firmware V4.10(AAOB.5); server-accessory switch on VLAN 4.
     snmp_ip: 192.168.4.2

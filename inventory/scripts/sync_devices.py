@@ -83,6 +83,13 @@ class DevicesMixin:
                 if platform is None:
                     raise SyncError(f"device {name}: unknown platform {platform_slug!r}")
 
+            owner = None
+            owner_name = item.get("owner")
+            if owner_name:
+                owner = self.owners.get(str(owner_name))
+                if owner is None:
+                    raise SyncError(f"device {name}: unknown owner {owner_name!r}")
+
             data: dict[str, Any] = {
                 "name": name,
                 "site": self.sites[site_slug].id,
@@ -97,6 +104,7 @@ class DevicesMixin:
                 "face": face or "",
                 "serial": item.get("serial", ""),
                 "asset_tag": item.get("asset_tag"),
+                "owner": owner.id if owner else None,
                 "description": item.get("description", ""),
                 "comments": item.get("comments", ""),
             }

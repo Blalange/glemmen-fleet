@@ -5,6 +5,7 @@ devices:
   - name: apc-ats
     role: power
     device_type: apc-ap4423a
+    owner: Simon Bråten
     status: active
     description: APC automatic transfer switch between server80 and server100.
     interfaces:
