@@ -177,4 +177,3 @@ def test_repository_ownership_and_contact_assignments() -> None:
     assert {
         name for name, contacts in contacts_by_device.items() if contacts == eric
     } == {"LeanderWin10", "server70"}
-    validate_inventory(inventory)

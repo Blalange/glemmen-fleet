@@ -6,20 +6,27 @@ import ipaddress
 import json
 import re
 import subprocess
-import sys
 from pathlib import Path
 from typing import Any
 
 import yaml
 
+from ..log import get_logger
 from ..process import kubectl_command, run
+
+log = get_logger(__name__)
 
 
 def read_nodes(kubectl: str, kubeconfig: str | None, nodes_json: str | None) -> list[dict]:
     if nodes_json:
-        return json.loads(Path(nodes_json).read_text(encoding="utf-8-sig"))["items"]
-    raw = run(kubectl_command(kubectl, kubeconfig, "get", "nodes", "-o", "json"))
-    return json.loads(raw)["items"]
+        log.debug("Talos: reading node list from %s", nodes_json)
+        nodes = json.loads(Path(nodes_json).read_text(encoding="utf-8-sig"))["items"]
+    else:
+        log.debug("Talos: reading node list from kubectl")
+        raw = run(kubectl_command(kubectl, kubeconfig, "get", "nodes", "-o", "json"))
+        nodes = json.loads(raw)["items"]
+    log.debug("Talos: node list contains %d node(s)", len(nodes))
+    return nodes
 
 def talosctl_command(talosctl: str, talosconfig: str | None, node: str, *args: str) -> list[str]:
     cmd = [talosctl]
@@ -64,7 +71,7 @@ def talos_table(talosctl: str, talosconfig: str | None, node: str, resource: str
     try:
         raw = run(talosctl_command(talosctl, talosconfig, node, "get", resource, "-o", "json"))
     except (subprocess.CalledProcessError, OSError) as exc:
-        print(f"WARNING: talosctl get {resource} on {node} failed: {exc}", file=sys.stderr)
+        log.warning("talosctl get %s on %s failed: %s", resource, node, exc)
         return []
     decoder = json.JSONDecoder()
     items: list[dict] = []
@@ -86,6 +93,7 @@ def talos_table(talosctl: str, talosconfig: str | None, node: str, resource: str
             items.append(payload)
         elif isinstance(payload, list):
             items.extend(item for item in payload if isinstance(item, dict))
+    log.debug("talosctl get %s on %s returned %d item(s)", resource, node, len(items))
     return items
 
 def disk_serial(spec: dict) -> str:

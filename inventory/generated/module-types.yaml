@@ -75,3 +75,77 @@ module_types:
   - drive-3-5
   part_number: ST2000DM008-2FR1
   description: Disk drive
+- manufacturer: intel
+  model: Intel Xeon CPU E5-1650 v3 @ 3.50GHz
+  slug: intel-xeon-cpu-e5-1650-v3-3-50ghz
+  profile: CPU
+  attributes:
+    cores: 6
+    speed: 4.0
+    architecture: x86-64
+  bay_types:
+  - cpu-socket
+  part_number: Intel Xeon CPU E5-1650 v3 @ 3.50GHz
+  description: Processor
+- manufacturer: generic
+  model: M393A2G40DB0-CPB
+  slug: generic-m393a2g40db0-cpb
+  profile: Memory
+  attributes:
+    size: 16
+    class: DDR4
+    ecc: true
+    data_rate: 1866
+  bay_types:
+  - dimm-ddr4
+  part_number: M393A2G40DB0-CPB
+  description: Memory module
+- manufacturer: generic
+  model: HMA42GR7MFR4N-TF
+  slug: generic-hma42gr7mfr4n-tf
+  profile: Memory
+  attributes:
+    size: 16
+    class: DDR4
+    ecc: true
+    data_rate: 1866
+  bay_types:
+  - dimm-ddr4
+  part_number: HMA42GR7MFR4N-TF
+  description: Memory module
+- manufacturer: generic
+  model: ST91000640NS
+  slug: generic-st91000640ns
+  profile: Hard disk
+  attributes:
+    size: 999
+    type: HD
+    speed: 7200
+  bay_types:
+  - drive-2-5
+  part_number: ST91000640NS
+  description: Disk drive
+- manufacturer: generic
+  model: WDC WD10JFCX 68N
+  slug: generic-wdc-wd10jfcx-68n
+  profile: Hard disk
+  attributes:
+    size: 999
+    type: HD
+    speed: 5400
+  bay_types:
+  - drive-2-5
+  part_number: WDC WD10JFCX 68N
+  description: Disk drive
+- manufacturer: dell
+  model: PWR SPLY,495W,RDNT,DELTA
+  slug: dell-pwr-sply-495w-rdnt-delta
+  profile: Power supply
+  attributes:
+    input_current: AC
+    input_voltage: 230
+    hot_swappable: true
+  bay_types:
+  - power-supply
+  part_number: 'PWR SPLY,495W,RDNT,DELTA      '
+  description: Hot-swap power supply

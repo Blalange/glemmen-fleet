@@ -164,6 +164,8 @@ devices:
     device_type: ibm-system-x3650-m3
     talos_node: glemmen50
     service_tag: KD65TTR
+    idrac_ip: 192.168.4.50
+    oob_ip: 192.168.4.50
     contacts:
       - contact: Simon Bråten
         role: technical-contact
@@ -178,6 +180,8 @@ devices:
     device_type: dell-poweredge-r515
     talos_node: glemmen60
     service_tag: JVCJGZ1
+    idrac_ip: 192.168.4.60
+    oob_ip: 192.168.4.60
     contacts:
       - contact: Simon Bråten
         role: technical-contact
@@ -192,6 +196,8 @@ devices:
     device_type: dell-poweredge-r630
     talos_node: glemmen80
     service_tag: 9SYD132
+    idrac_ip: 192.168.4.80
+    oob_ip: 192.168.4.80
     contacts:
       - contact: Simon Bråten
         role: technical-contact

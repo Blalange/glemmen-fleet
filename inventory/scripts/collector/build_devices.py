@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import sys
 from pathlib import Path
 from typing import Any
 
@@ -20,6 +19,7 @@ from .hardware import (
     normalize_manufacturer,
     register_module_type,
 )
+from .log import get_logger
 from .sources.talos import (
     cpu_cores,
     memory_gib,
@@ -29,6 +29,8 @@ from .sources.talos import (
     node_link_macs,
     talos_table,
 )
+
+log = get_logger(__name__)
 
 
 def build_servers(
@@ -144,6 +146,13 @@ def build_servers(
             server["module_bays"] = module_bays
         if modules:
             server["modules"] = modules
+        log.debug(
+            "Built server %s: interfaces=%d, module_bays=%d, modules=%d",
+            name,
+            len(interfaces),
+            len(module_bays),
+            len(modules),
+        )
         servers.append(server)
 
     # Devices that are not UniFi clients or Talos nodes, but do have Redfish
@@ -167,6 +176,12 @@ def build_servers(
         )
         if not modules:
             continue
+        log.debug(
+            "Built Redfish-only server %s: module_bays=%d, modules=%d",
+            name,
+            len(module_bays),
+            len(modules),
+        )
         servers.append(
             {
                 "name": name,
@@ -224,7 +239,7 @@ def build_nodes(
                 None,
             )
         if manual_device is None:
-            print(f"WARNING: Talos node {name} has no manual device entry", file=sys.stderr)
+            log.warning("Talos node %s has no manual device entry", name)
         device_name = str((manual_device or {}).get("name") or name)
 
         internal_ip = None
@@ -427,5 +442,12 @@ def build_nodes(
             device_entry["module_bays"] = module_bays
         if modules:
             device_entry["modules"] = modules
+        log.debug(
+            "Built Talos node %s: interfaces=%d, module_bays=%d, modules=%d",
+            device_name,
+            len(interfaces),
+            len(module_bays),
+            len(modules),
+        )
         result.append(device_entry)
     return result

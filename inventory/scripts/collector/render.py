@@ -7,6 +7,10 @@ from typing import Any
 
 import yaml
 
+from .log import get_logger
+
+log = get_logger(__name__)
+
 
 def write_yaml(path: Path, sections: dict[str, Any], title: str) -> None:
     header = (
@@ -19,3 +23,7 @@ def write_yaml(path: Path, sections: dict[str, Any], title: str) -> None:
         header + yaml.safe_dump({"layer": "generated", **sections}, sort_keys=False, allow_unicode=True),
         encoding="utf-8",
     )
+    details = ", ".join(
+        f"{key}={len(value)}" for key, value in sections.items() if isinstance(value, list)
+    )
+    log.info("Wrote %s%s", path, f" ({details})" if details else "")

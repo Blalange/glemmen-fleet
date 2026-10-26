@@ -2,14 +2,16 @@
 
 from __future__ import annotations
 
-import sys
 from collections import Counter
 from typing import Any
 
 from inventory_util import InventoryError
 
 from .identity import DeviceResolver, MappingError
+from .log import get_logger
 from .sources.snmp_oids import interface_candidate_priority, interface_candidates
+
+log = get_logger(__name__)
 
 
 def _ensure_vlan(
@@ -63,12 +65,13 @@ def merge_snmp_observations(
         except MappingError as exc:
             raise InventoryError(str(exc)) from exc
         if resolved is None:
-            print(f"WARNING: SNMP {address} is not mapped to a device", file=sys.stderr)
+            log.warning("SNMP %s is not mapped to a device", address)
             continue
         name = str(resolved.get("name") or "")
         if not name:
             continue
         matches[address] = name
+        log.debug("SNMP %s -> device %s", address, name)
 
         device = devices_by_name.get(name)
         manual_device = resolver.manual_by_name.get(name) or {}
@@ -205,4 +208,10 @@ def merge_snmp_observations(
                 existing[target_name] = interface
             interface.update(update)
 
+    log.debug(
+        "SNMP merge: observations=%d, matched=%d, vlans=%d",
+        len(observations),
+        len(matches),
+        len(vlans),
+    )
     return matches

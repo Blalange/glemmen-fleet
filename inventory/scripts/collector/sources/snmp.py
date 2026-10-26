@@ -4,12 +4,12 @@ from __future__ import annotations
 
 import asyncio
 import json
-import sys
 from pathlib import Path
 from typing import Any
 
 from inventory_util import InventoryError
 
+from ..log import get_logger
 from .snmp_oids import (
     BRIDGE_OIDS,
     ENTITY_OIDS,
@@ -39,6 +39,9 @@ try:
     _PYSNMP_AVAILABLE = True
 except ImportError:  # pragma: no cover - exercised only without the optional dependency
     _PYSNMP_AVAILABLE = False
+
+
+log = get_logger(__name__)
 
 
 def _require_pysnmp() -> None:
@@ -266,7 +269,7 @@ async def _poll_target(
             if value is not None:
                 system[key] = value_text(value)
         if not system.get("descr") and not system.get("name"):
-            print(f"WARNING: SNMP {ip} did not return system information", file=sys.stderr)
+            log.warning("SNMP %s did not return system information", ip)
             return None
         table_oids = {
             **IF_OIDS,
@@ -284,6 +287,17 @@ async def _poll_target(
         base_mac = value_mac(base_mac_value) if base_mac_value is not None else None
         serial = _first_text(_table(tables.get("entity_serial", {}), ENTITY_OIDS["serial"]))
         model = _first_text(_table(tables.get("entity_model", {}), ENTITY_OIDS["model"]))
+        lldp = _build_lldp(tables)
+        fdb = _build_fdb(tables, interfaces)
+        log.debug(
+            "SNMP %s (%s): interfaces=%d, vlans=%d, lldp=%d, fdb=%d",
+            ip,
+            target.get("name") or "unknown",
+            len(interfaces),
+            len(vlan_names),
+            len(lldp),
+            len(fdb),
+        )
         return {
             "ip": ip,
             "target_name": str(target.get("name") or ""),
@@ -294,11 +308,11 @@ async def _poll_target(
             "interfaces": interfaces,
             "vlans": vlan_names,
             "interface_vlans": interface_vlans,
-            "lldp": _build_lldp(tables),
-            "fdb": _build_fdb(tables, interfaces),
+            "lldp": lldp,
+            "fdb": fdb,
         }
     except Exception as exc:  # noqa: BLE001 - a source failure must not stop the inventory
-        print(f"WARNING: SNMP {ip}: {type(exc).__name__}: {exc}", file=sys.stderr)
+        log.warning("SNMP %s: %s: %s", ip, type(exc).__name__, exc)
         return None
     finally:
         engine.close_dispatcher()
@@ -322,7 +336,9 @@ async def collect_snmp(
             )
 
     results = await asyncio.gather(*(run(target) for target in targets))
-    return [result for result in results if result]
+    collected = [result for result in results if result]
+    log.debug("SNMP: collected %d/%d target(s)", len(collected), len(targets))
+    return collected
 
 
 def write_snmp_report(path: Path, observations: list[dict[str, Any]], matches: dict[str, str]) -> None:

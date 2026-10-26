@@ -480,6 +480,12 @@ uv run --with pysnmp==7.1.22 --with requests --with PyYAML \
   --talosconfig talos/generated/talosconfig
 ```
 
+The collector logs every stage to stderr with timestamps and counts. Use
+`-v`/`--verbose` for per-device source details, `--log-level` to choose
+`DEBUG`, `INFO`, `WARNING`, `ERROR` or `CRITICAL`, and `--log-file PATH` to also
+write the log to a file. `COLLECTOR_LOG_LEVEL` and `COLLECTOR_LOG_FILE` set the
+same defaults from the environment.
+
 SNMP defaults to v2c community `public` and the known SNMP-capable UniFi
 models (`udm-pro`, `usw-pro-24-poe`, `us-8-poe-150w`, `u6-pro`). Override the
 community with `--snmp-community` or `SNMP_COMMUNITY`; disable polling with

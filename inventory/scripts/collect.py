@@ -7,18 +7,19 @@ writes ``inventory/generated`` and never edits the manual layer.
 
 from __future__ import annotations
 
-import sys
-
 from collector.cli import main
+from collector.log import get_logger
 from inventory_util import InventoryError
+
+log = get_logger("main")
 
 
 if __name__ == "__main__":
     try:
         raise SystemExit(main())
     except InventoryError as exc:
-        print(f"ERROR: {exc}", file=sys.stderr)
+        log.error("Collector failed: %s", exc)
         raise SystemExit(1)
-    except Exception as exc:  # noqa: BLE001 - keep CLI output readable
-        print(f"ERROR: {type(exc).__name__}: {exc}", file=sys.stderr)
+    except Exception:
+        log.exception("Collector failed unexpectedly")
         raise SystemExit(1)

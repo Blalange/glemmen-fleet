@@ -6,6 +6,8 @@ import base64
 import json
 import subprocess
 
+from inventory_util import InventoryError
+
 
 def run(cmd: list[str], *, capture: bool = True) -> str:
     result = subprocess.run(
@@ -44,5 +46,5 @@ def read_cluster_secret(kubectl: str, kubeconfig: str | None) -> tuple[str, str]
         username = base64.b64decode(data["username"]).decode()
         password = base64.b64decode(data["password"]).decode()
     except KeyError as exc:
-        raise SystemExit(f"unpoller-unifi Secret is missing {exc}") from exc
+        raise InventoryError(f"unpoller-unifi Secret is missing {exc}") from exc
     return username, password

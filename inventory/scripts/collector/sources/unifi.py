@@ -7,21 +7,27 @@ from collections import Counter
 from typing import Any
 
 import requests
+from inventory_util import InventoryError, normalize_mac, slugify
 
-from inventory_util import normalize_mac, slugify
 from ..config import DEFAULT_TAG
+from ..log import get_logger
+
+log = get_logger(__name__)
 
 
 def unifi_get(base: str, username: str, password: str) -> tuple[list[dict], list[dict], list[dict]]:
     session = requests.Session()
     session.headers.update({"User-Agent": "glemmen-fleet-netbox-import/2.0"})
+    log.debug("UniFi: logging in to %s", base)
     login = session.post(
         f"{base}/api/auth/login",
         json={"username": username, "password": password, "remember": True},
         timeout=30,
     )
     if login.status_code != 200:
-        raise SystemExit(f"UniFi login failed: HTTP {login.status_code}: {login.text[:300]}")
+        raise InventoryError(
+            f"UniFi login failed: HTTP {login.status_code}: {login.text[:300]}"
+        )
 
     devices_response = session.get(
         f"{base}/proxy/network/api/s/default/stat/device", timeout=60
@@ -35,11 +41,16 @@ def unifi_get(base: str, username: str, password: str) -> tuple[list[dict], list
         f"{base}/proxy/network/api/s/default/stat/sta", timeout=60
     )
     clients_response.raise_for_status()
-    return (
-        devices_response.json().get("data") or [],
-        networks_response.json().get("data") or [],
-        clients_response.json().get("data") or [],
+    devices = devices_response.json().get("data") or []
+    networks = networks_response.json().get("data") or []
+    clients = clients_response.json().get("data") or []
+    log.debug(
+        "UniFi API: devices=%d, networks=%d, clients=%d",
+        len(devices),
+        len(networks),
+        len(clients),
     )
+    return devices, networks, clients
 
 def unifi_device_name(device: dict, counts: Counter[str]) -> str:
     mac = str(device.get("mac") or "").replace(":", "")
@@ -142,6 +153,14 @@ def build_unifi(
         interfaces: list[dict] = []
         ports = d.get("port_table") or []
         port_by_idx: dict[int, dict] = {}
+        log.debug(
+            "UniFi device %s: model=%s, type=%s, state=%s, ports=%d",
+            name,
+            model,
+            d.get("type"),
+            d.get("state"),
+            len(ports),
+        )
 
         for port in ports:
             try:
@@ -288,6 +307,13 @@ def build_unifi(
     # UniFi VLAN names that need correction are configured in the manual layer.
     vlan_names = {int(key): str(value) for key, value in (manual.get("unifi_vlan_names") or {}).items()}
     vlans, prefixes = build_networks(networks, next((d for d in devices if d.get("type") == "udm"), None), vlan_names, site_slug)
+    log.debug(
+        "UniFi build: devices=%d, cables=%d, vlans=%d, prefixes=%d",
+        len(unifi_devices),
+        len(cables),
+        len(vlans),
+        len(prefixes),
+    )
     return unifi_devices, cables, vlans, prefixes, names
 
 def build_networks(

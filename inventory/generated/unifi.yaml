@@ -980,7 +980,7 @@ devices:
   - name: Port 4
     type: 1000base-t
     enabled: true
-    description: Up, 1 Gbps PoE
+    description: Up, 0.1 Gbps PoE
     mtu: null
     mode: tagged
     untagged_vlan: 3

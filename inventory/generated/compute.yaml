@@ -763,7 +763,7 @@ devices:
   role: worker
   device_type: dell-poweredge-r515
   platform: talos-linux
-  status: active
+  status: offline
   serial: 4c4c4544-0056-4310-804a-cac04f475a31
   description: Talos (v1.14.4), Kubernetes v1.37.1, kernel 6.18.57-talos, 16 CPU,
     110.1 GiB RAM
@@ -798,3 +798,293 @@ devices:
     - address: 192.168.6.80/24
       dns_name: glemmen80
       primary: true
+  module_bays:
+  - name: CPU 1
+    position: '1'
+    bay_type: cpu-socket
+    description: Processor socket.
+  - name: DIMM A1
+    position: '2'
+    bay_type: dimm-ddr4
+    description: Memory module slot.
+  - name: DIMM A10
+    position: '3'
+    bay_type: dimm-ddr4
+    description: Memory module slot.
+  - name: DIMM A11
+    position: '4'
+    bay_type: dimm-ddr4
+    description: Memory module slot.
+  - name: DIMM A12
+    position: '5'
+    bay_type: dimm-ddr4
+    description: Memory module slot.
+  - name: DIMM A2
+    position: '6'
+    bay_type: dimm-ddr4
+    description: Memory module slot.
+  - name: DIMM A3
+    position: '7'
+    bay_type: dimm-ddr4
+    description: Memory module slot.
+  - name: DIMM A4
+    position: '8'
+    bay_type: dimm-ddr4
+    description: Memory module slot.
+  - name: DIMM A5
+    position: '9'
+    bay_type: dimm-ddr4
+    description: Memory module slot.
+  - name: DIMM A6
+    position: '10'
+    bay_type: dimm-ddr4
+    description: Memory module slot.
+  - name: DIMM A7
+    position: '11'
+    bay_type: dimm-ddr4
+    description: Memory module slot.
+  - name: DIMM A8
+    position: '12'
+    bay_type: dimm-ddr4
+    description: Memory module slot.
+  - name: DIMM A9
+    position: '13'
+    bay_type: dimm-ddr4
+    description: Memory module slot.
+  - name: Drive 1
+    position: '14'
+    bay_type: drive-2-5
+    description: Drive bay.
+  - name: Drive 2
+    position: '15'
+    bay_type: drive-2-5
+    description: Drive bay.
+  - name: Drive 3
+    position: '16'
+    bay_type: drive-2-5
+    description: Drive bay.
+  - name: Fan 1
+    position: '17'
+    bay_type: fan
+    description: Chassis cooling fan.
+  - name: Fan 2
+    position: '18'
+    bay_type: fan
+    description: Chassis cooling fan.
+  - name: Fan 3
+    position: '19'
+    bay_type: fan
+    description: Chassis cooling fan.
+  - name: Fan 4
+    position: '20'
+    bay_type: fan
+    description: Chassis cooling fan.
+  - name: Fan 5
+    position: '21'
+    bay_type: fan
+    description: Chassis cooling fan.
+  - name: Fan 6
+    position: '22'
+    bay_type: fan
+    description: Chassis cooling fan.
+  - name: Fan 7
+    position: '23'
+    bay_type: fan
+    description: Chassis cooling fan.
+  - name: Fan 8
+    position: '24'
+    bay_type: fan
+    description: Chassis cooling fan.
+  - name: Fan 9
+    position: '25'
+    bay_type: fan
+    description: Chassis cooling fan.
+  - name: Fan 10
+    position: '26'
+    bay_type: fan
+    description: Chassis cooling fan.
+  - name: Fan 11
+    position: '27'
+    bay_type: fan
+    description: Chassis cooling fan.
+  - name: Fan 12
+    position: '28'
+    bay_type: fan
+    description: Chassis cooling fan.
+  - name: Fan 13
+    position: '29'
+    bay_type: fan
+    description: Chassis cooling fan.
+  - name: Fan 14
+    position: '30'
+    bay_type: fan
+    description: Chassis cooling fan.
+  - name: PSU 1
+    position: '31'
+    bay_type: power-supply
+    description: Hot-swap power supply bay.
+  - name: PSU 2
+    position: '32'
+    bay_type: power-supply
+    description: Hot-swap power supply bay.
+  modules:
+  - bay: CPU 1
+    module_type: intel-xeon-cpu-e5-1650-v3-3-50ghz
+    status: active
+    serial: ''
+    description: Intel Xeon CPU E5-1650 v3 @ 3.50GHz
+  - bay: DIMM A1
+    module_type: generic-m393a2g40db0-cpb
+    status: active
+    serial: 38E4043E
+    description: 16 GB DDR4 1866 MT/s
+  - bay: DIMM A10
+    module_type: generic-hma42gr7mfr4n-tf
+    status: active
+    serial: 24210AAC
+    description: 16 GB DDR4 1866 MT/s
+  - bay: DIMM A11
+    module_type: generic-hma42gr7mfr4n-tf
+    status: active
+    serial: 24210ABC
+    description: 16 GB DDR4 1866 MT/s
+  - bay: DIMM A12
+    module_type: generic-hma42gr7mfr4n-tf
+    status: active
+    serial: 24210B88
+    description: 16 GB DDR4 1866 MT/s
+  - bay: DIMM A2
+    module_type: generic-m393a2g40db0-cpb
+    status: active
+    serial: 38E3F84A
+    description: 16 GB DDR4 1866 MT/s
+  - bay: DIMM A3
+    module_type: generic-m393a2g40db0-cpb
+    status: active
+    serial: 38E3F5B2
+    description: 16 GB DDR4 1866 MT/s
+  - bay: DIMM A4
+    module_type: generic-m393a2g40db0-cpb
+    status: active
+    serial: 38E3F5AB
+    description: 16 GB DDR4 1866 MT/s
+  - bay: DIMM A5
+    module_type: generic-m393a2g40db0-cpb
+    status: active
+    serial: 38E3FAF3
+    description: 16 GB DDR4 1866 MT/s
+  - bay: DIMM A6
+    module_type: generic-m393a2g40db0-cpb
+    status: active
+    serial: 38E3FA32
+    description: 16 GB DDR4 1866 MT/s
+  - bay: DIMM A7
+    module_type: generic-hma42gr7mfr4n-tf
+    status: active
+    serial: 24210BBB
+    description: 16 GB DDR4 1866 MT/s
+  - bay: DIMM A8
+    module_type: generic-hma42gr7mfr4n-tf
+    status: active
+    serial: 24210D47
+    description: 16 GB DDR4 1866 MT/s
+  - bay: DIMM A9
+    module_type: generic-hma42gr7mfr4n-tf
+    status: active
+    serial: 24210AA0
+    description: 16 GB DDR4 1866 MT/s
+  - bay: Drive 1
+    module_type: generic-st91000640ns
+    status: active
+    serial: 9XG58GD8
+    description: 999 GB HD
+  - bay: Drive 2
+    module_type: generic-wdc-wd10jfcx-68n
+    status: active
+    serial: WD WXL1AA5J34UJ
+    description: 999 GB HD
+  - bay: Drive 3
+    module_type: generic-wdc-wd10jfcx-68n
+    status: active
+    serial: WD WXL1AA55CN98
+    description: 999 GB HD
+  - bay: Fan 1
+    module_type: dell-system-board-fan
+    status: active
+    serial: ''
+    description: System Board Fan1A
+  - bay: Fan 2
+    module_type: dell-system-board-fan
+    status: active
+    serial: ''
+    description: System Board Fan2A
+  - bay: Fan 3
+    module_type: dell-system-board-fan
+    status: active
+    serial: ''
+    description: System Board Fan3A
+  - bay: Fan 4
+    module_type: dell-system-board-fan
+    status: active
+    serial: ''
+    description: System Board Fan5A
+  - bay: Fan 5
+    module_type: dell-system-board-fan
+    status: active
+    serial: ''
+    description: System Board Fan4A
+  - bay: Fan 6
+    module_type: dell-system-board-fan
+    status: active
+    serial: ''
+    description: System Board Fan6A
+  - bay: Fan 7
+    module_type: dell-system-board-fan
+    status: active
+    serial: ''
+    description: System Board Fan7A
+  - bay: Fan 8
+    module_type: dell-system-board-fan
+    status: active
+    serial: ''
+    description: System Board Fan1B
+  - bay: Fan 9
+    module_type: dell-system-board-fan
+    status: active
+    serial: ''
+    description: System Board Fan3B
+  - bay: Fan 10
+    module_type: dell-system-board-fan
+    status: active
+    serial: ''
+    description: System Board Fan2B
+  - bay: Fan 11
+    module_type: dell-system-board-fan
+    status: active
+    serial: ''
+    description: System Board Fan4B
+  - bay: Fan 12
+    module_type: dell-system-board-fan
+    status: active
+    serial: ''
+    description: System Board Fan5B
+  - bay: Fan 13
+    module_type: dell-system-board-fan
+    status: active
+    serial: ''
+    description: System Board Fan6B
+  - bay: Fan 14
+    module_type: dell-system-board-fan
+    status: active
+    serial: ''
+    description: System Board Fan7B
+  - bay: PSU 1
+    module_type: dell-pwr-sply-495w-rdnt-delta
+    status: active
+    serial: CN1797248701AQ
+    description: Power supply
+  - bay: PSU 2
+    module_type: dell-pwr-sply-495w-rdnt-delta
+    status: active
+    serial: CN1797248701CK
+    description: Power supply

@@ -5,7 +5,7 @@ from __future__ import annotations
 import argparse
 import asyncio
 import os
-import sys
+import time
 from pathlib import Path
 from typing import Any
 
@@ -18,7 +18,8 @@ from .config import (
     DEFAULT_MANUAL_DIR,
     DEFAULT_OUTPUT_DIR,
 )
-from .identity import DeviceResolver, MappingError
+from .identity import DeviceResolver
+from .log import configure_logging, get_logger
 from .manual import load_manual
 from .process import read_cluster_secret
 from .render import write_yaml
@@ -27,6 +28,8 @@ from .sources.redfish import read_redfish
 from .sources.snmp import collect_snmp, write_snmp_report
 from .sources.talos import node_system_info, read_nodes
 from .sources.unifi import build_unifi, unifi_get
+
+log = get_logger(__name__)
 
 
 def _refs_for_talos(node_name: str, system_info: dict[str, Any]) -> dict[str, set[str]]:
@@ -61,12 +64,17 @@ def _resolve_talos(
         refs = _refs_for_talos(name, system_info)
         manual_device = resolver.resolve(refs, source="talos", label=name)
         if manual_device is None:
-            print(
-                f"WARNING: Talos node {name} has no manual device entry",
-                file=sys.stderr,
-            )
+            log.warning("Talos node %s has no manual device entry", name)
             continue
         manual_by_node[name] = manual_device
+        log.debug(
+            "Talos node %s resolved to manual device %s%s",
+            name,
+            manual_device.get("name"),
+            f" (service tag {system_info.get('serialnumber')})"
+            if system_info.get("serialnumber")
+            else "",
+        )
         resolver.add_observation_claims(
             manual_device,
             {
@@ -85,12 +93,21 @@ def _collect_redfish(
     password: str | None,
 ) -> dict[str, dict[str, Any]]:
     if not username or not password:
+        log.info("Redfish: disabled (no credentials)")
         return {}
+    candidates = [device for device in manual["devices"] if device.get("idrac_ip")]
+    if not candidates:
+        log.info("Redfish: no manual devices declare idrac_ip")
+        return {}
+    log.info("Redfish: polling %d iDRAC(s)", len(candidates))
     result: dict[str, dict[str, Any]] = {}
-    for device in manual["devices"]:
+    for device in candidates:
         address = device.get("idrac_ip")
-        if not address:
-            continue
+        log.debug(
+            "Redfish: reading %s at %s",
+            device.get("name") or "unknown device",
+            address,
+        )
         data = read_redfish(f"https://{address}", username, password)
         if not data:
             continue
@@ -102,24 +119,18 @@ def _collect_redfish(
             refs["service_tag"] = {service_tag}
         if system_uuid:
             refs["system_uuid"] = {system_uuid}
-        try:
-            resolved = resolver.resolve(
-                refs, source="redfish", label=str(address)
-            )
-        except MappingError:
-            raise
+        resolved = resolver.resolve(refs, source="redfish", label=str(address))
         if resolved is None:
-            print(
-                f"WARNING: iDRAC {address} is not mapped to a manual device",
-                file=sys.stderr,
-            )
+            log.warning("iDRAC %s is not mapped to a manual device", address)
             continue
         name = str(resolved.get("name") or "")
         if name != str(device.get("name") or ""):
-            print(
-                f"WARNING: iDRAC {address} resolves to {name!r}, not "
-                f"{device.get('name')!r}; using {name!r}",
-                file=sys.stderr,
+            log.warning(
+                "iDRAC %s resolves to %r, not %r; using %r",
+                address,
+                name,
+                device.get("name"),
+                name,
             )
         resolver.add_observation_claims(
             resolved,
@@ -131,7 +142,17 @@ def _collect_redfish(
         if name in result:
             raise InventoryError(f"multiple iDRACs resolve to {name!r}")
         result[name] = data
-        print(f"Redfish: {name} ({address})", file=sys.stderr)
+        log.info(
+            "Redfish: %s (%s) cpu=%d memory=%d disks=%d fans=%d psus=%d",
+            name,
+            address,
+            len(data.get("cpu") or []),
+            len(data.get("memory") or []),
+            len(data.get("disks") or []),
+            len(data.get("fans") or []),
+            len(data.get("psus") or []),
+        )
+    log.info("Redfish: collected %d/%d iDRAC(s)", len(result), len(candidates))
     return result
 
 
@@ -269,26 +290,87 @@ def main(argv: list[str] | None = None) -> int:
         "--snmp-report",
         help="write LLDP/FDB and interface observations to a JSON report",
     )
+    parser.add_argument(
+        "-v",
+        "--verbose",
+        action="store_true",
+        help="enable DEBUG logging (per-device source details)",
+    )
+    parser.add_argument(
+        "--log-level",
+        default=os.environ.get("COLLECTOR_LOG_LEVEL", "INFO"),
+        type=str.upper,
+        choices=("DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"),
+        help="logging threshold (default: COLLECTOR_LOG_LEVEL or INFO)",
+    )
+    parser.add_argument(
+        "--log-file",
+        default=os.environ.get("COLLECTOR_LOG_FILE"),
+        help="also write logs to this file (default: COLLECTOR_LOG_FILE)",
+    )
     args = parser.parse_args(argv)
+
+    configure_logging("DEBUG" if args.verbose else args.log_level, args.log_file)
+    started = time.monotonic()
+    log.info("Collector starting")
+    log.info("Manual inventory: %s", Path(args.manual_dir).resolve())
+    log.info("Output directory: %s", Path(args.output_dir).resolve())
+    log.info("UniFi controller: %s", args.unifi_url)
+    if args.no_snmp:
+        log.info("SNMP: disabled")
+    else:
+        log.info(
+            "SNMP: enabled (timeout=%.1fs, retries=%d)",
+            args.snmp_timeout,
+            args.snmp_retries,
+        )
+    log.info("Talos hardware discovery: %s", args.talosctl or "disabled")
+    log.info("Kubernetes nodes: %s", args.nodes_json or "live cluster")
+    if args.log_file:
+        log.info("Log file: %s", Path(args.log_file).expanduser())
 
     manual = load_manual(Path(args.manual_dir))
     resolver = DeviceResolver(manual)
 
     if args.from_cluster:
+        log.info("UniFi credentials: monitoring/unpoller-unifi Secret")
         username, password = read_cluster_secret(args.kubectl, args.kubeconfig)
     else:
+        log.info("UniFi credentials: environment")
         username = os.environ.get("UNIFI_USER", "")
         password = os.environ.get("UNIFI_PASS", "")
     if not username or not password:
         raise InventoryError("set UNIFI_USER/UNIFI_PASS or use --from-cluster")
 
+    log.info("UniFi: fetching inventory")
     devices, networks, clients = unifi_get(args.unifi_url.rstrip("/"), username, password)
+    log.info(
+        "UniFi: fetched %d device(s), %d network(s), %d client(s)",
+        len(devices),
+        len(networks),
+        len(clients),
+    )
+    log.info("UniFi: building inventory")
     unifi_devices, cables, vlans, prefixes, _names = build_unifi(devices, networks, manual)
+    log.info(
+        "UniFi: built %d device(s), %d cable(s), %d VLAN(s), %d prefix(es)",
+        len(unifi_devices),
+        len(cables),
+        len(vlans),
+        len(prefixes),
+    )
     _register_unifi_devices(resolver, devices, _names)
     snmp_matches: dict[str, str] = {}
     if not args.no_snmp:
         targets = _snmp_targets(manual, devices, _names, unifi_devices)
         if targets:
+            log.info("SNMP: polling %d target(s)", len(targets))
+            log.debug(
+                "SNMP targets: %s",
+                ", ".join(
+                    f"{target.get('name')} ({target.get('ip')})" for target in targets
+                ),
+            )
             observations = asyncio.run(
                 collect_snmp(
                     targets,
@@ -300,13 +382,18 @@ def main(argv: list[str] | None = None) -> int:
             snmp_matches = merge_snmp_observations(
                 unifi_devices, vlans, observations, resolver, manual
             )
-            print(
-                f"SNMP: targets={len(targets)}, observed={len(observations)}, "
-                f"matched={len(snmp_matches)}",
-                file=sys.stderr,
+            log.info(
+                "SNMP: targets=%d, observed=%d, matched=%d",
+                len(targets),
+                len(observations),
+                len(snmp_matches),
             )
             if args.snmp_report:
-                write_snmp_report(Path(args.snmp_report), observations, snmp_matches)
+                report_path = Path(args.snmp_report)
+                write_snmp_report(report_path, observations, snmp_matches)
+                log.info("SNMP report: %s", report_path)
+        else:
+            log.info("SNMP: no targets discovered")
     switch_name = next(
         (
             device["name"]
@@ -316,12 +403,19 @@ def main(argv: list[str] | None = None) -> int:
         "USW Pro 24 PoE",
     )
 
+    log.info("Talos: reading Kubernetes node list")
     nodes = read_nodes(args.kubectl, args.kubeconfig, args.nodes_json)
+    log.info("Talos: %d node(s)", len(nodes))
     manual_by_node = _resolve_talos(
         resolver,
         nodes,
         talosctl=args.talosctl,
         talosconfig=args.talosconfig,
+    )
+    log.info(
+        "Talos: resolved %d/%d node(s) to manual devices",
+        len(manual_by_node),
+        len(nodes),
     )
     redfish_by_name = _collect_redfish(
         manual,
@@ -330,6 +424,7 @@ def main(argv: list[str] | None = None) -> int:
         password=args.redfish_pass,
     )
 
+    log.info("Compute: building servers and Talos nodes")
     module_types: dict[str, dict[str, Any]] = {}
     servers = build_servers(
         clients,
@@ -348,8 +443,19 @@ def main(argv: list[str] | None = None) -> int:
         redfish_by_name=redfish_by_name,
         manual_by_node=manual_by_node,
     )
+    module_count = sum(
+        len(device.get("modules", [])) for device in [*servers, *compute_nodes]
+    )
+    log.info(
+        "Compute: servers=%d, nodes=%d, module_types=%d, modules=%d",
+        len(servers),
+        len(compute_nodes),
+        len(module_types),
+        module_count,
+    )
 
     output_dir = Path(args.output_dir)
+    log.info("Writing generated inventory to %s", output_dir.resolve())
     write_yaml(
         output_dir / "unifi.yaml",
         {"devices": unifi_devices, "vlans": vlans, "prefixes": prefixes, "cables": cables},
@@ -369,12 +475,13 @@ def main(argv: list[str] | None = None) -> int:
         legacy_path = output_dir / legacy
         if legacy_path.exists():
             legacy_path.unlink()
+            log.info("Removed legacy generated file %s", legacy_path)
 
-    print(f"Wrote {output_dir}/unifi.yaml, compute.yaml, module-types.yaml")
+    print("Generated inventory summary:")
     print(
         f"  unifi_devices={len(unifi_devices)}, servers={len(servers)}, nodes={len(compute_nodes)}, "
         f"cables={len(cables)}, vlans={len(vlans)}, prefixes={len(prefixes)}, "
-        f"module_types={len(module_types)}, "
-        f"modules={sum(len(device.get('modules', [])) for device in [*servers, *compute_nodes])}"
+        f"module_types={len(module_types)}, modules={module_count}"
     )
+    log.info("Collector finished in %.2fs", time.monotonic() - started)
     return 0

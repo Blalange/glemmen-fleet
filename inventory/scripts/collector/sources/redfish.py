@@ -2,12 +2,14 @@
 
 from __future__ import annotations
 
-import sys
 from typing import Any
 
 import requests
 
 from ..hardware import normalize_manufacturer
+from ..log import get_logger
+
+log = get_logger(__name__)
 
 
 def _redfish_session(username: str, password: str) -> requests.Session:
@@ -24,10 +26,10 @@ def _redfish_get(session: requests.Session, base: str, path: str) -> dict | None
     try:
         response = session.get(f"{base}{path}", timeout=30)
     except requests.RequestException as exc:
-        print(f"WARNING: Redfish {base}{path}: {exc}", file=sys.stderr)
+        log.warning("Redfish %s%s: %s", base, path, exc)
         return None
     if response.status_code != 200:
-        print(f"WARNING: Redfish {base}{path}: HTTP {response.status_code}", file=sys.stderr)
+        log.warning("Redfish %s%s: HTTP %s", base, path, response.status_code)
         return None
     try:
         return response.json()
@@ -129,4 +131,13 @@ def read_redfish(base: str, username: str, password: str) -> dict[str, Any] | No
             }
         )
 
+    log.debug(
+        "Redfish %s: cpu=%d, memory=%d, disks=%d, fans=%d, psus=%d",
+        base,
+        len(result["cpu"]),
+        len(result["memory"]),
+        len(result["disks"]),
+        len(result["fans"]),
+        len(result["psus"]),
+    )
     return result
