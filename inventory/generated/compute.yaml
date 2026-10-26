@@ -15,6 +15,7 @@ devices:
   tags:
   - production
   sources:
+  - manual
   - unifi
   interfaces:
   - name: Port 1
@@ -22,6 +23,7 @@ devices:
     enabled: true
     description: Uplink to USW Pro 24 PoE Port 19
     sources:
+    - manual
     - unifi
     mac_address: 6c:3c:8c:75:3e:84
     ip_addresses:
@@ -39,6 +41,8 @@ devices:
   tags:
   - production
   sources:
+  - manual
+  - redfish
   - unifi
   interfaces:
   - name: Port 1
@@ -46,12 +50,119 @@ devices:
     enabled: true
     description: Uplink to USW Pro 24 PoE Port 20
     sources:
+    - manual
     - unifi
     mac_address: 6c:3c:8c:75:3b:f4
     ip_addresses:
     - address: 192.168.6.230/24
       dns_name: ubuntu-server
       primary: true
+  module_bays:
+  - name: CPU 1
+    position: '1'
+    bay_type: cpu-socket
+    description: Processor socket.
+    sources:
+    - redfish
+  - name: DIMM A2
+    position: '2'
+    bay_type: dimm-ddr4
+    description: Memory module slot.
+    sources:
+    - redfish
+  - name: DIMM A1
+    position: '3'
+    bay_type: dimm-ddr4
+    description: Memory module slot.
+    sources:
+    - redfish
+  - name: Drive 1
+    position: '4'
+    bay_type: drive-3-5
+    description: Drive bay.
+    sources:
+    - redfish
+  - name: Fan 1
+    position: '5'
+    bay_type: fan
+    description: Chassis cooling fan.
+    sources:
+    - redfish
+  - name: Fan 2
+    position: '6'
+    bay_type: fan
+    description: Chassis cooling fan.
+    sources:
+    - redfish
+  - name: Fan 3
+    position: '7'
+    bay_type: fan
+    description: Chassis cooling fan.
+    sources:
+    - redfish
+  - name: Fan 4
+    position: '8'
+    bay_type: fan
+    description: Chassis cooling fan.
+    sources:
+    - redfish
+  modules:
+  - bay: CPU 1
+    module_type: intel-xeon-e-2314-cpu-2-80ghz
+    status: active
+    serial: ''
+    description: Intel Xeon E-2314 CPU @ 2.80GHz
+    sources:
+    - redfish
+  - bay: DIMM A2
+    module_type: micron-9asf2g72az-3g2f1
+    status: active
+    serial: 3FE369A4
+    description: 16 GB DDR4 3200 MT/s
+    sources:
+    - redfish
+  - bay: DIMM A1
+    module_type: micron-9asf2g72az-3g2f1
+    status: active
+    serial: 3FE36CC0
+    description: 16 GB DDR4 3200 MT/s
+    sources:
+    - redfish
+  - bay: Drive 1
+    module_type: seagate-st2000nm012b-2td
+    status: active
+    serial: WRE0MWG0
+    description: 2000 GB HD
+    sources:
+    - redfish
+  - bay: Fan 1
+    module_type: dell-system-board-fan
+    status: active
+    serial: ''
+    description: System Board Fan1
+    sources:
+    - redfish
+  - bay: Fan 2
+    module_type: dell-system-board-fan
+    status: active
+    serial: ''
+    description: System Board Fan2
+    sources:
+    - redfish
+  - bay: Fan 3
+    module_type: dell-system-board-fan
+    status: active
+    serial: ''
+    description: System Board Fan3
+    sources:
+    - redfish
+  - bay: Fan 4
+    module_type: dell-system-board-fan
+    status: active
+    serial: ''
+    description: System Board Fan4
+    sources:
+    - redfish
 - name: server220
   site: glemmen
   role: server
@@ -63,6 +174,8 @@ devices:
   tags:
   - production
   sources:
+  - manual
+  - redfish
   - unifi
   interfaces:
   - name: Port 1
@@ -70,12 +183,119 @@ devices:
     enabled: true
     description: Uplink to USW Pro 24 PoE Port 23
     sources:
+    - manual
     - unifi
     mac_address: 6c:3c:8c:75:3c:3c
     ip_addresses:
     - address: 192.168.6.133/24
       dns_name: server220
       primary: true
+  module_bays:
+  - name: CPU 1
+    position: '1'
+    bay_type: cpu-socket
+    description: Processor socket.
+    sources:
+    - redfish
+  - name: DIMM A1
+    position: '2'
+    bay_type: dimm-ddr4
+    description: Memory module slot.
+    sources:
+    - redfish
+  - name: DIMM A2
+    position: '3'
+    bay_type: dimm-ddr4
+    description: Memory module slot.
+    sources:
+    - redfish
+  - name: Drive 1
+    position: '4'
+    bay_type: drive-3-5
+    description: Drive bay.
+    sources:
+    - redfish
+  - name: Fan 1
+    position: '5'
+    bay_type: fan
+    description: Chassis cooling fan.
+    sources:
+    - redfish
+  - name: Fan 2
+    position: '6'
+    bay_type: fan
+    description: Chassis cooling fan.
+    sources:
+    - redfish
+  - name: Fan 3
+    position: '7'
+    bay_type: fan
+    description: Chassis cooling fan.
+    sources:
+    - redfish
+  - name: Fan 4
+    position: '8'
+    bay_type: fan
+    description: Chassis cooling fan.
+    sources:
+    - redfish
+  modules:
+  - bay: CPU 1
+    module_type: intel-xeon-e-2314-cpu-2-80ghz
+    status: active
+    serial: ''
+    description: Intel Xeon E-2314 CPU @ 2.80GHz
+    sources:
+    - redfish
+  - bay: DIMM A1
+    module_type: micron-9asf2g72az-3g2f1
+    status: active
+    serial: 3FE36BC0
+    description: 16 GB DDR4 3200 MT/s
+    sources:
+    - redfish
+  - bay: DIMM A2
+    module_type: micron-9asf2g72az-3g2f1
+    status: active
+    serial: 3FE369A5
+    description: 16 GB DDR4 3200 MT/s
+    sources:
+    - redfish
+  - bay: Drive 1
+    module_type: seagate-st2000nm012b-2td
+    status: active
+    serial: WRE0M9SS
+    description: 2000 GB HD
+    sources:
+    - redfish
+  - bay: Fan 1
+    module_type: dell-system-board-fan
+    status: active
+    serial: ''
+    description: System Board Fan1
+    sources:
+    - redfish
+  - bay: Fan 2
+    module_type: dell-system-board-fan
+    status: active
+    serial: ''
+    description: System Board Fan2
+    sources:
+    - redfish
+  - bay: Fan 3
+    module_type: dell-system-board-fan
+    status: active
+    serial: ''
+    description: System Board Fan3
+    sources:
+    - redfish
+  - bay: Fan 4
+    module_type: dell-system-board-fan
+    status: active
+    serial: ''
+    description: System Board Fan4
+    sources:
+    - redfish
 - name: glemmen210
   site: glemmen
   role: server
@@ -87,6 +307,8 @@ devices:
   tags:
   - production
   sources:
+  - manual
+  - redfish
   - unifi
   interfaces:
   - name: Port 1
@@ -94,12 +316,145 @@ devices:
     enabled: true
     description: Uplink to USW Pro 24 PoE Port 22
     sources:
+    - manual
     - unifi
     mac_address: 6c:3c:8c:75:3c:f4
     ip_addresses:
     - address: 192.168.6.68/24
       dns_name: glemmen210
       primary: true
+  module_bays:
+  - name: CPU 1
+    position: '1'
+    bay_type: cpu-socket
+    description: Processor socket.
+    sources:
+    - redfish
+  - name: DIMM A4
+    position: '2'
+    bay_type: dimm-ddr4
+    description: Memory module slot.
+    sources:
+    - redfish
+  - name: DIMM A1
+    position: '3'
+    bay_type: dimm-ddr4
+    description: Memory module slot.
+    sources:
+    - redfish
+  - name: DIMM A3
+    position: '4'
+    bay_type: dimm-ddr4
+    description: Memory module slot.
+    sources:
+    - redfish
+  - name: DIMM A2
+    position: '5'
+    bay_type: dimm-ddr4
+    description: Memory module slot.
+    sources:
+    - redfish
+  - name: Drive 1
+    position: '6'
+    bay_type: drive-3-5
+    description: Drive bay.
+    sources:
+    - redfish
+  - name: Fan 1
+    position: '7'
+    bay_type: fan
+    description: Chassis cooling fan.
+    sources:
+    - redfish
+  - name: Fan 2
+    position: '8'
+    bay_type: fan
+    description: Chassis cooling fan.
+    sources:
+    - redfish
+  - name: Fan 3
+    position: '9'
+    bay_type: fan
+    description: Chassis cooling fan.
+    sources:
+    - redfish
+  - name: Fan 4
+    position: '10'
+    bay_type: fan
+    description: Chassis cooling fan.
+    sources:
+    - redfish
+  modules:
+  - bay: CPU 1
+    module_type: intel-xeon-e-2314-cpu-2-80ghz
+    status: active
+    serial: ''
+    description: Intel Xeon E-2314 CPU @ 2.80GHz
+    sources:
+    - redfish
+  - bay: DIMM A4
+    module_type: micron-9asf2g72az-3g2f1
+    status: active
+    serial: 408E3A39
+    description: 16 GB DDR4 3200 MT/s
+    sources:
+    - redfish
+  - bay: DIMM A1
+    module_type: micron-9asf2g72az-3g2f1
+    status: active
+    serial: 408E392F
+    description: 16 GB DDR4 3200 MT/s
+    sources:
+    - redfish
+  - bay: DIMM A3
+    module_type: micron-9asf2g72az-3g2f1
+    status: active
+    serial: 408E39CA
+    description: 16 GB DDR4 3200 MT/s
+    sources:
+    - redfish
+  - bay: DIMM A2
+    module_type: micron-9asf2g72az-3g2f1
+    status: active
+    serial: 408E3832
+    description: 16 GB DDR4 3200 MT/s
+    sources:
+    - redfish
+  - bay: Drive 1
+    module_type: seagate-st2000nm012b-2td
+    status: active
+    serial: WRE0MCFT
+    description: 2000 GB HD
+    sources:
+    - redfish
+  - bay: Fan 1
+    module_type: dell-system-board-fan
+    status: active
+    serial: ''
+    description: System Board Fan1
+    sources:
+    - redfish
+  - bay: Fan 2
+    module_type: dell-system-board-fan
+    status: active
+    serial: ''
+    description: System Board Fan2
+    sources:
+    - redfish
+  - bay: Fan 3
+    module_type: dell-system-board-fan
+    status: active
+    serial: ''
+    description: System Board Fan3
+    sources:
+    - redfish
+  - bay: Fan 4
+    module_type: dell-system-board-fan
+    status: active
+    serial: ''
+    description: System Board Fan4
+    sources:
+    - redfish
 - name: server190
   site: glemmen
   role: server
@@ -110,6 +465,8 @@ devices:
   tags:
   - production
   sources:
+  - manual
+  - redfish
   - unifi
   interfaces:
   - name: Port 1
@@ -117,12 +474,119 @@ devices:
     enabled: true
     description: Uplink to USW Pro 24 PoE Port 21
     sources:
+    - manual
     - unifi
     mac_address: 6c:3c:8c:75:3c:c4
     ip_addresses:
     - address: 192.168.6.190/24
       dns_name: server190
       primary: true
+  module_bays:
+  - name: CPU 1
+    position: '1'
+    bay_type: cpu-socket
+    description: Processor socket.
+    sources:
+    - redfish
+  - name: DIMM A1
+    position: '2'
+    bay_type: dimm-ddr4
+    description: Memory module slot.
+    sources:
+    - redfish
+  - name: DIMM A2
+    position: '3'
+    bay_type: dimm-ddr4
+    description: Memory module slot.
+    sources:
+    - redfish
+  - name: Drive 1
+    position: '4'
+    bay_type: drive-3-5
+    description: Drive bay.
+    sources:
+    - redfish
+  - name: Fan 1
+    position: '5'
+    bay_type: fan
+    description: Chassis cooling fan.
+    sources:
+    - redfish
+  - name: Fan 2
+    position: '6'
+    bay_type: fan
+    description: Chassis cooling fan.
+    sources:
+    - redfish
+  - name: Fan 3
+    position: '7'
+    bay_type: fan
+    description: Chassis cooling fan.
+    sources:
+    - redfish
+  - name: Fan 4
+    position: '8'
+    bay_type: fan
+    description: Chassis cooling fan.
+    sources:
+    - redfish
+  modules:
+  - bay: CPU 1
+    module_type: intel-xeon-e-2314-cpu-2-80ghz
+    status: active
+    serial: ''
+    description: Intel Xeon E-2314 CPU @ 2.80GHz
+    sources:
+    - redfish
+  - bay: DIMM A1
+    module_type: micron-9asf2g72az-3g2f1
+    status: active
+    serial: 3FE36997
+    description: 16 GB DDR4 3200 MT/s
+    sources:
+    - redfish
+  - bay: DIMM A2
+    module_type: micron-9asf2g72az-3g2f1
+    status: active
+    serial: 3FE36DCC
+    description: 16 GB DDR4 3200 MT/s
+    sources:
+    - redfish
+  - bay: Drive 1
+    module_type: seagate-st2000nm012b-2td
+    status: active
+    serial: WRE0MWKW
+    description: 2000 GB HD
+    sources:
+    - redfish
+  - bay: Fan 1
+    module_type: dell-system-board-fan
+    status: active
+    serial: ''
+    description: System Board Fan1
+    sources:
+    - redfish
+  - bay: Fan 2
+    module_type: dell-system-board-fan
+    status: active
+    serial: ''
+    description: System Board Fan2
+    sources:
+    - redfish
+  - bay: Fan 3
+    module_type: dell-system-board-fan
+    status: active
+    serial: ''
+    description: System Board Fan3
+    sources:
+    - redfish
+  - bay: Fan 4
+    module_type: dell-system-board-fan
+    status: active
+    serial: ''
+    description: System Board Fan4
+    sources:
+    - redfish
 - name: LeanderWin10
   site: glemmen
   role: server
@@ -134,6 +598,8 @@ devices:
   tags:
   - production
   sources:
+  - manual
+  - redfish
   - unifi
   interfaces:
   - name: Port 1
@@ -141,12 +607,119 @@ devices:
     enabled: true
     description: Uplink to USW Pro 24 PoE Port 18
     sources:
+    - manual
     - unifi
     mac_address: 6c:3c:8c:75:43:4c
     ip_addresses:
     - address: 192.168.6.140/24
       dns_name: LeanderWin10
       primary: true
+  module_bays:
+  - name: CPU 1
+    position: '1'
+    bay_type: cpu-socket
+    description: Processor socket.
+    sources:
+    - redfish
+  - name: DIMM A2
+    position: '2'
+    bay_type: dimm-ddr4
+    description: Memory module slot.
+    sources:
+    - redfish
+  - name: DIMM A1
+    position: '3'
+    bay_type: dimm-ddr4
+    description: Memory module slot.
+    sources:
+    - redfish
+  - name: Drive 1
+    position: '4'
+    bay_type: drive-3-5
+    description: Drive bay.
+    sources:
+    - redfish
+  - name: Fan 1
+    position: '5'
+    bay_type: fan
+    description: Chassis cooling fan.
+    sources:
+    - redfish
+  - name: Fan 2
+    position: '6'
+    bay_type: fan
+    description: Chassis cooling fan.
+    sources:
+    - redfish
+  - name: Fan 3
+    position: '7'
+    bay_type: fan
+    description: Chassis cooling fan.
+    sources:
+    - redfish
+  - name: Fan 4
+    position: '8'
+    bay_type: fan
+    description: Chassis cooling fan.
+    sources:
+    - redfish
+  modules:
+  - bay: CPU 1
+    module_type: intel-xeon-e-2314-cpu-2-80ghz
+    status: active
+    serial: ''
+    description: Intel Xeon E-2314 CPU @ 2.80GHz
+    sources:
+    - redfish
+  - bay: DIMM A2
+    module_type: micron-9asf2g72az-3g2f1
+    status: active
+    serial: 408E3B60
+    description: 16 GB DDR4 3200 MT/s
+    sources:
+    - redfish
+  - bay: DIMM A1
+    module_type: micron-9asf2g72az-3g2f1
+    status: active
+    serial: 3FE36AC5
+    description: 16 GB DDR4 3200 MT/s
+    sources:
+    - redfish
+  - bay: Drive 1
+    module_type: seagate-st2000nm012b-2td
+    status: active
+    serial: WRE0MBSQ
+    description: 2000 GB HD
+    sources:
+    - redfish
+  - bay: Fan 1
+    module_type: dell-system-board-fan
+    status: active
+    serial: ''
+    description: System Board Fan1
+    sources:
+    - redfish
+  - bay: Fan 2
+    module_type: dell-system-board-fan
+    status: active
+    serial: ''
+    description: System Board Fan2
+    sources:
+    - redfish
+  - bay: Fan 3
+    module_type: dell-system-board-fan
+    status: active
+    serial: ''
+    description: System Board Fan3
+    sources:
+    - redfish
+  - bay: Fan 4
+    module_type: dell-system-board-fan
+    status: active
+    serial: ''
+    description: System Board Fan4
+    sources:
+    - redfish
 - name: server120
   site: glemmen
   role: server
@@ -158,6 +731,7 @@ devices:
   tags:
   - production
   sources:
+  - manual
   - unifi
   interfaces:
   - name: Port 1
@@ -165,6 +739,7 @@ devices:
     enabled: true
     description: Uplink to USW Pro 24 PoE Port 17
     sources:
+    - manual
     - unifi
     mac_address: 6c:3c:8c:75:37:64
     ip_addresses:
@@ -182,6 +757,7 @@ devices:
   tags:
   - production
   sources:
+  - manual
   - unifi
   interfaces:
   - name: Port 1
@@ -189,6 +765,7 @@ devices:
     enabled: true
     description: Uplink to USW Pro 24 PoE Port 16
     sources:
+    - manual
     - unifi
     mac_address: 6c:3c:8c:75:3a:44
     ip_addresses:
@@ -206,6 +783,7 @@ devices:
   tags:
   - production
   sources:
+  - manual
   - unifi
   interfaces:
   - name: Port 1
@@ -213,12 +791,131 @@ devices:
     enabled: true
     description: Uplink to USW Pro 24 PoE Port 24
     sources:
+    - manual
     - unifi
     mac_address: b8:2a:72:d5:dd:04
     ip_addresses:
     - address: 192.168.6.70/24
       dns_name: server70
       primary: true
+- name: server110
+  site: glemmen
+  role: server
+  device_type: dell-poweredge-r250
+  status: offline
+  serial: ''
+  description: Physical server between server120 and dellserver01.
+  tags:
+  - production
+  sources:
+  - manual
+  - redfish
+  module_bays:
+  - name: CPU 1
+    position: '1'
+    bay_type: cpu-socket
+    description: Processor socket.
+    sources:
+    - redfish
+  - name: DIMM A1
+    position: '2'
+    bay_type: dimm-ddr4
+    description: Memory module slot.
+    sources:
+    - redfish
+  - name: DIMM A2
+    position: '3'
+    bay_type: dimm-ddr4
+    description: Memory module slot.
+    sources:
+    - redfish
+  - name: Drive 1
+    position: '4'
+    bay_type: drive-3-5
+    description: Drive bay.
+    sources:
+    - redfish
+  - name: Fan 1
+    position: '5'
+    bay_type: fan
+    description: Chassis cooling fan.
+    sources:
+    - redfish
+  - name: Fan 2
+    position: '6'
+    bay_type: fan
+    description: Chassis cooling fan.
+    sources:
+    - redfish
+  - name: Fan 3
+    position: '7'
+    bay_type: fan
+    description: Chassis cooling fan.
+    sources:
+    - redfish
+  - name: Fan 4
+    position: '8'
+    bay_type: fan
+    description: Chassis cooling fan.
+    sources:
+    - redfish
+  modules:
+  - bay: CPU 1
+    module_type: intel-xeon-e-2314-cpu-2-80ghz
+    status: active
+    serial: ''
+    description: Intel Xeon E-2314 CPU @ 2.80GHz
+    sources:
+    - redfish
+  - bay: DIMM A1
+    module_type: micron-9asf2g72az-3g2f1
+    status: active
+    serial: 408E3BDC
+    description: 16 GB DDR4 3200 MT/s
+    sources:
+    - redfish
+  - bay: DIMM A2
+    module_type: micron-9asf2g72az-3g2f1
+    status: active
+    serial: 408E3BDA
+    description: 16 GB DDR4 3200 MT/s
+    sources:
+    - redfish
+  - bay: Drive 1
+    module_type: seagate-st2000nm012b-2td
+    status: active
+    serial: WRE0MWL3
+    description: 2000 GB HD
+    sources:
+    - redfish
+  - bay: Fan 1
+    module_type: dell-system-board-fan
+    status: active
+    serial: ''
+    description: System Board Fan1
+    sources:
+    - redfish
+  - bay: Fan 2
+    module_type: dell-system-board-fan
+    status: active
+    serial: ''
+    description: System Board Fan2
+    sources:
+    - redfish
+  - bay: Fan 3
+    module_type: dell-system-board-fan
+    status: active
+    serial: ''
+    description: System Board Fan3
+    sources:
+    - redfish
+  - bay: Fan 4
+    module_type: dell-system-board-fan
+    status: active
+    serial: ''
+    description: System Board Fan4
+    sources:
+    - redfish
 - name: glemmen130
   site: glemmen
   role: control-plane
@@ -240,12 +937,14 @@ devices:
     description: bond0 member (LACP)
     sources:
     - talos
+    mac_address: 6c:3c:8c:75:3d:94
   - name: eno8403
     type: 1000base-t
     enabled: true
     description: bond0 member (LACP)
     sources:
     - talos
+    mac_address: 6c:3c:8c:75:3d:94
   - name: bond0
     type: lag
     enabled: true
@@ -256,6 +955,7 @@ devices:
     - address: 192.168.6.130/24
       dns_name: glemmen130
       primary: true
+    mac_address: 6c:3c:8c:75:3d:94
   module_bays:
   - name: CPU 1
     position: '1'
@@ -409,12 +1109,14 @@ devices:
     description: bond0 member (LACP)
     sources:
     - talos
+    mac_address: 6c:3c:8c:75:39:34
   - name: eno8403
     type: 1000base-t
     enabled: true
     description: bond0 member (LACP)
     sources:
     - talos
+    mac_address: 6c:3c:8c:75:39:34
   - name: bond0
     type: lag
     enabled: true
@@ -425,6 +1127,7 @@ devices:
     - address: 192.168.6.150/24
       dns_name: glemmen150
       primary: true
+    mac_address: 6c:3c:8c:75:39:34
   module_bays:
   - name: CPU 1
     position: '1'
@@ -565,12 +1268,14 @@ devices:
     description: bond0 member (LACP)
     sources:
     - talos
+    mac_address: 6c:3c:8c:75:45:0c
   - name: eno8403
     type: 1000base-t
     enabled: true
     description: bond0 member (LACP)
     sources:
     - talos
+    mac_address: 6c:3c:8c:75:45:0c
   - name: bond0
     type: lag
     enabled: true
@@ -581,6 +1286,7 @@ devices:
     - address: 192.168.6.160/24
       dns_name: glemmen160
       primary: true
+    mac_address: 6c:3c:8c:75:45:0c
   module_bays:
   - name: CPU 1
     position: '1'
@@ -721,12 +1427,14 @@ devices:
     description: bond0 member (LACP)
     sources:
     - talos
+    mac_address: 6c:3c:8c:75:3c:b4
   - name: eno8403
     type: 1000base-t
     enabled: true
     description: bond0 member (LACP)
     sources:
     - talos
+    mac_address: 6c:3c:8c:75:3c:b4
   - name: bond0
     type: lag
     enabled: true
@@ -737,6 +1445,7 @@ devices:
     - address: 192.168.6.170/24
       dns_name: glemmen170
       primary: true
+    mac_address: 6c:3c:8c:75:3c:b4
   module_bays:
   - name: CPU 1
     position: '1'
@@ -877,12 +1586,14 @@ devices:
     description: bond0 member (LACP)
     sources:
     - talos
+    mac_address: 6c:3c:8c:75:3c:44
   - name: eno8403
     type: 1000base-t
     enabled: true
     description: bond0 member (LACP)
     sources:
     - talos
+    mac_address: 6c:3c:8c:75:3c:44
   - name: bond0
     type: lag
     enabled: true
@@ -893,6 +1604,7 @@ devices:
     - address: 192.168.6.180/24
       dns_name: glemmen180
       primary: true
+    mac_address: 6c:3c:8c:75:3c:44
   module_bays:
   - name: CPU 1
     position: '1'
@@ -1048,6 +1760,7 @@ devices:
     - address: 192.168.6.60/24
       dns_name: glemmen60
       primary: true
+    mac_address: 08:9e:01:d8:7b:f9
   module_bays:
   - name: FAN MOD 1A
     position: '1'
@@ -1091,6 +1804,78 @@ devices:
     description: Hot-swap power supply bay.
     sources:
     - ipmi
+  - name: CPU1
+    position: '8'
+    bay_type: cpu-socket
+    description: Processor socket.
+    sources:
+    - talos
+  - name: CPU2
+    position: '9'
+    bay_type: cpu-socket
+    description: Processor socket.
+    sources:
+    - talos
+  - name: DIMM_A1
+    position: '10'
+    bay_type: dimm-ddr3
+    description: Memory module slot.
+    sources:
+    - talos
+  - name: DIMM_A2
+    position: '11'
+    bay_type: dimm-ddr3
+    description: Memory module slot.
+    sources:
+    - talos
+  - name: DIMM_A3
+    position: '12'
+    bay_type: dimm-ddr3
+    description: Memory module slot.
+    sources:
+    - talos
+  - name: DIMM_A4
+    position: '13'
+    bay_type: dimm-ddr3
+    description: Memory module slot.
+    sources:
+    - talos
+  - name: DIMM_B1
+    position: '14'
+    bay_type: dimm-ddr3
+    description: Memory module slot.
+    sources:
+    - talos
+  - name: DIMM_B2
+    position: '15'
+    bay_type: dimm-ddr3
+    description: Memory module slot.
+    sources:
+    - talos
+  - name: DIMM_B3
+    position: '16'
+    bay_type: dimm-ddr3
+    description: Memory module slot.
+    sources:
+    - talos
+  - name: DIMM_B4
+    position: '17'
+    bay_type: dimm-ddr3
+    description: Memory module slot.
+    sources:
+    - talos
+  - name: Drive 1
+    position: '18'
+    bay_type: drive-3-5
+    description: Drive bay.
+    sources:
+    - talos
+  - name: Drive 2
+    position: '19'
+    bay_type: drive-3-5
+    description: Drive bay.
+    sources:
+    - talos
   modules:
   - bay: FAN MOD 1A
     module_type: dell-system-board-fan
@@ -1141,6 +1926,90 @@ devices:
     description: 750 W
     sources:
     - ipmi
+  - bay: CPU1
+    module_type: amd-opteron-processor-4386
+    status: active
+    serial: ''
+    description: AMD Opteron Processor 4386
+    sources:
+    - talos
+  - bay: CPU2
+    module_type: amd-opteron-processor-4386
+    status: active
+    serial: ''
+    description: AMD Opteron Processor 4386
+    sources:
+    - talos
+  - bay: DIMM_A1
+    module_type: samsung-m393b2g70bh0-yk0
+    status: active
+    serial: 1426E297
+    description: 16 GB DDR3 1600 MT/s
+    sources:
+    - talos
+  - bay: DIMM_A2
+    module_type: samsung-m393b2g70bh0-yk0
+    status: active
+    serial: 1426F422
+    description: 16 GB DDR3 1600 MT/s
+    sources:
+    - talos
+  - bay: DIMM_A3
+    module_type: samsung-m393b2g70bh0-yk0
+    status: active
+    serial: 1426FF78
+    description: 16 GB DDR3 1600 MT/s
+    sources:
+    - talos
+  - bay: DIMM_A4
+    module_type: samsung-m393b2g70bh0-yk0
+    status: active
+    serial: 1426FFEE
+    description: 16 GB DDR3 1600 MT/s
+    sources:
+    - talos
+  - bay: DIMM_B1
+    module_type: samsung-m393b2g70bh0-yk0
+    status: active
+    serial: 1426E296
+    description: 16 GB DDR3 1600 MT/s
+    sources:
+    - talos
+  - bay: DIMM_B2
+    module_type: samsung-m393b2g70bh0-yk0
+    status: active
+    serial: '14270038'
+    description: 16 GB DDR3 1600 MT/s
+    sources:
+    - talos
+  - bay: DIMM_B3
+    module_type: samsung-m393b2g70bh0-yk0
+    status: active
+    serial: '14270034'
+    description: 16 GB DDR3 1600 MT/s
+    sources:
+    - talos
+  - bay: DIMM_B4
+    module_type: samsung-m393b2g70bh0-yk0
+    status: active
+    serial: '14270035'
+    description: 16 GB DDR3 1600 MT/s
+    sources:
+    - talos
+  - bay: Drive 1
+    module_type: generic-perc-h700
+    status: active
+    serial: ''
+    description: 599 GB HD
+    sources:
+    - talos
+  - bay: Drive 2
+    module_type: generic-perc-h700
+    status: active
+    serial: ''
+    description: 7999 GB HD
+    sources:
+    - talos
 - name: glemmen80
   site: glemmen
   role: worker
@@ -1166,6 +2035,7 @@ devices:
     - address: 192.168.6.80/24
       dns_name: glemmen80
       primary: true
+    mac_address: a0:36:9f:93:7d:c8
   module_bays:
   - name: CPU 1
     position: '1'

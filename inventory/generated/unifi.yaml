@@ -146,7 +146,7 @@ devices:
   - name: Port 2
     type: 2.5gbase-t
     enabled: true
-    description: Up, 1 Gbps
+    description: Down, no link
     mtu: null
     mode: ''
     untagged_vlan: null

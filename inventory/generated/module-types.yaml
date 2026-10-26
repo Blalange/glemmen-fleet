@@ -47,6 +47,19 @@ module_types:
   description: Disk drive
   sources:
   - redfish
+- manufacturer: dell
+  model: System Board Fan
+  slug: dell-system-board-fan
+  profile: Fan
+  attributes:
+    rpm: 3840
+  bay_types:
+  - fan
+  part_number: System Board Fan
+  description: Chassis cooling fan
+  sources:
+  - ipmi
+  - redfish
 - manufacturer: seagate
   model: ST1000DM010-2EP1
   slug: seagate-st1000dm010-2ep1
@@ -60,19 +73,6 @@ module_types:
   part_number: ST1000DM010-2EP1
   description: Disk drive
   sources:
-  - redfish
-- manufacturer: dell
-  model: System Board Fan
-  slug: dell-system-board-fan
-  profile: Fan
-  attributes:
-    rpm: 3840
-  bay_types:
-  - fan
-  part_number: System Board Fan
-  description: Chassis cooling fan
-  sources:
-  - ipmi
   - redfish
 - manufacturer: seagate
   model: ST2000DM008-2FR1
@@ -103,6 +103,48 @@ module_types:
   description: Hot-swap power supply
   sources:
   - ipmi
+- manufacturer: amd
+  model: AMD Opteron Processor 4386
+  slug: amd-opteron-processor-4386
+  profile: CPU
+  attributes:
+    cores: 8
+    speed: 3.1
+    architecture: x86_64
+  bay_types:
+  - cpu-socket
+  part_number: AMD Opteron Processor 4386
+  description: Processor
+  sources:
+  - talos
+- manufacturer: samsung
+  model: M393B2G70BH0-YK0
+  slug: samsung-m393b2g70bh0-yk0
+  profile: Memory
+  attributes:
+    size: 16
+    class: DDR3
+    ecc: true
+    data_rate: 1600
+  bay_types:
+  - dimm-ddr3
+  part_number: M393B2G70BH0-YK0
+  description: Memory module
+  sources:
+  - talos
+- manufacturer: generic
+  model: PERC H700
+  slug: generic-perc-h700
+  profile: Hard disk
+  attributes:
+    size: 599
+    type: HD
+  bay_types:
+  - drive-3-5
+  part_number: PERC H700
+  description: Disk drive
+  sources:
+  - talos
 - manufacturer: intel
   model: Intel Xeon CPU E5-1650 v3 @ 3.50GHz
   slug: intel-xeon-cpu-e5-1650-v3-3-50ghz
