@@ -199,12 +199,10 @@ devices:
     type: 1000base-t
     enabled: true
     description: bond0 member (LACP)
-    mac_address: 6c:3c:8c:75:3d:94
   - name: eno8403
     type: 1000base-t
     enabled: true
     description: bond0 member (LACP)
-    mac_address: 6c:3c:8c:75:3d:94
   - name: bond0
     type: lag
     enabled: true
@@ -213,7 +211,6 @@ devices:
     - address: 192.168.6.130/24
       dns_name: glemmen130
       primary: true
-    mac_address: 6c:3c:8c:75:3d:94
   module_bays:
   - name: CPU 1
     position: '1'
@@ -322,12 +319,10 @@ devices:
     type: 1000base-t
     enabled: true
     description: bond0 member (LACP)
-    mac_address: 6c:3c:8c:75:39:34
   - name: eno8403
     type: 1000base-t
     enabled: true
     description: bond0 member (LACP)
-    mac_address: 6c:3c:8c:75:39:34
   - name: bond0
     type: lag
     enabled: true
@@ -336,7 +331,6 @@ devices:
     - address: 192.168.6.150/24
       dns_name: glemmen150
       primary: true
-    mac_address: 6c:3c:8c:75:39:34
   module_bays:
   - name: CPU 1
     position: '1'
@@ -427,7 +421,7 @@ devices:
   platform: talos-linux
   status: active
   serial: 4c4c4544-004c-3510-8031-c4c04f4a5a33
-  description: Talos (v1.14.4), Kubernetes v1.37.1, kernel 6.18.57-talos, 4 CPU, 30.8
+  description: Talos (v1.14.4), Kubernetes v1.37.1, kernel 6.18.57-talos, 4 CPU, 31.2
     GiB RAM
   tags:
   - production
@@ -436,12 +430,10 @@ devices:
     type: 1000base-t
     enabled: true
     description: bond0 member (LACP)
-    mac_address: 6c:3c:8c:75:45:0c
   - name: eno8403
     type: 1000base-t
     enabled: true
     description: bond0 member (LACP)
-    mac_address: 6c:3c:8c:75:45:0c
   - name: bond0
     type: lag
     enabled: true
@@ -450,9 +442,8 @@ devices:
     - address: 192.168.6.160/24
       dns_name: glemmen160
       primary: true
-    mac_address: 6c:3c:8c:75:45:0c
   module_bays:
-  - name: CPU1
+  - name: CPU 1
     position: '1'
     bay_type: cpu-socket
     description: Processor socket.
@@ -472,8 +463,24 @@ devices:
     position: '5'
     bay_type: drive-3-5
     description: Drive bay.
+  - name: Fan 1
+    position: '6'
+    bay_type: fan
+    description: Chassis cooling fan.
+  - name: Fan 2
+    position: '7'
+    bay_type: fan
+    description: Chassis cooling fan.
+  - name: Fan 3
+    position: '8'
+    bay_type: fan
+    description: Chassis cooling fan.
+  - name: Fan 4
+    position: '9'
+    bay_type: fan
+    description: Chassis cooling fan.
   modules:
-  - bay: CPU1
+  - bay: CPU 1
     module_type: intel-xeon-e-2314-cpu-2-80ghz
     status: active
     serial: ''
@@ -498,6 +505,26 @@ devices:
     status: active
     serial: WFL4KAP2
     description: 2000 GB HD
+  - bay: Fan 1
+    module_type: dell-system-board-fan
+    status: active
+    serial: ''
+    description: System Board Fan1
+  - bay: Fan 2
+    module_type: dell-system-board-fan
+    status: active
+    serial: ''
+    description: System Board Fan2
+  - bay: Fan 3
+    module_type: dell-system-board-fan
+    status: active
+    serial: ''
+    description: System Board Fan3
+  - bay: Fan 4
+    module_type: dell-system-board-fan
+    status: active
+    serial: ''
+    description: System Board Fan4
 - name: glemmen170
   site: glemmen
   role: control-plane
@@ -505,7 +532,7 @@ devices:
   platform: talos-linux
   status: active
   serial: 4c4c4544-004c-3510-8031-b4c04f4a5a33
-  description: Talos (v1.14.4), Kubernetes v1.37.1, kernel 6.18.57-talos, 4 CPU, 30.8
+  description: Talos (v1.14.4), Kubernetes v1.37.1, kernel 6.18.57-talos, 4 CPU, 31.2
     GiB RAM
   tags:
   - production
@@ -514,12 +541,10 @@ devices:
     type: 1000base-t
     enabled: true
     description: bond0 member (LACP)
-    mac_address: 6c:3c:8c:75:3c:b4
   - name: eno8403
     type: 1000base-t
     enabled: true
     description: bond0 member (LACP)
-    mac_address: 6c:3c:8c:75:3c:b4
   - name: bond0
     type: lag
     enabled: true
@@ -528,17 +553,16 @@ devices:
     - address: 192.168.6.170/24
       dns_name: glemmen170
       primary: true
-    mac_address: 6c:3c:8c:75:3c:b4
   module_bays:
-  - name: CPU1
+  - name: CPU 1
     position: '1'
     bay_type: cpu-socket
     description: Processor socket.
-  - name: DIMM A1
+  - name: DIMM A2
     position: '2'
     bay_type: dimm-ddr4
     description: Memory module slot.
-  - name: DIMM A2
+  - name: DIMM A1
     position: '3'
     bay_type: dimm-ddr4
     description: Memory module slot.
@@ -550,21 +574,37 @@ devices:
     position: '5'
     bay_type: drive-3-5
     description: Drive bay.
+  - name: Fan 1
+    position: '6'
+    bay_type: fan
+    description: Chassis cooling fan.
+  - name: Fan 2
+    position: '7'
+    bay_type: fan
+    description: Chassis cooling fan.
+  - name: Fan 3
+    position: '8'
+    bay_type: fan
+    description: Chassis cooling fan.
+  - name: Fan 4
+    position: '9'
+    bay_type: fan
+    description: Chassis cooling fan.
   modules:
-  - bay: CPU1
+  - bay: CPU 1
     module_type: intel-xeon-e-2314-cpu-2-80ghz
     status: active
     serial: ''
     description: Intel Xeon E-2314 CPU @ 2.80GHz
-  - bay: DIMM A1
-    module_type: micron-9asf2g72az-3g2f1
-    status: active
-    serial: 3FE36D7B
-    description: 16 GB DDR4 3200 MT/s
   - bay: DIMM A2
     module_type: micron-9asf2g72az-3g2f1
     status: active
     serial: 3FE3711B
+    description: 16 GB DDR4 3200 MT/s
+  - bay: DIMM A1
+    module_type: micron-9asf2g72az-3g2f1
+    status: active
+    serial: 3FE36D7B
     description: 16 GB DDR4 3200 MT/s
   - bay: Drive 1
     module_type: seagate-st2000nm012b-2td
@@ -576,6 +616,26 @@ devices:
     status: active
     serial: WFL4K91A
     description: 2000 GB HD
+  - bay: Fan 1
+    module_type: dell-system-board-fan
+    status: active
+    serial: ''
+    description: System Board Fan1
+  - bay: Fan 2
+    module_type: dell-system-board-fan
+    status: active
+    serial: ''
+    description: System Board Fan2
+  - bay: Fan 3
+    module_type: dell-system-board-fan
+    status: active
+    serial: ''
+    description: System Board Fan3
+  - bay: Fan 4
+    module_type: dell-system-board-fan
+    status: active
+    serial: ''
+    description: System Board Fan4
 - name: glemmen180
   site: glemmen
   role: control-plane
@@ -583,7 +643,7 @@ devices:
   platform: talos-linux
   status: active
   serial: 4c4c4544-004c-3510-8031-b2c04f4a5a33
-  description: Talos (v1.14.4), Kubernetes v1.37.1, kernel 6.18.57-talos, 4 CPU, 30.8
+  description: Talos (v1.14.4), Kubernetes v1.37.1, kernel 6.18.57-talos, 4 CPU, 31.2
     GiB RAM
   tags:
   - production
@@ -592,12 +652,10 @@ devices:
     type: 1000base-t
     enabled: true
     description: bond0 member (LACP)
-    mac_address: 6c:3c:8c:75:3c:44
   - name: eno8403
     type: 1000base-t
     enabled: true
     description: bond0 member (LACP)
-    mac_address: 6c:3c:8c:75:3c:44
   - name: bond0
     type: lag
     enabled: true
@@ -606,9 +664,8 @@ devices:
     - address: 192.168.6.180/24
       dns_name: glemmen180
       primary: true
-    mac_address: 6c:3c:8c:75:3c:44
   module_bays:
-  - name: CPU1
+  - name: CPU 1
     position: '1'
     bay_type: cpu-socket
     description: Processor socket.
@@ -624,8 +681,24 @@ devices:
     position: '4'
     bay_type: drive-3-5
     description: Drive bay.
+  - name: Fan 1
+    position: '5'
+    bay_type: fan
+    description: Chassis cooling fan.
+  - name: Fan 2
+    position: '6'
+    bay_type: fan
+    description: Chassis cooling fan.
+  - name: Fan 3
+    position: '7'
+    bay_type: fan
+    description: Chassis cooling fan.
+  - name: Fan 4
+    position: '8'
+    bay_type: fan
+    description: Chassis cooling fan.
   modules:
-  - bay: CPU1
+  - bay: CPU 1
     module_type: intel-xeon-e-2314-cpu-2-80ghz
     status: active
     serial: ''
@@ -645,12 +718,32 @@ devices:
     status: active
     serial: WRE0MBFX
     description: 2000 GB HD
+  - bay: Fan 1
+    module_type: dell-system-board-fan
+    status: active
+    serial: ''
+    description: System Board Fan1
+  - bay: Fan 2
+    module_type: dell-system-board-fan
+    status: active
+    serial: ''
+    description: System Board Fan2
+  - bay: Fan 3
+    module_type: dell-system-board-fan
+    status: active
+    serial: ''
+    description: System Board Fan3
+  - bay: Fan 4
+    module_type: dell-system-board-fan
+    status: active
+    serial: ''
+    description: System Board Fan4
 - name: glemmen50
   site: glemmen
   role: worker
   device_type: ibm-system-x3650-m3
   platform: talos-linux
-  status: active
+  status: offline
   serial: 601b5291-fbf9-3108-b1e5-f33cca2a2fe5
   description: Talos (v1.14.4), Kubernetes v1.37.1, kernel 6.18.57-talos, 24 CPU,
     141.6 GiB RAM
@@ -665,198 +758,6 @@ devices:
     - address: 192.168.6.50/24
       dns_name: glemmen50
       primary: true
-    mac_address: 5c:f3:fc:e6:12:3c
-  module_bays:
-  - name: Node 1 Socket 1
-    position: '1'
-    bay_type: cpu-socket
-    description: Processor socket.
-  - name: Node 1 Socket 2
-    position: '2'
-    bay_type: cpu-socket
-    description: Processor socket.
-  - name: DIMM01
-    position: '3'
-    bay_type: dimm-ddr3
-    description: Memory module slot.
-  - name: DIMM02
-    position: '4'
-    bay_type: dimm-ddr3
-    description: Memory module slot.
-  - name: DIMM03
-    position: '5'
-    bay_type: dimm-ddr3
-    description: Memory module slot.
-  - name: DIMM04
-    position: '6'
-    bay_type: dimm-ddr3
-    description: Memory module slot.
-  - name: DIMM05
-    position: '7'
-    bay_type: dimm-ddr3
-    description: Memory module slot.
-  - name: DIMM06
-    position: '8'
-    bay_type: dimm-ddr3
-    description: Memory module slot.
-  - name: DIMM07
-    position: '9'
-    bay_type: dimm-ddr3
-    description: Memory module slot.
-  - name: DIMM08
-    position: '10'
-    bay_type: dimm-ddr3
-    description: Memory module slot.
-  - name: DIMM09
-    position: '11'
-    bay_type: dimm-ddr3
-    description: Memory module slot.
-  - name: DIMM10
-    position: '12'
-    bay_type: dimm-ddr3
-    description: Memory module slot.
-  - name: DIMM11
-    position: '13'
-    bay_type: dimm-ddr3
-    description: Memory module slot.
-  - name: DIMM12
-    position: '14'
-    bay_type: dimm-ddr3
-    description: Memory module slot.
-  - name: DIMM13
-    position: '15'
-    bay_type: dimm-ddr3
-    description: Memory module slot.
-  - name: DIMM14
-    position: '16'
-    bay_type: dimm-ddr3
-    description: Memory module slot.
-  - name: DIMM15
-    position: '17'
-    bay_type: dimm-ddr3
-    description: Memory module slot.
-  - name: DIMM16
-    position: '18'
-    bay_type: dimm-ddr3
-    description: Memory module slot.
-  - name: DIMM17
-    position: '19'
-    bay_type: dimm-ddr3
-    description: Memory module slot.
-  - name: DIMM18
-    position: '20'
-    bay_type: dimm-ddr3
-    description: Memory module slot.
-  - name: Drive 1
-    position: '21'
-    bay_type: drive-2-5
-    description: Drive bay.
-  modules:
-  - bay: Node 1 Socket 1
-    module_type: intel-xeon-cpu-e5645-2-40ghz
-    status: active
-    serial: ''
-    description: Intel Xeon CPU E5645 @ 2.40GHz
-  - bay: Node 1 Socket 2
-    module_type: intel-xeon-cpu-e5645-2-40ghz
-    status: active
-    serial: ''
-    description: Intel Xeon CPU E5645 @ 2.40GHz
-  - bay: DIMM01
-    module_type: samsung-m393b1k70ch0-yh9
-    status: active
-    serial: 959FA983
-    description: 8 GB DDR3 800 MT/s
-  - bay: DIMM02
-    module_type: samsung-m393b1k70ch0-yh9
-    status: active
-    serial: 879FA983
-    description: 8 GB DDR3 800 MT/s
-  - bay: DIMM03
-    module_type: samsung-m393b1k70ch0-yh9
-    status: active
-    serial: D69FA983
-    description: 8 GB DDR3 800 MT/s
-  - bay: DIMM04
-    module_type: samsung-m393b1k70ch0-yh9
-    status: active
-    serial: AA9FA983
-    description: 8 GB DDR3 800 MT/s
-  - bay: DIMM05
-    module_type: samsung-m393b1k70ch0-yh9
-    status: active
-    serial: D89FA983
-    description: 8 GB DDR3 800 MT/s
-  - bay: DIMM06
-    module_type: samsung-m393b1k70ch0-yh9
-    status: active
-    serial: D39FA983
-    description: 8 GB DDR3 800 MT/s
-  - bay: DIMM07
-    module_type: samsung-m393b1k70ch0-yh9
-    status: active
-    serial: CC9FA983
-    description: 8 GB DDR3 800 MT/s
-  - bay: DIMM08
-    module_type: samsung-m393b1k70ch0-yh9
-    status: active
-    serial: D79FA983
-    description: 8 GB DDR3 800 MT/s
-  - bay: DIMM09
-    module_type: samsung-m393b1k70ch0-yh9
-    status: active
-    serial: CA9FA983
-    description: 8 GB DDR3 800 MT/s
-  - bay: DIMM10
-    module_type: samsung-m393b1k70ch0-yh9
-    status: active
-    serial: CD9FA983
-    description: 8 GB DDR3 800 MT/s
-  - bay: DIMM11
-    module_type: samsung-m393b1k70ch0-yh9
-    status: active
-    serial: D49FA983
-    description: 8 GB DDR3 800 MT/s
-  - bay: DIMM12
-    module_type: samsung-m393b1k70ch0-yh9
-    status: active
-    serial: CB9FA983
-    description: 8 GB DDR3 800 MT/s
-  - bay: DIMM13
-    module_type: samsung-m393b1k70ch0-yh9
-    status: active
-    serial: D59FA983
-    description: 8 GB DDR3 800 MT/s
-  - bay: DIMM14
-    module_type: samsung-m393b1k70ch0-yh9
-    status: active
-    serial: 210FA585
-    description: 8 GB DDR3 800 MT/s
-  - bay: DIMM15
-    module_type: sk-hynix-hmt31gr7bfr4a-h9
-    status: active
-    serial: D1F2CC2D
-    description: 8 GB DDR3 800 MT/s
-  - bay: DIMM16
-    module_type: sk-hynix-hmt31gr7bfr4a-h9
-    status: active
-    serial: FEF28C2D
-    description: 8 GB DDR3 800 MT/s
-  - bay: DIMM17
-    module_type: sk-hynix-hmt31gr7bfr4a-h9
-    status: active
-    serial: FBF26C2D
-    description: 8 GB DDR3 800 MT/s
-  - bay: DIMM18
-    module_type: sk-hynix-hmt31gr7bfr4a-h9
-    status: active
-    serial: 4A80521F
-    description: 8 GB DDR3 800 MT/s
-  - bay: Drive 1
-    module_type: generic-serveraid-m5014
-    status: active
-    serial: ''
-    description: 598 GB HD
 - name: glemmen60
   site: glemmen
   role: worker
@@ -877,117 +778,6 @@ devices:
     - address: 192.168.6.60/24
       dns_name: glemmen60
       primary: true
-    mac_address: 08:9e:01:d8:7b:f9
-  module_bays:
-  - name: CPU1
-    position: '1'
-    bay_type: cpu-socket
-    description: Processor socket.
-  - name: CPU2
-    position: '2'
-    bay_type: cpu-socket
-    description: Processor socket.
-  - name: DIMM_A1
-    position: '3'
-    bay_type: dimm-ddr3
-    description: Memory module slot.
-  - name: DIMM_A2
-    position: '4'
-    bay_type: dimm-ddr3
-    description: Memory module slot.
-  - name: DIMM_A3
-    position: '5'
-    bay_type: dimm-ddr3
-    description: Memory module slot.
-  - name: DIMM_A4
-    position: '6'
-    bay_type: dimm-ddr3
-    description: Memory module slot.
-  - name: DIMM_B1
-    position: '7'
-    bay_type: dimm-ddr3
-    description: Memory module slot.
-  - name: DIMM_B2
-    position: '8'
-    bay_type: dimm-ddr3
-    description: Memory module slot.
-  - name: DIMM_B3
-    position: '9'
-    bay_type: dimm-ddr3
-    description: Memory module slot.
-  - name: DIMM_B4
-    position: '10'
-    bay_type: dimm-ddr3
-    description: Memory module slot.
-  - name: Drive 1
-    position: '11'
-    bay_type: drive-3-5
-    description: Drive bay.
-  - name: Drive 2
-    position: '12'
-    bay_type: drive-3-5
-    description: Drive bay.
-  modules:
-  - bay: CPU1
-    module_type: amd-opteron-processor-4386
-    status: active
-    serial: ''
-    description: AMD Opteron Processor 4386
-  - bay: CPU2
-    module_type: amd-opteron-processor-4386
-    status: active
-    serial: ''
-    description: AMD Opteron Processor 4386
-  - bay: DIMM_A1
-    module_type: samsung-m393b2g70bh0-yk0
-    status: active
-    serial: 1426E297
-    description: 16 GB DDR3 1600 MT/s
-  - bay: DIMM_A2
-    module_type: samsung-m393b2g70bh0-yk0
-    status: active
-    serial: 1426F422
-    description: 16 GB DDR3 1600 MT/s
-  - bay: DIMM_A3
-    module_type: samsung-m393b2g70bh0-yk0
-    status: active
-    serial: 1426FF78
-    description: 16 GB DDR3 1600 MT/s
-  - bay: DIMM_A4
-    module_type: samsung-m393b2g70bh0-yk0
-    status: active
-    serial: 1426FFEE
-    description: 16 GB DDR3 1600 MT/s
-  - bay: DIMM_B1
-    module_type: samsung-m393b2g70bh0-yk0
-    status: active
-    serial: 1426E296
-    description: 16 GB DDR3 1600 MT/s
-  - bay: DIMM_B2
-    module_type: samsung-m393b2g70bh0-yk0
-    status: active
-    serial: '14270038'
-    description: 16 GB DDR3 1600 MT/s
-  - bay: DIMM_B3
-    module_type: samsung-m393b2g70bh0-yk0
-    status: active
-    serial: '14270034'
-    description: 16 GB DDR3 1600 MT/s
-  - bay: DIMM_B4
-    module_type: samsung-m393b2g70bh0-yk0
-    status: active
-    serial: '14270035'
-    description: 16 GB DDR3 1600 MT/s
-  - bay: Drive 1
-    module_type: generic-perc-h700
-    status: active
-    serial: ''
-    description: 599 GB HD
-  - bay: Drive 2
-    module_type: generic-perc-h700
-    status: active
-    serial: ''
-    description: 7999 GB HD
 - name: glemmen80
   site: glemmen
   role: worker
@@ -1008,150 +798,3 @@ devices:
     - address: 192.168.6.80/24
       dns_name: glemmen80
       primary: true
-    mac_address: a0:36:9f:93:7d:c8
-  module_bays:
-  - name: CPU1
-    position: '1'
-    bay_type: cpu-socket
-    description: Processor socket.
-  - name: DIMM A1
-    position: '2'
-    bay_type: dimm-ddr4
-    description: Memory module slot.
-  - name: DIMM A10
-    position: '3'
-    bay_type: dimm-ddr4
-    description: Memory module slot.
-  - name: DIMM A11
-    position: '4'
-    bay_type: dimm-ddr4
-    description: Memory module slot.
-  - name: DIMM A12
-    position: '5'
-    bay_type: dimm-ddr4
-    description: Memory module slot.
-  - name: DIMM A2
-    position: '6'
-    bay_type: dimm-ddr4
-    description: Memory module slot.
-  - name: DIMM A3
-    position: '7'
-    bay_type: dimm-ddr4
-    description: Memory module slot.
-  - name: DIMM A4
-    position: '8'
-    bay_type: dimm-ddr4
-    description: Memory module slot.
-  - name: DIMM A5
-    position: '9'
-    bay_type: dimm-ddr4
-    description: Memory module slot.
-  - name: DIMM A6
-    position: '10'
-    bay_type: dimm-ddr4
-    description: Memory module slot.
-  - name: DIMM A7
-    position: '11'
-    bay_type: dimm-ddr4
-    description: Memory module slot.
-  - name: DIMM A8
-    position: '12'
-    bay_type: dimm-ddr4
-    description: Memory module slot.
-  - name: DIMM A9
-    position: '13'
-    bay_type: dimm-ddr4
-    description: Memory module slot.
-  - name: Drive 1
-    position: '14'
-    bay_type: drive-2-5
-    description: Drive bay.
-  - name: Drive 2
-    position: '15'
-    bay_type: drive-2-5
-    description: Drive bay.
-  - name: Drive 3
-    position: '16'
-    bay_type: drive-2-5
-    description: Drive bay.
-  modules:
-  - bay: CPU1
-    module_type: intel-xeon-cpu-e5-1650-v3-3-50ghz
-    status: active
-    serial: ''
-    description: Intel Xeon CPU E5-1650 v3 @ 3.50GHz
-  - bay: DIMM A1
-    module_type: samsung-m393a2g40db0-cpb
-    status: active
-    serial: 38E4043E
-    description: 16 GB DDR4 2133 MT/s
-  - bay: DIMM A10
-    module_type: sk-hynix-hma42gr7mfr4n-tf
-    status: active
-    serial: 24210AAC
-    description: 16 GB DDR4 2133 MT/s
-  - bay: DIMM A11
-    module_type: sk-hynix-hma42gr7mfr4n-tf
-    status: active
-    serial: 24210ABC
-    description: 16 GB DDR4 2133 MT/s
-  - bay: DIMM A12
-    module_type: sk-hynix-hma42gr7mfr4n-tf
-    status: active
-    serial: 24210B88
-    description: 16 GB DDR4 2133 MT/s
-  - bay: DIMM A2
-    module_type: samsung-m393a2g40db0-cpb
-    status: active
-    serial: 38E3F84A
-    description: 16 GB DDR4 2133 MT/s
-  - bay: DIMM A3
-    module_type: samsung-m393a2g40db0-cpb
-    status: active
-    serial: 38E3F5B2
-    description: 16 GB DDR4 2133 MT/s
-  - bay: DIMM A4
-    module_type: samsung-m393a2g40db0-cpb
-    status: active
-    serial: 38E3F5AB
-    description: 16 GB DDR4 2133 MT/s
-  - bay: DIMM A5
-    module_type: samsung-m393a2g40db0-cpb
-    status: active
-    serial: 38E3FAF3
-    description: 16 GB DDR4 2133 MT/s
-  - bay: DIMM A6
-    module_type: samsung-m393a2g40db0-cpb
-    status: active
-    serial: 38E3FA32
-    description: 16 GB DDR4 2133 MT/s
-  - bay: DIMM A7
-    module_type: sk-hynix-hma42gr7mfr4n-tf
-    status: active
-    serial: 24210BBB
-    description: 16 GB DDR4 2133 MT/s
-  - bay: DIMM A8
-    module_type: sk-hynix-hma42gr7mfr4n-tf
-    status: active
-    serial: 24210D47
-    description: 16 GB DDR4 2133 MT/s
-  - bay: DIMM A9
-    module_type: sk-hynix-hma42gr7mfr4n-tf
-    status: active
-    serial: 24210AA0
-    description: 16 GB DDR4 2133 MT/s
-  - bay: Drive 1
-    module_type: seagate-st91000640ns
-    status: active
-    serial: 9XG58GD8
-    description: 1000 GB HD
-  - bay: Drive 2
-    module_type: western-digital-wdc-wd10jfcx-68n
-    status: active
-    serial: WD-WXL1AA5J34UJ
-    description: 1000 GB HD
-  - bay: Drive 3
-    module_type: western-digital-wdc-wd10jfcx-68n
-    status: active
-    serial: WD-WXL1AA55CN98
-    description: 1000 GB HD

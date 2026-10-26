@@ -140,7 +140,7 @@ devices:
   - name: Port 2
     type: 2.5gbase-t
     enabled: true
-    description: Down, no link
+    description: Up, 1 Gbps
     mtu: null
     mode: ''
     untagged_vlan: null
@@ -677,7 +677,7 @@ devices:
   - name: Port 1
     type: 2.5gbase-t
     enabled: true
-    description: Down, no link
+    description: Up, 1 Gbps
     mtu: null
     mode: ''
     untagged_vlan: null
@@ -972,7 +972,7 @@ devices:
   - name: Port 3
     type: 1000base-t
     enabled: true
-    description: Up, 1 Gbps PoE
+    description: Up, 0.1 Gbps PoE
     mtu: null
     mode: access
     untagged_vlan: 3
