@@ -47,7 +47,7 @@ def redfish_payload() -> dict:
     }
 
 
-def test_manual_only_idrac_server_gets_redfish_modules() -> None:
+def test_manual_only_server_gets_bmc_modules() -> None:
     manual = {
         "settings": {"site": "glemmen", "default_tag": "production"},
         "devices": [
@@ -55,7 +55,7 @@ def test_manual_only_idrac_server_gets_redfish_modules() -> None:
                 "name": "server110",
                 "role": "server",
                 "device_type": "dell-poweredge-r250",
-                "idrac_ip": "192.168.4.99",
+                "redfish_ip": "192.168.4.99",
             }
         ],
     }
@@ -64,7 +64,7 @@ def test_manual_only_idrac_server_gets_redfish_modules() -> None:
         manual,
         "USW Pro 24 PoE",
         module_types={},
-        redfish_by_name={"server110": redfish_payload()},
+        bmc_by_name={"server110": redfish_payload()},
     )
     assert len(servers) == 1
     server = servers[0]

@@ -9,8 +9,8 @@ from inventory_util import normalize_mac
 
 from .config import DEFAULT_TAG
 from .hardware import (
+    add_bmc_components,
     add_module_component,
-    add_redfish_components,
     clean_model,
     disk_bay_type,
     disk_manufacturer,
@@ -39,7 +39,7 @@ def build_servers(
     switch_name: str,
     *,
     module_types: dict[str, dict[str, Any]] | None = None,
-    redfish_by_name: dict[str, dict[str, Any]] | None = None,
+    bmc_by_name: dict[str, dict[str, Any]] | None = None,
 ) -> list[dict]:
     clients_by_ip = {
         str(client.get("ip")): client
@@ -55,7 +55,7 @@ def build_servers(
     default_tag = manual["settings"].get("default_tag", DEFAULT_TAG)
     servers: list[dict] = []
     catalog = module_types if module_types is not None else {}
-    redfish_data = redfish_by_name or {}
+    bmc_data = bmc_by_name or {}
 
     for device in manual["devices"]:
         if device.get("talos_node") or device.get("role") != "server":
@@ -127,9 +127,9 @@ def build_servers(
 
         module_bays: list[dict] = []
         modules: list[dict] = []
-        redfish = redfish_data.get(name)
-        if redfish:
-            add_redfish_components(module_bays, modules, catalog, redfish, device_type)
+        bmc = bmc_data.get(name)
+        if bmc:
+            add_bmc_components(module_bays, modules, catalog, bmc, device_type)
 
         server: dict[str, Any] = {
             "name": name,
@@ -155,7 +155,7 @@ def build_servers(
         )
         servers.append(server)
 
-    # Devices that are not UniFi clients or Talos nodes, but do have Redfish
+    # Devices that are not UniFi clients or Talos nodes, but do have BMC
     # observations. They already exist in the manual layer; this sparse entry
     # only attaches the discovered components.
     for device in manual["devices"]:
@@ -166,18 +166,18 @@ def build_servers(
         ):
             continue
         name = str(device.get("name") or "")
-        redfish = redfish_data.get(name)
-        if not name or not redfish:
+        bmc = bmc_data.get(name)
+        if not name or not bmc:
             continue
         module_bays: list[dict] = []
         modules: list[dict] = []
-        add_redfish_components(
-            module_bays, modules, catalog, redfish, str(device.get("device_type") or "")
+        add_bmc_components(
+            module_bays, modules, catalog, bmc, str(device.get("device_type") or "")
         )
         if not modules:
             continue
         log.debug(
-            "Built Redfish-only server %s: module_bays=%d, modules=%d",
+            "Built BMC-only server %s: module_bays=%d, modules=%d",
             name,
             len(module_bays),
             len(modules),
@@ -208,7 +208,7 @@ def build_nodes(
     talosctl: str | None = None,
     talosconfig: str | None = None,
     module_types: dict[str, dict[str, Any]] | None = None,
-    redfish_by_name: dict[str, dict[str, Any]] | None = None,
+    bmc_by_name: dict[str, dict[str, Any]] | None = None,
     manual_by_node: dict[str, dict[str, Any]] | None = None,
 ) -> list[dict]:
     result: list[dict] = []
@@ -217,7 +217,7 @@ def build_nodes(
     manual_devices = manual["devices"]
     manual_nodes = manual_by_node or {}
     catalog = module_types if module_types is not None else {}
-    redfish_data = redfish_by_name or {}
+    bmc_data = bmc_by_name or {}
 
     for node in nodes:
         metadata = node.get("metadata") or {}
@@ -312,12 +312,12 @@ def build_nodes(
         modules: list[dict] = []
         bay_disk_type = disk_bay_type(device_type)
         dimm_class = memory_class(device_type)
-        redfish = redfish_data.get(device_name) or redfish_data.get(name)
+        bmc = bmc_data.get(device_name) or bmc_data.get(name)
 
-        if redfish:
-            add_redfish_components(module_bays, modules, catalog, redfish, device_type)
+        if bmc:
+            add_bmc_components(module_bays, modules, catalog, bmc, device_type)
 
-        if not redfish or not redfish.get("cpu"):
+        if not bmc or not bmc.get("cpu"):
             if talosctl:
                 for index, processor in enumerate(
                     talos_table(talosctl, talosconfig, name, "processors"), 1
@@ -356,7 +356,7 @@ def build_nodes(
                         description=model,
                     )
 
-        if not redfish or not redfish.get("memory"):
+        if not bmc or not bmc.get("memory"):
             if talosctl:
                 for index, memory in enumerate(
                     talos_table(talosctl, talosconfig, name, "memorymodules"), 1
@@ -398,7 +398,7 @@ def build_nodes(
                         description=f"{size_gb} GB {dimm_class} {data_rate} MT/s",
                     )
 
-        if not redfish or not redfish.get("disks"):
+        if not bmc or not bmc.get("disks"):
             if talosctl:
                 disks, _system_disk = node_disks(talosctl, talosconfig, name)
                 for index, disk in enumerate(disks, 1):

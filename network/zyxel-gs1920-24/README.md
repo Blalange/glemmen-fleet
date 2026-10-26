@@ -56,8 +56,8 @@ Access ports use `frame-type untagged`; the uplink uses the default
 
 - The APC automatic transfer switch has a fixed DHCP reservation at
   `192.168.4.3` (UniFi Network -> client MAC `00:c0:b7:f4:7e:d0`).
-- The iDRACs receive DHCP leases on VLAN 4. Current leases:
-  `192.168.4.32`, `.78`, `.91`, `.135`, `.247`.
+- The iDRACs and IBM IMM are on VLAN 4 at `192.168.4.50`, `.60`, `.80`,
+  `.130`, `.150`, `.160`, `.170` and `.180`.
 - The switch itself is static at `192.168.4.2`.
 
 ## Configuration backup

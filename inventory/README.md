@@ -7,7 +7,7 @@ Git is the source of truth. The inventory is split into two layers:
 
 - `inventory/generated/` is written by
   `inventory/scripts/collect.py` from the live UniFi controller, Kubernetes/Talos
-  nodes, iDRAC Redfish endpoints and SNMP network devices. Do not edit it by hand.
+  nodes, BMC Redfish/IPMI endpoints and SNMP network devices. Do not edit it by hand.
 - `inventory/manual/` is edited by hand. It owns everything that is not
   discoverable: real device models, the physical rack layout, physical servers,
   accessories, hand-documented cables, VIPs, ownership and contacts.
@@ -19,20 +19,20 @@ only writer. Objects created by hand in NetBox are never deleted by the sync.
 
 ## Components
 
-| Resource | Purpose |
-|---|---|
-| `flux/apps/netbox/release.yaml` | Official NetBox Helm chart `8.3.93` (NetBox `v4.7.3`) |
-| `flux/apps/netbox/postgres.yaml` | PostgreSQL `18.6` StatefulSet with an 8Gi Longhorn volume |
-| `flux/apps/netbox/media-pvc.yaml` | 2Gi Longhorn RWX volume for uploaded media |
-| `flux/apps/netbox/valkey.yaml` | Ephemeral Valkey `9.1.2` for the RQ queue and cache |
-| `flux/apps/netbox/sync-cronjob.yaml` | Runs the inventory sync every 10 minutes |
-| `inventory/scripts/sync.py` | NetBox reconciler entrypoint |
-| `inventory/scripts/dtl_catalog.py` | Runtime NetBox Device Type Library client |
-| `inventory/generated/` | Canonical compute and network facts from the collector |
-| `inventory/manual/` | Human-maintained inventory |
-| `inventory/scripts/` | Collector and sync code |
-| `inventory/images/` | Device-type front/rear/other images |
-| `flux/apps/netbox/storageclass.yaml` | `netbox` (RWO) and `netbox-media` (RWX) Longhorn classes |
+| Resource                             | Purpose                                                   |
+| ------------------------------------ | --------------------------------------------------------- |
+| `flux/apps/netbox/release.yaml`      | Official NetBox Helm chart `8.3.93` (NetBox `v4.7.3`)     |
+| `flux/apps/netbox/postgres.yaml`     | PostgreSQL `18.6` StatefulSet with an 8Gi Longhorn volume |
+| `flux/apps/netbox/media-pvc.yaml`    | 2Gi Longhorn RWX volume for uploaded media                |
+| `flux/apps/netbox/valkey.yaml`       | Ephemeral Valkey `9.1.2` for the RQ queue and cache       |
+| `flux/apps/netbox/sync-cronjob.yaml` | Runs the inventory sync every 10 minutes                  |
+| `inventory/scripts/sync.py`          | NetBox reconciler entrypoint                              |
+| `inventory/scripts/dtl_catalog.py`   | Runtime NetBox Device Type Library client                 |
+| `inventory/generated/`               | Canonical compute and network facts from the collector    |
+| `inventory/manual/`                  | Human-maintained inventory                                |
+| `inventory/scripts/`                 | Collector and sync code                                   |
+| `inventory/images/`                  | Device-type front/rear/other images                       |
+| `flux/apps/netbox/storageclass.yaml` | `netbox` (RWO) and `netbox-media` (RWX) Longhorn classes  |
 
 Media uploads use a 2Gi Longhorn **ReadWriteMany** volume. Longhorn implements
 RWX with its NFS share-manager, so the web and worker pods can run on different
@@ -94,6 +94,8 @@ The collector merges live sources into a canonical generated inventory:
 - **Talos** supplies node status, addresses, NIC MACs, CPUs, memory and disks.
 - **iDRAC Redfish** supplies richer compute components: CPU, memory, disks,
   fans and PSUs where exposed.
+- **IPMI** supplies FRU identity and fan/PSU sensors for BMCs without Redfish
+  (for example iDRAC 6 and the IBM IMM).
 - **SNMP v2c** supplies network-device identity, interfaces, VLAN membership,
   LLDP neighbors and forwarding-table observations. The default community is
   `public`; known SNMP-capable UniFi models are discovered automatically, and
@@ -104,32 +106,33 @@ identifiers first, then bootstrap locators:
 
 1. Dell service tag / system UUID / SNMP serial
 2. UniFi or bridge MAC / SNMP sysName
-3. Talos node name, UniFi IP, iDRAC IP or SNMP IP
+3. Talos node name, UniFi IP, Redfish/IPMI BMC IP or SNMP IP
 
 A source observation that maps to more than one manual device is an error. This
-prevents an iDRAC or DHCP address from silently assigning components to the
+prevents a BMC or DHCP address from silently assigning components to the
 wrong server. Optional stable identifiers can be added to manual devices:
 
 ```yaml
 - name: glemmen160
   talos_node: glemmen160
   service_tag: DL51JZ3
-  idrac_ip: 192.168.4.91
-  oob_ip: 192.168.4.91
+  redfish_ip: 192.168.4.160
+  oob_ip: 192.168.4.160
   unifi_mac: 6c:3c:8c:75:45:0c
 
 - name: zyxel-gs1920-24
   snmp_ip: 192.168.4.2
 ```
 
-`talos_node`, `unifi_ip` and `idrac_ip` remain supported for compatibility.
-`service_tag`, `system_uuid`, `unifi_mac` and `unifi_serial` are optional but
-make the mapping more robust.
+`talos_node`, `unifi_ip`, `redfish_ip` and `ipmi_ip` are optional locators.
+`service_tag`, `system_uuid`, `unifi_mac` and `unifi_serial` are optional stable
+identifiers that make the mapping more robust.
 
 The collector performs **source merging**: Redfish is preferred over Talos for
-compute components, Talos is the fallback, and SNMP only fills network fields
-that are missing from UniFi/manual data. The sync job performs the **layer
-merge** of generated and manual YAML; manual values win.
+compute components, Talos is the fallback, IPMI supplies fan/PSU data for BMCs
+without Redfish, and SNMP only fills network fields that are missing from
+UniFi/manual data. The sync job performs the **layer merge** of generated and
+manual YAML; manual values win.
 
 SNMP observations are intentionally supplemental: VLAN membership and
 per-interface MACs are added when missing, while manual descriptions, types and
@@ -246,27 +249,45 @@ installed in a physical slot is represented by a module type, a module bay on
 the device, and a module instance in that bay.
 
 The collector discovers CPU, memory and disk modules from Talos. Any manual
-device with an `idrac_ip` also uses the Redfish API for richer component data
+device with a `redfish_ip` also uses the Redfish API for richer component data
 (exact memory manufacturer/part number, disk RPM and cooling fans). This works
 for Talos nodes, UniFi-discovered servers and servers that exist only in the
 manual layer. Redfish uses the read-only `readonly` account (password
-`readonly`) by default; override it with `IDRAC_USER` / `IDRAC_PASS`. The
+`readonly`) by default; override it with `REDFISH_USER` / `REDFISH_PASS`. The
 default is a read-only account; any override stays in the environment and is
 never written to Git.
 
-`idrac_ip` can be added to any manual device, including servers that have no
-`unifi_ip` and no `talos_node`. If an iDRAC is unreachable or rejects the
+`redfish_ip` can be added to any manual device, including servers that have no
+`unifi_ip` and no `talos_node`. If a BMC is unreachable or rejects the
 credentials, Talos nodes fall back to Talos hardware data and non-Talos servers
 simply keep their manually modelled components.
 
-The five R250 servers with iDRACs model the out-of-band port explicitly. The
-device gets `oob_ip`, and an `iDRAC` interface carries the VLAN 4 address and
-MAC. The iDRAC interfaces are cabled to the Zyxel ports that already document
-the matching service tags:
+BMCs without Redfish can set `ipmi_ip` instead. The collector runs `ipmitool`
+over IPMI 2.0 and reads the FRU identity plus fan and PSU sensors; CPU, memory
+and disk modules still come from Talos or the manual layer. IPMI uses
+`IPMI_USER` / `IPMI_PASS`, the `ipmitool` binary from `PATH`, and the `IPMI_INTERFACE` (default
+`lanplus`), `IPMI_PRIVILEGE` (default `USER`), `IPMI_CIPHER` (optional) and
+`IPMI_TIMEOUT` (default 30 seconds) settings. Set `IPMI_TOOL` to use a
+non-default binary path.
+
+IPMI over LAN must be enabled on the BMC. On an iDRAC6 it can be enabled over
+SSH with:
+
+```sh
+ssh root@<idrac-ip> \
+  'racadm config -g cfgIpmiLan -o cfgIpmiLanEnable 1'
+```
+
+The R250 servers and the R630 use Redfish. Their out-of-band port is modelled
+explicitly: the device gets `oob_ip`, and an `iDRAC` interface carries the
+VLAN 4 address and MAC. The iDRAC interfaces are cabled to the Zyxel ports
+that already document the matching service tags. The iDRAC 6 on `glemmen60`
+and the IBM IMM on `glemmen50` use `ipmi_ip` and are modelled with an `iDRAC`
+or `IMM` interface respectively:
 
 ```yaml
 - name: glemmen130
-  idrac_ip: 192.168.4.130
+  redfish_ip: 192.168.4.130
   oob_ip: 192.168.4.130
   interfaces:
     - name: iDRAC
@@ -283,6 +304,24 @@ the matching service tags:
 
 The NetBox device `oob_ip` is resolved from the interface address, while the
 in-band primary IP remains on the server's normal NIC/bond.
+
+An IPMI-managed BMC uses the same OOB modelling but no `redfish_ip`:
+
+```yaml
+- name: glemmen60
+  ipmi_ip: 192.168.4.60
+  oob_ip: 192.168.4.60
+  interfaces:
+    - name: iDRAC
+      type: 1000base-t
+      enabled: true
+      mgmt_only: true
+      description: Dell iDRAC 6 out-of-band management.
+      untagged_vlan: 4
+      ip_addresses:
+        - address: 192.168.4.60/24
+          dns_name: idrac-jvcjgz1
+```
 
 Manual devices can declare their own components:
 
@@ -444,14 +483,14 @@ kubectl -n netbox create secret generic netbox-secrets \
   --dry-run=client -o yaml | kubectl apply -f -
 ```
 
-| Key | Used by |
-|---|---|
-| `username`, `password`, `email`, `api_token`, `api_token_key` | NetBox superuser bootstrap (v2 token) |
-| `api_token_full` | Sync CronJob (`nbt_<key>.<secret>`) |
-| `secret_key`, `api_token_peppers`, `email_password` | NetBox Django config |
-| `db-password` | PostgreSQL and NetBox |
-| `valkey-password` | Valkey and NetBox |
-| `dtl_token` | Optional; GitHub token for DTL tree lookups |
+| Key                                                           | Used by                                     |
+| ------------------------------------------------------------- | ------------------------------------------- |
+| `username`, `password`, `email`, `api_token`, `api_token_key` | NetBox superuser bootstrap (v2 token)       |
+| `api_token_full`                                              | Sync CronJob (`nbt_<key>.<secret>`)         |
+| `secret_key`, `api_token_peppers`, `email_password`           | NetBox Django config                        |
+| `db-password`                                                 | PostgreSQL and NetBox                       |
+| `valkey-password`                                             | Valkey and NetBox                           |
+| `dtl_token`                                                   | Optional; GitHub token for DTL tree lookups |
 
 Read the generated admin password with:
 
@@ -468,11 +507,11 @@ the Secret to match.
 
 ## Inventory sync
 
-Collect live UniFi, Talos and iDRAC facts into `inventory/generated/`:
+Collect live UniFi, Talos, Redfish and IPMI facts into `inventory/generated/`:
 
 ```sh
-# Optional; the collector defaults to the read-only iDRAC account.
-IDRAC_USER=... IDRAC_PASS=... \
+# Optional; the collector defaults to the read-only BMC accounts.
+REDFISH_USER=... REDFISH_PASS=... IPMI_USER=... IPMI_PASS=... \
 uv run --with pysnmp==7.1.22 --with requests --with PyYAML \
   python inventory/scripts/collect.py --from-cluster \
   --kubectl ./scripts/bin/kubectl --kubeconfig talos/generated/kubeconfig \
@@ -495,10 +534,10 @@ can set `snmp_ip` when they are not discovered through UniFi.
 `--from-cluster` reads the `unpoller-unifi` credentials from the monitoring
 namespace; they are never written to the file. The collector reads the manual
 `defaults`, `settings`, `unifi_models` and device entries, then writes only the
-generated layer. It never edits `inventory/manual/`. Devices with `idrac_ip`
-use the Redfish credentials from `IDRAC_USER` / `IDRAC_PASS` (default
-`readonly` / `readonly`) for additional components; overrides are never
-written to Git.
+generated layer. It never edits `inventory/manual/`. Devices with `redfish_ip`
+use the Redfish credentials from `REDFISH_USER` / `REDFISH_PASS` (default
+`readonly` / `readonly`) for additional components; devices with `ipmi_ip` use
+`IPMI_USER` / `IPMI_PASS` and `ipmitool`. Overrides are never written to Git.
 
 The generated layer contains:
 
@@ -508,7 +547,7 @@ The generated layer contains:
   interfaces and discovered modules merged across sources
 - `module-types.yaml`: module types discovered across all compute sources
 - CPU, memory and disk modules from Talos, enriched by Redfish where available
-- fan and PSU modules and richer attributes from iDRAC Redfish where exposed
+- fan and PSU modules from Redfish or IPMI where exposed
 - SNMP system, interface, VLAN, LLDP and FDB observations; `--snmp-report`
   writes the detailed report as JSON
 
@@ -525,30 +564,30 @@ other inventory objects.
 
 Supported top-level keys:
 
-| Key | Notes |
-|---|---|
-| `layer` | `generated` or `manual`; mandatory for deterministic merging |
-| `settings` | Collector settings (`site`, `default_tag`, `rack`); ignored by NetBox |
-| `unifi_models` | UniFi model code → device-type slug; ignored by NetBox |
-| `unifi_vlan_names` | UniFi VLAN ID → corrected name; ignored by NetBox |
-| `sites` | Required for devices, racks, VLANs and prefixes |
-| `manufacturers` | Referenced by device types and platforms |
-| `platforms` | Referenced by devices |
-| `device_roles` | Referenced by devices |
-| `owner_groups` | Optional groups for owners; manual-only |
-| `owners` | Referenced by devices via `owner`; manual-only |
-| `contact_roles` | Referenced by device contacts; manual-only |
-| `contacts` | Referenced by device contacts; manual-only |
-| `module_bay_types` | Referenced by module types and device module bays |
-| `module_types` | Referenced by device modules; may declare `dtl` and component templates |
-| `device_types` | Referenced by devices; may declare `dtl`, `images` and component templates |
-| `racks` | Rack definitions plus declarative `layout` |
-| `vlans` | Site-scoped or global |
-| `prefixes` | Optionally attached to a site and VLAN |
-| `devices` | Nested `interfaces`, `module_bays`, `modules`, `ip_addresses`, `contacts` and optional `uplinks` |
-| `ip_addresses` | Standalone/unassigned IPs (VIPs, for example) |
-| `cables` | One declaration per physical cable |
-| `defaults` | Inherited by every device (site, owner, tags, etc.) |
+| Key                | Notes                                                                                                                                                   |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `layer`            | `generated` or `manual`; mandatory for deterministic merging                                                                                            |
+| `settings`         | Collector settings (`site`, `default_tag`, `rack`); ignored by NetBox                                                                                   |
+| `unifi_models`     | UniFi model code → device-type slug; ignored by NetBox                                                                                                  |
+| `unifi_vlan_names` | UniFi VLAN ID → corrected name; ignored by NetBox                                                                                                       |
+| `sites`            | Required for devices, racks, VLANs and prefixes                                                                                                         |
+| `manufacturers`    | Referenced by device types and platforms                                                                                                                |
+| `platforms`        | Referenced by devices                                                                                                                                   |
+| `device_roles`     | Referenced by devices                                                                                                                                   |
+| `owner_groups`     | Optional groups for owners; manual-only                                                                                                                 |
+| `owners`           | Referenced by devices via `owner`; manual-only                                                                                                          |
+| `contact_roles`    | Referenced by device contacts; manual-only                                                                                                              |
+| `contacts`         | Referenced by device contacts; manual-only                                                                                                              |
+| `module_bay_types` | Referenced by module types and device module bays                                                                                                       |
+| `module_types`     | Referenced by device modules; may declare `dtl` and component templates                                                                                 |
+| `device_types`     | Referenced by devices; may declare `dtl`, `images` and component templates                                                                              |
+| `racks`            | Rack definitions plus declarative `layout`                                                                                                              |
+| `vlans`            | Site-scoped or global                                                                                                                                   |
+| `prefixes`         | Optionally attached to a site and VLAN                                                                                                                  |
+| `devices`          | Nested `interfaces`, `module_bays`, `modules`, `ip_addresses`, `contacts` and optional `uplinks`; may set `owner`, `redfish_ip`, `ipmi_ip` and `oob_ip` |
+| `ip_addresses`     | Standalone/unassigned IPs (VIPs, for example)                                                                                                           |
+| `cables`           | One declaration per physical cable                                                                                                                      |
+| `defaults`         | Inherited by every device (site, owner, tags, etc.)                                                                                                     |
 
 Natural keys used for matching are slugs for sites, manufacturers, platforms,
 roles, contact roles, module bay types and device types; names for owner groups,

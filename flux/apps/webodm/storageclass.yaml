@@ -9,6 +9,6 @@ allowVolumeExpansion: true
 reclaimPolicy: Retain
 volumeBindingMode: Immediate
 parameters:
-  numberOfReplicas: "1"
+  numberOfReplicas: "2"
   staleReplicaTimeout: "2880"
   fsType: "ext4"

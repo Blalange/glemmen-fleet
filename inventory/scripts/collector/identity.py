@@ -20,7 +20,7 @@ def normalize_ref(kind: str, value: Any) -> str:
         return ""
     if kind == "mac":
         return normalize_mac(text)
-    if kind in {"unifi_ip", "idrac_ip"}:
+    if kind in {"unifi_ip", "redfish_ip", "ipmi_ip"}:
         try:
             if "/" in text:
                 return str(ipaddress.ip_interface(text).ip)
@@ -48,7 +48,8 @@ class DeviceResolver:
     _FIELDS = {
         "talos_node": "talos_node",
         "unifi_ip": "unifi_ip",
-        "idrac_ip": "idrac_ip",
+        "redfish_ip": "redfish_ip",
+        "ipmi_ip": "ipmi_ip",
         "service_tag": "service_tag",
         "system_uuid": "system_uuid",
         "unifi_mac": "unifi_mac",

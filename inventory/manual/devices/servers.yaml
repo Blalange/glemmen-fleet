@@ -2,8 +2,8 @@ layer: manual
 
 devices:
   # --------------------------------------------------------------- physical servers
-  # Any server below may also set idrac_ip; Redfish components work without a
-  # talos_node and without a UniFi client address.
+  # Any server below may also set redfish_ip or ipmi_ip; BMC components work
+  # without a talos_node and without a UniFi client address.
   - name: 240emy
     role: server
     device_type: dell-poweredge-r250

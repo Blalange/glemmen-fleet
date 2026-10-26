@@ -126,17 +126,17 @@ def add_module_component(
         }
     )
 
-def add_redfish_components(
+def add_bmc_components(
     module_bays: list[dict[str, Any]],
     modules: list[dict[str, Any]],
     catalog: dict[str, dict[str, Any]],
-    redfish: dict[str, Any],
+    bmc: dict[str, Any],
     device_type: str,
 ) -> None:
-    """Add CPU, memory, disk, fan and PSU modules discovered through Redfish."""
+    """Add CPU, memory, disk, fan and PSU modules discovered through a BMC."""
     bay_disk_type = disk_bay_type(device_type)
 
-    for cpu in redfish.get("cpu") or []:
+    for cpu in bmc.get("cpu") or []:
         cpu_model = clean_model(cpu["model"])
         module_type = register_module_type(
             catalog,
@@ -163,7 +163,7 @@ def add_redfish_components(
             description=cpu_model,
         )
 
-    for memory in redfish.get("memory") or []:
+    for memory in bmc.get("memory") or []:
         klass = str(memory["class"]).upper()
         bay_type = f"dimm-{klass.lower()}" if klass in {"DDR3", "DDR4", "DDR5"} else "dimm-ddr4"
         module_type = register_module_type(
@@ -192,7 +192,7 @@ def add_redfish_components(
             description=f"{memory['size_gb']} GB {klass} {memory['data_rate']} MT/s",
         )
 
-    for disk in redfish.get("disks") or []:
+    for disk in bmc.get("disks") or []:
         attributes: dict[str, Any] = {"size": disk["size_gb"], "type": disk["type"]}
         if disk["speed"]:
             attributes["speed"] = disk["speed"]
@@ -217,13 +217,14 @@ def add_redfish_components(
             description=f"{disk['size_gb']} GB {disk['type']}",
         )
 
-    for fan in redfish.get("fans") or []:
+    for fan in bmc.get("fans") or []:
+        fan_rpm = int(fan["rpm"]) if fan.get("rpm") is not None else 3600
         module_type = register_module_type(
             catalog,
-            manufacturer="dell",
+            manufacturer=fan.get("manufacturer") or "dell",
             model="System Board Fan",
             profile="Fan",
-            attributes={"rpm": 3600},
+            attributes={"rpm": fan_rpm},
             bay_types=["fan"],
             part_number="System Board Fan",
             description="Chassis cooling fan",
@@ -239,7 +240,7 @@ def add_redfish_components(
             description=fan["name"],
         )
 
-    for psu in redfish.get("psus") or []:
+    for psu in bmc.get("psus") or []:
         attributes: dict[str, Any] = {
             "input_current": "AC",
             "input_voltage": 230,

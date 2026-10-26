@@ -47,7 +47,8 @@ The NetBox inventory, collector, sync code and usage instructions live in
 
 ```sh
 # collect live sources into inventory/generated
-env -u IDRAC_USER -u IDRAC_PASS \
+env -u REDFISH_USER -u REDFISH_PASS -u IDRAC_USER -u IDRAC_PASS \
+  -u IPMI_USER -u IPMI_PASS \
   uv run --with pysnmp==7.1.22 --with requests --with PyYAML \
   python inventory/scripts/collect.py --from-cluster \
   --kubectl ./scripts/bin/kubectl --kubeconfig talos/generated/kubeconfig \
@@ -60,7 +61,10 @@ uv run --with pynetbox==7.9.0 --with PyYAML==6.0.3 --with requests==2.32.5 \
 
 The collector also polls SNMP v2c network devices (default community
 `public`) for interfaces, VLANs and LLDP/FDB diagnostics. Use
-`--snmp-community`, `--no-snmp` or `--snmp-report PATH` as needed.
+`--snmp-community`, `--no-snmp` or `--snmp-report PATH` as needed. BMCs without
+Redfish (iDRAC 6, IBM IMM) are polled with `ipmitool`; install it locally and
+set `IPMI_USER` / `IPMI_PASS` if the factory `root` / `readonly` account is not
+enabled.
 
 The sync enriches device and module types from the Apache-2.0 NetBox Device
 Type Library (`--dtl`, enabled by default). Definitions and elevation images

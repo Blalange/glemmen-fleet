@@ -13,10 +13,12 @@ from inventory_util import InventoryError
 
 from .build_devices import build_nodes, build_servers
 from .config import (
-    DEFAULT_IDRAC_PASS,
-    DEFAULT_IDRAC_USER,
+    DEFAULT_IPMI_PASS,
+    DEFAULT_IPMI_USER,
     DEFAULT_MANUAL_DIR,
     DEFAULT_OUTPUT_DIR,
+    DEFAULT_REDFISH_PASS,
+    DEFAULT_REDFISH_USER,
 )
 from .identity import DeviceResolver
 from .log import configure_logging, get_logger
@@ -24,6 +26,7 @@ from .manual import load_manual
 from .process import read_cluster_secret
 from .render import write_yaml
 from .snmp_merge import merge_snmp_observations
+from .sources.ipmi import read_ipmi
 from .sources.redfish import read_redfish
 from .sources.snmp import collect_snmp, write_snmp_report
 from .sources.talos import node_system_info, read_nodes
@@ -95,14 +98,15 @@ def _collect_redfish(
     if not username or not password:
         log.info("Redfish: disabled (no credentials)")
         return {}
-    candidates = [device for device in manual["devices"] if device.get("idrac_ip")]
+    candidates = [device for device in manual["devices"]
+                  if device.get("redfish_ip")]
     if not candidates:
-        log.info("Redfish: no manual devices declare idrac_ip")
+        log.info("Redfish: no manual devices declare redfish_ip")
         return {}
     log.info("Redfish: polling %d iDRAC(s)", len(candidates))
     result: dict[str, dict[str, Any]] = {}
     for device in candidates:
-        address = device.get("idrac_ip")
+        address = device.get("redfish_ip")
         log.debug(
             "Redfish: reading %s at %s",
             device.get("name") or "unknown device",
@@ -112,9 +116,10 @@ def _collect_redfish(
         if not data:
             continue
         system = data.get("system") or {}
-        service_tag = str(system.get("SKU") or system.get("SerialNumber") or "").strip()
+        service_tag = str(system.get("SKU") or system.get(
+            "SerialNumber") or "").strip()
         system_uuid = str(system.get("UUID") or "").strip()
-        refs: dict[str, set[str]] = {"idrac_ip": {str(address)}}
+        refs: dict[str, set[str]] = {"redfish_ip": {str(address)}}
         if service_tag:
             refs["service_tag"] = {service_tag}
         if system_uuid:
@@ -153,6 +158,68 @@ def _collect_redfish(
             len(data.get("psus") or []),
         )
     log.info("Redfish: collected %d/%d iDRAC(s)", len(result), len(candidates))
+    return result
+
+
+def _collect_ipmi(
+    manual: dict[str, Any],
+    resolver: DeviceResolver,
+    *,
+    username: str | None,
+    password: str | None,
+) -> dict[str, dict[str, Any]]:
+    if not username or not password:
+        log.info("IPMI: disabled (no credentials)")
+        return {}
+    candidates = [device for device in manual["devices"]
+                  if device.get("ipmi_ip")]
+    if not candidates:
+        log.info("IPMI: no manual devices declare ipmi_ip")
+        return {}
+    log.info("IPMI: polling %d BMC(s)", len(candidates))
+    result: dict[str, dict[str, Any]] = {}
+    for device in candidates:
+        address = device.get("ipmi_ip")
+        log.debug("IPMI: reading %s at %s", device.get(
+            "name") or "unknown device", address)
+        data = read_ipmi(str(address), username, password)
+        if not data:
+            continue
+        system = data.get("system") or {}
+        serial = str(system.get("SerialNumber")
+                     or system.get("SKU") or "").strip()
+        refs: dict[str, set[str]] = {"ipmi_ip": {str(address)}}
+        if serial:
+            refs["service_tag"] = {serial}
+        resolved = resolver.resolve(refs, source="ipmi", label=str(address))
+        if resolved is None:
+            log.warning("IPMI %s is not mapped to a manual device", address)
+            continue
+        name = str(resolved.get("name") or "")
+        if name != str(device.get("name") or ""):
+            log.warning(
+                "IPMI %s resolves to %r, not %r; using %r",
+                address,
+                name,
+                device.get("name"),
+                name,
+            )
+        if serial:
+            resolver.add_observation_claims(
+                resolved, {"service_tag": {serial}})
+        if name in result:
+            raise InventoryError(f"multiple IPMI BMCs resolve to {name!r}")
+        result[name] = data
+        log.info(
+            "IPMI: %s (%s) model=%s serial=%s fans=%d psus=%d",
+            name,
+            address,
+            system.get("Model") or "unknown",
+            serial or "unknown",
+            len(data.get("fans") or []),
+            len(data.get("psus") or []),
+        )
+    log.info("IPMI: collected %d/%d BMC(s)", len(result), len(candidates))
     return result
 
 
@@ -239,9 +306,11 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--manual-dir", default=DEFAULT_MANUAL_DIR)
     parser.add_argument("--output-dir", default=DEFAULT_OUTPUT_DIR)
     parser.add_argument("--talos-config-dir", default="talos/nodes")
-    parser.add_argument("--kubectl", default=os.environ.get("KUBECTL", "kubectl"))
+    parser.add_argument(
+        "--kubectl", default=os.environ.get("KUBECTL", "kubectl"))
     parser.add_argument("--kubeconfig", default=os.environ.get("KUBECONFIG"))
-    parser.add_argument("--nodes-json", help="use a saved kubectl get nodes -o json file")
+    parser.add_argument(
+        "--nodes-json", help="use a saved kubectl get nodes -o json file")
     parser.add_argument(
         "--talosctl",
         default=os.environ.get("TALOSCTL"),
@@ -252,17 +321,33 @@ def main(argv: list[str] | None = None) -> int:
         default=os.environ.get("TALOSCONFIG", "talos/generated/talosconfig"),
         help="talosconfig for the talosctl lookups",
     )
-    parser.add_argument("--from-cluster", action="store_true", help="read UniFi credentials from unpoller-unifi")
-    parser.add_argument("--unifi-url", default=os.environ.get("UNIFI_URL", "https://unifi.glem.men"))
+    parser.add_argument("--from-cluster", action="store_true",
+                        help="read UniFi credentials from unpoller-unifi")
+    parser.add_argument(
+        "--unifi-url", default=os.environ.get("UNIFI_URL", "https://unifi.glem.men"))
     parser.add_argument(
         "--redfish-user",
-        default=os.environ.get("IDRAC_USER", DEFAULT_IDRAC_USER),
-        help="iDRAC username for Redfish (default: IDRAC_USER or readonly)",
+        default=os.environ.get(
+            "REDFISH_USER", os.environ.get("IDRAC_USER", DEFAULT_REDFISH_USER)
+        ),
+        help="BMC username for Redfish (default: REDFISH_USER, IDRAC_USER or readonly)",
     )
     parser.add_argument(
         "--redfish-pass",
-        default=os.environ.get("IDRAC_PASS", DEFAULT_IDRAC_PASS),
-        help="iDRAC password for Redfish (default: IDRAC_PASS or readonly)",
+        default=os.environ.get(
+            "REDFISH_PASS", os.environ.get("IDRAC_PASS", DEFAULT_REDFISH_PASS)
+        ),
+        help="BMC password for Redfish (default: REDFISH_PASS, IDRAC_PASS or readonly)",
+    )
+    parser.add_argument(
+        "--ipmi-user",
+        default=os.environ.get("IPMI_USER", DEFAULT_IPMI_USER),
+        help="BMC username for IPMI (default: IPMI_USER or readonly)",
+    )
+    parser.add_argument(
+        "--ipmi-pass",
+        default=os.environ.get("IPMI_PASS", DEFAULT_IPMI_PASS),
+        help="BMC password for IPMI (default: IPMI_PASS or readonly)",
     )
     parser.add_argument(
         "--snmp-community",
@@ -310,7 +395,8 @@ def main(argv: list[str] | None = None) -> int:
     )
     args = parser.parse_args(argv)
 
-    configure_logging("DEBUG" if args.verbose else args.log_level, args.log_file)
+    configure_logging(
+        "DEBUG" if args.verbose else args.log_level, args.log_file)
     started = time.monotonic()
     log.info("Collector starting")
     log.info("Manual inventory: %s", Path(args.manual_dir).resolve())
@@ -343,7 +429,8 @@ def main(argv: list[str] | None = None) -> int:
         raise InventoryError("set UNIFI_USER/UNIFI_PASS or use --from-cluster")
 
     log.info("UniFi: fetching inventory")
-    devices, networks, clients = unifi_get(args.unifi_url.rstrip("/"), username, password)
+    devices, networks, clients = unifi_get(
+        args.unifi_url.rstrip("/"), username, password)
     log.info(
         "UniFi: fetched %d device(s), %d network(s), %d client(s)",
         len(devices),
@@ -351,7 +438,8 @@ def main(argv: list[str] | None = None) -> int:
         len(clients),
     )
     log.info("UniFi: building inventory")
-    unifi_devices, cables, vlans, prefixes, _names = build_unifi(devices, networks, manual)
+    unifi_devices, cables, vlans, prefixes, _names = build_unifi(
+        devices, networks, manual)
     log.info(
         "UniFi: built %d device(s), %d cable(s), %d VLAN(s), %d prefix(es)",
         len(unifi_devices),
@@ -423,6 +511,15 @@ def main(argv: list[str] | None = None) -> int:
         username=args.redfish_user,
         password=args.redfish_pass,
     )
+    ipmi_by_name = _collect_ipmi(
+        manual,
+        resolver,
+        username=args.ipmi_user,
+        password=args.ipmi_pass,
+    )
+    # Poll Redfish and IPMI separately. If a device exposes both, Redfish data
+    # wins because it provides richer component details.
+    bmc_by_name = {**ipmi_by_name, **redfish_by_name}
 
     log.info("Compute: building servers and Talos nodes")
     module_types: dict[str, dict[str, Any]] = {}
@@ -431,7 +528,7 @@ def main(argv: list[str] | None = None) -> int:
         manual,
         switch_name,
         module_types=module_types,
-        redfish_by_name=redfish_by_name,
+        bmc_by_name=bmc_by_name,
     )
     compute_nodes = build_nodes(
         nodes,
@@ -440,7 +537,7 @@ def main(argv: list[str] | None = None) -> int:
         talosctl=args.talosctl,
         talosconfig=args.talosconfig,
         module_types=module_types,
-        redfish_by_name=redfish_by_name,
+        bmc_by_name=bmc_by_name,
         manual_by_node=manual_by_node,
     )
     module_count = sum(
@@ -458,7 +555,8 @@ def main(argv: list[str] | None = None) -> int:
     log.info("Writing generated inventory to %s", output_dir.resolve())
     write_yaml(
         output_dir / "unifi.yaml",
-        {"devices": unifi_devices, "vlans": vlans, "prefixes": prefixes, "cables": cables},
+        {"devices": unifi_devices, "vlans": vlans,
+            "prefixes": prefixes, "cables": cables},
         "UniFi devices, VLANs, prefixes and uplink cables.",
     )
     write_yaml(

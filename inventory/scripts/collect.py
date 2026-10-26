@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Collect live UniFi, Talos and iDRAC facts into the generated inventory layer.
+"""Collect live UniFi, Talos, Redfish and IPMI facts into the generated inventory layer.
 
 The implementation lives in the ``collector`` package next to this wrapper. It
 writes ``inventory/generated`` and never edits the manual layer.
