@@ -10,7 +10,7 @@ Git is the source of truth. The inventory is split into two layers:
   nodes, iDRAC Redfish endpoints and SNMP network devices. Do not edit it by hand.
 - `inventory/manual/` is edited by hand. It owns everything that is not
   discoverable: real device models, the physical rack layout, physical servers,
-  accessories, hand-documented cables, VIPs and ownership.
+  accessories, hand-documented cables, VIPs, ownership and contacts.
 
 The `netbox-sync` CronJob merges both layers every 10 minutes and reconciles
 the result into NetBox. Manual values win when the same object appears in both
@@ -62,7 +62,8 @@ inventory/
 │   ├── devices/         # Talos, servers, network, storage and power devices
 │   ├── cables.yaml      # manual cables not discoverable from UniFi
 │   ├── ipam.yaml        # VIPs and standalone addresses
-│   └── owners.yaml      # manual owner groups and owners
+│   ├── owners.yaml      # manual owners
+│   └── contacts.yaml    # manual contact roles and contacts
 ├── scripts/
 │   ├── collect.py       # collector entrypoint
 │   ├── sync.py          # NetBox reconciler entrypoint
@@ -166,29 +167,43 @@ Each entry is a device name, or `gap: N` for empty units. An optional
 Moving a device is a one-line layout change; everything above/below follows.
 Changing the rack height means editing `u_height` and the layout together.
 
-### Ownership
+### Ownership and contacts
 
-Owners and owner groups are maintained only in the manual inventory; the
-collector never discovers them. NetBox stores them in the users app, and every
-owner can optionally belong to one owner group:
+Owners, contact roles and contacts are maintained only in the manual inventory;
+the collector never discovers them. Set the default owner for all hardware in
+`defaults.yaml`, then assign the responsible person as a contact on the
+specific devices:
 
 ```yaml
-owner_groups:
-  - name: Elev
+# defaults.yaml
+defaults:
+  owner: Glemmen VGS
 
+# owners.yaml
 owners:
-  - name: Simon Bråten
-    group: Elev
+  - name: Glemmen VGS
 
+# contacts.yaml
+contact_roles:
+  - name: Technical contact
+    slug: technical-contact
+
+contacts:
+  - name: Simon Bråten
+
+# devices/talos.yaml
 devices:
   - name: glemmen130
-    owner: Simon Bråten
+    contacts:
+      - contact: Simon Bråten
+        role: technical-contact
 ```
 
-Owner groups only organize owners; they do not inherit ownership. The sync
-creates owner groups before owners and resolves each device `owner` by name.
-Owners and owner groups cannot carry NetBox tags, so the sync creates and
-updates them but never prunes them.
+Owners can optionally belong to an owner group, but groups only organize owners
+and do not inherit ownership. The sync creates owners before devices and
+contact roles/contacts before the devices' contact assignments. Owners and
+owner groups cannot carry NetBox tags, so they are never pruned. Contacts and
+contact assignments are tagged and are pruned like other taggable objects.
 
 ### Physical servers and accessories
 
@@ -492,13 +507,15 @@ The generated layer contains:
   writes the detailed report as JSON
 
 Manual files contain the rest: real models, device-type images, module types,
-rack layout, physical devices, accessories, manual cables, VIPs and owners.
+rack layout, physical devices, accessories, manual cables, VIPs, owners and
+contacts.
 
 The CronJob tags every taggable object it creates with `gitops`. With
 `PRUNE=true`, it deletes objects that still carry that tag but are no longer
 present in the inventory. Objects without the tag are left alone, so manual
 additions are safe. Owner groups and owners are not taggable and are therefore
-never pruned.
+never pruned. Contacts and contact assignments are taggable and are pruned like
+other inventory objects.
 
 Supported top-level keys:
 
@@ -514,27 +531,31 @@ Supported top-level keys:
 | `device_roles` | Referenced by devices |
 | `owner_groups` | Optional groups for owners; manual-only |
 | `owners` | Referenced by devices via `owner`; manual-only |
+| `contact_roles` | Referenced by device contacts; manual-only |
+| `contacts` | Referenced by device contacts; manual-only |
 | `module_bay_types` | Referenced by module types and device module bays |
 | `module_types` | Referenced by device modules; may declare `dtl` and component templates |
 | `device_types` | Referenced by devices; may declare `dtl`, `images` and component templates |
 | `racks` | Rack definitions plus declarative `layout` |
 | `vlans` | Site-scoped or global |
 | `prefixes` | Optionally attached to a site and VLAN |
-| `devices` | Nested `interfaces`, `module_bays`, `modules`, `ip_addresses` and optional `uplinks` |
+| `devices` | Nested `interfaces`, `module_bays`, `modules`, `ip_addresses`, `contacts` and optional `uplinks` |
 | `ip_addresses` | Standalone/unassigned IPs (VIPs, for example) |
 | `cables` | One declaration per physical cable |
-| `defaults` | Inherited by every device (site, tags, etc.) |
+| `defaults` | Inherited by every device (site, owner, tags, etc.) |
 
 Natural keys used for matching are slugs for sites, manufacturers, platforms,
-roles, module bay types and device types; names for owner groups and owners;
-`(site, name)` for racks; `(site, vid)` for VLANs; the prefix for prefixes; the
-device name for devices; `(device, name)` for interfaces and module bays;
-`(device, bay)` for modules; the address for IPs; and the two terminations for
-cables. Adding a `slug` explicitly is recommended.
+roles, contact roles, module bay types and device types; names for owner groups,
+owners and contacts; `(site, name)` for racks; `(site, vid)` for VLANs; the
+prefix for prefixes; the device name for devices; `(device, name)` for
+interfaces and module bays; `(device, bay)` for modules; `(device, contact,
+role)` for contact assignments; the address for IPs; and the two terminations
+for cables. Adding a `slug` explicitly is recommended.
 
-Not modelled yet: VRFs, tenants, virtual machines, wireless, circuits, custom
-fields and multi-termination cables. Device-type and module-type component
-templates are synced from the manual layer and the Device Type Library.
+Not modelled yet: VRFs, tenants, contact groups, virtual machines, wireless,
+circuits, custom fields and multi-termination cables. Device-type and
+module-type component templates are synced from the manual layer and the Device
+Type Library.
 IP addresses are global (no VRF). Add those objects in the UI if needed; they
 will not carry the `gitops` tag and will not be pruned.
 

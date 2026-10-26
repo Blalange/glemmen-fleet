@@ -32,6 +32,7 @@ configMapGenerator:
       - 35-manual-cables.yaml=manual/cables.yaml
       - 36-manual-ipam.yaml=manual/ipam.yaml
       - 37-manual-owners.yaml=manual/owners.yaml
+      - 38-manual-contacts.yaml=manual/contacts.yaml
       - 40-manual-devices-network.yaml=manual/devices/network.yaml
       - 40-manual-devices-power.yaml=manual/devices/power.yaml
       - 40-manual-devices-servers.yaml=manual/devices/servers.yaml

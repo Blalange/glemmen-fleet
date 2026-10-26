@@ -94,9 +94,9 @@ Passwords are stored in Kubernetes Secrets, not in Git: `netbox-secrets` in `net
 Flux is the source of truth for the cluster. Changes are made in Git and reconciled by Flux. The inventory has two layers:
 
 - `inventory/generated/` is written by `inventory/scripts/collect.py` from UniFi, Talos, iDRAC Redfish and SNMP. Do not edit it by hand.
-- `inventory/manual/` is maintained by hand and owns models, rack layout, physical servers, accessories, manual cables, VIPs and ownership.
+- `inventory/manual/` is maintained by hand and owns models, rack layout, physical servers, accessories, manual cables, VIPs, ownership and contacts.
 
-The `netbox-sync` CronJob merges both layers, with manual values winning, enriches device and module types from the public NetBox Device Type Library at runtime, and reconciles the result into NetBox. Every taggable object created by the job carries the `gitops` tag; pruning only removes tagged objects and never touches objects created manually in NetBox. Owner groups and owners are not taggable and are never pruned.
+The `netbox-sync` CronJob merges both layers, with manual values winning, enriches device and module types from the public NetBox Device Type Library at runtime, and reconciles the result into NetBox. Every taggable object created by the job carries the `gitops` tag; pruning only removes tagged objects and never touches objects created manually in NetBox. Owner groups and owners are not taggable and are never pruned; contacts and contact assignments are tagged and pruned like other inventory objects.
 
 The collector and sync are separate processes:
 

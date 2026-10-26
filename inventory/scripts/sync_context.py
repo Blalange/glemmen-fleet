@@ -47,6 +47,8 @@ class SyncContext:
         self.roles: dict[str, Any] = {}
         self.owner_groups: dict[str, Any] = {}
         self.owners: dict[str, Any] = {}
+        self.contact_roles: dict[str, Any] = {}
+        self.contacts: dict[str, Any] = {}
         self.device_types: dict[str, Any] = {}
         self.module_bay_types: dict[str, Any] = {}
         self.module_profiles: dict[str, Any] = {}
@@ -68,6 +70,7 @@ class SyncContext:
         self.desired["interfaces"] = set()
         self.desired["module_bays"] = set()
         self.desired["modules"] = set()
+        self.desired["contact_assignments"] = set()
 
     def log(self, action: str, kind: str, label: Any, detail: str = "") -> None:
         self.counts[action] += 1

@@ -60,6 +60,16 @@ def validate_inventory(inventory: dict[str, list[Any]]) -> None:
         "owners",
         lambda item: require(item, "name", "owner"),
     )
+    contact_roles = index(
+        inventory["contact_roles"],
+        "contact_roles",
+        lambda item: item.get("slug") or slugify(require(item, "name", "contact role")),
+    )
+    contacts = index(
+        inventory["contacts"],
+        "contacts",
+        lambda item: require(item, "name", "contact"),
+    )
     device_types = index(
         inventory["device_types"],
         "device_types",
@@ -180,6 +190,22 @@ def validate_inventory(inventory: dict[str, list[Any]]) -> None:
         owner = device.get("owner")
         if owner and owner not in owners:
             raise SyncError(f"device {name}: unknown owner {owner!r}")
+        contact_assignments: set[tuple[str, str]] = set()
+        for entry in device.get("contacts", []) or []:
+            if not isinstance(entry, dict):
+                raise SyncError(f"device {name}: every contact must be a mapping")
+            contact = str(require(entry, "contact", f"contact on {name}"))
+            role = str(require(entry, "role", f"contact on {name}"))
+            if contact not in contacts:
+                raise SyncError(f"device {name}: unknown contact {contact!r}")
+            if role not in contact_roles:
+                raise SyncError(f"device {name}: unknown contact role {role!r}")
+            key = (contact, role)
+            if key in contact_assignments:
+                raise SyncError(
+                    f"device {name}: duplicate contact {contact!r} with role {role!r}"
+                )
+            contact_assignments.add(key)
         if rack and (site, rack) not in racks:
             raise SyncError(f"device {name}: unknown rack {rack!r} in site {site!r}")
         if not rack and (device.get("position") is not None or device.get("face")):

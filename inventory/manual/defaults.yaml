@@ -2,5 +2,6 @@ layer: manual
 
 defaults:
   site: glemmen
+  owner: Glemmen VGS
   tags:
     - production

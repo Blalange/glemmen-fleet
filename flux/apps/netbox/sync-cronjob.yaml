@@ -6,6 +6,7 @@
 # objects that carry that tag but are no longer in the inventory are deleted;
 # anything created by hand (without the tag) is never touched. Owner groups and
 # owners cannot be tagged, so they are created/updated but never pruned.
+# Contacts and contact assignments are taggable and are pruned normally.
 #
 # The job is intentionally self-contained: the Python image is standard, and
 # an init container installs the pinned dependencies into an emptyDir.

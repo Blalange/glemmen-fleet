@@ -15,6 +15,8 @@ SECTIONS = (
     "device_roles",
     "owner_groups",
     "owners",
+    "contact_roles",
+    "contacts",
     "device_types",
     "module_bay_types",
     "module_types",

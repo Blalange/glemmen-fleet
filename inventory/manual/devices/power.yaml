@@ -5,8 +5,10 @@ devices:
   - name: apc-ats
     role: power
     device_type: apc-ap4423a
-    owner: Simon Bråten
     status: active
+    contacts:
+      - contact: Simon Bråten
+        role: technical-contact
     description: APC automatic transfer switch between server80 and server100.
     interfaces:
       - name: mgmt

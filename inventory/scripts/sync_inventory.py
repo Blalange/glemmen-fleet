@@ -83,13 +83,14 @@ def _inventory_key(section: str, item: dict[str, Any]) -> Any:
                 f"{item.get('manufacturer')}-{item.get('model') or item.get('name') or ''}"
             )
         )
-    if section in {"owner_groups", "owners"}:
+    if section in {"owner_groups", "owners", "contacts"}:
         return str(item.get("name") or "")
     if section in {
         "sites",
         "manufacturers",
         "platforms",
         "device_roles",
+        "contact_roles",
         "device_types",
         "module_bay_types",
     }:

@@ -128,6 +128,49 @@ class DevicesMixin:
                 self.sync_module(device, name, module)
             self.sync_oob_ip(device, name, item)
 
+    def sync_contact_assignments(self) -> None:
+        for item in self.inventory["devices"]:
+            device_name = str(require(item, "name", "device"))
+            device = self.devices.get(device_name)
+            if device is None:
+                continue
+            for entry in item.get("contacts", []) or []:
+                contact_name = str(require(entry, "contact", f"contact on {device_name}"))
+                role_slug = str(require(entry, "role", f"contact on {device_name}"))
+                contact = self.contacts.get(contact_name)
+                if contact is None:
+                    raise SyncError(
+                        f"device {device_name}: unknown contact {contact_name!r}"
+                    )
+                role = self.contact_roles.get(role_slug)
+                if role is None:
+                    raise SyncError(
+                        f"device {device_name}: unknown contact role {role_slug!r}"
+                    )
+                data: dict[str, Any] = {
+                    "object_type": "dcim.device",
+                    "object_id": device.id,
+                    "contact": contact.id,
+                    "role": role.id,
+                    "priority": entry.get("priority") or "",
+                }
+                self.ensure(
+                    "contact_assignment",
+                    self.nb.tenancy.contact_assignments,
+                    {
+                        "object_type": "dcim.device",
+                        "object_id": device.id,
+                        "contact_id": contact.id,
+                        "role_id": role.id,
+                    },
+                    data,
+                    tags=entry.get("tags"),
+                    label=f"contact_assignment/{device_name}/{contact_name}/{role_slug}",
+                )
+                self.desired["contact_assignments"].add(
+                    ("dcim.device", int(device.id), int(contact.id), int(role.id))
+                )
+
     def sync_oob_ip(self, device: Any, device_name: str, item: dict[str, Any]) -> None:
         raw = item.get("oob_ip")
         if not raw:

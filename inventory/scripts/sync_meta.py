@@ -151,6 +151,51 @@ class MetaMixin:
             self.owners[name] = obj
             self.desired["owners"].add(name)
 
+    def sync_contact_roles(self) -> None:
+        for item in self.inventory["contact_roles"]:
+            name = str(require(item, "name", "contact role"))
+            slug = item.get("slug") or slugify(name)
+            data: dict[str, Any] = {
+                "name": name,
+                "slug": slug,
+                "description": item.get("description", ""),
+                "comments": item.get("comments", ""),
+            }
+            obj = self.ensure(
+                "contact_role",
+                self.nb.tenancy.contact_roles,
+                {"slug": slug},
+                data,
+                tags=item.get("tags"),
+                label=f"contact_role/{slug}",
+            )
+            self.contact_roles[slug] = obj
+            self.desired["contact_roles"].add(slug)
+
+    def sync_contacts(self) -> None:
+        for item in self.inventory["contacts"]:
+            name = str(require(item, "name", "contact"))
+            data: dict[str, Any] = {
+                "name": name,
+                "title": item.get("title", ""),
+                "phone": item.get("phone", ""),
+                "email": item.get("email", ""),
+                "address": item.get("address", ""),
+                "link": item.get("link", ""),
+                "description": item.get("description", ""),
+                "comments": item.get("comments", ""),
+            }
+            obj = self.ensure(
+                "contact",
+                self.nb.tenancy.contacts,
+                {"name": name},
+                data,
+                tags=item.get("tags"),
+                label=f"contact/{name}",
+            )
+            self.contacts[name] = obj
+            self.desired["contacts"].add(name)
+
     def sync_module_bay_types(self) -> None:
         for item in self.inventory["module_bay_types"]:
             name = require(item, "name", "module bay type")

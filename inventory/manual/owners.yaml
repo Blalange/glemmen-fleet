@@ -1,12 +1,5 @@
 layer: manual
 
 # Ownership is manual-only: the collector never writes owners or owner groups.
-owner_groups:
-  - name: Elev
-  - name: Other
-
 owners:
-  - name: Simon Bråten
-    group: Elev
-  - name: Eric
-    group: Other
+  - name: Glemmen VGS

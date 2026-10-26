@@ -110,6 +110,35 @@ class PruneMixin:
     def prune_ip_addresses(self) -> None:
         self.prune_model("ip_address", self.nb.ipam.ip_addresses, self.desired["ip_addresses"], lambda ip: ip.address)
 
+    def prune_contact_assignments(self) -> None:
+        self.prune_model(
+            "contact_assignment",
+            self.nb.tenancy.contact_assignments,
+            self.desired["contact_assignments"],
+            lambda assignment: (
+                str(assignment.object_type),
+                int(assignment.object_id),
+                int(assignment.contact.id),
+                int(assignment.role.id),
+            ),
+        )
+
+    def prune_contacts(self) -> None:
+        self.prune_model(
+            "contact",
+            self.nb.tenancy.contacts,
+            self.desired["contacts"],
+            lambda item: item.name,
+        )
+
+    def prune_contact_roles(self) -> None:
+        self.prune_model(
+            "contact_role",
+            self.nb.tenancy.contact_roles,
+            self.desired["contact_roles"],
+            lambda item: item.slug,
+        )
+
     def prune_racks(self) -> None:
         self.prune_model(
             "rack",
@@ -185,9 +214,12 @@ class PruneMixin:
         self.prune_modules()
         self.prune_module_bays()
         self.prune_ip_addresses()
+        self.prune_contact_assignments()
         self.prune_racks()
         self.prune_prefixes()
         self.prune_vlans()
+        self.prune_contact_roles()
+        self.prune_contacts()
         self.prune_device_types()
         self.prune_module_types()
         self.prune_platforms()

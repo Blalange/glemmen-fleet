@@ -1,0 +1,11 @@
+layer: manual
+
+# Contacts are manual-only: the collector never writes contact roles or contacts.
+contact_roles:
+  - name: Technical contact
+    slug: technical-contact
+    description: Person responsible for day-to-day technical administration.
+
+contacts:
+  - name: Simon Bråten
+  - name: Eric

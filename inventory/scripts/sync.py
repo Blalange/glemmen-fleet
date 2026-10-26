@@ -6,13 +6,14 @@ The inventory has two layers:
   * ``inventory/generated`` is written by ``inventory/scripts/collect.py`` from
     the live UniFi controller, Kubernetes/Talos nodes and iDRAC Redfish;
   * ``inventory/manual`` is edited by hand and owns models, rack layout,
-    physical servers, accessories, manual cables and VIPs.
+    physical servers, accessories, manual cables, VIPs, ownership and contacts.
 
 This process merges both layers (manual values win), expands the declarative
 rack layout, and reconciles the result. Every taggable object it manages is
 tagged with the ``gitops`` tag. Pruning is opt-in and only ever deletes objects
 that carry that tag, so objects created by hand in the NetBox UI are safe.
-Owners and owner groups cannot be tagged and are therefore never pruned.
+Owners and owner groups cannot be tagged and are therefore never pruned;
+contacts and contact assignments are tagged and pruned normally.
 
 Run locally (uv fetches the pinned dependencies):
 

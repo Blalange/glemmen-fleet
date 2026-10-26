@@ -68,7 +68,9 @@ devices:
   - name: LeanderWin10
     role: server
     device_type: dell-poweredge-r250
-    owner: Eric
+    contacts:
+      - contact: Eric
+        role: technical-contact
     unifi_mac: 6c:3c:8c:75:43:4c
     unifi_ip: 192.168.6.140
     uplinks:
@@ -108,7 +110,9 @@ devices:
   - name: server70
     role: server
     device_type: dell-poweredge-r630
-    owner: Eric
+    contacts:
+      - contact: Eric
+        role: technical-contact
     unifi_mac: b8:2a:72:d5:dd:04
     unifi_ip: 192.168.6.70
     uplinks:

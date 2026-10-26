@@ -4,8 +4,10 @@ devices:
   - name: storwize-01
     role: storage
     device_type: ibm-storwize-v5000-lff-expansion
-    owner: Simon Bråten
     status: staged
+    contacts:
+      - contact: Simon Bråten
+        role: technical-contact
     description: IBM Storwize V5000 LFF expansion enclosure with 12 x 12 TB disks.
     module_bays: &storwize_bays
       - name: Drive 1
@@ -137,8 +139,10 @@ devices:
   - name: storwize-02
     role: storage
     device_type: ibm-storwize-v5000-lff-expansion
-    owner: Simon Bråten
     status: staged
+    contacts:
+      - contact: Simon Bråten
+        role: technical-contact
     description: IBM Storwize V5000 LFF expansion enclosure with 12 x 12 TB disks.
     module_bays: *storwize_bays
     modules: *storwize_modules

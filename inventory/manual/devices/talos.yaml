@@ -7,9 +7,11 @@ devices:
   - name: glemmen130
     role: control-plane
     device_type: dell-poweredge-r250
-    owner: Simon Bråten
     talos_node: glemmen130
     service_tag: 6L51JZ3
+    contacts:
+      - contact: Simon Bråten
+        role: technical-contact
     idrac_ip: 192.168.4.130 # 6L51JZ3
     oob_ip: 192.168.4.130
     uplinks:
@@ -36,9 +38,11 @@ devices:
   - name: glemmen150
     role: control-plane
     device_type: dell-poweredge-r250
-    owner: Simon Bråten
     talos_node: glemmen150
     service_tag: FL51JZ3
+    contacts:
+      - contact: Simon Bråten
+        role: technical-contact
     idrac_ip: 192.168.4.150 # FL51JZ3
     oob_ip: 192.168.4.150
     uplinks:
@@ -65,9 +69,11 @@ devices:
   - name: glemmen160
     role: control-plane
     device_type: dell-poweredge-r250
-    owner: Simon Bråten
     talos_node: glemmen160
     service_tag: DL51JZ3
+    contacts:
+      - contact: Simon Bråten
+        role: technical-contact
     idrac_ip: 192.168.4.160 # DL51JZ3
     oob_ip: 192.168.4.160
     uplinks:
@@ -94,9 +100,11 @@ devices:
   - name: glemmen170
     role: control-plane
     device_type: dell-poweredge-r250
-    owner: Simon Bråten
     talos_node: glemmen170
     service_tag: 4L51JZ3
+    contacts:
+      - contact: Simon Bråten
+        role: technical-contact
     idrac_ip: 192.168.4.170 # 4L51JZ3
     oob_ip: 192.168.4.170
     uplinks:
@@ -123,9 +131,11 @@ devices:
   - name: glemmen180
     role: control-plane
     device_type: dell-poweredge-r250
-    owner: Simon Bråten
     talos_node: glemmen180
     service_tag: 2L51JZ3
+    contacts:
+      - contact: Simon Bråten
+        role: technical-contact
     idrac_ip: 192.168.4.180 # 2L51JZ3
     oob_ip: 192.168.4.180
     uplinks:
@@ -152,9 +162,11 @@ devices:
   - name: glemmen50
     role: worker
     device_type: ibm-system-x3650-m3
-    owner: Simon Bråten
     talos_node: glemmen50
     service_tag: KD65TTR
+    contacts:
+      - contact: Simon Bråten
+        role: technical-contact
     uplinks:
       - interface: enp11s0f0
         switch: USW Pro 24 PoE
@@ -164,9 +176,11 @@ devices:
   - name: glemmen60
     role: worker
     device_type: dell-poweredge-r515
-    owner: Simon Bråten
     talos_node: glemmen60
     service_tag: JVCJGZ1
+    contacts:
+      - contact: Simon Bråten
+        role: technical-contact
     uplinks:
       - interface: eno1
         switch: USW Pro 24 PoE
@@ -176,9 +190,11 @@ devices:
   - name: glemmen80
     role: worker
     device_type: dell-poweredge-r630
-    owner: Simon Bråten
     talos_node: glemmen80
     service_tag: 9SYD132
+    contacts:
+      - contact: Simon Bråten
+        role: technical-contact
     uplinks:
       - interface: enp4s0f0
         switch: USW Pro 24 PoE
