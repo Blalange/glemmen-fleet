@@ -468,7 +468,7 @@ def main(argv: list[str] | None = None) -> int:
                 )
             )
             snmp_matches = merge_snmp_observations(
-                unifi_devices, vlans, observations, resolver, manual
+                unifi_devices, vlans, observations, resolver, manual, cables=cables
             )
             log.info(
                 "SNMP: targets=%d, observed=%d, matched=%d",
@@ -557,7 +557,7 @@ def main(argv: list[str] | None = None) -> int:
         output_dir / "unifi.yaml",
         {"devices": unifi_devices, "vlans": vlans,
             "prefixes": prefixes, "cables": cables},
-        "UniFi devices, VLANs, prefixes and uplink cables.",
+        "Network devices (UniFi and SNMP-managed), VLANs, prefixes and discovered cables.",
     )
     write_yaml(
         output_dir / "compute.yaml",

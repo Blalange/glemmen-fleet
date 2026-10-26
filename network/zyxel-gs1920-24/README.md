@@ -19,29 +19,17 @@ the UDM Pro's inter-VLAN routing (same firewall zone, no rules).
 
 ## Topology
 
-| Switch port | Connected to | VLAN |
-|---|---|---|
-| 1 | iDRAC `DL51JZ3` | 4, untagged |
-| 2 | iDRAC `FL51JZ3` | 4, untagged |
-| 3 | iDRAC `4L51JZ3` | 4, untagged |
-| 4 | iDRAC `6L51JZ3` | 4, untagged |
-| 5 | iDRAC `2L51JZ3` | 4, untagged |
-| 6 | iDRAC `9L51JZ3` | 4, untagged |
-| 7 | link up, no MAC learned yet | 4, untagged |
-| 8 | management laptop / access device | 4, untagged (PVID 4) |
-| 9 | iDRAC `CL51JZ3` | 4, untagged |
-| 10 | iDRAC `JL51JZ3` | 4, untagged |
-| 11 | iDRAC `8L51JZ3` | 4, untagged |
-| 12 | iDRAC `7L51JZ3` | 4, untagged |
-| 13 | iDRAC `BL51JZ3` | 4, untagged |
-| 14 | iDRAC `3L51JZ3` | 4, untagged |
-| 15-27 | spare access ports | 4, untagged (PVID 4) |
-| 28 | UDM Pro port 8 | 1 untagged (PVID 1) + 4 tagged |
+Ports 1-27 are access ports in VLAN 4; port 28 is the uplink to the UDM Pro
+with VLAN 1 untagged as the native link and VLAN 4 tagged. The UDM Pro port 8
+is configured with the **Default** network as its native network
+(`192.168.50.0/24`) and allows tagged VLAN 4.
 
-The UDM Pro port 8 is configured with the **Default** network as its native
-network (`192.168.50.0/24`) and allows tagged VLAN 4. The switch keeps VLAN 1
-untagged on the uplink as the native link to the UDM Default network; all
-access devices, including the laptop on port 8, are on VLAN 4.
+The current port-to-device mapping is discovered automatically by the inventory
+collector from the switch's forwarding table (FDB) and LLDP neighbours and
+synced to NetBox (`inventory/manual/devices/network.yaml` sets
+`snmp_interfaces: true` and `snmp_cables: true`). Do not maintain a manual
+mapping here: the switch is patched frequently and the live mapping is visible
+in NetBox under **Devices → zyxel-gs1920-24 → Interfaces**.
 
 ### VLANs
 

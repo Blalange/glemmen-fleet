@@ -50,7 +50,7 @@ starts before its scripts and inventory are present.
 inventory/
 ├── kustomization.yaml   # NetBox inventory/sync/image ConfigMaps
 ├── generated/
-│   ├── unifi.yaml       # adopted UniFi devices, VLANs, prefixes, uplinks
+│   ├── unifi.yaml       # UniFi + SNMP-managed devices, VLANs, prefixes, cables
 │   ├── compute.yaml     # canonical servers/nodes and discovered modules
 │   └── module-types.yaml
 ├── manual/
@@ -120,7 +120,9 @@ The collector merges live sources into a canonical generated inventory:
 - **SNMP v2c** supplies network-device identity, interfaces, VLAN membership,
   LLDP neighbors and forwarding-table observations. The default community is
   `public`; known SNMP-capable UniFi models are discovered automatically, and
-  other devices can set `snmp_ip`.
+  other devices can set `snmp_ip`. Devices with `snmp_interfaces: true` get
+  their physical port list generated from SNMP, and `snmp_cables: true` also
+  generates cables from LLDP/FDB matches.
 
 The manual device entry is the identity registry. Matching uses hardware
 identifiers first, then bootstrap locators:
@@ -143,11 +145,15 @@ wrong server. Optional stable identifiers can be added to manual devices:
 
 - name: zyxel-gs1920-24
   snmp_ip: 192.168.4.2
+  snmp_interfaces: true
+  snmp_cables: true
 ```
 
-`talos_node`, `unifi_ip`, `redfish_ip` and `ipmi_ip` are optional locators.
-`service_tag`, `system_uuid`, `unifi_mac` and `unifi_serial` are optional stable
-identifiers that make the mapping more robust.
+`talos_node`, `unifi_ip`, `redfish_ip`, `ipmi_ip` and `snmp_ip` are optional
+locators. `service_tag`, `system_uuid`, `unifi_mac` and `unifi_serial` are
+optional stable identifiers that make the mapping more robust. Set
+`snmp_interfaces` and/or `snmp_cables` on an SNMP-capable device to let SNMP
+own its ports and cables.
 
 The collector performs **source merging**: Redfish is preferred over Talos for
 compute components, Talos is the fallback, IPMI supplies fan/PSU data for BMCs
@@ -155,10 +161,14 @@ without Redfish, and SNMP only fills network fields that are missing from
 UniFi/manual data. The sync job performs the **layer merge** of generated and
 manual YAML; manual values win.
 
-SNMP observations are intentionally supplemental: VLAN membership and
+SNMP observations are supplemental by default: VLAN membership and
 per-interface MACs are added when missing, while manual descriptions, types and
-VLAN assignments are never overwritten. LLDP/FDB data is available through
-`--snmp-report` for validation before any automatic cable creation.
+VLAN assignments are never overwritten. A device can opt in to full SNMP port
+management with `snmp_interfaces: true` (port names, types, status and VLANs)
+and `snmp_cables: true` (cables from LLDP neighbours and the forwarding table).
+FDB matches on trunk ports, MACs seen on several ports, and ports with more than
+one candidate endpoint are skipped as ambiguous. `--snmp-report` still writes
+the raw observations for troubleshooting.
 
 ### Rack layout
 
@@ -563,7 +573,8 @@ use the Redfish credentials from `REDFISH_USER` / `REDFISH_PASS` (default
 The generated layer contains:
 
 - `unifi.yaml`: adopted UniFi devices with ports/radios, management addresses,
-  VLANs, prefixes and uplinks; SNMP-enriched interface MACs/VLAN membership
+  VLANs, prefixes and uplinks; SNMP-managed devices with their generated ports
+  and cables; SNMP-enriched interface MACs/VLAN membership
 - `compute.yaml`: one canonical entry per physical server or Talos node, with
   interfaces and discovered modules merged across sources
 - `module-types.yaml`: module types discovered across all compute sources

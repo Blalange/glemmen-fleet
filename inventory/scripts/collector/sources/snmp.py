@@ -177,12 +177,20 @@ def _build_vlans(tables: dict[str, dict[str, Any]], interfaces: list[dict[str, A
         if ifindex not in ifindex_set:
             continue
         pvid_vid = pvid.get(bridge_port)
-        untagged_vids = {vid for vid, ports in untagged.items() if bridge_port in ports}
         egress_vids = {vid for vid, ports in egress.items() if bridge_port in ports}
+        # The untagged bitmap can list VLANs that are only configured on the
+        # switch but not actually forwarded on this port (the Zyxel keeps the
+        # default VLAN 1 in the table for every access port). A port only
+        # forwards a VLAN if it appears in the egress bitmap, and its PVID is
+        # the single untagged VLAN.
+        untagged_vids = {
+            vid
+            for vid, ports in untagged.items()
+            if bridge_port in ports and (not egress_vids or vid in egress_vids)
+        }
+        if pvid_vid and (not egress_vids or pvid_vid in egress_vids):
+            untagged_vids = {pvid_vid}
         tagged_vids = {vid for vid in egress_vids if vid not in untagged_vids}
-        if pvid_vid:
-            untagged_vids.add(pvid_vid)
-            tagged_vids.discard(pvid_vid)
         by_ifindex[ifindex] = {
             "untagged": sorted(vid for vid in untagged_vids if vid > 0),
             "tagged": sorted(vid for vid in tagged_vids if vid > 0),
