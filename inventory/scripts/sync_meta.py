@@ -28,7 +28,7 @@ class MetaMixin:
                 self.nb.dcim.sites,
                 {"slug": slug},
                 data,
-                tags=item.get("tags"),
+                tags=self.tags_for(item),
                 label=f"site/{slug}",
             )
             self.sites[slug] = obj
@@ -50,7 +50,7 @@ class MetaMixin:
                 self.nb.dcim.manufacturers,
                 {"slug": slug},
                 data,
-                tags=item.get("tags"),
+                tags=self.tags_for(item),
                 label=f"manufacturer/{slug}",
             )
             self.manufacturers[slug] = obj
@@ -77,7 +77,7 @@ class MetaMixin:
                 self.nb.dcim.platforms,
                 {"slug": slug},
                 data,
-                tags=item.get("tags"),
+                tags=self.tags_for(item),
                 label=f"platform/{slug}",
             )
             self.platforms[slug] = obj
@@ -100,7 +100,7 @@ class MetaMixin:
                 self.nb.dcim.device_roles,
                 {"slug": slug},
                 data,
-                tags=item.get("tags"),
+                tags=self.tags_for(item),
                 label=f"device_role/{slug}",
             )
             self.roles[slug] = obj
@@ -166,7 +166,7 @@ class MetaMixin:
                 self.nb.tenancy.contact_roles,
                 {"slug": slug},
                 data,
-                tags=item.get("tags"),
+                tags=self.tags_for(item),
                 label=f"contact_role/{slug}",
             )
             self.contact_roles[slug] = obj
@@ -190,7 +190,7 @@ class MetaMixin:
                 self.nb.tenancy.contacts,
                 {"name": name},
                 data,
-                tags=item.get("tags"),
+                tags=self.tags_for(item),
                 label=f"contact/{name}",
             )
             self.contacts[name] = obj
@@ -220,7 +220,7 @@ class MetaMixin:
                 self.nb.dcim.module_bay_types,
                 {"slug": slug},
                 data,
-                tags=item.get("tags"),
+                tags=self.tags_for(item),
                 label=f"module_bay_type/{slug}",
             )
             self.module_bay_types[slug] = obj
@@ -264,7 +264,7 @@ class MetaMixin:
                 self.nb.dcim.device_types,
                 {"slug": slug},
                 data,
-                tags=item.get("tags"),
+                tags=self.tags_for(item),
                 label=f"device_type/{slug}",
             )
             self.device_types[slug] = obj
@@ -320,7 +320,7 @@ class MetaMixin:
                 self.nb.dcim.module_types,
                 {"manufacturer_id": self.manufacturers[manufacturer].id, "model": model},
                 data,
-                tags=item.get("tags"),
+                tags=self.tags_for(item),
                 label=f"module_type/{slug}",
             )
             self.module_types[slug] = obj
@@ -351,7 +351,7 @@ class MetaMixin:
                 self.nb.dcim.racks,
                 {"name": name, "site_id": data["site"]},
                 data,
-                tags=item.get("tags"),
+                tags=self.tags_for(item),
                 label=f"rack/{site_slug}/{name}",
             )
             self.racks[(site_slug, name)] = obj

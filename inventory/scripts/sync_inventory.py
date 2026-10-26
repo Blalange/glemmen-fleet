@@ -22,7 +22,7 @@ from inventory_util import (
 
 
 def _normalize_merge_value(key: str, current: Any, desired: Any) -> Any:
-    if key in {"tags", "tagged_vlans"}:
+    if key in {"tags", "sources", "tagged_vlans"}:
         return sorted({*as_list(current), *as_list(desired)})
     if key == "interfaces":
         return _merge_named_list(current, desired, "name")
@@ -37,6 +37,40 @@ def _normalize_merge_value(key: str, current: Any, desired: Any) -> Any:
     if isinstance(current, dict) and isinstance(desired, dict):
         return _merge_mapping(current, desired)
     return copy.deepcopy(desired)
+
+
+def _stamp_sources(item: dict[str, Any], layer: str, inherited: Any = None) -> None:
+    """Attach provenance sources to an inventory item and its components.
+
+    Manual objects always carry ``manual``. Generated objects keep the sources
+    supplied by the collector; nested components inherit the parent's sources
+    unless they declare a more specific source themselves.
+    """
+    sources = {
+        str(source)
+        for source in as_list(item.get("sources"))
+        if source is not None and str(source)
+    }
+    if layer == "manual":
+        sources.add("manual")
+    elif not sources:
+        sources = {
+            str(source)
+            for source in as_list(inherited)
+            if source is not None and str(source)
+        }
+        if not sources:
+            sources = {"generated"}
+    item["sources"] = sorted(sources)
+
+    for key in ("interfaces", "module_bays", "modules", "ip_addresses", "contacts"):
+        nested_items = item.get(key)
+        if not isinstance(nested_items, list):
+            continue
+        for nested in nested_items:
+            if isinstance(nested, dict):
+                _stamp_sources(nested, layer, item["sources"])
+
 
 def _merge_mapping(base: dict[str, Any], override: dict[str, Any]) -> dict[str, Any]:
     result = copy.deepcopy(base)
@@ -158,10 +192,16 @@ def _expand_uplinks(inventory: dict[str, list[Any]]) -> None:
                 "type": str(uplink.get("type") or "cat6"),
                 "status": "connected",
                 "description": f"{device['name']} {uplink.get('interface')} to {uplink.get('switch')} Port {uplink.get('port')}",
+                "sources": ["manual"],
             }
             key = _cable_key(cable)
             if key in cables_by_key:
-                cables_by_key[key].update(cable)
+                existing = cables_by_key[key]
+                sources = sorted(
+                    {*as_list(existing.get("sources")), *as_list(cable["sources"])}
+                )
+                existing.update(cable)
+                existing["sources"] = sources
             else:
                 cables_by_key[key] = cable
     inventory["cables"] = list(cables_by_key.values())
@@ -269,6 +309,9 @@ def load_inventory(directory: Path) -> dict[str, list[Any]]:
                         continue
                     if not isinstance(value, list):
                         raise SyncError(f"{path}: {key} must be a list")
+                    for raw in value:
+                        if isinstance(raw, dict):
+                            _stamp_sources(raw, layer)
                     by_layer[layer][key].extend(value)
                 else:
                     print(f"WARNING: {path}: ignoring unknown top-level key {key!r}", file=sys.stderr)

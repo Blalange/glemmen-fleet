@@ -29,6 +29,7 @@ def _ensure_vlan(
         "site": site,
         "status": "active",
         "description": "SNMP-discovered VLAN",
+        "sources": ["snmp"],
     }
     vlans.append(entry)
     by_vid[vid] = entry
@@ -74,6 +75,8 @@ def merge_snmp_observations(
         log.debug("SNMP %s -> device %s", address, name)
 
         device = devices_by_name.get(name)
+        if device is not None:
+            device["sources"] = sorted({*(device.get("sources") or []), "snmp"})
         manual_device = resolver.manual_by_name.get(name) or {}
         known_names = {
             str(interface.get("name"))
@@ -193,7 +196,7 @@ def merge_snmp_observations(
         if device is None and not interface_updates and not needs_serial:
             continue
         if device is None:
-            device = {"name": name, "interfaces": []}
+            device = {"name": name, "sources": ["snmp"], "interfaces": []}
             devices.append(device)
             devices_by_name[name] = device
             existing = {}
@@ -203,9 +206,12 @@ def merge_snmp_observations(
         for target_name, update in interface_updates:
             interface = existing.get(target_name)
             if interface is None:
-                interface = {"name": target_name}
+                interface = {"name": target_name, "sources": ["snmp"]}
                 device.setdefault("interfaces", []).append(interface)
                 existing[target_name] = interface
+            else:
+                inherited = interface.get("sources") or device.get("sources") or []
+                interface["sources"] = sorted({*inherited, "snmp"})
             interface.update(update)
 
     log.debug(

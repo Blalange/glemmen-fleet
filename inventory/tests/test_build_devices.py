@@ -5,6 +5,7 @@ from collector.build_devices import build_servers
 
 def redfish_payload() -> dict:
     return {
+        "source": "redfish",
         "system": {"SKU": "ABC1234", "UUID": "uuid-1"},
         "cpu": [
             {
@@ -69,6 +70,7 @@ def test_manual_only_server_gets_bmc_modules() -> None:
     assert len(servers) == 1
     server = servers[0]
     assert server["name"] == "server110"
+    assert server["sources"] == ["manual", "redfish"]
     assert len(server["module_bays"]) == 4
     assert len(server["modules"]) == 4
     assert "interfaces" not in server

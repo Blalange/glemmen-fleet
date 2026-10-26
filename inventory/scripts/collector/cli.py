@@ -146,7 +146,7 @@ def _collect_redfish(
         )
         if name in result:
             raise InventoryError(f"multiple iDRACs resolve to {name!r}")
-        result[name] = data
+        result[name] = {**data, "source": "redfish"}
         log.info(
             "Redfish: %s (%s) cpu=%d memory=%d disks=%d fans=%d psus=%d",
             name,
@@ -209,7 +209,7 @@ def _collect_ipmi(
                 resolved, {"service_tag": {serial}})
         if name in result:
             raise InventoryError(f"multiple IPMI BMCs resolve to {name!r}")
-        result[name] = data
+        result[name] = {**data, "source": "ipmi"}
         log.info(
             "IPMI: %s (%s) model=%s serial=%s fans=%d psus=%d",
             name,
@@ -342,12 +342,12 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--ipmi-user",
         default=os.environ.get("IPMI_USER", DEFAULT_IPMI_USER),
-        help="BMC username for IPMI (default: IPMI_USER or readonly)",
+        help="BMC username for IPMI (default: IPMI_USER or root)",
     )
     parser.add_argument(
         "--ipmi-pass",
         default=os.environ.get("IPMI_PASS", DEFAULT_IPMI_PASS),
-        help="BMC password for IPMI (default: IPMI_PASS or readonly)",
+        help="BMC password for IPMI (default: IPMI_PASS or calvin)",
     )
     parser.add_argument(
         "--snmp-community",

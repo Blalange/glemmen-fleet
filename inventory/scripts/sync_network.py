@@ -30,7 +30,7 @@ class NetworkMixin:
                     self.nb.ipam.vlans,
                     {"vid": vid, "site_id": data["site"]},
                     data,
-                    tags=item.get("tags"),
+                    tags=self.tags_for(item),
                     label=label,
                 )
             else:
@@ -39,7 +39,7 @@ class NetworkMixin:
                     self.nb.ipam.vlans,
                     self.find_global_vlan(vid),
                     data,
-                    tags=item.get("tags"),
+                    tags=self.tags_for(item),
                     label=label,
                 )
             self.vlans[(site_slug, vid)] = obj
@@ -77,7 +77,7 @@ class NetworkMixin:
                 self.nb.ipam.prefixes,
                 {"prefix": prefix},
                 data,
-                tags=item.get("tags"),
+                tags=self.tags_for(item),
                 label=f"prefix/{prefix}",
             )
             self.desired["prefixes"].add(prefix)
@@ -149,7 +149,7 @@ class NetworkMixin:
                 self.nb.dcim.cables,
                 existing.get(key),
                 data,
-                tags=item.get("tags"),
+                tags=self.tags_for(item),
                 label=f"cable/{a_device}/{a_interface}<->{b_device}/{b_interface}",
                 compare_fields=("type", "status", "label", "description", "color", "tags"),
             )

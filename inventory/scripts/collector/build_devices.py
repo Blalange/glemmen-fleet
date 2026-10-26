@@ -87,6 +87,7 @@ def build_servers(
             primary_iface = "Port 1"
 
         interfaces: list[dict] = []
+        interface_sources = ["manual", "unifi"] if client else ["manual"]
         if uplinks:
             for uplink in uplinks:
                 iface_name = str(uplink.get("interface") or "Port 1")
@@ -95,6 +96,7 @@ def build_servers(
                     "type": "1000base-t",
                     "enabled": True,
                     "description": f"Uplink to {uplink.get('switch')} Port {uplink.get('port')}",
+                    "sources": interface_sources,
                 }
                 if iface_name == primary_iface:
                     if mac:
@@ -112,6 +114,7 @@ def build_servers(
                     "description": "Server network uplink",
                     "mac_address": mac or None,
                     "ip_addresses": [{"address": f"{ip}/24", "dns_name": name, "primary": True}],
+                    "sources": interface_sources,
                 }
             )
 
@@ -128,7 +131,9 @@ def build_servers(
         module_bays: list[dict] = []
         modules: list[dict] = []
         bmc = bmc_data.get(name)
+        sources = set(interface_sources)
         if bmc:
+            sources.add(str(bmc.get("source") or "redfish"))
             add_bmc_components(module_bays, modules, catalog, bmc, device_type)
 
         server: dict[str, Any] = {
@@ -140,6 +145,7 @@ def build_servers(
             "serial": str(device.get("serial") or ""),
             "description": description,
             "tags": sorted({default_tag, *[str(tag) for tag in device.get("tags") or []]}),
+            "sources": sorted(sources),
             "interfaces": interfaces,
         }
         if module_bays:
@@ -190,10 +196,11 @@ def build_servers(
                 "device_type": str(device.get("device_type") or ""),
                 "status": str(device.get("status") or "active"),
                 "serial": str(device.get("serial") or ""),
-                "description": str(device.get("description") or f"{name} via iDRAC Redfish"),
+                "description": str(device.get("description") or f"{name} via BMC"),
                 "tags": sorted(
                     {default_tag, *[str(tag) for tag in device.get("tags") or []]}
                 ),
+                "sources": sorted({"manual", str(bmc.get("source") or "redfish")}),
                 "module_bays": module_bays,
                 "modules": modules,
             }
@@ -281,6 +288,7 @@ def build_nodes(
                 "type": "1000base-t",
                 "enabled": True,
                 "description": "bond0 member (LACP)",
+                "sources": ["talos"],
             }
             if member in macs:
                 entry["mac_address"] = macs[member]
@@ -296,6 +304,7 @@ def build_nodes(
             "type": iface_type,
             "enabled": True,
             "description": "In-band management and cluster traffic",
+            "sources": ["talos"],
             "ip_addresses": [
                 {
                     "address": iface_address,
@@ -345,6 +354,7 @@ def build_nodes(
                         bay_types=["cpu-socket"],
                         part_number=model,
                         description="Processor",
+                        sources=["talos"],
                     )
                     add_module_component(
                         module_bays,
@@ -354,6 +364,7 @@ def build_nodes(
                         "Processor socket.",
                         module_type,
                         description=model,
+                        sources=["talos"],
                     )
 
         if not bmc or not bmc.get("memory"):
@@ -386,6 +397,7 @@ def build_nodes(
                         bay_types=[f"dimm-{dimm_class.lower()}"],
                         part_number=model,
                         description="Memory module",
+                        sources=["talos"],
                     )
                     add_module_component(
                         module_bays,
@@ -396,6 +408,7 @@ def build_nodes(
                         module_type,
                         serial=str(spec.get("serialNumber") or ""),
                         description=f"{size_gb} GB {dimm_class} {data_rate} MT/s",
+                        sources=["talos"],
                     )
 
         if not bmc or not bmc.get("disks"):
@@ -414,6 +427,7 @@ def build_nodes(
                         bay_types=[bay_disk_type],
                         part_number=model,
                         description="Disk drive",
+                        sources=["talos"],
                     )
                     add_module_component(
                         module_bays,
@@ -424,6 +438,7 @@ def build_nodes(
                         module_type,
                         serial=disk["serial"],
                         description=f"{size_gb} GB {kind}",
+                        sources=["talos"],
                     )
 
         device_entry: dict[str, Any] = {
@@ -436,6 +451,7 @@ def build_nodes(
             "serial": node_info.get("systemUUID") or "",
             "description": description,
             "tags": sorted({default_tag, *[str(tag) for tag in (manual_device or {}).get("tags") or []]}),
+            "sources": sorted({"talos", *([str(bmc.get("source") or "redfish")] if bmc else [])}),
             "interfaces": interfaces,
         }
         if module_bays:

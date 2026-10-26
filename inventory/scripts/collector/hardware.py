@@ -48,13 +48,14 @@ def register_module_type(
     bay_types: list[str],
     part_number: str = "",
     description: str = "",
+    sources: list[str] | None = None,
 ) -> str:
     model = clean_model(model)
     if model.lower().startswith(manufacturer.lower() + " "):
         slug = slugify(model)
     else:
         slug = slugify(f"{manufacturer}-{model}")
-    catalog.setdefault(
+    entry = catalog.setdefault(
         slug,
         {
             "manufacturer": manufacturer,
@@ -67,6 +68,13 @@ def register_module_type(
             "description": description,
         },
     )
+    source_names = {
+        str(source)
+        for source in sources or []
+        if source is not None and str(source)
+    }
+    if source_names:
+        entry["sources"] = sorted({*entry.get("sources", []), *source_names})
     return slug
 
 def memory_class(device_type: str) -> str:
@@ -90,18 +98,30 @@ def disk_bay_type(device_type: str) -> str:
     return "drive-3-5"
 
 def add_module_bay(
-    module_bays: list[dict[str, Any]], bay_name: str, bay_type: str, description: str
+    module_bays: list[dict[str, Any]],
+    bay_name: str,
+    bay_type: str,
+    description: str,
+    *,
+    sources: list[str] | None = None,
 ) -> None:
     if any(bay["name"] == bay_name for bay in module_bays):
         return
-    module_bays.append(
-        {
-            "name": bay_name,
-            "position": str(len(module_bays) + 1),
-            "bay_type": bay_type,
-            "description": description,
-        }
-    )
+    entry: dict[str, Any] = {
+        "name": bay_name,
+        "position": str(len(module_bays) + 1),
+        "bay_type": bay_type,
+        "description": description,
+    }
+    if sources:
+        entry["sources"] = sorted(
+            {
+                str(source)
+                for source in sources
+                if source is not None and str(source)
+            }
+        )
+    module_bays.append(entry)
 
 def add_module_component(
     module_bays: list[dict[str, Any]],
@@ -114,17 +134,27 @@ def add_module_component(
     status: str = "active",
     serial: str = "",
     description: str = "",
+    sources: list[str] | None = None,
 ) -> None:
-    add_module_bay(module_bays, bay_name, bay_type, bay_description)
-    modules.append(
-        {
-            "bay": bay_name,
-            "module_type": module_type,
-            "status": status,
-            "serial": serial,
-            "description": description,
-        }
+    add_module_bay(
+        module_bays, bay_name, bay_type, bay_description, sources=sources
     )
+    entry: dict[str, Any] = {
+        "bay": bay_name,
+        "module_type": module_type,
+        "status": status,
+        "serial": serial,
+        "description": description,
+    }
+    if sources:
+        entry["sources"] = sorted(
+            {
+                str(source)
+                for source in sources
+                if source is not None and str(source)
+            }
+        )
+    modules.append(entry)
 
 def add_bmc_components(
     module_bays: list[dict[str, Any]],
@@ -135,6 +165,7 @@ def add_bmc_components(
 ) -> None:
     """Add CPU, memory, disk, fan and PSU modules discovered through a BMC."""
     bay_disk_type = disk_bay_type(device_type)
+    source = str(bmc.get("source") or "redfish")
 
     for cpu in bmc.get("cpu") or []:
         cpu_model = clean_model(cpu["model"])
@@ -151,6 +182,7 @@ def add_bmc_components(
             bay_types=["cpu-socket"],
             part_number=cpu_model,
             description="Processor",
+            sources=[source],
         )
         add_module_component(
             module_bays,
@@ -161,6 +193,7 @@ def add_bmc_components(
             module_type,
             serial=cpu["serial"],
             description=cpu_model,
+            sources=[source],
         )
 
     for memory in bmc.get("memory") or []:
@@ -180,6 +213,7 @@ def add_bmc_components(
             bay_types=[bay_type],
             part_number=memory["model"],
             description="Memory module",
+            sources=[source],
         )
         add_module_component(
             module_bays,
@@ -190,6 +224,7 @@ def add_bmc_components(
             module_type,
             serial=memory["serial"],
             description=f"{memory['size_gb']} GB {klass} {memory['data_rate']} MT/s",
+            sources=[source],
         )
 
     for disk in bmc.get("disks") or []:
@@ -205,6 +240,7 @@ def add_bmc_components(
             bay_types=[bay_disk_type],
             part_number=disk["model"],
             description="Disk drive",
+            sources=[source],
         )
         add_module_component(
             module_bays,
@@ -215,6 +251,7 @@ def add_bmc_components(
             module_type,
             serial=disk["serial"],
             description=f"{disk['size_gb']} GB {disk['type']}",
+            sources=[source],
         )
 
     for fan in bmc.get("fans") or []:
@@ -228,6 +265,7 @@ def add_bmc_components(
             bay_types=["fan"],
             part_number="System Board Fan",
             description="Chassis cooling fan",
+            sources=[source],
         )
         add_module_component(
             module_bays,
@@ -238,6 +276,7 @@ def add_bmc_components(
             module_type,
             status=fan["status"],
             description=fan["name"],
+            sources=[source],
         )
 
     for psu in bmc.get("psus") or []:
@@ -257,6 +296,7 @@ def add_bmc_components(
             bay_types=["power-supply"],
             part_number=psu["model"],
             description="Hot-swap power supply",
+            sources=[source],
         )
         add_module_component(
             module_bays,
@@ -268,4 +308,5 @@ def add_bmc_components(
             status=psu["status"],
             serial=psu["serial"],
             description=f"{psu['wattage']} W" if psu["wattage"] else "Power supply",
+            sources=[source],
         )

@@ -61,6 +61,7 @@ def test_dtl_enriches_manual_device_type() -> None:
     assert device_type["description"] == "Manual description."
     assert device_type["comments"] == "Catalog comment."
     assert device_type["part_number"] == "U6-Pro"
+    assert "dtl" in device_type["sources"]
     assert device_type["interfaces"][0]["description"] == "Manual port."
     assert device_type["interfaces"][0]["poe_mode"] == "pd"
     assert device_type["interfaces"][1]["name"] == "Wlan 0"
@@ -90,6 +91,7 @@ def test_dtl_enriches_module_type_without_device_bays() -> None:
     module_type = inventory["module_types"][0]
     assert report.module_types_enriched == 1
     assert module_type["interfaces"] == [{"name": "Ethernet/{module}/1", "type": "10gbase-t"}]
+    assert "dtl" in module_type["sources"]
     assert "device_bays" not in module_type
 
 

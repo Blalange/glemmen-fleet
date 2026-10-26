@@ -15,6 +15,8 @@ devices:
     84:78:48:6c:2e:f6
   tags:
   - production
+  sources:
+  - unifi
   interfaces:
   - name: Port 1
     type: 2.5gbase-t
@@ -71,6 +73,8 @@ devices:
   description: UniFi UniFi Switch Flex Mini (USMINI), firmware 2.1.6.762, MAC 24:5a:4c:18:c1:71
   tags:
   - production
+  sources:
+  - unifi
   interfaces:
   - name: Port 1
     type: 1000base-t
@@ -128,6 +132,8 @@ devices:
     84:78:48:6a:97:fc
   tags:
   - production
+  sources:
+  - unifi
   interfaces:
   - name: Port 1
     type: 2.5gbase-t
@@ -185,6 +191,9 @@ devices:
     24:5a:4c:76:79:d1
   tags:
   - production
+  sources:
+  - snmp
+  - unifi
   interfaces:
   - name: lan
     type: virtual
@@ -217,6 +226,9 @@ devices:
     mode: ''
     untagged_vlan: null
     tagged_vlans: []
+    sources:
+    - snmp
+    - unifi
   - name: Port 11
     type: 10gbase-x-sfpp
     enabled: true
@@ -233,6 +245,9 @@ devices:
     mode: ''
     untagged_vlan: null
     tagged_vlans: []
+    sources:
+    - snmp
+    - unifi
     mac_address: 24:5a:4c:76:79:d3
   - name: Port 3
     type: 1000base-t
@@ -242,6 +257,9 @@ devices:
     mode: ''
     untagged_vlan: null
     tagged_vlans: []
+    sources:
+    - snmp
+    - unifi
     mac_address: 24:5a:4c:76:79:d4
   - name: Port 4
     type: 1000base-t
@@ -251,6 +269,9 @@ devices:
     mode: ''
     untagged_vlan: null
     tagged_vlans: []
+    sources:
+    - snmp
+    - unifi
     mac_address: 24:5a:4c:76:79:d5
   - name: Port 5
     type: 1000base-t
@@ -260,6 +281,9 @@ devices:
     mode: ''
     untagged_vlan: null
     tagged_vlans: []
+    sources:
+    - snmp
+    - unifi
     mac_address: 24:5a:4c:76:79:d6
   - name: Port 6
     type: 1000base-t
@@ -269,6 +293,9 @@ devices:
     mode: ''
     untagged_vlan: null
     tagged_vlans: []
+    sources:
+    - snmp
+    - unifi
     mac_address: 24:5a:4c:76:79:d7
   - name: Port 7
     type: 1000base-t
@@ -278,6 +305,9 @@ devices:
     mode: ''
     untagged_vlan: null
     tagged_vlans: []
+    sources:
+    - snmp
+    - unifi
     mac_address: 24:5a:4c:76:79:d8
   - name: Port 8
     type: 1000base-t
@@ -287,6 +317,9 @@ devices:
     mode: ''
     untagged_vlan: null
     tagged_vlans: []
+    sources:
+    - snmp
+    - unifi
     mac_address: 24:5a:4c:76:79:d9
   - name: Port 9
     type: 1000base-t
@@ -299,6 +332,9 @@ devices:
     ip_addresses:
     - address: 109.247.229.146/30
       description: WAN
+    sources:
+    - snmp
+    - unifi
 - name: USW Flex 2.5G 8 PoE
   site: glemmen
   role: switch
@@ -310,6 +346,8 @@ devices:
     a8:9c:6c:08:fa:a7
   tags:
   - production
+  sources:
+  - unifi
   interfaces:
   - name: Port 1
     type: 2.5gbase-t
@@ -407,6 +445,8 @@ devices:
     a8:9c:6c:08:f9:50
   tags:
   - production
+  sources:
+  - unifi
   interfaces:
   - name: Port 1
     type: 2.5gbase-t
@@ -503,6 +543,8 @@ devices:
   description: UniFi UniFi Switch Flex Mini (USMINI), firmware 2.1.6.762, MAC 24:5a:4c:18:be:41
   tags:
   - production
+  sources:
+  - unifi
   interfaces:
   - name: Port 1
     type: 1000base-t
@@ -560,6 +602,8 @@ devices:
     84:78:48:6a:89:b9
   tags:
   - production
+  sources:
+  - unifi
   interfaces:
   - name: Port 1
     type: 2.5gbase-t
@@ -616,6 +660,8 @@ devices:
   description: UniFi UniFi Switch Flex Mini (USMINI), firmware 2.1.6.762, MAC 24:5a:4c:18:c0:d6
   tags:
   - production
+  sources:
+  - unifi
   interfaces:
   - name: Port 1
     type: 1000base-t
@@ -673,6 +719,8 @@ devices:
     84:78:48:6c:2b:2b
   tags:
   - production
+  sources:
+  - unifi
   interfaces:
   - name: Port 1
     type: 2.5gbase-t
@@ -729,6 +777,9 @@ devices:
   description: UniFi U6 Pro (UAP6MP), firmware 6.8.2.15592, MAC 0c:ea:14:df:e2:71
   tags:
   - production
+  sources:
+  - snmp
+  - unifi
   interfaces:
   - name: Port 1
     type: 1000base-t
@@ -739,6 +790,9 @@ devices:
     - address: 192.168.50.36/24
       dns_name: u6-pro
       primary: true
+    sources:
+    - snmp
+    - unifi
   - name: wifi0
     type: ieee802.11ax
     enabled: true
@@ -757,6 +811,9 @@ devices:
   description: UniFi US-8-150W (US8P150), firmware 7.5.15.17146, MAC d8:b3:70:6d:22:18
   tags:
   - production
+  sources:
+  - snmp
+  - unifi
   interfaces:
   - name: Port 1
     type: 1000base-t
@@ -769,6 +826,9 @@ devices:
     - 3
     - 4
     - 5
+    sources:
+    - snmp
+    - unifi
   - name: Port 2
     type: 1000base-t
     enabled: true
@@ -780,6 +840,9 @@ devices:
     - 3
     - 4
     - 5
+    sources:
+    - snmp
+    - unifi
   - name: Port 3
     type: 1000base-t
     enabled: true
@@ -791,6 +854,9 @@ devices:
     - 3
     - 4
     - 5
+    sources:
+    - snmp
+    - unifi
   - name: Port 4
     type: 1000base-t
     enabled: true
@@ -802,6 +868,9 @@ devices:
     - 3
     - 4
     - 5
+    sources:
+    - snmp
+    - unifi
   - name: Port 5
     type: 1000base-t
     enabled: true
@@ -813,6 +882,9 @@ devices:
     - 3
     - 4
     - 5
+    sources:
+    - snmp
+    - unifi
   - name: Port 6
     type: 1000base-t
     enabled: true
@@ -824,6 +896,9 @@ devices:
     - 1
     - 4
     - 5
+    sources:
+    - snmp
+    - unifi
   - name: Port 7
     type: 1000base-t
     enabled: true
@@ -835,6 +910,9 @@ devices:
     - 3
     - 4
     - 5
+    sources:
+    - snmp
+    - unifi
   - name: Port 8
     type: 1000base-t
     enabled: true
@@ -846,6 +924,9 @@ devices:
     - 3
     - 4
     - 5
+    sources:
+    - snmp
+    - unifi
   - name: Port 9
     type: 1000base-x-sfp
     enabled: true
@@ -862,6 +943,9 @@ devices:
     - address: 192.168.50.145/24
       dns_name: us-8-poe-150w
       primary: true
+    sources:
+    - snmp
+    - unifi
   - name: Port 10
     type: 1000base-x-sfp
     enabled: true
@@ -873,6 +957,9 @@ devices:
     - 3
     - 4
     - 5
+    sources:
+    - snmp
+    - unifi
 - name: USW Flex 2.5G 5 (22c8)
   site: glemmen
   role: switch
@@ -884,6 +971,8 @@ devices:
     84:78:48:6c:22:c8
   tags:
   - production
+  sources:
+  - unifi
   interfaces:
   - name: Port 1
     type: 2.5gbase-t
@@ -941,6 +1030,9 @@ devices:
     MAC ac:8b:a9:b5:f7:e9
   tags:
   - production
+  sources:
+  - snmp
+  - unifi
   interfaces:
   - name: Port 1
     type: 1000base-t
@@ -958,6 +1050,9 @@ devices:
     - address: 192.168.50.178/24
       dns_name: usw-pro-24-poe
       primary: true
+    sources:
+    - snmp
+    - unifi
   - name: Port 2
     type: 1000base-t
     enabled: true
@@ -969,6 +1064,9 @@ devices:
     - 3
     - 4
     - 5
+    sources:
+    - snmp
+    - unifi
   - name: Port 3
     type: 1000base-t
     enabled: true
@@ -977,6 +1075,9 @@ devices:
     mode: access
     untagged_vlan: 3
     tagged_vlans: []
+    sources:
+    - snmp
+    - unifi
   - name: Port 4
     type: 1000base-t
     enabled: true
@@ -988,6 +1089,9 @@ devices:
     - 1
     - 4
     - 5
+    sources:
+    - snmp
+    - unifi
   - name: Port 5
     type: 1000base-t
     enabled: true
@@ -999,6 +1103,9 @@ devices:
     - 3
     - 4
     - 5
+    sources:
+    - snmp
+    - unifi
   - name: Port 6
     type: 1000base-t
     enabled: true
@@ -1010,6 +1117,9 @@ devices:
     - 3
     - 4
     - 5
+    sources:
+    - snmp
+    - unifi
   - name: Port 7
     type: 1000base-t
     enabled: true
@@ -1021,6 +1131,9 @@ devices:
     - 1
     - 4
     - 5
+    sources:
+    - snmp
+    - unifi
   - name: Port 8
     type: 1000base-t
     enabled: true
@@ -1032,6 +1145,9 @@ devices:
     - 1
     - 4
     - 5
+    sources:
+    - snmp
+    - unifi
   - name: Port 9
     type: 1000base-t
     enabled: true
@@ -1043,6 +1159,9 @@ devices:
     - 1
     - 4
     - 5
+    sources:
+    - snmp
+    - unifi
   - name: Port 10
     type: 1000base-t
     enabled: true
@@ -1054,6 +1173,9 @@ devices:
     - 1
     - 4
     - 5
+    sources:
+    - snmp
+    - unifi
   - name: Port 11
     type: 1000base-t
     enabled: true
@@ -1065,6 +1187,9 @@ devices:
     - 1
     - 4
     - 5
+    sources:
+    - snmp
+    - unifi
   - name: Port 12
     type: 1000base-t
     enabled: true
@@ -1076,6 +1201,9 @@ devices:
     - 1
     - 4
     - 5
+    sources:
+    - snmp
+    - unifi
   - name: Port 13
     type: 1000base-t
     enabled: true
@@ -1087,6 +1215,9 @@ devices:
     - 1
     - 4
     - 5
+    sources:
+    - snmp
+    - unifi
   - name: Port 14
     type: 1000base-t
     enabled: true
@@ -1098,6 +1229,9 @@ devices:
     - 1
     - 4
     - 5
+    sources:
+    - snmp
+    - unifi
   - name: Port 15
     type: 1000base-t
     enabled: true
@@ -1109,6 +1243,9 @@ devices:
     - 1
     - 4
     - 5
+    sources:
+    - snmp
+    - unifi
   - name: Port 16
     type: 1000base-t
     enabled: true
@@ -1120,6 +1257,9 @@ devices:
     - 1
     - 4
     - 5
+    sources:
+    - snmp
+    - unifi
   - name: Port 17
     type: 1000base-t
     enabled: true
@@ -1131,6 +1271,9 @@ devices:
     - 1
     - 4
     - 5
+    sources:
+    - snmp
+    - unifi
   - name: Port 18
     type: 1000base-t
     enabled: true
@@ -1142,6 +1285,9 @@ devices:
     - 1
     - 4
     - 5
+    sources:
+    - snmp
+    - unifi
   - name: Port 19
     type: 1000base-t
     enabled: true
@@ -1153,6 +1299,9 @@ devices:
     - 1
     - 4
     - 5
+    sources:
+    - snmp
+    - unifi
   - name: Port 20
     type: 1000base-t
     enabled: true
@@ -1164,6 +1313,9 @@ devices:
     - 1
     - 4
     - 5
+    sources:
+    - snmp
+    - unifi
   - name: Port 21
     type: 1000base-t
     enabled: true
@@ -1175,6 +1327,9 @@ devices:
     - 1
     - 4
     - 5
+    sources:
+    - snmp
+    - unifi
   - name: Port 22
     type: 1000base-t
     enabled: true
@@ -1186,6 +1341,9 @@ devices:
     - 1
     - 4
     - 5
+    sources:
+    - snmp
+    - unifi
   - name: Port 23
     type: 1000base-t
     enabled: true
@@ -1197,6 +1355,9 @@ devices:
     - 1
     - 4
     - 5
+    sources:
+    - snmp
+    - unifi
   - name: Port 24
     type: 1000base-t
     enabled: true
@@ -1208,6 +1369,9 @@ devices:
     - 1
     - 4
     - 5
+    sources:
+    - snmp
+    - unifi
   - name: Port 25
     type: 10gbase-x-sfpp
     enabled: true
@@ -1219,6 +1383,9 @@ devices:
     - 3
     - 4
     - 5
+    sources:
+    - snmp
+    - unifi
   - name: Port 26
     type: 10gbase-x-sfpp
     enabled: true
@@ -1230,6 +1397,9 @@ devices:
     - 1
     - 4
     - 5
+    sources:
+    - snmp
+    - unifi
 - name: USW Flex 2.5G 5 (228f)
   site: glemmen
   role: switch
@@ -1241,6 +1411,8 @@ devices:
     84:78:48:6c:22:8f
   tags:
   - production
+  sources:
+  - unifi
   interfaces:
   - name: Port 1
     type: 2.5gbase-t
@@ -1298,6 +1470,8 @@ devices:
     84:78:48:6c:38:a8
   tags:
   - production
+  sources:
+  - unifi
   interfaces:
   - name: Port 1
     type: 1000base-t
@@ -1314,58 +1488,82 @@ vlans:
   site: glemmen
   status: active
   description: UniFi Default network (native VLAN).
+  sources:
+  - unifi
 - vid: 3
   name: Servere
   site: glemmen
   status: active
   description: 'UniFi network: Servere'
+  sources:
+  - unifi
 - vid: 5
   name: JubA
   site: glemmen
   status: active
   description: 'UniFi network: JubA'
+  sources:
+  - unifi
 - vid: 4
   name: Server tilbehør
   site: glemmen
   status: active
   description: 'UniFi network: Server tilbehør'
+  sources:
+  - unifi
 prefixes:
 - prefix: 192.168.50.0/24
   site: glemmen
   status: active
   description: UniFi Default (corporate)
+  sources:
+  - unifi
   vlan: 1
 - prefix: 192.168.2.0/24
   site: glemmen
   status: active
   description: UniFi VPN Server (remote-user-vpn)
+  sources:
+  - unifi
 - prefix: 192.168.6.0/24
   site: glemmen
   status: active
   description: UniFi Servere (corporate)
+  sources:
+  - unifi
   vlan: 3
 - prefix: 192.168.7.0/24
   site: glemmen
   status: active
   description: UniFi OpenVPN Server (remote-user-vpn)
+  sources:
+  - unifi
 - prefix: 192.168.8.0/24
   site: glemmen
   status: active
   description: UniFi WGS (remote-user-vpn)
+  sources:
+  - unifi
 - prefix: 10.23.42.0/24
   site: glemmen
   status: active
   description: UniFi JubA (corporate)
+  sources:
+  - unifi
   vlan: 5
 - prefix: 192.168.4.0/24
   site: glemmen
   status: active
   description: UniFi Server tilbehør (corporate)
+  sources:
+  - unifi
   vlan: 4
 - prefix: 109.247.229.144/30
   site: glemmen
   status: active
   description: WAN (UDM Pro)
+  sources:
+  - unifi
 cables:
 - a_device: U6 Pro
   a_interface: Port 1
@@ -1374,6 +1572,8 @@ cables:
   type: cat6
   status: connected
   description: UniFi uplink to USW Pro 24 PoE Port 2
+  sources:
+  - unifi
 - a_device: USW Flex 2.5G 5 (97fc)
   a_interface: Port 5
   b_device: USW Flex 2.5G 8 PoE
@@ -1381,6 +1581,8 @@ cables:
   type: cat6a
   status: connected
   description: UniFi uplink to USW Flex 2.5G 8 PoE Port 4
+  sources:
+  - unifi
 - a_device: USW Flex 2.5G 5 (228f)
   a_interface: Port 5
   b_device: USW Flex 2.5G 8 PoEVindu
@@ -1388,6 +1590,8 @@ cables:
   type: cat6a
   status: connected
   description: UniFi uplink to USW Flex 2.5G 8 PoEVindu Port 4
+  sources:
+  - unifi
 - a_device: USW Flex 2.5G 5 (22c8)
   a_interface: Port 5
   b_device: US 8 PoE 150W
@@ -1395,6 +1599,8 @@ cables:
   type: cat6
   status: connected
   description: UniFi uplink to US 8 PoE 150W Port 2
+  sources:
+  - unifi
 - a_device: USW Flex 2.5G 5 (2b2b)
   a_interface: Port 5
   b_device: USW Flex 2.5G 8 PoEVindu
@@ -1402,6 +1608,8 @@ cables:
   type: cat6a
   status: connected
   description: UniFi uplink to USW Flex 2.5G 8 PoEVindu Port 5
+  sources:
+  - unifi
 - a_device: USW Flex 2.5G 5Lager
   a_interface: Port 5
   b_device: USW Flex 2.5G 5 (22c8)
@@ -1409,6 +1617,8 @@ cables:
   type: cat6a
   status: connected
   description: UniFi uplink to USW Flex 2.5G 5 (22c8) Port 4
+  sources:
+  - unifi
 - a_device: USW Flex 2.5G 8 PoEVindu
   a_interface: Port 9
   b_device: US 8 PoE 150W
@@ -1416,6 +1626,8 @@ cables:
   type: cat6
   status: connected
   description: UniFi uplink to US 8 PoE 150W Port 4
+  sources:
+  - unifi
 - a_device: USW Flex 2.5G 8 PoE
   a_interface: Port 1
   b_device: US 8 PoE 150W
@@ -1423,6 +1635,8 @@ cables:
   type: cat6
   status: connected
   description: UniFi uplink to US 8 PoE 150W Port 3
+  sources:
+  - unifi
 - a_device: USW Pro 24 PoE
   a_interface: Port 1
   b_device: Dream Machine Pro B bygg
@@ -1430,6 +1644,8 @@ cables:
   type: cat6
   status: connected
   description: UniFi uplink to Dream Machine Pro B bygg Port 1
+  sources:
+  - unifi
 - a_device: US 8 PoE 150W
   a_interface: Port 9
   b_device: USW Pro 24 PoE
@@ -1437,6 +1653,8 @@ cables:
   type: cat6
   status: connected
   description: UniFi uplink to USW Pro 24 PoE Port 25
+  sources:
+  - unifi
 - a_device: USW Flex Mini (be41)
   a_interface: Port 1
   b_device: USW Flex Mini (c0d6)
@@ -1444,6 +1662,8 @@ cables:
   type: cat6
   status: connected
   description: UniFi uplink to USW Flex Mini (c0d6) Port 4
+  sources:
+  - unifi
 - a_device: USW Flex 2.5G 5 (89b9)
   a_interface: Port 5
   b_device: USW Flex 2.5G 8 PoEVindu
@@ -1451,3 +1671,5 @@ cables:
   type: cat6
   status: connected
   description: UniFi uplink to USW Flex 2.5G 8 PoEVindu Port 7
+  sources:
+  - unifi

@@ -16,6 +16,8 @@ module_types:
   - cpu-socket
   part_number: Intel Xeon E-2314 CPU @ 2.80GHz
   description: Processor
+  sources:
+  - redfish
 - manufacturer: micron
   model: 9ASF2G72AZ-3G2F1
   slug: micron-9asf2g72az-3g2f1
@@ -29,6 +31,8 @@ module_types:
   - dimm-ddr4
   part_number: 9ASF2G72AZ-3G2F1
   description: Memory module
+  sources:
+  - redfish
 - manufacturer: seagate
   model: ST2000NM012B-2TD
   slug: seagate-st2000nm012b-2td
@@ -41,6 +45,8 @@ module_types:
   - drive-3-5
   part_number: ST2000NM012B-2TD
   description: Disk drive
+  sources:
+  - redfish
 - manufacturer: seagate
   model: ST1000DM010-2EP1
   slug: seagate-st1000dm010-2ep1
@@ -53,16 +59,21 @@ module_types:
   - drive-3-5
   part_number: ST1000DM010-2EP1
   description: Disk drive
+  sources:
+  - redfish
 - manufacturer: dell
   model: System Board Fan
   slug: dell-system-board-fan
   profile: Fan
   attributes:
-    rpm: 3720
+    rpm: 3840
   bay_types:
   - fan
   part_number: System Board Fan
   description: Chassis cooling fan
+  sources:
+  - ipmi
+  - redfish
 - manufacturer: seagate
   model: ST2000DM008-2FR1
   slug: seagate-st2000dm008-2fr1
@@ -75,6 +86,8 @@ module_types:
   - drive-3-5
   part_number: ST2000DM008-2FR1
   description: Disk drive
+  sources:
+  - redfish
 - manufacturer: dell
   model: PWR SPLY,750W,RDNT,DELTA
   slug: dell-pwr-sply-750w-rdnt-delta
@@ -88,6 +101,8 @@ module_types:
   - power-supply
   part_number: PWR SPLY,750W,RDNT,DELTA
   description: Hot-swap power supply
+  sources:
+  - ipmi
 - manufacturer: intel
   model: Intel Xeon CPU E5-1650 v3 @ 3.50GHz
   slug: intel-xeon-cpu-e5-1650-v3-3-50ghz
@@ -100,6 +115,8 @@ module_types:
   - cpu-socket
   part_number: Intel Xeon CPU E5-1650 v3 @ 3.50GHz
   description: Processor
+  sources:
+  - redfish
 - manufacturer: generic
   model: M393A2G40DB0-CPB
   slug: generic-m393a2g40db0-cpb
@@ -113,6 +130,8 @@ module_types:
   - dimm-ddr4
   part_number: M393A2G40DB0-CPB
   description: Memory module
+  sources:
+  - redfish
 - manufacturer: generic
   model: HMA42GR7MFR4N-TF
   slug: generic-hma42gr7mfr4n-tf
@@ -126,6 +145,8 @@ module_types:
   - dimm-ddr4
   part_number: HMA42GR7MFR4N-TF
   description: Memory module
+  sources:
+  - redfish
 - manufacturer: generic
   model: ST91000640NS
   slug: generic-st91000640ns
@@ -138,6 +159,8 @@ module_types:
   - drive-2-5
   part_number: ST91000640NS
   description: Disk drive
+  sources:
+  - redfish
 - manufacturer: generic
   model: WDC WD10JFCX 68N
   slug: generic-wdc-wd10jfcx-68n
@@ -150,6 +173,8 @@ module_types:
   - drive-2-5
   part_number: WDC WD10JFCX 68N
   description: Disk drive
+  sources:
+  - redfish
 - manufacturer: dell
   model: PWR SPLY,495W,RDNT,DELTA
   slug: dell-pwr-sply-495w-rdnt-delta
@@ -162,3 +187,5 @@ module_types:
   - power-supply
   part_number: 'PWR SPLY,495W,RDNT,DELTA      '
   description: Hot-swap power supply
+  sources:
+  - redfish

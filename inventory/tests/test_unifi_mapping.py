@@ -32,3 +32,4 @@ def test_unifi_serial_pins_manual_canonical_name() -> None:
         devices, [], manual
     )
     assert unifi_devices[0]["name"] == "Core Switch"
+    assert unifi_devices[0]["sources"] == ["unifi"]

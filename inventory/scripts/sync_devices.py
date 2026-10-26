@@ -113,7 +113,7 @@ class DevicesMixin:
                 self.nb.dcim.devices,
                 {"name": name, "site_id": data["site"]},
                 data,
-                tags=item.get("tags"),
+                tags=self.tags_for(item),
                 label=f"device/{site_slug}/{name}",
             )
             self.devices[name] = device
@@ -164,7 +164,7 @@ class DevicesMixin:
                         "role_id": role.id,
                     },
                     data,
-                    tags=entry.get("tags"),
+                    tags=self.tags_for(entry),
                     label=f"contact_assignment/{device_name}/{contact_name}/{role_slug}",
                 )
                 self.desired["contact_assignments"].add(
@@ -237,7 +237,7 @@ class DevicesMixin:
             self.nb.dcim.interfaces,
             {"device_id": device.id, "name": name},
             data,
-            tags=item.get("tags"),
+            tags=self.tags_for(item),
             label=f"interface/{device_name}/{name}",
         )
         self.interfaces[key] = interface
@@ -273,7 +273,7 @@ class DevicesMixin:
             self.nb.dcim.module_bays,
             {"device_id": device.id, "name": name},
             data,
-            tags=item.get("tags"),
+            tags=self.tags_for(item),
             label=f"module_bay/{device_name}/{name}",
         )
         self.module_bays[key] = bay
@@ -307,7 +307,7 @@ class DevicesMixin:
             self.nb.dcim.modules,
             {"device_id": device.id, "module_bay_id": bay.id},
             data,
-            tags=item.get("tags"),
+            tags=self.tags_for(item),
             label=f"module/{device_name}/{bay_name}",
         )
         self.modules[key] = module
@@ -341,7 +341,7 @@ class DevicesMixin:
             self.nb.ipam.ip_addresses,
             {"address": address},
             data,
-            tags=item.get("tags"),
+            tags=self.tags_for(item),
             label=f"ip/{address}",
         )
         self.ip_addresses[address] = obj

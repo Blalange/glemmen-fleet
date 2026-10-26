@@ -119,6 +119,12 @@ def _clean(value: Any) -> Any:
     return value
 
 
+def _add_source(item: dict[str, Any], source: str) -> None:
+    sources = {str(value) for value in (item.get("sources") or []) if str(value)}
+    sources.add(source)
+    item["sources"] = sorted(sources)
+
+
 def _normalize_component(section: str, raw: Any) -> dict[str, Any] | None:
     if not isinstance(raw, dict):
         return None
@@ -306,6 +312,7 @@ def enrich_inventory(
                 )
             report.skipped += 1
             continue
+        _add_source(item, "dtl")
         changed, fields_added, components_added = _merge_definition(
             item, definition, "device-type"
         )
@@ -346,6 +353,7 @@ def enrich_inventory(
                 )
             report.skipped += 1
             continue
+        _add_source(item, "dtl")
         changed, fields_added, components_added = _merge_definition(
             item, definition, "module-type"
         )

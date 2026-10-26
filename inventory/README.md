@@ -80,6 +80,27 @@ Every YAML document declares its layer:
 layer: manual
 ```
 
+### Provenance and source tags
+
+Every inventory object can carry a `sources` list. The loader automatically adds
+`manual` to everything in the manual layer, the collector records the sources
+that contributed to each generated object, and the layer merge unions the
+lists. The sync job turns these into NetBox tags on every object it creates:
+
+| Tag | Meaning |
+|---|---|
+| `manual` | Declared in the hand-maintained inventory layer |
+| `unifi` | Discovered from the UniFi controller |
+| `talos` | Discovered from Talos/Kubernetes node data |
+| `redfish` | Read from a Redfish BMC |
+| `ipmi` | Read from an IPMI BMC |
+| `snmp` | Observed through SNMP |
+| `dtl` | Enriched from the NetBox Device Type Library |
+
+Source tags are applied in addition to ordinary inventory tags such as
+`production`. `generated` is a fallback for generated files that predate source
+metadata; run the collector once to populate the specific source tags.
+
 The loader merges by natural key (device name, device-type slug, rack/site,
 VLAN/site+VID, prefix, IP address, cable endpoints). Duplicate keys inside one
 layer are an error; a manual object merges into the generated object with the
@@ -555,12 +576,13 @@ Manual files contain the rest: real models, device-type images, module types,
 rack layout, physical devices, accessories, manual cables, VIPs, owners and
 contacts.
 
-The CronJob tags every taggable object it creates with `gitops`. With
-`PRUNE=true`, it deletes objects that still carry that tag but are no longer
-present in the inventory. Objects without the tag are left alone, so manual
-additions are safe. Owner groups and owners are not taggable and are therefore
-never pruned. Contacts and contact assignments are taggable and are pruned like
-other inventory objects.
+The CronJob tags every taggable object it creates with `gitops` and its
+provenance source tags (`manual`, `unifi`, `talos`, `redfish`, `ipmi`, `snmp`
+and `dtl`). With `PRUNE=true`, it deletes objects that still carry the `gitops`
+tag but are no longer present in the inventory. Objects without the tag are
+left alone, so manual additions are safe. Owner groups and owners are not
+taggable and are therefore never pruned. Contacts and contact assignments are
+taggable and are pruned like other inventory objects.
 
 Supported top-level keys:
 

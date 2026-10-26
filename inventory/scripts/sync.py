@@ -10,8 +10,10 @@ The inventory has two layers:
 
 This process merges both layers (manual values win), expands the declarative
 rack layout, and reconciles the result. Every taggable object it manages is
-tagged with the ``gitops`` tag. Pruning is opt-in and only ever deletes objects
-that carry that tag, so objects created by hand in the NetBox UI are safe.
+tagged with the ``gitops`` tag and the inventory's provenance source tags
+(``manual``, ``unifi``, ``talos``, ``redfish``, ``ipmi``, ``snmp`` and
+``dtl``). Pruning is opt-in and only ever deletes objects that carry the
+``gitops`` tag, so objects created by hand in the NetBox UI are safe.
 Owners and owner groups cannot be tagged and are therefore never pruned;
 contacts and contact assignments are tagged and pruned normally.
 

@@ -268,6 +268,7 @@ def build_unifi(
                 "serial": d.get("serial") or "",
                 "description": description,
                 "tags": [default_tag],
+                "sources": ["unifi"],
                 "interfaces": interfaces,
             }
         )
@@ -301,6 +302,7 @@ def build_unifi(
                 "type": "cat6a" if speed > 1000 else "cat6",
                 "status": "connected",
                 "description": f"UniFi uplink to {parent_name} {parent_if}",
+                "sources": ["unifi"],
             }
         )
 
@@ -337,6 +339,7 @@ def build_networks(
                 "site": site_slug,
                 "status": "active",
                 "description": f"UniFi network: {name}",
+                "sources": ["unifi"],
             }
         elif name == "Default":
             vlans[1] = {
@@ -345,6 +348,7 @@ def build_networks(
                 "site": site_slug,
                 "status": "active",
                 "description": "UniFi Default network (native VLAN).",
+                "sources": ["unifi"],
             }
         subnet = network.get("ip_subnet")
         if not subnet:
@@ -360,6 +364,7 @@ def build_networks(
             "site": site_slug,
             "status": "active",
             "description": f"UniFi {name} ({purpose or 'network'})",
+            "sources": ["unifi"],
         }
         if name == "Default":
             entry["vlan"] = 1
@@ -379,6 +384,7 @@ def build_networks(
                         "site": site_slug,
                         "status": "active",
                         "description": "WAN (UDM Pro)",
+                        "sources": ["unifi"],
                     },
                 )
             except ValueError:

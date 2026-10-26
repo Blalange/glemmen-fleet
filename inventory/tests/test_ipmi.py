@@ -171,4 +171,4 @@ def test_collect_ipmi_maps_result_to_manual_device(monkeypatch) -> None:
         manual, DeviceResolver(manual), username="readonly", password="readonly"
     )
 
-    assert result == {"glemmen60": payload}
+    assert result == {"glemmen60": {**payload, "source": "ipmi"}}

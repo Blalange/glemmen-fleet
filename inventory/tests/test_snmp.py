@@ -64,6 +64,8 @@ def test_snmp_enriches_generated_interface_without_duplicate() -> None:
     ]
     matches = merge_snmp_observations(devices, vlans, observations, resolver, {"settings": {"site": "glemmen"}})
     assert matches == {"192.168.50.178": "USW Pro 24 PoE"}
+    assert devices[0]["sources"] == ["snmp"]
+    assert devices[0]["interfaces"][0]["sources"] == ["snmp"]
     assert len(devices[0]["interfaces"]) == 1
     assert devices[0]["interfaces"][0]["untagged_vlan"] == 1
     assert devices[0]["interfaces"][0]["tagged_vlans"] == [4]

@@ -115,6 +115,16 @@ class SyncContext:
             ids.append(self.ensure_tag(str(name)).id)
         return list(dict.fromkeys(ids))
 
+    def tags_for(self, item: dict[str, Any] | None) -> list[str]:
+        """Combine ordinary tags with provenance source tags."""
+        tags = [str(tag) for tag in as_list((item or {}).get("tags")) if str(tag)]
+        tags.extend(
+            str(source)
+            for source in as_list((item or {}).get("sources"))
+            if str(source)
+        )
+        return sorted(set(tags))
+
     def is_managed(self, obj: Any) -> bool:
         return any(
             getattr(tag, "slug", None) == MANAGED_TAG_SLUG
