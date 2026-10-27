@@ -61,6 +61,18 @@ def test_repository_inventory_has_no_diagnostics() -> None:
     assert index.diagnostics == []
 
 
+def test_device_type_images_fit_the_configmap_budget() -> None:
+    images = Path(__file__).resolve().parents[1] / "images"
+    total = sum(path.stat().st_size for path in images.iterdir() if path.is_file())
+    # Images are base64-encoded into netbox-device-type-images. The Kubernetes
+    # API rejects a ConfigMap above 3 MiB, which is roughly 2 MiB of raw image
+    # bytes plus YAML and key overhead. Keep a safety margin.
+    assert total < 2_000_000, (
+        f"inventory/images is {total} bytes; keep the base64 ConfigMap under "
+        "the 3 MiB Kubernetes API limit by resizing/compressing images"
+    )
+
+
 def test_unknown_reference_is_a_warning(tmp_path: Path) -> None:
     devices = BASE_DEVICES.replace("dell-poweredge-r250", "missing-device-type")
     root = write_inventory(

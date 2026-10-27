@@ -467,6 +467,12 @@ renames uploaded files, so the sync uploads an image once and leaves it alone
 on later runs. Use `--force-images` (or `FORCE_IMAGES=true`) to replace an
 image after changing its file.
 
+The images are shipped in the `netbox-device-type-images` ConfigMap, which has
+a 3 MiB Kubernetes API limit after base64 encoding. Keep the raw image directory
+below roughly 2 MiB and resize/compress large photos; the inventory tests
+enforce this budget. A too-large image ConfigMap leaves `netbox-inventory`
+stale, so the sync job can run against an old rack layout.
+
 ### Device Type Library enrichment
 
 The sync enriches device and module types from the Apache-2.0
