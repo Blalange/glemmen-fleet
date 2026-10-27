@@ -72,6 +72,52 @@ are fetched at runtime and cached outside Git; manual inventory values and
 components always win. The CronJob enables this with `DTL_ENABLED=true` and
 caches under the NetBox media volume.
 
+## Redfish
+
+`scripts/redfish.py` sends one command to many server BMCs in parallel. It
+works with Dell iDRACs and other Redfish implementations.
+
+```sh
+# one server, several servers, or everything in inventory/manual/devices
+./scripts/redfish.py --host 192.168.4.130 --username root --password '...' status
+./scripts/redfish.py --hosts 192.168.4.130,192.168.4.150 \
+  --username root --password '...' power restart
+./scripts/redfish.py --all --username root --password '...' fan min-speed 30
+
+# names are only for output; the address may also include a scheme/port
+./scripts/redfish.py --host glemmen130=192.168.4.130 --username root \
+  --password '...' fan show
+```
+
+Commands:
+
+```text
+status                              power state, health, model and fan floor
+power on|off|force-off|restart|reset|cycle
+fan show
+fan min-speed <0-100|default>       "Minimum Fan Speed in PWM (% of Max)"
+fan profile <profile>               default, maximum-performance, minimum-power, sound-cap
+identify [on|off|blink|status]
+```
+
+`fan min-speed` writes the iDRAC attribute
+`ThermalSettings.1.MinimumFanSpeed`; `default` writes Dell's `255` sentinel and
+removes the PWM floor. The script reads the value back and reports a failure if
+the iDRAC does not accept it. `off` is a graceful shutdown, `force-off` is
+immediate, and `reset` is a hard reset; `restart` is a graceful restart.
+
+Credentials can also come from `REDFISH_USER` / `REDFISH_PASS` (or
+`IDRAC_USER` / `IDRAC_PASS`). TLS verification is off by default because iDRACs
+use self-signed certificates; use `--verify` or `--ca-cert PATH` to enable it.
+Use `--jobs N` to limit parallelism (`8` by default) and `--timeout SECONDS`
+for slow BMCs.
+
+The script needs `requests`, and `--all` additionally needs PyYAML:
+
+```sh
+uv run --with requests --with pyyaml python scripts/redfish.py --help
+```
+
 ## Updates
 
 ```sh

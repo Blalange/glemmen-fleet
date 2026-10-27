@@ -91,7 +91,7 @@ Passwords are stored in Kubernetes Secrets, not in Git: `netbox-secrets` in `net
 - `editors/vscode/inventory-lsp/` — thin VS Code client for the inventory language server (diagnostics, Ctrl-click, hover, completion and rename).
 - `flux/` — Flux v2 configuration. `scripts/flux/setup.py` bootstraps Flux against this repository, and `scripts/flux/manage.py` shows status and suspends/resumes reconciliation. Application manifests live under `flux/apps/`, infrastructure under `flux/infrastructure/`, monitoring under `flux/monitoring/` and ingress under `flux/ingress/`.
 - `talos/` — Talos machine configuration: `schematic.yaml` (Image Factory extensions), `nodes/` (per-node documents), `patches/` and a runbook in `talos/README.md`. Generated configurations and secrets live in `talos/generated/` (not committed).
-- `scripts/` — operational and generation scripts: `scripts/talos/` (gen-iso, setup-images, gen-config, manage), `scripts/flux/` (setup, manage), `scripts/download-tools.py` (pinned `talosctl`/`kubectl`/`flux` into `scripts/bin/`), `scripts/check-updates.py` (Talos/Kubernetes/Flux/Helm/image updates), plus `network-test.py` and `update-grafana-dashboards.py`.
+- `scripts/` — operational and generation scripts: `scripts/talos/` (gen-iso, setup-images, gen-config, manage), `scripts/flux/` (setup, manage), `scripts/download-tools.py` (pinned `talosctl`/`kubectl`/`flux` into `scripts/bin/`), `scripts/check-updates.py` (Talos/Kubernetes/Flux/Helm/image updates), `scripts/redfish.py` (parallel multi-server Redfish power/fan control), plus `network-test.py` and `update-grafana-dashboards.py`.
 - `network/` — network hardware documentation and switch backups.
 
 ## GitOps and configuration
