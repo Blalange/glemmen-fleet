@@ -463,9 +463,11 @@ device_types:
 
 `inventory/scripts/sync.py` uploads `front_image` and `rear_image` through the NetBox multipart
 API and stores additional images as `dcim.devicetype` image attachments. NetBox
-renames uploaded files, so the sync uploads an image once and leaves it alone
-on later runs. Use `--force-images` (or `FORCE_IMAGES=true`) to replace an
-image after changing its file.
+renames uploaded files, so the sync compares the local file's SHA-256 digest with
+the image NetBox is currently serving. Unchanged images are left alone; changed
+files are uploaded automatically. Use `--force-images` (or `FORCE_IMAGES=true`)
+to re-upload even when the content already matches, for example to repair a
+missing image.
 
 The images are shipped in the `netbox-device-type-images` ConfigMap, which has
 a 3 MiB Kubernetes API limit after base64 encoding. Keep the raw image directory

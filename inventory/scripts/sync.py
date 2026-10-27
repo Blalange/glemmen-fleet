@@ -83,7 +83,7 @@ def main(argv: list[str] | None = None) -> int:
         "--force-images",
         action="store_true",
         default=env_bool("FORCE_IMAGES", False),
-        help="re-upload device-type images even when the filename already matches",
+        help="re-upload device-type images even when the content already matches",
     )
     parser.add_argument(
         "--dtl",

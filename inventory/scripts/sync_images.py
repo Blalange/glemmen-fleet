@@ -1,11 +1,12 @@
 from __future__ import annotations
 
+import hashlib
 import mimetypes
 from pathlib import Path
 from typing import Any
+from urllib.parse import urljoin, urlsplit
 
 import requests
-
 from inventory_util import SyncError, require
 
 
@@ -30,17 +31,44 @@ class ImagesMixin:
         return path
 
     @staticmethod
-    def _remote_basename(value: Any) -> str:
-        if not value:
-            return ""
-        return str(value).rstrip("/").split("/")[-1]
+    def _file_digest(path: Path) -> str:
+        digest = hashlib.sha256()
+        with path.open("rb") as handle:
+            for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+                digest.update(chunk)
+        return digest.hexdigest()
+
+    def _download_headers(self, url: str) -> dict[str, str]:
+        headers = {"Accept": "*/*"}
+        # NetBox media is normally public. Only send the API token when the
+        # image is on the NetBox origin; do not leak it to an external CDN.
+        if urlsplit(url).netloc == urlsplit(self.url).netloc:
+            headers["Authorization"] = self._auth_headers()["Authorization"]
+        return headers
+
+    def _remote_image_matches(self, value: Any, path: Path) -> bool:
+        if not value or not self.url:
+            return False
+        url = urljoin(f"{self.url}/", str(value))
+        try:
+            response = requests.get(
+                url,
+                headers=self._download_headers(url),
+                timeout=60,
+            )
+        except requests.RequestException:
+            # A missing or unreachable remote image should be repaired rather
+            # than silently treated as unchanged.
+            return False
+        if response.status_code >= 300:
+            return False
+        return hashlib.sha256(response.content).hexdigest() == self._file_digest(path)
 
     def _patch_device_type_image(self, obj: Any, field: str, path: Path) -> None:
         current = getattr(obj, field, None)
-        # NetBox stores uploads under a generated filename, so the remote
-        # basename cannot be compared with the source file. Upload once and
-        # require --force-images to replace an existing image.
-        if not self.force_images and current:
+        # NetBox stores uploads under a generated filename, so compare the
+        # actual image content instead of the remote basename.
+        if not self.force_images and current and self._remote_image_matches(current, path):
             return
         if not isinstance(getattr(obj, "id", None), int) or obj.id < 0:
             # The device type is created earlier in this dry run; its mock ID
@@ -94,9 +122,12 @@ class ImagesMixin:
             path = self._image_path(entry.get("file"))
             desired_names.add(name)
             attachment = by_name.get(name)
-            # NetBox renames uploaded files; do not compare basenames. Replace
-            # an existing attachment only when --force-images is used.
-            if attachment and not self.force_images:
+            # NetBox renames uploaded files; compare content instead of names.
+            if (
+                attachment
+                and not self.force_images
+                and self._remote_image_matches(getattr(attachment, "image", None), path)
+            ):
                 continue
             if not self.url or not self.token:
                 raise SyncError("NetBox URL/token are required to upload device-type images")
