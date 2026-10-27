@@ -34,6 +34,9 @@ manufacturers:
   - name: AMD
     slug: amd
     description: AMD processors.
+  - name: Biltema
+    slug: biltema
+    description: Biltema Nordic Services consumer products.
   - name: Dell
     slug: dell
     description: Dell Technologies servers.
@@ -93,6 +96,10 @@ device_roles:
   - name: Access point
     slug: access-point
     color: 7b61ff
+  - name: Appliance
+    slug: appliance
+    color: 16a085
+    description: Non-rack appliances and facility equipment.
   - name: Server
     slug: server
     color: 9e9e9e

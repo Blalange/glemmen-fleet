@@ -1,0 +1,14 @@
+layer: manual
+
+devices:
+  # --------------------------------------------------------------- appliances
+  - name: minikjoleskap
+    role: appliance
+    device_type: biltema-minikjoleskap-4l
+    status: active
+    description: Biltema 4 l mini fridge and warmer.
+    comments: >-
+      Not rack-mounted; recorded at site level. Biltema article 49-586
+      (web article 2000061760). Serial number and asset tag are not recorded.
+      Product page:
+      https://www.biltema.no/hjem/kjokkenmaskiner/kjoleskap/minikjoleskap-4-l-2000061760

@@ -33,6 +33,7 @@ configMapGenerator:
       - 36-manual-ipam.yaml=manual/ipam.yaml
       - 37-manual-owners.yaml=manual/owners.yaml
       - 38-manual-contacts.yaml=manual/contacts.yaml
+      - 40-manual-devices-appliances.yaml=manual/devices/appliances.yaml
       - 40-manual-devices-network.yaml=manual/devices/network.yaml
       - 40-manual-devices-power.yaml=manual/devices/power.yaml
       - 40-manual-devices-servers.yaml=manual/devices/servers.yaml
@@ -42,6 +43,8 @@ configMapGenerator:
     files:
       - apc-ap4423a-front.jpg=images/apc-ap4423a-front.jpg
       - apc-ap4423a-rear.jpg=images/apc-ap4423a-rear.jpg
+      - biltema-minikjoleskap-4l-front.jpg=images/biltema-minikjoleskap-4l-front.jpg
+      - biltema-minikjoleskap-4l-open.jpg=images/biltema-minikjoleskap-4l-open.jpg
       - dell-poweredge-r250-front.jpg=images/dell-poweredge-r250-front.jpg
       - dell-poweredge-r250-other.jpg=images/dell-poweredge-r250-other.jpg
       - dell-poweredge-r250-rear.jpg=images/dell-poweredge-r250-rear.jpg

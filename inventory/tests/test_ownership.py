@@ -135,7 +135,8 @@ def test_duplicate_device_contact_role_is_rejected() -> None:
 def test_repository_ownership_and_contact_assignments() -> None:
     inventory = load_inventory(Path(__file__).resolve().parents[1])
 
-    assert any(item.get("name") == "Glemmen VGS" for item in inventory["owners"])
+    assert any(item.get("name") ==
+               "Glemmen VGS" for item in inventory["owners"])
     assert any(
         item.get("name") == "Technical contact"
         and item.get("slug") == "technical-contact"

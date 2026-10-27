@@ -249,3 +249,29 @@ device_types:
         - name: Angled view
           file: images/ubiquiti-u6-pro-other.jpg
           description: Angled product view.
+
+  - manufacturer: biltema
+    model: Minikjøleskap 4 l
+    slug: biltema-minikjoleskap-4l
+    u_height: 0
+    is_full_depth: false
+    part_number: "49-586"
+    airflow: passive
+    weight: 1.73
+    weight_unit: kg
+    description: Biltema 4 l portable mini fridge and warmer with 230 V AC and 12 V DC power.
+    comments: >-
+      Biltema article 49-586 (web article 2000061760). Volume 4 l
+      (4 x 0.33 l bottles or 6 x 0.33 l cans). Cools to about 18 °C below
+      ambient temperature and warms to a maximum of 50 °C; the LED indicator
+      on the side shows cooling or heating mode. Powered from 230 V AC or
+      12 V DC. Dimensions 225 x 300 x 275 mm (W x D x H), weight 1.73 kg.
+      Price NOK 499 including VAT (NOK 399.20 excluding VAT) on 2026-10-27.
+      Product page:
+      https://www.biltema.no/hjem/kjokkenmaskiner/kjoleskap/minikjoleskap-4-l-2000061760
+    images:
+      front: images/biltema-minikjoleskap-4l-front.jpg
+      other:
+        - name: Door open
+          file: images/biltema-minikjoleskap-4l-open.jpg
+          description: Mini fridge with the door open, holding six 0.33 l cans.
