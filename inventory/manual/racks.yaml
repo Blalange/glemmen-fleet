@@ -41,8 +41,9 @@ racks:
       - device: server70
       - device: glemmen50
       - device: zyxel-gs1920-24
-      - gap: 4
+        face: rear
+      - gap: 6
       - device: storwize-02
       - device: storwize-01
       - device: glemmen60
-      - gap: 4
+      - gap: 2

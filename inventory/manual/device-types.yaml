@@ -75,14 +75,13 @@ device_types:
   - manufacturer: ibm
     model: Storwize V5000 LFF Expansion Enclosure
     slug: ibm-storwize-v5000-lff-expansion
-    u_height: 3
+    u_height: 2
     is_full_depth: true
     part_number: 6194-12E
     airflow: front-to-rear
     description: 3U LFF SAS expansion enclosure with 12 x 3.5-inch drive bays.
     comments: >-
       Two Storwize V5000 LFF expansion enclosures, each with 12 x 12 TB disks.
-      The device type is modelled as 3U to match the physical rack layout.
     images:
       front: images/ibm-storwize-v5000-lff-expansion-front.jpg
       rear: images/ibm-storwize-v5000-lff-expansion-rear.jpg
