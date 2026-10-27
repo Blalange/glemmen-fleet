@@ -1,0 +1,10 @@
+{
+  "yaml.schemas": {
+    "./inventory/schema/inventory.schema.json": [
+      "inventory/manual/**/*.yaml",
+      "inventory/manual/**/*.yml",
+      "inventory/generated/**/*.yaml",
+      "inventory/generated/**/*.yml"
+    ]
+  }
+}

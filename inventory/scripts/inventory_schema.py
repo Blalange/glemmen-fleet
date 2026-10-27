@@ -1,4 +1,8 @@
-"""Shared inventory schema constants for the collector and NetBox sync."""
+"""Shared inventory schema constants for the collector and NetBox sync.
+
+Keep the editor schema at inventory/schema/inventory.schema.json in sync when
+adding or renaming inventory fields.
+"""
 
 from __future__ import annotations
 

@@ -80,6 +80,23 @@ Every YAML document declares its layer:
 layer: manual
 ```
 
+### Editor support
+
+`inventory/schema/inventory.schema.json` is a JSON Schema for both layers. It
+covers the NetBox-backed fields written by the sync job and the collector-only
+fields (`talos_node`, `redfish_ip`, `ipmi_ip`, `snmp_ip`, `unifi_ip`,
+`service_tag`, `system_uuid`, `oob_ip`, `snmp_interfaces`, `snmp_cables` and
+`uplinks`), plus device-type images, DTL references and module-type profiles
+and attributes.
+
+The repository ships `.vscode/settings.json`, which associates the schema with
+`inventory/manual/**/*.yaml` and `inventory/generated/**/*.yaml`, and
+`.vscode/extensions.json`, which recommends the Red Hat YAML extension. Install
+the extension to get completion and inline validation in VS Code. The schema is
+editor-only; the collector and sync job do not read it. The
+`inventory/tests/test_yaml_schema.py` test validates every manual and generated
+document against it.
+
 ### Provenance and source tags
 
 Every inventory object can carry a `sources` list. The loader automatically adds
@@ -676,8 +693,8 @@ custom image for a short-lived job.
 Run the inventory tests locally with:
 
 ```sh
-uv run --with pytest --with pynetbox==7.9.0 --with PyYAML==6.0.3 --with requests==2.32.5 \
-  pytest -q inventory/tests
+uv run --with pytest --with jsonschema --with pynetbox==7.9.0 --with PyYAML==6.0.3 \
+  --with requests==2.32.5 pytest -q inventory/tests
 ```
 
 
