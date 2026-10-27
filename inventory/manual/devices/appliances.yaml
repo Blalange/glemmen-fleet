@@ -12,3 +12,10 @@ devices:
       (web article 2000061760). Serial number and asset tag are not recorded.
       Product page:
       https://www.biltema.no/hjem/kjokkenmaskiner/kjoleskap/minikjoleskap-4-l-2000061760
+
+  - name: rail-one
+    role: appliance
+    device_type: hpe-proliant-dl360-g5
+    status: active
+    description: 1U rack server used as a rail to stack servers
+    

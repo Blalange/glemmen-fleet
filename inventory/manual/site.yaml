@@ -70,6 +70,8 @@ manufacturers:
   - name: Zyxel
     slug: zyxel
     description: Zyxel network switches.
+  - name: Hewlett Packard Enterprise
+    slug: hpe
 
 platforms:
   - name: Talos Linux

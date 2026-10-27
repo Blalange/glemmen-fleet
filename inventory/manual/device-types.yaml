@@ -274,3 +274,16 @@ device_types:
         - name: Door open
           file: images/biltema-minikjoleskap-4l-open.jpg
           description: Mini fridge with the door open, holding six 0.33 l cans.
+
+  - manufacturer: hpe
+    model: ProLiant DL360 G5
+    slug: hpe-proliant-dl360-g5
+    u_height: 1
+    is_full_depth: true
+    part_number: 399524-b21
+    airflow: front-to-rear
+    weight: 14.5
+    weight_unit: kg
+    images:
+      front: images/rail-one-front.jpg
+      rear: images/rail-one-back.jpg

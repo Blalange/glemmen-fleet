@@ -46,4 +46,5 @@ racks:
       - device: storwize-02
       - device: storwize-01
       - device: glemmen60
-      - gap: 2
+      - device: rail-one
+      - gap: 1
