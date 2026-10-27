@@ -16,6 +16,5 @@ devices:
   - name: rail-one
     role: appliance
     device_type: hpe-proliant-dl360-g5
-    status: active
+    status: offline
     description: 1U rack server used as a rail to stack servers
-    
