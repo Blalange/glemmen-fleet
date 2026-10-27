@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import yaml
 from inventory_index import InventoryIndex, Position
 from sync_inventory import load_inventory
 from sync_validate import collect_inventory_problems
@@ -70,6 +71,25 @@ def test_device_type_images_fit_the_configmap_budget() -> None:
     assert total < 2_000_000, (
         f"inventory/images is {total} bytes; keep the base64 ConfigMap under "
         "the 3 MiB Kubernetes API limit by resizing/compressing images"
+    )
+
+
+def test_all_device_type_images_are_in_the_configmap() -> None:
+    root = Path(__file__).resolve().parents[1]
+    kustomization = yaml.safe_load((root / "kustomization.yaml").read_text(encoding="utf-8"))
+    image_config = next(
+        item
+        for item in kustomization["configMapGenerator"]
+        if item["name"] == "netbox-device-type-images"
+    )
+    listed = {
+        entry.split("=", 1)[0] if "=" in entry else Path(entry).name
+        for entry in image_config["files"]
+    }
+    on_disk = {path.name for path in (root / "images").iterdir() if path.is_file()}
+    assert on_disk <= listed, (
+        "images missing from netbox-device-type-images in inventory/kustomization.yaml: "
+        + ", ".join(sorted(on_disk - listed))
     )
 
 

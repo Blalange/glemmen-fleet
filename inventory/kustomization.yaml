@@ -63,6 +63,8 @@ configMapGenerator:
       - ibm-system-x3650-m3-front.jpg=images/ibm-system-x3650-m3-front.jpg
       - ibm-system-x3650-m3-other.jpg=images/ibm-system-x3650-m3-other.jpg
       - ibm-system-x3650-m3-rear.jpg=images/ibm-system-x3650-m3-rear.jpg
+      - rail-one-back.jpg=images/rail-one-back.jpg
+      - rail-one-front.jpg=images/rail-one-front.jpg
       - ubiquiti-u6-pro-front.jpg=images/ubiquiti-u6-pro-front.jpg
       - ubiquiti-u6-pro-other.jpg=images/ubiquiti-u6-pro-other.jpg
       - ubiquiti-u6-pro-rear.jpg=images/ubiquiti-u6-pro-rear.jpg
