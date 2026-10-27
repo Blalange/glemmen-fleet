@@ -5,6 +5,8 @@ from __future__ import annotations
 from pathlib import Path
 
 from inventory_index import InventoryIndex, Position
+from sync_inventory import load_inventory
+from sync_validate import collect_inventory_problems
 
 BASE_TYPES = """\
 layer: manual
@@ -242,6 +244,155 @@ racks:
         position_of(racks, "device: server01", len("device: ")),
     )
     assert any(item.label == "server01" for item in completions)
+
+
+def test_interface_boolean_and_cable_completions(tmp_path: Path) -> None:
+    devices = """\
+layer: manual
+devices:
+  - name: server01
+    site: glemmen
+    role: server
+    device_type: dell-poweredge-r250
+    interfaces:
+      - name: Port 1
+        type: 1000base-t
+        enabled: true
+cables:
+  - a_device: server01
+    a_interface: Port 1
+    b_device: server01
+    b_interface: Port 1
+    type: cat6
+"""
+    root = write_inventory(
+        tmp_path,
+        {"manual/types.yaml": BASE_TYPES, "manual/devices.yaml": devices},
+    )
+    index = InventoryIndex(root)
+    devices_path = root / "manual/devices.yaml"
+
+    interface_completions = index.completions_at(
+        devices_path,
+        position_of(devices, "type: 1000base-t", len("type: ")),
+    )
+    interface_labels = {item.label for item in interface_completions}
+    assert {"1000base-t", "10gbase-x-sfpp", "lag", "virtual"} <= interface_labels
+
+    boolean_completions = index.completions_at(
+        devices_path,
+        position_of(devices, "enabled: true", len("enabled: ")),
+    )
+    assert [item.label for item in boolean_completions] == ["true", "false"]
+
+    cable_completions = index.completions_at(
+        devices_path,
+        position_of(devices, "type: cat6", len("type: ")),
+    )
+    cable_labels = {item.label for item in cable_completions}
+    assert {"cat6", "cat6a", "dac-passive", "smf-os2"} <= cable_labels
+
+
+def test_component_template_and_module_profile_completions(tmp_path: Path) -> None:
+    device_types = """\
+layer: manual
+device_types:
+  - manufacturer: dell
+    model: R250
+    slug: dell-r250
+    power_ports:
+      - name: PSU 1
+        type: iec-60320-c14
+    console_ports:
+      - name: Console
+        type: rj-45
+    interfaces:
+      - name: Port 1
+        type: 1000base-t
+        poe_mode: pse
+        poe_type: type2-ieee802.3at
+module_types:
+  - manufacturer: dell
+    model: CPU
+    slug: dell-cpu
+    profile: CPU
+"""
+    root = write_inventory(tmp_path, {"manual/types.yaml": device_types})
+    index = InventoryIndex(root)
+    path = root / "manual/types.yaml"
+
+    power = index.completions_at(
+        path,
+        position_of(device_types, "type: iec-60320-c14", len("type: ")),
+    )
+    assert "iec-60320-c14" in {item.label for item in power}
+
+    console = index.completions_at(
+        path,
+        position_of(device_types, "type: rj-45", len("type: ")),
+    )
+    assert "rj-45" in {item.label for item in console}
+
+    poe = index.completions_at(
+        path,
+        position_of(device_types, "poe_mode: pse", len("poe_mode: ")),
+    )
+    assert {item.label for item in poe} == {"pd", "pse"}
+
+    profile = index.completions_at(
+        path,
+        position_of(device_types, "profile: CPU", len("profile: ")),
+    )
+    assert {"CPU", "Memory", "Hard disk", "Power supply"} <= {
+        item.label for item in profile
+    }
+
+
+def test_top_level_key_completion_after_a_sequence(tmp_path: Path) -> None:
+    text = """\
+layer: manual
+sites:
+  - name: Glemmen
+    slug: glemmen
+"""
+    root = write_inventory(tmp_path, {"manual/sites.yaml": text})
+    index = InventoryIndex(root)
+    path = root / "manual/sites.yaml"
+    completions = index.completions_at(path, Position(len(text.splitlines()), 0))
+    labels = {item.label for item in completions}
+    assert {"devices", "device_types", "racks", "vlans"} <= labels
+
+
+def test_shared_validator_and_lsp_report_the_same_semantic_problems(tmp_path: Path) -> None:
+    devices = BASE_DEVICES.replace("dell-poweredge-r250", "missing-device-type")
+    racks = """\
+layer: manual
+racks:
+  - name: Glemmen rack
+    site: glemmen
+    u_height: 2
+    layout:
+      - device: server01
+"""
+    root = write_inventory(
+        tmp_path,
+        {
+            "manual/types.yaml": BASE_TYPES,
+            "manual/devices.yaml": devices,
+            "manual/racks.yaml": racks,
+        },
+    )
+
+    loader_problems = []
+    inventory = load_inventory(root, problems=loader_problems)
+    shared_problems = loader_problems + collect_inventory_problems(inventory)
+    shared_codes = {problem.code for problem in shared_problems}
+    assert {"rack-layout-incomplete", "unknown-reference"} <= shared_codes
+    assert len(shared_problems) >= 2
+
+    index = InventoryIndex(root)
+    lsp_codes = {diagnostic.code for diagnostic in index.diagnostics}
+    assert {"rack-layout-incomplete", "unknown-reference"} <= lsp_codes
 
 
 def test_unsaved_override_is_indexed(tmp_path: Path) -> None:

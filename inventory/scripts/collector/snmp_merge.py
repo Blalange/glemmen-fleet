@@ -6,6 +6,7 @@ import re
 from collections import Counter, defaultdict
 from typing import Any
 
+from inventory_keys import cable_key
 from inventory_util import InventoryError, normalize_mac
 
 from .identity import DeviceResolver, MappingError
@@ -398,17 +399,6 @@ def _cable(
     }
 
 
-def _cable_key(cable: dict[str, Any]) -> tuple[Any, Any]:
-    return tuple(
-        sorted(
-            [
-                (str(cable.get("a_device")), str(cable.get("a_interface"))),
-                (str(cable.get("b_device")), str(cable.get("b_interface"))),
-            ]
-        )
-    )
-
-
 def _auto_cables(
     observation: dict[str, Any],
     switch_name: str,
@@ -499,10 +489,10 @@ def _auto_cables(
 def _append_cables(
     cables: list[dict[str, Any]], generated: list[dict[str, Any]]
 ) -> int:
-    existing = {_cable_key(cable): cable for cable in cables}
+    existing = {cable_key(cable): cable for cable in cables}
     added = 0
     for cable in generated:
-        key = _cable_key(cable)
+        key = cable_key(cable)
         current = existing.get(key)
         if current is not None:
             current["sources"] = sorted(

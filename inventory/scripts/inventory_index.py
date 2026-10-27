@@ -5,10 +5,10 @@ NetBox objects. It keeps the source location of every value so the language
 server can report diagnostics and resolve definitions, references, completions
 and renames.
 
-The sync job remains the authority for what is written to NetBox. This module
-mirrors the semantic rules that matter while editing: references between the
-layers, rack layout arithmetic, field types, duplicate natural keys, image
-paths, VLAN membership, cable/uplink endpoints and module compatibility.
+The sync job remains the authority for what is written to NetBox. Reference
+and rack rules come from the shared ``sync_validate``/``inventory_racks``
+engine; this module adds source positions, editor-only field diagnostics and
+the language features (definition, hover, completion and rename).
 """
 
 from __future__ import annotations
@@ -24,11 +24,14 @@ from typing import Any
 
 import yaml
 from inventory_fields import TOP_LEVEL_SPEC, spec_for_path
-from inventory_util import slugify
+from inventory_keys import interface_key, inventory_files, module_bay_key, natural_key
+from inventory_problems import Problem, ProblemLocation
+from inventory_util import SyncError
+from sync_inventory import assemble_inventory
+from sync_validate import collect_inventory_problems
 
 SLUG_RE = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
 MAC_RE = re.compile(r"^[0-9A-Fa-f]{2}(?::[0-9A-Fa-f]{2}){5}$")
-IGNORED_INVENTORY_FILES = {"kustomization.yaml", "kustomization.yml"}
 LAYERS = ("generated", "manual")
 
 
@@ -205,6 +208,14 @@ def _contains(span: Range, position: Position) -> bool:
     )
 
 
+def _ranges_overlap(left: Range, right: Range) -> bool:
+    left_start = (left.start.line, left.start.character)
+    left_end = (left.end.line, left.end.character)
+    right_start = (right.start.line, right.start.character)
+    right_end = (right.end.line, right.end.character)
+    return not (left_end < right_start or right_end < left_start)
+
+
 def _build_node(node: Any, loader: yaml.SafeLoader) -> YNode:
     if isinstance(node, yaml.MappingNode):
         entries: list[YEntry] = []
@@ -260,29 +271,6 @@ def _parse_file(path: Path, text: str) -> list[YamlDocument]:
         layer = str(layer_node.value) if isinstance(layer_node, YScalar) else "manual"
         documents.append(YamlDocument(path=path, text=text, root=root, layer=layer))
     return documents
-
-
-def inventory_files(root: Path) -> list[Path]:
-    """Return the YAML files that make up the inventory."""
-
-    files: set[Path] = set()
-    root = Path(root)
-    for directory_name in ("manual", "generated"):
-        directory = root / directory_name
-        if not directory.is_dir():
-            continue
-        for pattern in ("*.yaml", "*.yml"):
-            for path in directory.rglob(pattern):
-                relative = path.relative_to(root)
-                if any(part.startswith(".") for part in relative.parts):
-                    continue
-                if path.name in IGNORED_INVENTORY_FILES:
-                    continue
-                try:
-                    files.add(path.resolve())
-                except OSError:
-                    files.add(path)
-    return sorted(files)
 
 
 def _walk_scalars(node: YNode, path: tuple[Any, ...] = ()) -> Iterator[tuple[tuple[Any, ...], YScalar]]:
@@ -617,7 +605,10 @@ class InventoryIndex:
             self._section_definitions(document, root, "module_types", "module_type")
             self._section_definitions(document, root, "racks", "rack")
             self._section_definitions(document, root, "vlans", "vlan")
+            self._section_definitions(document, root, "prefixes", "prefix")
             self._section_definitions(document, root, "devices", "device")
+            self._section_definitions(document, root, "ip_addresses", "ip_address")
+            self._section_definitions(document, root, "cables", "cable")
             self._nested_device_definitions(document, root)
 
     def _section_definitions(
@@ -633,40 +624,31 @@ class InventoryIndex:
         for item in section_node.items:
             if not isinstance(item, YMap):
                 continue
+            try:
+                key = natural_key(section, item.value)
+            except (TypeError, ValueError, SyncError):
+                continue
             if kind in SLUG_KINDS:
-                if kind == "device_type" or kind == "module_type":
-                    manufacturer = _text(item, "manufacturer") or ""
-                    model = _text(item, "model") or ""
-                    explicit = _text(item, "slug")
-                    key = explicit or slugify(f"{manufacturer}-{model}")
-                    name_field = "slug" if explicit else None
-                    name_node = item.get("slug") if explicit else None
-                else:
-                    name = _text(item, "name") or ""
-                    explicit = _text(item, "slug")
-                    key = explicit or slugify(name)
-                    name_field = "slug" if explicit else None
-                    name_node = item.get("slug") if explicit else None
+                explicit = _text(item, "slug")
+                name_field = "slug" if explicit else None
+                name_node = item.get("slug") if explicit else None
             elif kind in NAME_KINDS:
-                if kind == "rack":
-                    site = _text(item, "site")
-                    name = _text(item, "name") or ""
-                    key = (site, name)
-                    name_field = "name"
-                    name_node = item.get("name")
-                elif kind == "module_bay" or kind == "interface":
+                if kind in {"module_bay", "interface"}:
                     continue
-                else:
-                    name = _text(item, "name") or ""
-                    key = name
-                    name_field = "name"
-                    name_node = item.get("name")
+                name_field = "name"
+                name_node = item.get("name")
             elif kind == "vlan":
-                site = _text(item, "site")
-                vid = _integer(item, "vid")
-                key = (site, vid)
                 name_field = "vid"
                 name_node = item.get("vid")
+            elif kind == "prefix":
+                name_field = "prefix"
+                name_node = item.get("prefix")
+            elif kind == "ip_address":
+                name_field = "address"
+                name_node = item.get("address")
+            elif kind == "cable":
+                name_field = None
+                name_node = None
             else:
                 continue
             self._add_definition(kind, key, document, item, name_field, name_node)
@@ -691,9 +673,14 @@ class InventoryIndex:
                     name = _text(entry, "name")
                     if not name:
                         continue
+                    key = (
+                        module_bay_key(device_name, name)
+                        if kind == "module_bay"
+                        else interface_key(device_name, name)
+                    )
                     self._add_definition(
                         kind,
-                        (device_name, name),
+                        key,
                         document,
                         entry,
                         "name",
@@ -804,9 +791,8 @@ class InventoryIndex:
                         f"Unknown layer {document.layer!r}; expected generated or manual.",
                     )
         self._lint_natural_key_duplicates()
-        self._lint_references()
-        self._lint_racks()
-        self._lint_uplinks_and_cables()
+        self._lint_auxiliary_references()
+        self._lint_shared()
         self._lint_module_compatibility()
         self._lint_images()
         self.diagnostics.sort(
@@ -817,6 +803,189 @@ class InventoryIndex:
                 diagnostic.code,
             )
         )
+
+    def _lint_auxiliary_references(self) -> None:
+        """Validate settings/defaults/unifi_models, which the sync merge drops."""
+
+        auxiliary_sections = {"settings", "defaults", "unifi_models"}
+        for reference in self.references:
+            if not reference.yaml_path or reference.yaml_path[0] not in auxiliary_sections:
+                continue
+            definition, candidates = self._resolve(reference)
+            if definition is None:
+                self._diag(
+                    reference.path,
+                    reference.span,
+                    "warning",
+                    "unknown-reference",
+                    _unknown_reference_message(
+                        reference,
+                        self.definitions.get(reference.kind, []),
+                    ),
+                )
+            elif len(candidates) > 1 and len({candidate.key for candidate in candidates}) > 1:
+                self._diag(
+                    reference.path,
+                    reference.span,
+                    "warning",
+                    "ambiguous-reference",
+                    f"Reference {reference.key!r} matches more than one "
+                    f"{reference.kind} definition.",
+                    related=[candidate.location for candidate in candidates],
+                )
+
+    def _lint_shared(self) -> None:
+        """Run the sync validator and map its semantic locations to YAML."""
+
+        documents = [
+            (document.path, document.root.value)
+            for document in self.documents
+            if document.root is not None
+        ]
+        shared_problems: list[Problem] = []
+        try:
+            inventory = assemble_inventory(
+                documents,
+                problems=shared_problems,
+                warn=False,
+            )
+            shared_problems.extend(
+                collect_inventory_problems(inventory, report_duplicates=False)
+            )
+        except Exception as exc:  # noqa: BLE001 - shape validation still runs
+            path = documents[0][0] if documents else None
+            if path is not None:
+                self._diag(
+                    path,
+                    Range(Position(0, 0), Position(0, 0)),
+                    "error",
+                    "inventory-assembly",
+                    str(exc),
+                )
+            return
+
+        self._populate_rack_metadata(inventory)
+        for item in shared_problems:
+            # The index already reports duplicate definitions with precise
+            # ranges and related locations.
+            if item.code == "duplicate-definition":
+                continue
+            self._add_shared_problem(item)
+
+    def _populate_rack_metadata(self, inventory: dict[str, list[Any]]) -> None:
+        device_types = {
+            str(natural_key("device_types", item)): item
+            for item in inventory.get("device_types", [])
+        }
+        devices = [
+            device
+            for device in inventory.get("devices", [])
+            if isinstance(device, dict) and device.get("name")
+        ]
+        for device in devices:
+            rack_name = device.get("rack")
+            position = device.get("position")
+            if not rack_name or position is None:
+                continue
+            device_type = device_types.get(str(device.get("device_type")))
+            height = 1
+            if isinstance(device_type, dict):
+                try:
+                    height = int(device_type.get("u_height", 1))
+                except (TypeError, ValueError):
+                    height = 1
+            start = int(position)
+            end = start + height - 1
+            self.device_rack_positions[str(device["name"])] = (
+                device.get("site"),
+                str(rack_name),
+                start,
+                end,
+                str(device.get("face") or "front"),
+            )
+
+        for rack in inventory.get("racks", []):
+            if not isinstance(rack, dict):
+                continue
+            site = rack.get("site")
+            name = str(rack.get("name") or "")
+            key = (site, name)
+            definition = self._definition("rack", key)
+            if definition is None:
+                continue
+            try:
+                u_height = int(rack.get("u_height", 42))
+            except (TypeError, ValueError):
+                u_height = 42
+            used = sum(
+                end - start + 1
+                for device_site, rack_name, start, end, _face in self.device_rack_positions.values()
+                if (device_site, rack_name) == key
+            )
+            self.rack_states[key] = RackState(
+                definition=definition,
+                u_height=u_height,
+                used=used,
+            )
+
+    def _add_shared_problem(self, item: Problem) -> None:
+        if item.location is None:
+            return
+        path, span = self._locate_problem(item.location)
+        if path is None or span is None:
+            return
+        # Shape validation already reports missing/type errors at the same
+        # location with a more precise field range.
+        if any(
+            diagnostic.path == path
+            and diagnostic.code == item.code
+            and _ranges_overlap(diagnostic.range, span)
+            for diagnostic in self.diagnostics
+        ):
+            return
+        related: list[Location] = []
+        for location in item.related:
+            related_path, related_span = self._locate_problem(location)
+            if related_path is not None and related_span is not None:
+                related.append(Location(related_path, related_span))
+        self.diagnostics.append(
+            Diagnostic(
+                path=path,
+                range=span,
+                severity=item.severity if item.severity in {"error", "warning"} else "error",
+                code=item.code,
+                message=item.message,
+                related=related,
+            )
+        )
+
+    def _locate_problem(
+        self,
+        location: ProblemLocation,
+    ) -> tuple[Path | None, Range | None]:
+        candidates = [
+            definition
+            for definition in self.definitions.get(location.kind, [])
+            if definition.key == location.key
+        ]
+        if location.layer:
+            layered = [item for item in candidates if item.layer == location.layer]
+            if layered:
+                candidates = layered
+        candidates.sort(key=lambda item: 0 if item.layer == "manual" else 1)
+        for definition in candidates:
+            if location.field_path:
+                child = _node_at(definition.node, location.field_path)
+                if child is not None:
+                    return definition.path, child.span
+            else:
+                return definition.path, definition.name_range
+        if candidates:
+            definition = candidates[0]
+            if location.field_path:
+                return definition.path, definition.node.key_range(str(location.field_path[0]))
+            return definition.path, definition.span
+        return None, None
 
     def _validate_node(
         self,
@@ -988,6 +1157,27 @@ class InventoryIndex:
                     f"{_display_path(path)} contains an invalid IP address {node.value!r}.",
                 )
                 return
+        elif kind == "prefix":
+            if not isinstance(node, YScalar) or not isinstance(node.value, str):
+                self._diag(
+                    document.path,
+                    node.span,
+                    "error",
+                    "type-mismatch",
+                    f"{_display_path(path)} must be a prefix in CIDR notation.",
+                )
+                return
+            try:
+                ipaddress.ip_network(node.value, strict=False)
+            except ValueError:
+                self._diag(
+                    document.path,
+                    node.span,
+                    "error",
+                    "invalid-prefix",
+                    f"{_display_path(path)} contains an invalid prefix {node.value!r}.",
+                )
+                return
         elif kind == "mac":
             if not isinstance(node, YScalar) or not isinstance(node.value, str):
                 self._diag(
@@ -1132,50 +1322,8 @@ class InventoryIndex:
             return manual[0], manual
         return candidates[0], candidates
 
-    def _lint_references(self) -> None:
-        for reference in self.references:
-            definition, candidates = self._resolve(reference)
-            if definition is None:
-                if self._reference_allows_missing(reference):
-                    continue
-                self._diag(
-                    reference.path,
-                    reference.span,
-                    "warning",
-                    "unknown-reference",
-                    _unknown_reference_message(reference, self.definitions.get(reference.kind, [])),
-                )
-            elif len(candidates) > 1 and len({candidate.key for candidate in candidates}) > 1:
-                self._diag(
-                    reference.path,
-                    reference.span,
-                    "warning",
-                    "ambiguous-reference",
-                    f"Reference {reference.key!r} matches more than one {reference.kind} definition.",
-                    related=[candidate.location for candidate in candidates],
-                )
-
-    def _reference_allows_missing(self, reference: Reference) -> bool:
-        """Interfaces owned by SNMP are not present in the YAML layer."""
-
-        if reference.kind != "interface":
-            return False
-        document = self._document(reference.path)
-        if document is None or document.root is None:
-            return False
-        device_name = _device_name(self, document, reference.yaml_path)
-        if not device_name:
-            return False
-        return self._device_interface_names(device_name) is None
-
     def _device_definitions(self, name: str) -> list[Definition]:
         return [d for d in self.definitions.get("device", []) if d.key == name]
-
-    def _device_field(self, name: str, field_name: str) -> Any:
-        for definition in self._device_definitions(name):
-            if field_name in definition.value:
-                return definition.value[field_name]
-        return None
 
     def _device_interface_names(self, name: str) -> set[str] | None:
         """Combine interfaces from all layers; None means SNMP owns them."""
@@ -1194,241 +1342,6 @@ class InventoryIndex:
                         if interface_name:
                             names.add(interface_name)
         return names if found else set()
-
-    def _lint_racks(self) -> None:
-        # Build layout positions and check that every non-empty layout uses the
-        # complete rack height.
-        for rack in self.definitions.get("rack", []):
-            if not isinstance(rack.key, tuple):
-                continue
-            site, rack_name = rack.key
-            u_height = _integer(rack.node, "u_height") or 42
-            layout = rack.node.get("layout")
-            state = RackState(definition=rack, u_height=u_height)
-            self.rack_states[(site, rack_name)] = state
-            if not isinstance(layout, YSeq) or not layout.items:
-                continue
-            cursor = u_height
-            seen: set[str] = set()
-            for index, entry in enumerate(layout.items):
-                if not isinstance(entry, YMap):
-                    continue
-                gap_node = entry.get("gap") or entry.get("empty")
-                if isinstance(gap_node, YScalar) and isinstance(gap_node.value, int):
-                    cursor -= gap_node.value
-                    if cursor < 0:
-                        self._diag(
-                            rack.path,
-                            entry.span,
-                            "error",
-                            "rack-layout-overflow",
-                            f"Rack {rack_name!r} layout exceeds its {u_height}U height.",
-                        )
-                    continue
-                device_node = entry.get("device")
-                if not isinstance(device_node, YScalar) or not isinstance(device_node.value, str):
-                    continue
-                device_name = device_node.value
-                if device_name in seen:
-                    self._diag(
-                        rack.path,
-                        device_node.span,
-                        "error",
-                        "rack-layout-duplicate-device",
-                        f"Device {device_name!r} appears more than once in rack {rack_name!r}.",
-                    )
-                    continue
-                seen.add(device_name)
-                device = self._definition("device", device_name)
-                if device is None:
-                    self._diag(
-                        rack.path,
-                        device_node.span,
-                        "error",
-                        "rack-layout-unknown-device",
-                        f"Device {device_name!r} is not defined.",
-                    )
-                    continue
-                device_type_slug = self._device_field(device_name, "device_type") or (
-                    str(self.defaults.get("device_type"))
-                    if isinstance(self.defaults.get("device_type"), str)
-                    else None
-                )
-                device_type = self._definition("device_type", device_type_slug) if device_type_slug else None
-                if device_type is None:
-                    field_node = device.node.get("device_type") or device_node
-                    self._diag(
-                        rack.path,
-                        device_node.span,
-                        "error",
-                        "rack-layout-unknown-device-type",
-                        f"Device {device_name!r} has no defined device type.",
-                        related=[Location(device.path, field_node.span)],
-                    )
-                    continue
-                height = _integer(device_type.node, "u_height")
-                if height is None:
-                    height = 1
-                if height == 0:
-                    self._diag(
-                        rack.path,
-                        device_node.span,
-                        "error",
-                        "rack-layout-zero-height",
-                        f"Device {device_name!r} has u_height 0 and cannot be placed in a rack layout.",
-                    )
-                    continue
-                position = cursor - height + 1
-                if position < 1:
-                    self._diag(
-                        rack.path,
-                        entry.span,
-                        "error",
-                        "rack-layout-does-not-fit",
-                        f"Device {device_name!r} ({height}U) does not fit in rack {rack_name!r}.",
-                    )
-                    continue
-                face = _text(entry, "face") or _text(device.node, "face") or "front"
-                state.positions[device_name] = (position, position + height - 1, face)
-                state.used += height
-                for unit in range(position, position + height):
-                    state.occupancy[unit] = device_name
-                self.device_rack_positions[device_name] = (
-                    site,
-                    rack_name,
-                    position,
-                    position + height - 1,
-                    face,
-                )
-                cursor = position - 1
-            if cursor != 0:
-                used = u_height - cursor
-                if used < u_height:
-                    message = (
-                        f"Rack {rack_name!r} layout uses {used} of {u_height} units; "
-                        f"add {u_height - used} empty unit(s)."
-                    )
-                else:
-                    message = (
-                        f"Rack {rack_name!r} layout uses {used} of {u_height} units; "
-                        f"it overflows by {used - u_height} unit(s)."
-                    )
-                self._diag(
-                    rack.path,
-                    layout.span,
-                    "error",
-                    "rack-layout-incomplete",
-                    message,
-                )
-
-        # Devices that declare rack/position directly are checked against the
-        # same occupancy map. Devices placed by a layout are skipped here.
-        for device in self.definitions.get("device", []):
-            if not isinstance(device.key, str):
-                continue
-            if device.key in self.device_rack_positions:
-                continue
-            rack_name = _text(device.node, "rack")
-            position = _integer(device.node, "position")
-            face = _text(device.node, "face")
-            if not rack_name and (position is not None or face):
-                self._diag(
-                    device.path,
-                    device.node.key_range("position" if position is not None else "face"),
-                    "error",
-                    "rack-position-without-rack",
-                    f"Device {device.key!r} has position/face without a rack.",
-                )
-                continue
-            if not rack_name or position is None:
-                continue
-            if not face:
-                self._diag(
-                    device.path,
-                    device.node.key_range("position"),
-                    "error",
-                    "rack-position-without-face",
-                    f"Device {device.key!r} has a rack position without a face.",
-                )
-            site = self._device_field(device.key, "site") or (
-                str(self.defaults.get("site")) if isinstance(self.defaults.get("site"), str) else None
-            )
-            state = self.rack_states.get((site, rack_name))
-            if state is None:
-                continue
-            device_type_slug = self._device_field(device.key, "device_type")
-            device_type = self._definition("device_type", device_type_slug) if device_type_slug else None
-            height = _integer(device_type.node, "u_height") if device_type else None
-            height = height or 1
-            end = position + height - 1
-            if position < 1 or end > state.u_height:
-                self._diag(
-                    device.path,
-                    device.node.key_range("position"),
-                    "error",
-                    "rack-position-out-of-bounds",
-                    f"Device {device.key!r} ({height}U at {position}) does not fit in rack {rack_name!r} ({state.u_height}U).",
-                )
-                continue
-            overlaps = [
-                (unit, occupant)
-                for unit, occupant in state.occupancy.items()
-                if position <= unit <= end
-            ]
-            if overlaps:
-                occupant = overlaps[0][1]
-                related_definition = self._definition("device", occupant)
-                self._diag(
-                    device.path,
-                    device.node.key_range("position"),
-                    "error",
-                    "rack-position-overlap",
-                    f"Device {device.key!r} overlaps {occupant!r} in rack {rack_name!r}.",
-                    related=[related_definition.location] if related_definition else [],
-                )
-            for unit in range(position, end + 1):
-                state.occupancy[unit] = device.key
-            self.device_rack_positions[device.key] = (site, rack_name, position, end, face or "front")
-
-    def _lint_uplinks_and_cables(self) -> None:
-        for document in self.documents:
-            root = document.root
-            if root is None:
-                continue
-            devices = root.get("devices")
-            if isinstance(devices, YSeq):
-                for device in devices.items:
-                    if not isinstance(device, YMap):
-                        continue
-                    device_name = _text(device, "name")
-                    if not device_name:
-                        continue
-                    uplinks = device.get("uplinks")
-                    if isinstance(uplinks, YSeq):
-                        for uplink in uplinks.items:
-                            if not isinstance(uplink, YMap):
-                                continue
-                            switch_name = _text(uplink, "switch")
-                            port = _integer(uplink, "port")
-                            if not switch_name or port is None:
-                                continue
-                            switch = self._definition("device", switch_name)
-                            if switch is None:
-                                continue
-                            switch_interfaces = self._device_interface_names(switch_name)
-                            if switch_interfaces is None:
-                                continue
-                            port_name = f"Port {port}"
-                            if port_name not in switch_interfaces:
-                                self._diag(
-                                    document.path,
-                                    uplink.key_range("port"),
-                                    "warning",
-                                    "unknown-interface",
-                                    f"Switch {switch_name!r} has no interface {port_name!r}.",
-                                    related=[switch.location],
-                                )
-
 
     def _lint_module_compatibility(self) -> None:
         for device in self.definitions.get("device", []):
@@ -1671,6 +1584,15 @@ class InventoryIndex:
 
         if context == "key":
             line_indent = len(prefix) - len(prefix.lstrip())
+            if (
+                line_indent == 0
+                and context_path
+                and not prefix.lstrip().startswith("-")
+            ):
+                # A new top-level key after a sequence item mapping: the YAML
+                # span of the last item can extend to the end of the file.
+                context_path = ()
+                node = document.root
             if isinstance(node, YMap) and prefix.lstrip().startswith("-"):
                 # The cursor is on a new "- " line inside a mapping item. If it
                 # is less indented than the item's keys, it is a new item of
@@ -1738,7 +1660,7 @@ class InventoryIndex:
             spec is not None
             and spec.get("kind") == "array"
             and context_path
-            and context_path[-1] in {"tagged_vlans", "bay_types"}
+            and context_path[-1] in {"tagged_vlans", "bay_types", "tags"}
         ):
             item_spec = spec.get("items", {})
             return self._value_completions(document, context_path + (0,), item_spec)
@@ -1806,12 +1728,30 @@ class InventoryIndex:
     ) -> list[Completion]:
         if spec is None:
             spec = {}
+        if path and (
+            path[-1] == "tags" or (len(path) >= 2 and path[-2] == "tags")
+        ):
+            return self._tag_completions()
         allowed = spec.get("enum")
         if allowed is not None:
             return [
                 Completion(label=str(value), kind="enum", detail="Allowed value")
                 for value in allowed
                 if str(value) != ""
+            ]
+
+        suggested = spec.get("suggestions")
+        if suggested is not None:
+            return [
+                Completion(label=str(value), kind="suggestion", detail="Suggested value")
+                for value in suggested
+                if str(value) != ""
+            ]
+
+        if spec.get("kind") == "boolean":
+            return [
+                Completion(label="true", kind="boolean", detail="Boolean value"),
+                Completion(label="false", kind="boolean", detail="Boolean value"),
             ]
 
         kind = _reference_descriptor(path)
@@ -1903,6 +1843,18 @@ class InventoryIndex:
                 )
             )
         return results
+
+    def _tag_completions(self) -> list[Completion]:
+        tags: set[str] = set()
+        for definitions in self.definitions.values():
+            for definition in definitions:
+                values = definition.value.get("tags")
+                if isinstance(values, list):
+                    tags.update(str(value) for value in values if str(value))
+        return [
+            Completion(label=tag, kind="suggestion", detail="Existing tag")
+            for tag in sorted(tags)
+        ]
 
     def _image_completions(self) -> list[Completion]:
         images = self.root / "images"

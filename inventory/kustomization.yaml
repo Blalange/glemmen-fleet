@@ -3,6 +3,9 @@ kind: Kustomization
 configMapGenerator:
   - name: netbox-sync-code
     files:
+      - inventory_keys.py=scripts/inventory_keys.py
+      - inventory_problems.py=scripts/inventory_problems.py
+      - inventory_racks.py=scripts/inventory_racks.py
       - inventory_schema.py=scripts/inventory_schema.py
       - inventory_util.py=scripts/inventory_util.py
       - dtl_catalog.py=scripts/dtl_catalog.py

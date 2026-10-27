@@ -28,6 +28,10 @@ only writer. Objects created by hand in NetBox are never deleted by the sync.
 | `flux/apps/netbox/sync-cronjob.yaml` | Runs the inventory sync every 10 minutes                  |
 | `inventory/scripts/sync.py`          | NetBox reconciler entrypoint                              |
 | `inventory/scripts/dtl_catalog.py`   | Runtime NetBox Device Type Library client                 |
+| `inventory/scripts/inventory_keys.py` | Shared inventory file discovery, natural keys and cable keys |
+| `inventory/scripts/inventory_problems.py` | Structured problems shared by the sync job and LSP |
+| `inventory/scripts/inventory_racks.py` | Shared rack layout and occupancy rules |
+| `inventory/scripts/inventory_choices.py` | NetBox choice values used for editor completion |
 | `inventory/scripts/inventory_fields.py` | Field catalog for editor validation and completion    |
 | `inventory/scripts/inventory_index.py` | Position-aware inventory index, lint rules and language features |
 | `inventory/scripts/inventory_lsp.py` | Inventory language server (stdio LSP)                     |
@@ -72,6 +76,10 @@ inventory/
 │   ├── collect.py       # collector entrypoint
 │   ├── sync.py          # NetBox reconciler entrypoint
 │   ├── dtl_catalog.py   # Device Type Library runtime client
+│   ├── inventory_keys.py    # shared file discovery and natural keys
+│   ├── inventory_problems.py# structured problems shared by sync and LSP
+│   ├── inventory_racks.py   # shared rack layout and occupancy rules
+│   ├── inventory_choices.py # NetBox choice values for completion
 │   ├── inventory_fields.py  # editor field catalog
 │   ├── inventory_index.py   # semantic index, lint rules and language features
 │   ├── inventory_lsp.py     # stdio language server
@@ -104,14 +112,18 @@ provides:
   devices, module bays and interfaces
 - hover details for definitions and missing references
 - key and value completion, including defined slugs, names, VLAN IDs, rack
-  layout devices, cable endpoints and upload image paths
+  layout devices, cable endpoints, upload image paths, booleans, existing tags
+  and NetBox choice values for interface, cable, console, power, pass-through
+  port, PoE, IP-role and module-profile fields
 - workspace-wide rename of a definition and all of its references
 
-The thin VS Code client lives in `editors/vscode/inventory-lsp/`. See its
-README for installation. The client starts the server with
-`uv run --with pygls --with lsprotocol --with PyYAML python
-inventory/scripts/inventory_lsp.py` by default; the command, arguments and
-inventory directory are configurable through the `glemmenInventory.*`
+The language server runs the same `collect_inventory_problems()` rule engine as
+the sync job, including the shared rack layout/occupancy engine, and maps each
+problem's semantic location to a YAML range. The thin VS Code client lives in
+`editors/vscode/inventory-lsp/`. See its README for installation. The client
+starts the server with `uv run --with pygls --with lsprotocol --with PyYAML
+python inventory/scripts/inventory_lsp.py` by default; the command, arguments
+and inventory directory are configurable through the `glemmenInventory.*`
 settings. `.vscode/settings.json` contains the repository defaults. No JSON
 Schema is used.
 
@@ -701,7 +713,9 @@ uv run --with pynetbox==7.9.0 --with PyYAML==6.0.3 --with requests==2.32.5 \
 ```
 
 `--check` validates references, unique keys, rack bounds and overlaps without
-contacting NetBox (DTL enrichment is enabled by default; add `--no-dtl` for an offline check).
+contacting NetBox. It prints every problem and exits non-zero if any are found;
+the same rule engine powers the language server. DTL enrichment is enabled by
+default; add `--no-dtl` for an offline check.
 `--dry-run` prints the exact create/update/delete plan.
 `--prune` is required for deletions; without it the sync only creates and
 updates. For rack moves that also delete an old device or cable, use `--prune`

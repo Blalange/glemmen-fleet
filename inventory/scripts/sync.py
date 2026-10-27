@@ -38,14 +38,14 @@ import sys
 from pathlib import Path
 
 import pynetbox
-
-from inventory_util import SyncError, env_bool
 from dtl_catalog import DtlCatalog
+from inventory_problems import Problem
+from inventory_util import SyncError, env_bool
 from sync_api import wait_for_netbox
-from sync_inventory import load_inventory
 from sync_catalog import enrich_inventory
+from sync_inventory import load_inventory
 from sync_reconciler import Reconciler
-from sync_validate import validate_inventory
+from sync_validate import collect_inventory_problems, inventory_summary
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -111,7 +111,8 @@ def main(argv: list[str] | None = None) -> int:
     )
     args = parser.parse_args(argv)
 
-    inventory = load_inventory(Path(args.inventory))
+    problems: list[Problem] = []
+    inventory = load_inventory(Path(args.inventory), problems=problems)
     if args.dtl:
         catalog = DtlCatalog.from_env()
         if args.dtl_cache:
@@ -135,7 +136,21 @@ def main(argv: list[str] | None = None) -> int:
             for item in inventory.get(section, []) or []:
                 if isinstance(item, dict) and item.get("dtl"):
                     item["_dtl_failed"] = True
-    validate_inventory(inventory)
+    problems.extend(
+        collect_inventory_problems(inventory, report_duplicates=False)
+    )
+    if problems:
+        for item in problems:
+            print(
+                f"{item.severity.upper():7} {item.code:24} {item.message}",
+                file=sys.stderr,
+            )
+        if args.check:
+            print(f"ERROR: {len(problems)} inventory problem(s)", file=sys.stderr)
+            return 1
+        raise SyncError(f"{len(problems)} inventory problem(s)")
+
+    print(inventory_summary(inventory))
     if args.check:
         return 0
 

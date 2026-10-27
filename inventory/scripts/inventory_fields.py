@@ -9,11 +9,29 @@ from __future__ import annotations
 
 from typing import Any
 
+from inventory_choices import (
+    CABLE_TYPES,
+    CONSOLE_PORT_TYPES,
+    INTERFACE_POE_MODES,
+    INTERFACE_POE_TYPES,
+    INTERFACE_TYPES,
+    IP_ROLES,
+    MODULE_PROFILES,
+    PASS_THROUGH_PORT_TYPES,
+    POWER_OUTLET_TYPES,
+    POWER_PORT_TYPES,
+    WIRELESS_ROLES,
+)
+
 Spec = dict[str, Any]
 
 
 def string(**kwargs: Any) -> Spec:
     return {"kind": "string", **kwargs}
+
+
+def suggestions(values: tuple[str, ...], **kwargs: Any) -> Spec:
+    return {"kind": "string", "suggestions": values, **kwargs}
 
 
 def slug(**kwargs: Any) -> Spec:
@@ -22,6 +40,10 @@ def slug(**kwargs: Any) -> Spec:
 
 def cidr(**kwargs: Any) -> Spec:
     return {"kind": "cidr", **kwargs}
+
+
+def prefix_network(**kwargs: Any) -> Spec:
+    return {"kind": "prefix", **kwargs}
 
 
 def mac(**kwargs: Any) -> Spec:
@@ -247,37 +269,45 @@ IMAGES_FIELDS = {
 INTERFACE_TEMPLATE_FIELDS = {
     "name": string(required=True),
     "label": string(),
-    "type": string(description="NetBox interface type."),
+    "type": suggestions(INTERFACE_TYPES, description="NetBox interface type."),
     "channels": integer(minimum=1),
     "channel_id": integer(minimum=1),
     "enabled": boolean(),
     "mgmt_only": boolean(),
     "description": string(),
-    "poe_mode": string(),
-    "poe_type": string(),
-    "rf_role": string(),
+    "poe_mode": enum(INTERFACE_POE_MODES),
+    "poe_type": enum(INTERFACE_POE_TYPES),
+    "rf_role": enum(WIRELESS_ROLES),
 }
 
 CONSOLE_PORT_TEMPLATE_FIELDS = {
     "name": string(required=True),
     "label": string(),
-    "type": string(description="NetBox console port type."),
+    "type": suggestions(CONSOLE_PORT_TYPES, description="NetBox console port type."),
     "description": string(),
 }
 
 POWER_PORT_TEMPLATE_FIELDS = {
     "name": string(required=True),
     "label": string(),
-    "type": string(description="NetBox power port or outlet type."),
+    "type": suggestions(POWER_PORT_TYPES, description="NetBox power port type."),
     "maximum_draw": integer(minimum=0),
     "allocated_draw": integer(minimum=0),
     "description": string(),
 }
 
+POWER_OUTLET_TEMPLATE_FIELDS = {
+    **POWER_PORT_TEMPLATE_FIELDS,
+    "type": suggestions(POWER_OUTLET_TYPES, description="NetBox power outlet type."),
+}
+
 FRONT_REAR_PORT_TEMPLATE_FIELDS = {
     "name": string(required=True),
     "label": string(),
-    "type": string(description="NetBox pass-through port type."),
+    "type": suggestions(
+        PASS_THROUGH_PORT_TYPES,
+        description="NetBox pass-through port type.",
+    ),
     "color": string(),
     "positions": integer(minimum=1),
     "description": string(),
@@ -314,10 +344,14 @@ MODULE_TYPE_ATTRIBUTE_FIELDS = {
     "input_current": enum(("AC", "DC")),
     "input_voltage": number(minimum=0),
     "hot_swappable": boolean(),
-    "connector_type": string(),
+    "connector_type": suggestions(
+        ("PCIe", "PCIe x4", "PCIe x8", "PCIe x16", "SAS", "SATA", "QSFP+", "SFP+", "USB"),
+    ),
     "bandwidth": integer(minimum=0),
     "gpu": string(),
-    "interface": string(),
+    "interface": suggestions(
+        ("PCIe 3.0 x16", "PCIe 4.0 x8", "PCIe 4.0 x16", "PCIe 5.0 x16"),
+    ),
     "memory": integer(minimum=0),
 }
 
@@ -352,7 +386,7 @@ DEVICE_TYPE_FIELDS = _with_common(
         "console_ports": array(obj(CONSOLE_PORT_TEMPLATE_FIELDS)),
         "console_server_ports": array(obj(CONSOLE_PORT_TEMPLATE_FIELDS)),
         "power_ports": array(obj(POWER_PORT_TEMPLATE_FIELDS)),
-        "power_outlets": array(obj(POWER_PORT_TEMPLATE_FIELDS)),
+        "power_outlets": array(obj(POWER_OUTLET_TEMPLATE_FIELDS)),
         "rear_ports": array(obj(FRONT_REAR_PORT_TEMPLATE_FIELDS)),
         "front_ports": array(obj(FRONT_REAR_PORT_TEMPLATE_FIELDS)),
         "module_bays": array(obj(MODULE_BAY_TEMPLATE_FIELDS)),
@@ -365,7 +399,11 @@ MODULE_TYPE_FIELDS = _with_common(
         "manufacturer": slug(required=True, description="Manufacturer slug."),
         "model": string(required=True),
         "slug": slug(),
-        "profile": string(required=True, description="NetBox module type profile name."),
+        "profile": suggestions(
+            MODULE_PROFILES,
+            required=True,
+            description="NetBox module type profile name.",
+        ),
         "dtl": string(description="NetBox Device Type Library definition path."),
         "part_number": string(),
         "description": string(),
@@ -378,7 +416,7 @@ MODULE_TYPE_FIELDS = _with_common(
         "console_ports": array(obj(CONSOLE_PORT_TEMPLATE_FIELDS)),
         "console_server_ports": array(obj(CONSOLE_PORT_TEMPLATE_FIELDS)),
         "power_ports": array(obj(POWER_PORT_TEMPLATE_FIELDS)),
-        "power_outlets": array(obj(POWER_PORT_TEMPLATE_FIELDS)),
+        "power_outlets": array(obj(POWER_OUTLET_TEMPLATE_FIELDS)),
         "rear_ports": array(obj(FRONT_REAR_PORT_TEMPLATE_FIELDS)),
         "front_ports": array(obj(FRONT_REAR_PORT_TEMPLATE_FIELDS)),
         "module_bays": array(obj(MODULE_BAY_TEMPLATE_FIELDS)),
@@ -425,7 +463,10 @@ VLAN_FIELDS = _with_common(
 
 PREFIX_FIELDS = _with_common(
     {
-        "prefix": string(required=True, description="IPv4 or IPv6 prefix in CIDR notation."),
+        "prefix": prefix_network(
+            required=True,
+            description="IPv4 or IPv6 prefix in CIDR notation.",
+        ),
         "site": slug(description="Site slug."),
         "vlan": integer(description="VLAN ID."),
         "status": enum(PREFIX_STATUS),
@@ -448,7 +489,7 @@ IP_ASSIGNMENT_FIELDS = {
     "status": enum(IP_STATUS),
     "dns_name": string(),
     "description": string(),
-    "role": string(description="NetBox IP address role."),
+    "role": enum(("", *IP_ROLES), description="NetBox IP address role."),
     "primary": boolean(description="Use as the device primary IP address."),
     "tags": TAGS,
     "sources": SOURCES,
@@ -456,7 +497,7 @@ IP_ASSIGNMENT_FIELDS = {
 
 INTERFACE_FIELDS = {
     "name": string(required=True),
-    "type": string(description="NetBox interface type."),
+    "type": suggestions(INTERFACE_TYPES, description="NetBox interface type."),
     "enabled": boolean(),
     "mgmt_only": boolean(),
     "description": string(),
@@ -497,7 +538,7 @@ UPLINK_FIELDS = {
     "interface": string(description="Device interface name."),
     "switch": string(required=True, description="Switch device name."),
     "port": integer(required=True, minimum=1, description="Switch port number."),
-    "type": string(description="NetBox cable type."),
+    "type": suggestions(CABLE_TYPES, description="NetBox cable type."),
 }
 
 CABLE_FIELDS = _with_common(
@@ -506,7 +547,7 @@ CABLE_FIELDS = _with_common(
         "a_interface": string(required=True),
         "b_device": string(required=True),
         "b_interface": string(required=True),
-        "type": string(description="NetBox cable type."),
+        "type": suggestions(CABLE_TYPES, description="NetBox cable type."),
         "status": enum(CABLE_STATUS),
         "label": string(),
         "description": string(),
@@ -586,7 +627,7 @@ STANDALONE_IP_FIELDS = {
     "status": enum(IP_STATUS),
     "dns_name": string(),
     "description": string(),
-    "role": string(description="NetBox IP address role."),
+    "role": enum(("", *IP_ROLES), description="NetBox IP address role."),
     "primary": boolean(description="Use as the device primary IP address."),
     "tags": TAGS,
     "sources": SOURCES,

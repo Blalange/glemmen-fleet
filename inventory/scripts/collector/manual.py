@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Any
 
 import yaml
+from inventory_keys import inventory_files
 from inventory_util import InventoryError
 
 from .log import get_logger
@@ -25,14 +26,9 @@ def load_manual(directory: Path) -> dict[str, Any]:
         "defaults": {},
         "devices": [],
     }
-    files: set[Path] = set()
-    for pattern in ("*.yaml", "*.yml"):
-        for path in directory.rglob(pattern):
-            if any(part.startswith(".") for part in path.relative_to(directory).parts):
-                continue
-            files.add(path.resolve())
+    files = inventory_files(directory)
 
-    for path in sorted(files):
+    for path in files:
         log.debug("Reading manual inventory file %s", path)
         for document in yaml.safe_load_all(path.read_text(encoding="utf-8")):
             if document is None:
@@ -113,11 +109,8 @@ def load_manual(directory: Path) -> dict[str, Any]:
 
 def _read_manual_section(directory: Path, section: str) -> list[dict]:
     result: list[dict] = []
-    for pattern in ("*.yaml", "*.yml"):
-        for path in sorted(directory.rglob(pattern)):
-            if any(part.startswith(".") for part in path.relative_to(directory).parts):
-                continue
-            for document in yaml.safe_load_all(path.read_text(encoding="utf-8")):
-                if isinstance(document, dict) and isinstance(document.get(section), list):
-                    result.extend(document[section])
+    for path in inventory_files(directory):
+        for document in yaml.safe_load_all(path.read_text(encoding="utf-8")):
+            if isinstance(document, dict) and isinstance(document.get(section), list):
+                result.extend(document[section])
     return result

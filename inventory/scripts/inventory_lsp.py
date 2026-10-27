@@ -27,8 +27,8 @@ from inventory_index import (
     Range,
     YamlDocument,
     _parse_file,
-    inventory_files,
 )
+from inventory_keys import inventory_files
 from lsprotocol import types
 from pygls.lsp.server import LanguageServer
 from pygls.uris import from_fs_path, to_fs_path
@@ -190,6 +190,8 @@ def _completion_kind(completion: Completion) -> types.CompletionItemKind:
         "reference": types.CompletionItemKind.Reference,
         "file": types.CompletionItemKind.File,
         "value": types.CompletionItemKind.Value,
+        "suggestion": types.CompletionItemKind.Value,
+        "boolean": types.CompletionItemKind.Value,
     }.get(completion.kind, types.CompletionItemKind.Text)
 
 
@@ -283,7 +285,7 @@ def hover(ls: LanguageServer, params: types.HoverParams) -> types.Hover | None:
 
 @SERVER.feature(
     types.TEXT_DOCUMENT_COMPLETION,
-    types.CompletionOptions(trigger_characters=[":", "-", " ", "/"]),
+    types.CompletionOptions(trigger_characters=[":", "-", " ", "/", "."]),
 )
 def completion(
     ls: LanguageServer,
