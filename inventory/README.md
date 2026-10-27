@@ -28,6 +28,10 @@ only writer. Objects created by hand in NetBox are never deleted by the sync.
 | `flux/apps/netbox/sync-cronjob.yaml` | Runs the inventory sync every 10 minutes                  |
 | `inventory/scripts/sync.py`          | NetBox reconciler entrypoint                              |
 | `inventory/scripts/dtl_catalog.py`   | Runtime NetBox Device Type Library client                 |
+| `inventory/scripts/inventory_fields.py` | Field catalog for editor validation and completion    |
+| `inventory/scripts/inventory_index.py` | Position-aware inventory index, lint rules and language features |
+| `inventory/scripts/inventory_lsp.py` | Inventory language server (stdio LSP)                     |
+| `editors/vscode/inventory-lsp/`      | Thin VS Code client for the language server               |
 | `inventory/generated/`               | Canonical compute and network facts from the collector    |
 | `inventory/manual/`                  | Human-maintained inventory                                |
 | `inventory/scripts/`                 | Collector and sync code                                   |
@@ -68,10 +72,13 @@ inventory/
 │   ├── collect.py       # collector entrypoint
 │   ├── sync.py          # NetBox reconciler entrypoint
 │   ├── dtl_catalog.py   # Device Type Library runtime client
+│   ├── inventory_fields.py  # editor field catalog
+│   ├── inventory_index.py   # semantic index, lint rules and language features
+│   ├── inventory_lsp.py     # stdio language server
 │   ├── collector/       # source adapters, identity resolver, builders
 │   └── sync_*.py        # merge, validation, templates and NetBox resources
 ├── images/              # device-type images
-└── tests/               # identity, merge and rendering tests
+└── tests/               # identity, merge, language-server and rendering tests
 ```
 
 Every YAML document declares its layer:
@@ -82,20 +89,34 @@ layer: manual
 
 ### Editor support
 
-`inventory/schema/inventory.schema.json` is a JSON Schema for both layers. It
-covers the NetBox-backed fields written by the sync job and the collector-only
-fields (`talos_node`, `redfish_ip`, `ipmi_ip`, `snmp_ip`, `unifi_ip`,
-`service_tag`, `system_uuid`, `oob_ip`, `snmp_interfaces`, `snmp_cables` and
-`uplinks`), plus device-type images, DTL references and module-type profiles
-and attributes.
+The inventory has a small language server in
+`inventory/scripts/inventory_lsp.py`, backed by the position-aware semantic
+index in `inventory/scripts/inventory_index.py` and the field catalog in
+`inventory/scripts/inventory_fields.py`. It understands both layers and
+provides:
 
-The repository ships `.vscode/settings.json`, which associates the schema with
-`inventory/manual/**/*.yaml` and `inventory/generated/**/*.yaml`, and
-`.vscode/extensions.json`, which recommends the Red Hat YAML extension. Install
-the extension to get completion and inline validation in VS Code. The schema is
-editor-only; the collector and sync job do not read it. The
-`inventory/tests/test_yaml_schema.py` test validates every manual and generated
-document against it.
+- diagnostics for field types, unknown fields, unknown references, duplicate
+  natural keys, rack layout arithmetic (including incomplete/overflowing
+  layouts), rack overlaps, cable/uplink endpoints, module compatibility and
+  missing image files
+- Ctrl-click/go-to-definition for sites, roles, device types, module types,
+  module bay types, manufacturers, platforms, owners, contacts, racks, VLANs,
+  devices, module bays and interfaces
+- hover details for definitions and missing references
+- key and value completion, including defined slugs, names, VLAN IDs, rack
+  layout devices, cable endpoints and upload image paths
+- workspace-wide rename of a definition and all of its references
+
+The thin VS Code client lives in `editors/vscode/inventory-lsp/`. See its
+README for installation. The client starts the server with
+`uv run --with pygls --with lsprotocol --with PyYAML python
+inventory/scripts/inventory_lsp.py` by default; the command, arguments and
+inventory directory are configurable through the `glemmenInventory.*`
+settings. `.vscode/settings.json` contains the repository defaults. No JSON
+Schema is used.
+
+The semantic rules are exercised by `inventory/tests/test_inventory_lint.py`
+and the existing inventory tests.
 
 ### Provenance and source tags
 
@@ -693,8 +714,8 @@ custom image for a short-lived job.
 Run the inventory tests locally with:
 
 ```sh
-uv run --with pytest --with jsonschema --with pynetbox==7.9.0 --with PyYAML==6.0.3 \
-  --with requests==2.32.5 pytest -q inventory/tests
+uv run --with pytest --with pynetbox==7.9.0 --with PyYAML==6.0.3 --with requests==2.32.5 \
+  pytest -q inventory/tests
 ```
 
 
