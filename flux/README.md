@@ -115,7 +115,8 @@ Google token needs a new `rclone.conf` in the Secret and a rollout restart.
 
 The `Longhorn Monitoring & Backups` Grafana dashboard is an enhanced local
 copy based on Grafana.com dashboard 16888. It adds volume IOPS, throughput,
-read/write latency and per-volume status tables. Because it is now customized,
+read/write latency, per-volume status tables and workqueue depth/latency/retry
+statistics. Because it is now customized,
 `scripts/update-grafana-dashboards.py` does not refresh it from upstream.
 
 ## SeaweedFS object storage

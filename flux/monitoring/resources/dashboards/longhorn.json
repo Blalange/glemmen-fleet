@@ -60,7 +60,7 @@
       }
     ]
   },
-  "description": "Longhorn volume health, capacity, backups, node/disk usage and detailed volume performance (IOPS, throughput, read/write latency and status). Based on the Longhorn dashboard by ONZACK AG (Robin Hermann).",
+  "description": "Longhorn volume health, capacity, backups, node/disk usage, detailed volume performance (IOPS, throughput, read/write latency and status) and workqueue depth, latency and retry statistics. Based on the Longhorn dashboard by ONZACK AG (Robin Hermann).",
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
@@ -820,7 +820,7 @@
         "type": "prometheus",
         "uid": "${datasource}"
       },
-      "description": "Read and write IOPS reported by the Longhorn volume engine.",
+      "description": "Read and write IOPS reported by the Longhorn volume engine. Idle (zero) series are hidden; min and mean exclude zero samples.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -884,6 +884,9 @@
       "options": {
         "legend": {
           "calcs": [
+            "max",
+            "min",
+            "mean",
             "lastNotNull"
           ],
           "displayMode": "table",
@@ -906,7 +909,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "max by (pvc_namespace, pvc, volume) (longhorn_volume_read_iops{pvc_namespace=~\"$namespace\",pvc=~\"$pvc\",volume=~\"$pv_name\"})",
+          "expr": "max by (pvc_namespace, pvc, volume) (longhorn_volume_read_iops{pvc_namespace=~\"$namespace\",pvc=~\"$pvc\",volume=~\"$pv_name\"}) > 0",
           "legendFormat": "{{pvc_namespace}}/{{pvc}} read",
           "range": true,
           "refId": "read"
@@ -917,7 +920,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "max by (pvc_namespace, pvc, volume) (longhorn_volume_write_iops{pvc_namespace=~\"$namespace\",pvc=~\"$pvc\",volume=~\"$pv_name\"})",
+          "expr": "max by (pvc_namespace, pvc, volume) (longhorn_volume_write_iops{pvc_namespace=~\"$namespace\",pvc=~\"$pvc\",volume=~\"$pv_name\"}) > 0",
           "legendFormat": "{{pvc_namespace}}/{{pvc}} write",
           "range": true,
           "refId": "write"
@@ -931,7 +934,7 @@
         "type": "prometheus",
         "uid": "${datasource}"
       },
-      "description": "Read and write throughput reported by the Longhorn volume engine (bytes/sec).",
+      "description": "Read and write throughput reported by the Longhorn volume engine (bytes/sec). Idle (zero) series are hidden; min and mean exclude zero samples.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -995,6 +998,9 @@
       "options": {
         "legend": {
           "calcs": [
+            "max",
+            "min",
+            "mean",
             "lastNotNull"
           ],
           "displayMode": "table",
@@ -1017,7 +1023,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "max by (pvc_namespace, pvc, volume) (longhorn_volume_read_throughput{pvc_namespace=~\"$namespace\",pvc=~\"$pvc\",volume=~\"$pv_name\"})",
+          "expr": "max by (pvc_namespace, pvc, volume) (longhorn_volume_read_throughput{pvc_namespace=~\"$namespace\",pvc=~\"$pvc\",volume=~\"$pv_name\"}) > 0",
           "legendFormat": "{{pvc_namespace}}/{{pvc}} read",
           "range": true,
           "refId": "read"
@@ -1028,7 +1034,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "max by (pvc_namespace, pvc, volume) (longhorn_volume_write_throughput{pvc_namespace=~\"$namespace\",pvc=~\"$pvc\",volume=~\"$pv_name\"})",
+          "expr": "max by (pvc_namespace, pvc, volume) (longhorn_volume_write_throughput{pvc_namespace=~\"$namespace\",pvc=~\"$pvc\",volume=~\"$pv_name\"}) > 0",
           "legendFormat": "{{pvc_namespace}}/{{pvc}} write",
           "range": true,
           "refId": "write"
@@ -1042,7 +1048,7 @@
         "type": "prometheus",
         "uid": "${datasource}"
       },
-      "description": "Average read and write latency reported by the Longhorn volume engine (nanoseconds).",
+      "description": "Average read and write latency reported by the Longhorn volume engine (nanoseconds). Idle (zero) series are hidden; min and mean exclude zero samples.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -1106,6 +1112,9 @@
       "options": {
         "legend": {
           "calcs": [
+            "max",
+            "min",
+            "mean",
             "lastNotNull"
           ],
           "displayMode": "table",
@@ -1128,7 +1137,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "max by (pvc_namespace, pvc, volume) (longhorn_volume_read_latency{pvc_namespace=~\"$namespace\",pvc=~\"$pvc\",volume=~\"$pv_name\"})",
+          "expr": "max by (pvc_namespace, pvc, volume) (longhorn_volume_read_latency{pvc_namespace=~\"$namespace\",pvc=~\"$pvc\",volume=~\"$pv_name\"}) > 0",
           "legendFormat": "{{pvc_namespace}}/{{pvc}} read",
           "range": true,
           "refId": "read"
@@ -1139,7 +1148,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "max by (pvc_namespace, pvc, volume) (longhorn_volume_write_latency{pvc_namespace=~\"$namespace\",pvc=~\"$pvc\",volume=~\"$pv_name\"})",
+          "expr": "max by (pvc_namespace, pvc, volume) (longhorn_volume_write_latency{pvc_namespace=~\"$namespace\",pvc=~\"$pvc\",volume=~\"$pv_name\"}) > 0",
           "legendFormat": "{{pvc_namespace}}/{{pvc}} write",
           "range": true,
           "refId": "write"
@@ -4313,6 +4322,721 @@
         "x": 0,
         "y": 52
       },
+      "id": 300,
+      "panels": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "description": "Sum of queued items across all Longhorn workqueues.",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "orange",
+                    "value": 10
+                  },
+                  {
+                    "color": "red",
+                    "value": 50
+                  }
+                ]
+              },
+              "unit": "short"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 4,
+            "w": 4,
+            "x": 0,
+            "y": 53
+          },
+          "id": 301,
+          "options": {
+            "colorMode": "value",
+            "graphMode": "area",
+            "justifyMode": "auto",
+            "orientation": "auto",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "showPercentChange": false,
+            "textMode": "auto",
+            "wideLayout": true
+          },
+          "pluginVersion": "13.0.1",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "editorMode": "code",
+              "expr": "sum(longhorn_workqueue_depth)",
+              "legendFormat": "",
+              "range": true,
+              "refId": "A"
+            }
+          ],
+          "title": "Total Workqueue Depth",
+          "type": "stat"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "description": "Rate at which items are added to Longhorn workqueues.",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              },
+              "unit": "ops"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 4,
+            "w": 4,
+            "x": 4,
+            "y": 53
+          },
+          "id": 302,
+          "options": {
+            "colorMode": "value",
+            "graphMode": "area",
+            "justifyMode": "auto",
+            "orientation": "auto",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "showPercentChange": false,
+            "textMode": "auto",
+            "wideLayout": true
+          },
+          "pluginVersion": "13.0.1",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "editorMode": "code",
+              "expr": "sum(rate(longhorn_workqueue_adds_total[5m]))",
+              "legendFormat": "",
+              "range": true,
+              "refId": "A"
+            }
+          ],
+          "title": "Adds / second",
+          "type": "stat"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "description": "Rate of Longhorn workqueue retries.",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "orange",
+                    "value": 0.01
+                  },
+                  {
+                    "color": "red",
+                    "value": 0.1
+                  }
+                ]
+              },
+              "unit": "ops"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 4,
+            "w": 4,
+            "x": 8,
+            "y": 53
+          },
+          "id": 303,
+          "options": {
+            "colorMode": "value",
+            "graphMode": "area",
+            "justifyMode": "auto",
+            "orientation": "auto",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "showPercentChange": false,
+            "textMode": "auto",
+            "wideLayout": true
+          },
+          "pluginVersion": "13.0.1",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "editorMode": "code",
+              "expr": "sum(rate(longhorn_workqueue_retries_total[5m]))",
+              "legendFormat": "",
+              "range": true,
+              "refId": "A"
+            }
+          ],
+          "title": "Retries / second",
+          "type": "stat"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "description": "Seconds of work in progress that has not been observed by the workqueue.",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              },
+              "unit": "s"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 4,
+            "w": 4,
+            "x": 12,
+            "y": 53
+          },
+          "id": 304,
+          "options": {
+            "colorMode": "value",
+            "graphMode": "area",
+            "justifyMode": "auto",
+            "orientation": "auto",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "showPercentChange": false,
+            "textMode": "auto",
+            "wideLayout": true
+          },
+          "pluginVersion": "13.0.1",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "editorMode": "code",
+              "expr": "sum(longhorn_workqueue_unfinished_work_seconds)",
+              "legendFormat": "",
+              "range": true,
+              "refId": "A"
+            }
+          ],
+          "title": "Unfinished Work",
+          "type": "stat"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "description": "Highest 99th-percentile wait time before an item is processed.",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "orange",
+                    "value": 0.5
+                  },
+                  {
+                    "color": "red",
+                    "value": 2
+                  }
+                ]
+              },
+              "unit": "s"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 4,
+            "w": 4,
+            "x": 16,
+            "y": 53
+          },
+          "id": 305,
+          "options": {
+            "colorMode": "value",
+            "graphMode": "area",
+            "justifyMode": "auto",
+            "orientation": "auto",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "showPercentChange": false,
+            "textMode": "auto",
+            "wideLayout": true
+          },
+          "pluginVersion": "13.0.1",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "editorMode": "code",
+              "expr": "max(histogram_quantile(0.99, sum by (name, le) (rate(longhorn_workqueue_queue_duration_seconds_bucket[5m]))))",
+              "legendFormat": "",
+              "range": true,
+              "refId": "A"
+            }
+          ],
+          "title": "Worst Queue p99",
+          "type": "stat"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "description": "Highest 99th-percentile workqueue processing time.",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "orange",
+                    "value": 0.5
+                  },
+                  {
+                    "color": "red",
+                    "value": 2
+                  }
+                ]
+              },
+              "unit": "s"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 4,
+            "w": 4,
+            "x": 20,
+            "y": 53
+          },
+          "id": 306,
+          "options": {
+            "colorMode": "value",
+            "graphMode": "area",
+            "justifyMode": "auto",
+            "orientation": "auto",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "showPercentChange": false,
+            "textMode": "auto",
+            "wideLayout": true
+          },
+          "pluginVersion": "13.0.1",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "editorMode": "code",
+              "expr": "max(histogram_quantile(0.99, sum by (name, le) (rate(longhorn_workqueue_work_duration_seconds_bucket[5m]))))",
+              "legendFormat": "",
+              "range": true,
+              "refId": "A"
+            }
+          ],
+          "title": "Worst Work p99",
+          "type": "stat"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "description": "Per-workqueue depth, add/retry rates, queue and work latency, unfinished work and longest-running processor.",
+          "fieldConfig": {
+            "defaults": {
+              "custom": {
+                "align": "auto",
+                "cellOptions": {
+                  "type": "auto"
+                },
+                "footer": {
+                  "reducers": []
+                },
+                "inspect": false
+              },
+              "decimals": 2,
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              },
+              "unit": "short"
+            },
+            "overrides": [
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Adds/s"
+                },
+                "properties": [
+                  {
+                    "id": "unit",
+                    "value": "ops"
+                  },
+                  {
+                    "id": "decimals",
+                    "value": 2
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Retries/s"
+                },
+                "properties": [
+                  {
+                    "id": "unit",
+                    "value": "ops"
+                  },
+                  {
+                    "id": "decimals",
+                    "value": 2
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Queue p99"
+                },
+                "properties": [
+                  {
+                    "id": "unit",
+                    "value": "s"
+                  },
+                  {
+                    "id": "decimals",
+                    "value": 3
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Work p99"
+                },
+                "properties": [
+                  {
+                    "id": "unit",
+                    "value": "s"
+                  },
+                  {
+                    "id": "decimals",
+                    "value": 3
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Unfinished"
+                },
+                "properties": [
+                  {
+                    "id": "unit",
+                    "value": "s"
+                  },
+                  {
+                    "id": "decimals",
+                    "value": 2
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Longest Running"
+                },
+                "properties": [
+                  {
+                    "id": "unit",
+                    "value": "s"
+                  },
+                  {
+                    "id": "decimals",
+                    "value": 2
+                  }
+                ]
+              }
+            ]
+          },
+          "gridPos": {
+            "h": 10,
+            "w": 24,
+            "x": 0,
+            "y": 57
+          },
+          "id": 307,
+          "options": {
+            "cellHeight": "sm",
+            "showHeader": true,
+            "sortBy": [
+              {
+                "desc": true,
+                "displayName": "Depth"
+              }
+            ]
+          },
+          "pluginVersion": "13.0.1",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "editorMode": "code",
+              "expr": "max by (name) (longhorn_workqueue_depth)",
+              "legendFormat": "",
+              "range": false,
+              "refId": "depth",
+              "format": "table",
+              "instant": true
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "editorMode": "code",
+              "expr": "sum by (name) (rate(longhorn_workqueue_adds_total[5m]))",
+              "legendFormat": "",
+              "range": false,
+              "refId": "adds",
+              "format": "table",
+              "instant": true
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "editorMode": "code",
+              "expr": "sum by (name) (rate(longhorn_workqueue_retries_total[5m]))",
+              "legendFormat": "",
+              "range": false,
+              "refId": "retries",
+              "format": "table",
+              "instant": true
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "editorMode": "code",
+              "expr": "histogram_quantile(0.99, sum by (name, le) (rate(longhorn_workqueue_queue_duration_seconds_bucket[5m])))",
+              "legendFormat": "",
+              "range": false,
+              "refId": "queue_p99",
+              "format": "table",
+              "instant": true
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "editorMode": "code",
+              "expr": "histogram_quantile(0.99, sum by (name, le) (rate(longhorn_workqueue_work_duration_seconds_bucket[5m])))",
+              "legendFormat": "",
+              "range": false,
+              "refId": "work_p99",
+              "format": "table",
+              "instant": true
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "editorMode": "code",
+              "expr": "max by (name) (longhorn_workqueue_unfinished_work_seconds)",
+              "legendFormat": "",
+              "range": false,
+              "refId": "unfinished",
+              "format": "table",
+              "instant": true
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "editorMode": "code",
+              "expr": "max by (name) (longhorn_workqueue_longest_running_processor_seconds)",
+              "legendFormat": "",
+              "range": false,
+              "refId": "longest",
+              "format": "table",
+              "instant": true
+            }
+          ],
+          "title": "Workqueue Details",
+          "transformations": [
+            {
+              "id": "merge",
+              "options": {}
+            },
+            {
+              "id": "organize",
+              "options": {
+                "excludeByName": {
+                  "Time": true
+                },
+                "includeByName": {},
+                "indexByName": {
+                  "name": 0,
+                  "Value #depth": 1,
+                  "Value #adds": 2,
+                  "Value #retries": 3,
+                  "Value #queue_p99": 4,
+                  "Value #work_p99": 5,
+                  "Value #unfinished": 6,
+                  "Value #longest": 7
+                },
+                "renameByName": {
+                  "Value #depth": "Depth",
+                  "Value #adds": "Adds/s",
+                  "Value #retries": "Retries/s",
+                  "Value #queue_p99": "Queue p99",
+                  "Value #work_p99": "Work p99",
+                  "Value #unfinished": "Unfinished",
+                  "Value #longest": "Longest Running",
+                  "name": "Workqueue"
+                }
+              }
+            }
+          ],
+          "type": "table"
+        }
+      ],
+      "title": "Workqueues",
+      "type": "row"
+    },
+    {
+      "collapsed": true,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 53
+      },
       "id": 119,
       "panels": [
         {
@@ -4321,7 +5045,7 @@
             "h": 13,
             "w": 24,
             "x": 0,
-            "y": 53
+            "y": 54
           },
           "id": 48,
           "options": {
@@ -4526,7 +5250,7 @@
   "timezone": "browser",
   "title": "Longhorn Monitoring & Backups",
   "uid": "ozk-lh-mon",
-  "version": 36,
+  "version": 37,
   "weekStart": "",
   "gnetId": 16888
 }
