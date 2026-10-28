@@ -122,10 +122,47 @@ also installs CRDs for buckets, S3 identities, credentials and policies, so
 future applications can request their own bucket and key pair next to their
 workload.
 
-The SeaweedFS resource, its metadata PVCs and the `thanos` bucket/IAM objects
-are in `infrastructure/seaweedfs/`. The `seaweedfs` Flux Kustomization depends
-on `infrastructure` so the operator's CRDs exist before its custom resources
-are applied.
+The SeaweedFS resource, its master PVC and the `thanos` bucket/IAM objects are
+in `infrastructure/seaweedfs/`. The `seaweedfs` Flux Kustomization depends on
+`infrastructure` so the operator's CRDs exist before its custom resources are
+applied.
+
+The filer stores its metadata in the existing YugabyteDB cluster using the
+`postgres2` store, so filer replicas can be restarted or scaled without losing
+metadata. The database role and the `seaweedfs-filer-config` Secret are created
+by hand (the password is not in Git):
+
+```sh
+PW="$(openssl rand -hex 24)"
+
+kubectl -n yugabyte exec yugabyte-0 -- /opt/yugabyte/ysql-local.sh \
+  -U yugabyte -d yugabyte -v ON_ERROR_STOP=1 -c \
+  "DO \$\$ BEGIN
+     IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'seaweedfs') THEN
+       CREATE ROLE seaweedfs LOGIN PASSWORD '${PW}';
+     ELSE
+       ALTER ROLE seaweedfs WITH LOGIN PASSWORD '${PW}';
+     END IF;
+   END \$\$;"
+
+kubectl -n yugabyte exec yugabyte-0 -- /opt/yugabyte/ysql-local.sh \
+  -U yugabyte -d yugabyte -c \
+  "CREATE DATABASE seaweedfs OWNER seaweedfs;"
+
+kubectl -n seaweedfs create secret generic seaweedfs-filer-config \
+  --from-literal=filer.toml="$(cat <<EOF
+[postgres2]
+enabled = true
+createTable = true
+hostname = "yugabyte.yugabyte.svc.cluster.local"
+port = 5433
+username = "seaweedfs"
+password = "${PW}"
+database = "seaweedfs"
+sslmode = "disable"
+EOF
+)" --dry-run=client -o yaml | kubectl apply -f -
+```
 
 The operator generates the `thanos` key pair in the `thanos-s3-credentials`
 Secret in the `seaweedfs` namespace. Copy it into the hand-created

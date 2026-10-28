@@ -34,13 +34,12 @@ spec:
       memory: 1Gi
   filer:
     replicas: 1
-    persistence:
-      enabled: true
-      existingClaim: seaweedfs-filer
-    config: |
-      [leveldb2]
-      enabled = true
-      dir = "/data/filerldb2"
+    # Filer metadata lives in the existing three-node YugabyteDB cluster, not
+    # on a local leveldb/PVC. The Secret is hand-created (not in Git) because it
+    # contains the YSQL password; see flux/README.md.
+    configSecret:
+      name: seaweedfs-filer-config
+      key: filer.toml
     requests:
       cpu: 100m
       memory: 128Mi
