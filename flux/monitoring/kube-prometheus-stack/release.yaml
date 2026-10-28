@@ -16,6 +16,13 @@ spec:
   # Grafana runs its SQLite -> PostgreSQL schema migrations during the first
   # rollout after the database switch.
   timeout: 30m
+  # The chart's node-exporter DaemonSet can never report all
+  # replicas ready while a node is down. Waiting for readiness would keep the
+  # whole release (and every dependent Kustomization) stuck until the timeout.
+  install:
+    disableWait: true
+  upgrade:
+    disableWait: true
   chart:
     spec:
       chart: kube-prometheus-stack
