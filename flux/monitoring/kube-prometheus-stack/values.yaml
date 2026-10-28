@@ -115,13 +115,33 @@ grafana:
       maxSurge: 1
   affinity:
     podAntiAffinity:
-      preferredDuringSchedulingIgnoredDuringExecution:
+      requiredDuringSchedulingIgnoredDuringExecution:
         - weight: 100
           podAffinityTerm:
             labelSelector:
               matchLabels:
                 app.kubernetes.io/name: grafana
             topologyKey: kubernetes.io/hostname
+    nodeAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          preference:
+            matchExpressions:
+              - key: kubernetes.io/hostname
+                operator: In
+                values:
+                  - glemmen130
+                  - glemmen150
+                  - glemmen160
+                  - glemmen170
+                  - glemmen180
+        - weight: 50
+          preference:
+            matchExpressions:
+              - key: kubernetes.io/hostname
+                operator: In
+                values:
+                  - glemmen80
 
   # The one-time YugabyteDB schema migration has completed. If the Grafana
   # database is ever recreated, disable this probe until the migration has
