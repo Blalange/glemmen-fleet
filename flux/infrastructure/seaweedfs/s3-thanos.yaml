@@ -1,0 +1,63 @@
+# S3 identity and key pair used by the Prometheus Thanos sidecar, Thanos Store
+# Gateway and Thanos Compactor. The operator generates the key pair in the
+# `thanos-s3-credentials` Secret; copy it into the `thanos-objstore-config`
+# Secret in the monitoring namespace (see flux/README.md).
+apiVersion: seaweed.seaweedfs.com/v1
+kind: S3Identity
+metadata:
+  name: thanos
+spec:
+  seaweedRef:
+    name: seaweedfs
+  account:
+    displayName: Thanos
+---
+apiVersion: seaweed.seaweedfs.com/v1
+kind: S3Credentials
+metadata:
+  name: thanos
+spec:
+  seaweedRef:
+    name: seaweedfs
+  identityRef:
+    name: thanos
+  secretRef:
+    name: thanos-s3-credentials
+  reclaimPolicy: Retain
+---
+apiVersion: seaweed.seaweedfs.com/v1
+kind: S3Policy
+metadata:
+  name: thanos
+spec:
+  seaweedRef:
+    name: seaweedfs
+  statements:
+    - effect: Allow
+      actions:
+        - s3:ListBucket
+        - s3:GetBucketLocation
+      resources:
+        - thanos
+    - effect: Allow
+      actions:
+        - s3:GetObject
+        - s3:PutObject
+        - s3:DeleteObject
+        - s3:AbortMultipartUpload
+      resources:
+        - thanos/*
+---
+apiVersion: seaweed.seaweedfs.com/v1
+kind: S3PolicyBinding
+metadata:
+  name: thanos
+spec:
+  seaweedRef:
+    name: seaweedfs
+  policyRef:
+    name: thanos
+  subjects:
+    - kind: S3Identity
+      name: thanos
+  reclaimPolicy: Retain

@@ -1,0 +1,13 @@
+# StorageClass for SeaweedFS data. Keep a dedicated class so the object store
+# can be sized/replicated independently of the application volumes.
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: seaweedfs
+provisioner: driver.longhorn.io
+parameters:
+  numberOfReplicas: "2"
+  staleReplicaTimeout: "2880"
+allowVolumeExpansion: true
+reclaimPolicy: Retain
+volumeBindingMode: Immediate

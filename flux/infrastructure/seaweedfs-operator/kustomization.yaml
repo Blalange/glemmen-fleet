@@ -1,0 +1,8 @@
+# SeaweedFS operator. The operator is cluster-scoped (CRDs) but runs its
+# controller in the `seaweedfs` namespace. It watches all namespaces so other
+# applications can create Bucket/S3Identity/S3Credentials CRs later.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: seaweedfs
+resources:
+  - release.yaml

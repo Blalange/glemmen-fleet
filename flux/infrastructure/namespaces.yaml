@@ -104,4 +104,9 @@ metadata:
 apiVersion: v1
 kind: Namespace
 metadata:
+  name: seaweedfs
+---
+apiVersion: v1
+kind: Namespace
+metadata:
   name: system-upgrade

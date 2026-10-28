@@ -1,0 +1,23 @@
+# SeaweedFS cluster and its S3 bucket/credentials. Separate from the
+# infrastructure Kustomization so the operator's CRDs exist before these custom
+# resources are applied.
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: seaweedfs
+  namespace: flux-system
+spec:
+  interval: 1h
+  retryInterval: 2m
+  path: ./flux/infrastructure/seaweedfs
+  prune: true
+  dependsOn:
+    - name: infrastructure
+  healthChecks:
+    - apiVersion: seaweed.seaweedfs.com/v1
+      kind: Seaweed
+      name: seaweedfs
+      namespace: seaweedfs
+  sourceRef:
+    kind: GitRepository
+    name: flux-system

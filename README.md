@@ -77,7 +77,7 @@ Longhorn (`v1.12`) provides all PVCs. The data disks are btrfs volumes mounted b
 
 Longhorn volume backups go to a Google Drive folder through an in-cluster rclone S3 bridge (`flux/infrastructure/longhorn/rclone/`). Longhorn uses the backup target `s3://longhorn-backup@us-east-1/`; `rclone.conf` and the S3 keys are stored in the `rclone-backup-config` Secret in `longhorn-system`.
 
-Prometheus only retains the most recent metrics locally (15 GiB, see `retentionSize`). The Thanos side in `flux/monitoring/thanos/` uploads blocks to the `thanos` bucket on the same rclone bridge, compresses and downsamples them, and exposes the history through a dedicated Grafana data source.
+Prometheus only retains the most recent metrics locally (15 GiB, see `retentionSize`). The Thanos side in `flux/monitoring/thanos/` uploads blocks to the `thanos` bucket in the SeaweedFS cluster under `flux/infrastructure/seaweedfs/`, compacts and downsamples them, and exposes the history through a dedicated Grafana data source.
 
 ### Databases
 

@@ -1,0 +1,62 @@
+# SeaweedFS cluster managed by seaweedfs-operator.
+#
+# One master/volume/filer/S3 pod is enough for this cluster: Longhorn keeps two
+# replicas of the data volumes, and Thanos tolerates short S3 outages. Increase
+# the component replica counts later if the object store becomes shared by more
+# latency-sensitive systems.
+apiVersion: seaweed.seaweedfs.com/v1
+kind: Seaweed
+metadata:
+  name: seaweedfs
+spec:
+  image: chrislusf/seaweedfs:4.51
+  master:
+    replicas: 1
+    volumeSizeLimitMB: 1024
+    persistence:
+      enabled: true
+      existingClaim: seaweedfs-master
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 200m
+      memory: 256Mi
+  volume:
+    replicas: 1
+    storageClassName: seaweedfs
+    requests:
+      storage: 50Gi
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 1Gi
+  filer:
+    replicas: 1
+    persistence:
+      enabled: true
+      existingClaim: seaweedfs-filer
+    config: |
+      [leveldb2]
+      enabled = true
+      dir = "/data/filerldb2"
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+  # Standalone S3 gateway. It exposes SeaweedFS as an S3 endpoint on
+  # seaweedfs-s3.seaweedfs.svc.cluster.local:8333.
+  s3:
+    replicas: 1
+    iam: true
+    service:
+      type: ClusterIP
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi

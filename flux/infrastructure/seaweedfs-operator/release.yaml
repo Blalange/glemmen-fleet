@@ -1,0 +1,34 @@
+# seaweedfs-operator, from the official project helm repository.
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: HelmRepository
+metadata:
+  name: seaweedfs-operator
+spec:
+  interval: 1h
+  url: https://seaweedfs.github.io/seaweedfs-operator/
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: seaweedfs-operator
+spec:
+  interval: 1h
+  timeout: 10m
+  chart:
+    spec:
+      chart: seaweedfs-operator
+      version: 0.1.45
+      sourceRef:
+        kind: HelmRepository
+        name: seaweedfs-operator
+  values:
+    # The operator's CRDs are cluster-scoped, so keeping the controller in the
+    # seaweedfs namespace is enough. Watching all namespaces lets future apps
+    # declare their own buckets and credentials next to the workload.
+    watchNamespaces: []
+    # Prometheus Operator (and its ServiceMonitor CRD) is installed later by
+    # the monitoring Kustomization, so do not render a ServiceMonitor here.
+    serviceMonitor:
+      enabled: false
+    grafanaDashboard:
+      enabled: true

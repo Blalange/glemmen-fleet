@@ -1,0 +1,10 @@
+# The long-term metrics bucket. Other applications can add their own Bucket
+# resources in their namespaces later (with a ReferenceGrant when the Seaweed
+# cluster lives in another namespace).
+apiVersion: seaweed.seaweedfs.com/v1
+kind: Bucket
+metadata:
+  name: thanos
+spec:
+  clusterRef:
+    name: seaweedfs

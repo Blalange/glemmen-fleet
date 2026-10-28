@@ -1,0 +1,26 @@
+# Metadata volumes for the SeaweedFS master and filer. The operator's CRD does
+# not expose a storageClassName for these components, so the claims are created
+# here and referenced with persistence.existingClaim in the Seaweed resource.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: seaweedfs-master
+spec:
+  storageClassName: seaweedfs
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 2Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: seaweedfs-filer
+spec:
+  storageClassName: seaweedfs
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi

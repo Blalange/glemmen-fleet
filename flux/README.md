@@ -20,9 +20,10 @@ flux/
 │   ├── ingress.yaml            -> flux/ingress (Traefik, depends on certificates)
 │   ├── monitoring-pvc.yaml     -> kube-prometheus-stack/pvc (Grafana volume + SC)
 │   ├── monitoring.yaml         -> flux/monitoring (KPS, Thanos, smartctl, iDRAC, unpoller)
+│   ├── seaweedfs.yaml          -> flux/infrastructure/seaweedfs (S3 object store)
 │   ├── monitoring-dashboards.yaml / monitoring-alerts.yaml
 │   └── apps.yaml               -> flux/apps (application Kustomizations)
-├── infrastructure/             namespaces, Longhorn, cert-manager, MetalLB, metrics-server, YugabyteDB
+├── infrastructure/             namespaces, Longhorn, cert-manager, MetalLB, metrics-server, YugabyteDB, SeaweedFS operator
 ├── ingress/                    Traefik HelmRelease + values
 ├── monitoring/                 kube-prometheus-stack, Thanos, smartctl-exporter, idrac-exporter, unpoller
 └── apps/                       Kustomization objects, Homepage, NetBox + inventory sync
@@ -112,16 +113,71 @@ If the Longhorn target reports an error, check
 `kubectl -n longhorn-system logs deploy/rclone-s3`; an expired or revoked
 Google token needs a new `rclone.conf` in the Secret and a rollout restart.
 
+## SeaweedFS object storage
+
+Long-term metrics live in a SeaweedFS cluster in the `seaweedfs` namespace. It
+is managed by the SeaweedFS operator (Helm release `seaweedfs-operator`) and
+exposed as S3 at `seaweedfs-s3.seaweedfs.svc.cluster.local:8333`. The operator
+also installs CRDs for buckets, S3 identities, credentials and policies, so
+future applications can request their own bucket and key pair next to their
+workload.
+
+The SeaweedFS resource, its metadata PVCs and the `thanos` bucket/IAM objects
+are in `infrastructure/seaweedfs/`. The `seaweedfs` Flux Kustomization depends
+on `infrastructure` so the operator's CRDs exist before its custom resources
+are applied.
+
+The operator generates the `thanos` key pair in the `thanos-s3-credentials`
+Secret in the `seaweedfs` namespace. Copy it into the hand-created
+`thanos-objstore-config` Secret in `monitoring` (the secret is not in Git):
+
+```sh
+ACCESS_KEY="$(kubectl -n seaweedfs get secret thanos-s3-credentials \
+  -o jsonpath='{.data.accessKey}' | base64 -d)"
+SECRET_KEY="$(kubectl -n seaweedfs get secret thanos-s3-credentials \
+  -o jsonpath='{.data.secretKey}' | base64 -d)"
+
+kubectl -n monitoring create secret generic thanos-objstore-config \
+  --from-literal=objstore.yml="$(cat <<EOF
+type: S3
+config:
+  bucket: thanos
+  endpoint: seaweedfs-s3.seaweedfs.svc.cluster.local:8333
+  region: us-east-1
+  access_key: ${ACCESS_KEY}
+  secret_key: ${SECRET_KEY}
+  insecure: true
+  bucket_lookup_type: path
+EOF
+)" --dry-run=client -o yaml | kubectl apply -f -
+```
+
+Existing blocks in the old Google Drive `thanos` bucket are not visible through
+SeaweedFS until they are copied. Before switching the secret, copy them with a
+one-off rclone job that mounts `rclone-backup-config` (for `gdrive:`) and the
+SeaweedFS credentials, for example:
+
+```sh
+rclone copy gdrive:thanos \
+  ":s3,provider=Other,endpoint=http://seaweedfs-s3.seaweedfs.svc.cluster.local:8333,access_key_id=${ACCESS_KEY},secret_access_key=${SECRET_KEY},region=us-east-1,force_path_style=true:thanos" \
+  --transfers 4 --checkers 4 --checksum --progress
+```
+
+Keep the old Drive bucket until the Grafana Thanos data source has been
+verified against SeaweedFS. After changing the secret, restart the Prometheus
+statefulset (so its Thanos sidecar re-reads the config) and the Thanos
+Store/Compactor pods.
+
 ## Thanos and long-term metrics
 
 Prometheus is capped at 15GiB of local TSDB blocks (`retentionSize` in
 `monitoring/kube-prometheus-stack/values.yaml`), so its 20Gi PVC stays within
 the 20GB usage budget. The Thanos sidecar uploads completed blocks to the
-`thanos` bucket in Google Drive; the `thanos` HelmRelease runs Query, Store
-Gateway and Compactor against the same bucket. Grafana uses the additional
-"Thanos" data source as its default, because it serves both live Prometheus
-data and the long-term blocks; the built-in Prometheus data source remains
-available for local troubleshooting.
+`thanos` bucket in SeaweedFS; the `thanos` HelmRelease runs Query, Store Gateway
+and Compactor against the same bucket. Grafana uses the additional "Thanos"
+data source as its default, because it serves both live Prometheus data and the
+long-term blocks; the built-in Prometheus data source remains available for
+local troubleshooting.
 
 The Thanos component dashboards (Overview, Compact, Query, Query Frontend,
 Store, Receive, Sidecar, Rule and BucketReplicate) live in
@@ -135,37 +191,15 @@ built-in Kubernetes-mixin and node-exporter-mixin dashboards get the same
 annotation from the HelmRelease post-renderer. Dashboards without the
 annotation stay at the root (General) level.
 
-The rclone bridge creates the `thanos` bucket at startup (same `gdrive:`
-remote as the Longhorn backups). Thanos uses the same S3 key pair, so the
-object-store config is copied from the `rclone-backup-config` Secret into the
-monitoring namespace. Create it before reconciling monitoring, otherwise the
-Prometheus sidecar cannot start:
+Create the `thanos-objstore-config` Secret from the SeaweedFS credentials (see
+the SeaweedFS section above) before reconciling monitoring; otherwise the
+Prometheus sidecar cannot start.
+
+Then reconcile SeaweedFS and monitoring:
 
 ```sh
-AWS_ACCESS_KEY_ID="$(kubectl -n longhorn-system get secret rclone-backup-config \
-  -o jsonpath='{.data.AWS_ACCESS_KEY_ID}' | base64 -d)"
-AWS_SECRET_ACCESS_KEY="$(kubectl -n longhorn-system get secret rclone-backup-config \
-  -o jsonpath='{.data.AWS_SECRET_ACCESS_KEY}' | base64 -d)"
-
-kubectl -n monitoring create secret generic thanos-objstore-config \
-  --from-literal=objstore.yml="$(cat <<EOF
-type: S3
-config:
-  bucket: thanos
-  endpoint: rclone-s3.longhorn-system.svc.cluster.local:9000
-  region: us-east-1
-  access_key: ${AWS_ACCESS_KEY_ID}
-  secret_key: ${AWS_SECRET_ACCESS_KEY}
-  insecure: true
-  bucket_lookup_type: path
-EOF
-)" --dry-run=client -o yaml | kubectl apply -f -
-```
-
-Then reconcile the bridge and monitoring:
-
-```sh
-./scripts/flux/manage.py reconcile infrastructure longhorn-backup monitoring
+./scripts/flux/manage.py reconcile seaweedfs monitoring
+kubectl -n seaweedfs get pods
 kubectl -n monitoring get pods -l app.kubernetes.io/part-of=thanos
 ```
 
@@ -254,10 +288,11 @@ role passwords are in `yugabyte-auth` (`yugabyte` namespace) and `grafana-db`
 
 ## Dependencies (was Fleet `dependsOn`)
 
-- `infrastructure` (namespaces, Longhorn, cert-manager chart, MetalLB, metrics-server)
-- `infrastructure` -> `longhorn-backup` (rclone S3 gateway for Google Drive)
+- `infrastructure` (namespaces, Longhorn, cert-manager chart, MetalLB, metrics-server, SeaweedFS operator)
+- `infrastructure` -> `longhorn-backup` (rclone S3 gateway for Google Drive backups)
+- `infrastructure` -> `seaweedfs` (SeaweedFS cluster, bucket and S3 credentials)
 - `cert-manager-issuers` -> `cert-manager-certificates` -> `ingress` (Traefik)
-- `infrastructure` -> `monitoring-pvc` -> `monitoring` (kube-prometheus-stack -> Thanos) -> `monitoring-dashboards` / `monitoring-alerts`
+- `infrastructure` -> `monitoring-pvc`; `infrastructure` + `seaweedfs` -> `monitoring` (kube-prometheus-stack -> Thanos) -> `monitoring-dashboards` / `monitoring-alerts`
 - `apps` waits for `infrastructure`, `monitoring` and `ingress`; the individual
   applications additionally wait for what they need (`homepage` for example
   waits for `homepage-assets`, `kube-prometheus-stack` and `infrastructure`;
@@ -274,7 +309,8 @@ role passwords are in `yugabyte-auth` (`yugabyte` namespace) and `grafana-db`
   `homepage-grafana`, `frigate-secrets`, `energisjappa-secrets`, `colibri-secrets`,
   `snipe-it-db`, `snipe-it-app-key`, `warrior-http-auth`,
   `volunteer-secrets` and the TLS certificates in `kube-system`; created for
-  the rclone bridge: `rclone-backup-config`; created for Thanos:
+  the rclone bridge: `rclone-backup-config`; generated by the SeaweedFS
+  operator: `thanos-s3-credentials` in `seaweedfs`; created by hand for Thanos:
   `thanos-objstore-config` in `monitoring`; created for NetBox:
   `netbox-secrets` in `netbox` (superuser, YSQL/Valkey passwords, Django secret
   and sync API token); created for Grafana's YugabyteDB: `yugabyte-auth` in

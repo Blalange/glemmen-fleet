@@ -16,6 +16,7 @@ spec:
   targetNamespace: monitoring
   dependsOn:
     - name: infrastructure
+    - name: seaweedfs
   sourceRef:
     kind: GitRepository
     name: flux-system
