@@ -1,8 +1,8 @@
 # Thanos Query, Store Gateway and Compactor.
 #
 # Prometheus runs the sidecar (see ../kube-prometheus-stack/values.yaml) and
-# uploads TSDB blocks to the `thanos` bucket exposed by the rclone S3 bridge
-# (../../infrastructure/longhorn/rclone). These components read those blocks,
+# uploads TSDB blocks to the `thanos` bucket in SeaweedFS
+# (../../infrastructure/seaweedfs). These components read those blocks,
 # compact/downsample them and serve one query endpoint for Grafana.
 #
 # The object store credentials are not in Git. Create the
@@ -49,31 +49,48 @@ query:
   extraArgs:
     - --log.level=info
     - --query.auto-downsampling
+  # Prefer the control-plane/1xx nodes; fall back to workers when full.
+  affinity:
+    nodeAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          preference:
+            matchExpressions:
+              - key: node-role.kubernetes.io/control-plane
+                operator: Exists
   resources:
     requests:
-      cpu: 100m
-      memory: 256Mi
+      cpu: 500m
+      memory: 1Gi
     limits:
-      cpu: 1000m
-      memory: 2Gi
+      cpu: 2
+      memory: 4Gi
 
 storegateway:
   replicaCount: 1
   persistence:
     size: 10Gi
   # Only serve blocks older than the local Prometheus retention window. This
-  # keeps recent Grafana queries from duplicating every read through the slow
-  # rclone/Google Drive object store. Move to -7d once the 30s scrape interval
-  # has grown local retention past 7 days.
+  # avoids duplicated reads from the SeaweedFS object store for recent data.
+  # Move to -7d once the 30s scrape interval has grown local retention past
+  # 7 days.
   extraArgs:
     - --max-time=-4d
+  affinity:
+    nodeAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          preference:
+            matchExpressions:
+              - key: node-role.kubernetes.io/control-plane
+                operator: Exists
   resources:
     requests:
-      cpu: 100m
-      memory: 256Mi
+      cpu: 500m
+      memory: 1Gi
     limits:
-      cpu: 1000m
-      memory: 2Gi
+      cpu: 2
+      memory: 4Gi
 
 compactor:
   replicaCount: 1
@@ -88,10 +105,18 @@ compactor:
     resolutionRaw: 30d
     resolution5m: 90d
     resolution1h: 365d
+  affinity:
+    nodeAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          preference:
+            matchExpressions:
+              - key: node-role.kubernetes.io/control-plane
+                operator: Exists
   resources:
     requests:
-      cpu: 100m
-      memory: 256Mi
+      cpu: 500m
+      memory: 1Gi
     limits:
-      cpu: 1000m
-      memory: 2Gi
+      cpu: 2
+      memory: 4Gi

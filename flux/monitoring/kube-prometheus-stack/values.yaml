@@ -17,6 +17,17 @@ prometheus:
     externalLabels:
       cluster: glemmen
 
+    # Prefer the control-plane/1xx nodes. This is a soft preference so
+    # Prometheus can still move to a worker if the 1xx nodes are full.
+    affinity:
+      nodeAffinity:
+        preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            preference:
+              matchExpressions:
+                - key: node-role.kubernetes.io/control-plane
+                  operator: Exists
+
     # Storage configuration
     # Keep the local volume below the 20Gi budget: Prometheus deletes the
     # oldest blocks as soon as the block directory reaches 15GiB (the WAL and
@@ -34,8 +45,8 @@ prometheus:
               storage: 20Gi
 
     # Ship completed TSDB blocks to the Thanos object store (the `thanos`
-    # bucket served by the rclone S3 bridge) and expose the local Prometheus
-    # through the Thanos Store API.
+    # bucket in SeaweedFS, see ../../infrastructure/seaweedfs) and expose the
+    # local Prometheus through the Thanos Store API.
     thanos:
       image: quay.io/thanos/thanos:v0.42.4
       objectStorageConfig:
@@ -44,21 +55,23 @@ prometheus:
           key: objstore.yml
       resources:
         requests:
-          cpu: 100m
-          memory: 256Mi
+          cpu: 200m
+          memory: 512Mi
         limits:
-          cpu: 500m
-          memory: 1Gi
+          cpu: 1000m
+          memory: 2Gi
 
-    # Resource limits
+    # Resource limits. Prometheus runs on a 1xx control-plane node (4 CPU /
+    # 32GiB); these leave room for the sidecar and system pods while allowing
+    # compaction/query bursts.
     resources:
       requests:
-        cpu: 500m
-        memory: 2Gi
+        cpu: 1
+        memory: 4Gi
       limits:
-        cpu: 2000m
+        cpu: 3
         # Peak usage was already ~3.8Gi with the old scrape volume.
-        memory: 6Gi
+        memory: 10Gi
 
     # Service monitors selector - match all
     serviceMonitorSelectorNilUsesHelmValues: false
