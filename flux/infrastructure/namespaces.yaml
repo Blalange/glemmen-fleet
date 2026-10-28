@@ -6,6 +6,7 @@
 #   - longhorn-system: Longhorn's privileged daemonsets/installer
 #   - metallb-system:  the speaker needs NET_ADMIN/NET_RAW and friends
 #   - monitoring:      node-exporter (hostNetwork/hostPID) + smartctl-exporter
+#   - node-feature-discovery: nfd-worker mounts host paths (/sys, /proc, /lib)
 #   - colibri:         the hf-fuse sidecar needs a privileged FUSE mount
 # All other namespaces (and anything added later) stay on the baseline default.
 apiVersion: v1
@@ -110,6 +111,8 @@ apiVersion: v1
 kind: Namespace
 metadata:
   name: node-feature-discovery
+  labels:
+    pod-security.kubernetes.io/enforce: privileged
 ---
 apiVersion: v1
 kind: Namespace
