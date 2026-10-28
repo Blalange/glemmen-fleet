@@ -135,32 +135,24 @@ applied.
 
 The filer stores its metadata in the existing YugabyteDB cluster using the
 `postgres2` store, so filer replicas can be restarted or scaled without losing
-metadata. The database role and the `seaweedfs-filer-config` Secret are created
-by hand (the password is not in Git):
+metadata. The `seaweedfs` role and database are created by the
+`yugabyte-init-v1` Job in the `yugabyte` namespace. Its password is the
+`seaweedfs-password` key in the `yugabyte-auth` Secret (created by hand, not in
+Git; see `infrastructure/yugabyte/README.md`).
+
+The filer's `seaweedfs-filer-config` Secret must carry the same password and the
+new YSQL service name:
 
 ```sh
-PW="$(openssl rand -hex 24)"
-
-kubectl -n yugabyte exec yugabyte-0 -- /opt/yugabyte/ysql-local.sh \
-  -U yugabyte -d yugabyte -v ON_ERROR_STOP=1 -c \
-  "DO \$\$ BEGIN
-     IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'seaweedfs') THEN
-       CREATE ROLE seaweedfs LOGIN PASSWORD '${PW}';
-     ELSE
-       ALTER ROLE seaweedfs WITH LOGIN PASSWORD '${PW}';
-     END IF;
-   END \$\$;"
-
-kubectl -n yugabyte exec yugabyte-0 -- /opt/yugabyte/ysql-local.sh \
-  -U yugabyte -d yugabyte -c \
-  "CREATE DATABASE seaweedfs OWNER seaweedfs;"
+PW="$(kubectl -n yugabyte get secret yugabyte-auth \
+  -o jsonpath='{.data.seaweedfs-password}' | base64 -d)"
 
 kubectl -n seaweedfs create secret generic seaweedfs-filer-config \
   --from-literal=filer.toml="$(cat <<EOF
 [postgres2]
 enabled = true
 createTable = true
-hostname = "yugabyte.yugabyte.svc.cluster.local"
+hostname = "yb-tservers.yugabyte.svc.cluster.local"
 port = 5433
 username = "seaweedfs"
 password = "${PW}"
@@ -356,9 +348,10 @@ role passwords are in `yugabyte-auth` (`yugabyte` namespace) and `grafana-db`
   operator: `thanos-s3-credentials` in `seaweedfs`; created by hand for Thanos:
   `thanos-objstore-config` in `monitoring`; created for NetBox:
   `netbox-secrets` in `netbox` (superuser, YSQL/Valkey passwords, Django secret
-  and sync API token); created for Grafana's YugabyteDB: `yugabyte-auth` in
-  `yugabyte` (superuser and Grafana role passwords) and `grafana-db` in
-  `monitoring`; created for iDRAC metrics: `idrac-exporter` in `monitoring`).
+  and sync API token); created for the shared YugabyteDB: `yugabyte-auth` in
+  `yugabyte` (superuser, Grafana and SeaweedFS role passwords) and `grafana-db`
+  in `monitoring`; created for iDRAC metrics: `idrac-exporter` in
+  `monitoring`).
 - **Backup target**: Longhorn backs up to `s3://longhorn-backup@us-east-1/`,
   served by the in-cluster `rclone serve s3` bridge in
   `infrastructure/longhorn/rclone/`. The actual backupstore is a folder

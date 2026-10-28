@@ -3,6 +3,13 @@ kind: Kustomization
 namespace: yugabyte
 resources:
   - storageclass.yaml
-  - service.yaml
-  - configmap.yaml
-  - statefulset.yaml
+  - storageclass-fast.yaml
+  - release.yaml
+  - pdb.yaml
+  - init-job.yaml
+configMapGenerator:
+  - name: yugabyte-values
+    files:
+      - values.yaml
+generatorOptions:
+  disableNameSuffixHash: true

@@ -81,9 +81,9 @@ Prometheus only retains the most recent metrics locally (15 GiB, see `retentionS
 
 ### Databases
 
-NetBox uses its own PostgreSQL instance in the `netbox` namespace (see `flux/apps/netbox/`). Grafana uses a separate three-node YugabyteDB (YSQL) cluster in the `yugabyte` namespace (`flux/infrastructure/yugabyte/`) with replication factor 3 and two Grafana replicas. Grafana connects to `yugabyte.yugabyte.svc.cluster.local:5433`; the database is not exposed outside the cluster.
+NetBox uses its own PostgreSQL instance in the `netbox` namespace (see `flux/apps/netbox/`). Grafana uses a separate three-node YugabyteDB (YSQL) cluster in the `yugabyte` namespace (`flux/infrastructure/yugabyte/`) with replication factor 3 and two Grafana replicas. The cluster is managed by the official `yugabytedb/yugabyte` Helm chart (three YB-Master and three YB-TServer pods), not the earlier hand-written StatefulSet. Grafana connects to `yb-tservers.yugabyte.svc.cluster.local:5433`; the database is not exposed outside the cluster.
 
-Passwords are stored in Kubernetes Secrets, not in Git: `netbox-secrets` in `netbox` for NetBox, and `yugabyte-auth` in `yugabyte` (superuser and `grafana`) plus `grafana-db` in `monitoring` for Grafana. See `flux/infrastructure/yugabyte/README.md` for setup and administration.
+Passwords are stored in Kubernetes Secrets, not in Git: `netbox-secrets` in `netbox` for NetBox, and `yugabyte-auth` in `yugabyte` (superuser, `grafana` and `seaweedfs` role passwords) plus `grafana-db` in `monitoring` for Grafana. See `flux/infrastructure/yugabyte/README.md` for setup and administration.
 
 ## Repository layout
 

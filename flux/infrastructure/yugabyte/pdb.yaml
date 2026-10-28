@@ -1,0 +1,24 @@
+# The chart's built-in PDBs use policy/v1beta1, which is removed in current
+# Kubernetes. The chart's PDB template is disabled with
+# useOldPodDisruptionBudget=false, and these are the policy/v1 replacements.
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: yb-master-pdb
+  namespace: yugabyte
+spec:
+  maxUnavailable: 1
+  selector:
+    matchLabels:
+      app: yb-master
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: yb-tserver-pdb
+  namespace: yugabyte
+spec:
+  maxUnavailable: 1
+  selector:
+    matchLabels:
+      app: yb-tserver

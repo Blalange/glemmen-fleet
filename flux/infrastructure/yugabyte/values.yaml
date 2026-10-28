@@ -1,0 +1,176 @@
+# Values for the official YugabyteDB Helm chart (yugabytedb/yugabyte).
+#
+# This replaces the hand-written yugabyted StatefulSet. The chart runs three
+# YB-Master pods and three YB-TServer pods (six pods total) as separate
+# StatefulSets, with the YB-Master and YB-TServer processes using their
+# supported production topology.
+Image:
+  repository: yugabytedb/yugabyte
+  tag: 2026.1.2.0-b137
+  pullPolicy: IfNotPresent
+
+storage:
+  ephemeral: false
+  master:
+    count: 1
+    size: 10Gi
+    storageClass: yugabyte-fast-master
+  tserver:
+    count: 1
+    size: 30Gi
+    storageClass: yugabyte-fast-tserver
+
+replicas:
+  master: 3
+  tserver: 3
+  totalMasters: 3
+
+PodManagementPolicy: Parallel
+# Grafana and SeaweedFS connect through the headless yb-tservers Service.
+enableLoadBalancer: false
+oldNamingStyle: true
+disableYsql: false
+
+# The yugabyted UI is not used; keeping it disabled avoids a sidecar and an
+# extra Service.
+yugabytedUi:
+  enabled: false
+ybc:
+  enabled: false
+
+# The Prometheus Operator CRDs are installed by the monitoring Kustomization,
+# which is applied after infrastructure. Enable this later if YB metrics are
+# wanted.
+serviceMonitor:
+  enabled: false
+
+resource:
+  master:
+    requests:
+      cpu: 250m
+      memory: 1Gi
+    limits:
+      cpu: "2"
+      memory: 2Gi
+  tserver:
+    requests:
+      cpu: 500m
+      memory: 2Gi
+    limits:
+      cpu: "4"
+      memory: 6Gi
+
+# The chart's default liveness probe syncs the data directory. On this
+# cluster's Longhorn-backed disks that can exceed the one-second timeout and
+# restart a healthy database. Readiness is the useful signal.
+livenessProbe:
+  enabled: false
+
+gflags:
+  master:
+    default_memory_limit_to_ram_ratio: 0.85
+  tserver:
+    ysql_enable_auth: "true"
+    ysql_auth_method: "scram-sha-256"
+    metrics_snapshotter_interval_ms: "300000"
+
+commonLabels:
+  app.kubernetes.io/part-of: yugabyte
+
+master:
+  podLabels:
+    app.kubernetes.io/instance: yugabyte
+  readinessProbe:
+    enabled: true
+    initialDelaySeconds: 30
+    periodSeconds: 20
+    timeoutSeconds: 10
+    failureThreshold: 6
+    successThreshold: 1
+  startupProbe:
+    enabled: true
+    initialDelaySeconds: 10
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 360
+    successThreshold: 1
+  affinity:
+    podAntiAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        - labelSelector:
+            matchLabels:
+              app.kubernetes.io/instance: yugabyte
+          topologyKey: kubernetes.io/hostname
+    nodeAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          preference:
+            matchExpressions:
+              - key: kubernetes.io/hostname
+                operator: In
+                values:
+                  - glemmen130
+                  - glemmen150
+                  - glemmen160
+                  - glemmen170
+                  - glemmen180
+        - weight: 50
+          preference:
+            matchExpressions:
+              - key: kubernetes.io/hostname
+                operator: In
+                values:
+                  - glemmen80
+
+tserver:
+  podLabels:
+    app.kubernetes.io/instance: yugabyte
+  # The chart's default readiness probe runs ysqlsh/ycqlsh. A plain HTTP check
+  # on the tserver UI is enough to keep the StatefulSet rollout ordered and
+  # does not depend on YSQL catalog/tablet availability.
+  customReadinessProbe:
+    httpGet:
+      path: /
+      port: 9000
+      scheme: HTTP
+    initialDelaySeconds: 30
+    periodSeconds: 20
+    timeoutSeconds: 10
+    failureThreshold: 6
+    successThreshold: 1
+  startupProbe:
+    enabled: true
+    initialDelaySeconds: 10
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 360
+    successThreshold: 1
+  affinity:
+    podAntiAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        - labelSelector:
+            matchLabels:
+              app.kubernetes.io/instance: yugabyte
+          topologyKey: kubernetes.io/hostname
+    nodeAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          preference:
+            matchExpressions:
+              - key: kubernetes.io/hostname
+                operator: In
+                values:
+                  - glemmen130
+                  - glemmen150
+                  - glemmen160
+                  - glemmen170
+                  - glemmen180
+        - weight: 50
+          preference:
+            matchExpressions:
+              - key: kubernetes.io/hostname
+                operator: In
+                values:
+                  - glemmen80
+
+useOldPodDisruptionBudget: false

@@ -1,0 +1,36 @@
+# Official YugabyteDB Helm chart, managed by Flux.
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: HelmRepository
+metadata:
+  name: yugabyte
+  namespace: yugabyte
+spec:
+  interval: 1h
+  url: https://charts.yugabyte.com
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: yugabyte
+  namespace: yugabyte
+spec:
+  interval: 1h
+  # The StatefulSet rollout is slow on Longhorn-backed HDDs. Do not make the
+  # Helm action wait for every YB pod; the StatefulSet controller continues
+  # the rollout and the readiness probes gate traffic.
+  timeout: 30m
+  install:
+    disableWait: true
+  upgrade:
+    disableWait: true
+  chart:
+    spec:
+      chart: yugabyte
+      version: 2026.1.2
+      sourceRef:
+        kind: HelmRepository
+        name: yugabyte
+  valuesFrom:
+    - kind: ConfigMap
+      name: yugabyte-values
+      valuesKey: values.yaml

@@ -42,6 +42,23 @@ spec:
   postRenderers:
     - kustomize:
         patches:
+          # Grafana's subchart defaults to an HTTP /api/health liveness probe.
+          # During a YugabyteDB outage that endpoint returns 503 and the probe
+          # restarts Grafana, which cannot make the database recover. Replace
+          # the whole probe with a TCP check; readiness keeps using /api/health.
+          - target:
+              kind: Deployment
+              name: kube-prometheus-stack-grafana
+            patch: |
+              - op: replace
+                path: /spec/template/spec/containers/2/livenessProbe
+                value:
+                  tcpSocket:
+                    port: grafana
+                  initialDelaySeconds: 30
+                  periodSeconds: 10
+                  timeoutSeconds: 5
+                  failureThreshold: 6
           - target:
               kind: ConfigMap
               name: "kube-prometheus-stack-(apiserver|cluster-total|controller-manager|k8s-resources-.*|kubelet|namespace-by-.*|persistentvolumesusage|pod-total|proxy|scheduler|workload-total)"

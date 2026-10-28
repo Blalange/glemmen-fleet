@@ -141,11 +141,11 @@ grafana:
                 values:
                   - glemmen80
 
-  # The readiness probe is the database-backed one. Liveness only checks that
-  # the HTTP listener is up: Grafana returns 503 from /api/health while
-  # YugabyteDB is unavailable, and restarting Grafana does not make the
-  # database recover any faster. The startup probe waits for the
-  # database-backed health endpoint during a cold start (including a schema
+  # Readiness is the database-backed probe. The subchart's default
+  # /api/health liveness probe is replaced by a TCP check in release.yaml:
+  # Grafana returns 503 while YugabyteDB is unavailable, and restarting Grafana
+  # does not make the database recover any faster. The startup probe waits for
+  # the database-backed health endpoint during a cold start (including a schema
   # migration).
   startupProbe:
     httpGet:
@@ -156,13 +156,6 @@ grafana:
     # Allow an hour: the first migration can take 20-30 minutes on this
     # cluster, and a YugabyteDB outage can delay it much longer.
     failureThreshold: 360
-  livenessProbe:
-    tcpSocket:
-      port: grafana
-    initialDelaySeconds: 30
-    periodSeconds: 10
-    timeoutSeconds: 5
-    failureThreshold: 6
 
   # Use secret for admin password
   admin:
@@ -186,7 +179,7 @@ grafana:
   grafana.ini:
     database:
       type: postgres
-      host: yugabyte.yugabyte.svc.cluster.local:5433
+      host: yb-tservers.yugabyte.svc.cluster.local:5433
       name: grafana
       user: grafana
       ssl_mode: disable
@@ -209,7 +202,7 @@ grafana:
   # Grafana resources
   resources:
     requests:
-      cpu: 2
+      cpu: 500m
       memory: 1Gi
     limits:
       cpu: 4

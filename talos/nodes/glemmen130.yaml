@@ -56,4 +56,4 @@ kind: KubeNodeConfig
 labels:
     node.longhorn.io/create-default-disk: config
 annotations:
-    node.longhorn.io/default-disks-config: '[{"name":"system","path":"/var/mnt/longhorn-system","allowScheduling":true,"storageReserved":600000000000},{"name":"longhorn","path":"/var/mnt/longhorn","allowScheduling":true,"storageReserved":0},{"name":"hdd1","path":"/var/mnt/hdd1","allowScheduling":true,"storageReserved":0}]'
+    node.longhorn.io/default-disks-config: '[{"name":"system","path":"/var/mnt/longhorn-system","allowScheduling":true,"storageReserved":600000000000,"tags":["fast"]},{"name":"longhorn","path":"/var/mnt/longhorn","allowScheduling":true,"storageReserved":0,"tags":["fast"]},{"name":"hdd1","path":"/var/mnt/hdd1","allowScheduling":true,"storageReserved":0}]'

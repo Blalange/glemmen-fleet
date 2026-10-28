@@ -1,0 +1,144 @@
+# One-shot bootstrap for the Grafana and SeaweedFS roles/databases.
+#
+# This is a plain Kubernetes Job rather than a Helm hook so it also works when
+# Flux reconciles the chart into an existing namespace. It is idempotent and
+# waits for the new YB-TServers; on a fresh database it also sets the
+# yugabyte superuser password from yugabyte-auth.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: yugabyte-init-script
+  namespace: yugabyte
+data:
+  init.sh: |
+    #!/bin/bash
+    # Create the application roles and databases on the official-chart cluster.
+    #
+    # The chart's own setup-credentials Job is disabled (authCredentials is empty),
+    # so this Job owns the superuser password and the Grafana/SeaweedFS roles. It is
+    # idempotent: it can run against a fresh cluster or one that already has the
+    # roles/databases.
+    set -euo pipefail
+
+    export PATH="/home/yugabyte/bin:${PATH}"
+
+    YSQL_HOST="${YSQL_HOST:-yb-tservers.yugabyte.svc.cluster.local}"
+    YSQL_PORT="${YSQL_PORT:-5433}"
+    SUPERUSER_PASSWORD="${SUPERUSER_PASSWORD:?SUPERUSER_PASSWORD is required}"
+    GRAFANA_PASSWORD="${GRAFANA_PASSWORD:?GRAFANA_PASSWORD is required}"
+    SEAWEEDFS_PASSWORD="${SEAWEEDFS_PASSWORD:?SEAWEEDFS_PASSWORD is required}"
+
+    ysql() {
+      local password="$1"
+      shift
+      PGPASSWORD="${password}" ysqlsh \
+        -h "${YSQL_HOST}" \
+        -p "${YSQL_PORT}" \
+        -U yugabyte \
+        -v ON_ERROR_STOP=1 \
+        "$@"
+    }
+
+    echo "Waiting for YSQL at ${YSQL_HOST}:${YSQL_PORT}"
+    ready=0
+    for _ in $(seq 1 360); do
+      if PGPASSWORD="${SUPERUSER_PASSWORD}" ysqlsh -h "${YSQL_HOST}" -p "${YSQL_PORT}" \
+          -U yugabyte -d yugabyte -tAc 'SELECT 1' >/dev/null 2>&1; then
+        ready=1
+        break
+      fi
+
+      # A fresh YB cluster starts with the default yugabyte/yugabyte password.
+      # Set the configured password before creating anything else.
+      if PGPASSWORD=yugabyte ysqlsh -h "${YSQL_HOST}" -p "${YSQL_PORT}" \
+          -U yugabyte -d yugabyte -tAc 'SELECT 1' >/dev/null 2>&1; then
+        echo "Setting the yugabyte superuser password"
+        PGPASSWORD=yugabyte ysqlsh -h "${YSQL_HOST}" -p "${YSQL_PORT}" \
+          -U yugabyte -d yugabyte -v ON_ERROR_STOP=1 \
+          -c "ALTER ROLE yugabyte PASSWORD '${SUPERUSER_PASSWORD}'"
+        ready=1
+        break
+      fi
+
+      sleep 5
+    done
+
+    if [ "${ready}" -ne 1 ]; then
+      echo "YSQL did not become ready" >&2
+      exit 1
+    fi
+
+    create_role_and_database() {
+      local role="$1"
+      local password="$2"
+      local database="$3"
+
+      if ! ysql "${SUPERUSER_PASSWORD}" -d yugabyte -tAc \
+          "SELECT 1 FROM pg_roles WHERE rolname = '${role}'" | grep -qx 1; then
+        ysql "${SUPERUSER_PASSWORD}" -d yugabyte -c "CREATE ROLE ${role} LOGIN"
+      fi
+
+      ysql "${SUPERUSER_PASSWORD}" -d yugabyte \
+        -c "ALTER ROLE ${role} PASSWORD '${password}'"
+
+      if ! ysql "${SUPERUSER_PASSWORD}" -d yugabyte -tAc \
+          "SELECT 1 FROM pg_database WHERE datname = '${database}'" | grep -qx 1; then
+        ysql "${SUPERUSER_PASSWORD}" -d yugabyte \
+          -c "CREATE DATABASE ${database} OWNER ${role}"
+      fi
+    }
+
+    create_role_and_database grafana "${GRAFANA_PASSWORD}" grafana
+    create_role_and_database seaweedfs "${SEAWEEDFS_PASSWORD}" seaweedfs
+
+    echo "YugabyteDB roles and databases are ready"
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: yugabyte-init-v1
+  namespace: yugabyte
+spec:
+  backoffLimit: 10
+  activeDeadlineSeconds: 3600
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: yugabyte-init
+    spec:
+      restartPolicy: OnFailure
+      securityContext:
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
+        runAsNonRoot: true
+      containers:
+        - name: init
+          image: yugabytedb/yugabyte:2026.1.2.0-b137
+          imagePullPolicy: IfNotPresent
+          command: ["/bin/bash", "/scripts/init.sh"]
+          env:
+            - name: SUPERUSER_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: yugabyte-auth
+                  key: superuser-password
+            - name: GRAFANA_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: yugabyte-auth
+                  key: grafana-password
+            - name: SEAWEEDFS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: yugabyte-auth
+                  key: seaweedfs-password
+          volumeMounts:
+            - name: init-script
+              mountPath: /scripts
+              readOnly: true
+      volumes:
+        - name: init-script
+          configMap:
+            name: yugabyte-init-script
+            defaultMode: 0555

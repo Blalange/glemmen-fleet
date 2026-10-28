@@ -1,0 +1,48 @@
+# Longhorn classes for YugabyteDB. Only disks tagged `fast` (CMR system disks
+# and glemmen130's CMR data disk) are eligible; the large SMR/HDD data disks are
+# excluded. WaitForFirstConsumer keeps each volume near the pod that uses it.
+#
+# The tserver class uses one Longhorn replica because YB RF3 already protects
+# the data. The master class keeps two replicas because replacing a master is
+# more delicate and the master volumes are small and low-write.
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: yugabyte-fast-master
+provisioner: driver.longhorn.io
+allowVolumeExpansion: true
+reclaimPolicy: Retain
+volumeBindingMode: WaitForFirstConsumer
+parameters:
+  numberOfReplicas: "2"
+  staleReplicaTimeout: "2880"
+  diskSelector: "fast"
+---
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: yugabyte-fast-tserver
+provisioner: driver.longhorn.io
+allowVolumeExpansion: true
+reclaimPolicy: Retain
+volumeBindingMode: WaitForFirstConsumer
+parameters:
+  numberOfReplicas: "1"
+  staleReplicaTimeout: "2880"
+  diskSelector: "fast"
+---
+# Kept for the PVCs created by the first chart install; those PVCs are bound to
+# this class and cannot change it in place. New volumes use the two classes
+# above.
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: yugabyte-fast
+provisioner: driver.longhorn.io
+allowVolumeExpansion: true
+reclaimPolicy: Retain
+volumeBindingMode: WaitForFirstConsumer
+parameters:
+  numberOfReplicas: "2"
+  staleReplicaTimeout: "2880"
+  diskSelector: "fast"

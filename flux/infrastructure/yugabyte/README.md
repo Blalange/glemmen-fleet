@@ -1,66 +1,74 @@
 # YugabyteDB
 
 Three-node [YugabyteDB](https://www.yugabyte.com/) (YSQL) cluster used by
-Grafana. NetBox continues to use its own PostgreSQL StatefulSet; the shared
-YugabyteDB instance was retired because NetBox's schema needs index and
-collation features that YSQL does not implement.
+Grafana and by the SeaweedFS filer. NetBox continues to use its own PostgreSQL
+StatefulSet; the shared YugabyteDB instance was retired because NetBox's schema
+needs index and collation features that YSQL does not implement.
 
 ## Components
 
 | Resource | Purpose |
 |---|---|
-| `statefulset.yaml` | Three `yugabytedb/yugabyte:2026.1.0.1-b1` pods, 20Gi each |
-| `service.yaml` | Headless `yugabyte` Service (YSQL `5433`, RPC/UI ports) |
-| `configmap.yaml` | Seed/join/startup scripts and the readiness helper |
-| `storageclass.yaml` | `yugabyte` Longhorn class (Retain, two Longhorn replicas) |
+| `release.yaml` | `yugabytedb/yugabyte` HelmRepository and HelmRelease (chart `2026.1.2`, image `2026.1.2.0-b137`) |
+| `values.yaml` | Three YB-Masters, three YB-TServers, RF3, storage and probe settings |
+| `init-job.yaml` | One-shot `yugabyte-init-v1` Job that creates the application roles/databases and sets the superuser password |
+| `pdb.yaml` | `policy/v1` PodDisruptionBudgets for masters and tservers |
+| `storageclass-fast.yaml` | `yugabyte-fast-master` (two Longhorn replicas) and `yugabyte-fast-tserver` (one Longhorn replica) |
+| `storageclass.yaml` | Legacy `yugabyte` class used by the retired hand-written cluster's PVCs |
 
-Grafana connects to `yugabyte.yugabyte.svc.cluster.local:5433` with the
-`grafana` role and SCRAM password authentication. The database is
-cluster-internal and unencrypted; nothing is exposed through Traefik.
+The chart runs YB-Master and YB-TServer as separate StatefulSets, with three
+pods each. `oldNamingStyle` is on, so the stable services are `yb-masters` and
+`yb-tservers`; the latter is the YSQL endpoint on port 5433. Grafana and
+SeaweedFS connect to `yb-tservers.yugabyte.svc.cluster.local:5433`.
 
-## Cluster topology and replication
+## Topology and replication
 
-- Three pods, one per Kubernetes node (required pod anti-affinity).
-- Three masters and three tservers.
-- `yugabyted configure data_placement --fault_tolerance=zone --rf=3` after all
-  nodes join; each pod advertises a different logical zone (`z0`, `z1`, `z2`).
-  This makes the cluster survive one node or zone failure.
-- Each pod has its own Longhorn volume with two Longhorn replicas, so a pod can
-  be rescheduled to another node if its original node fails.
+- Three masters in a quorum and three tservers, one pod per node with
+  required pod anti-affinity.
+- YSQL replication factor 3. `yugabyted configure` is not used; the chart
+  starts the supported master/tserver topology directly.
+- The YB pods prefer the 1xx control-plane nodes (and `glemmen80` as a
+  fallback), matching the rest of the performance-sensitive workloads.
+- Pod readiness requires the tserver UI HTTP endpoint; liveness is disabled.
+  The chart's default liveness probe syncs the data directory, which can time
+  out on Longhorn and restart a healthy database.
 
-Pod 0 is the seed. Pods 1 and 2 wait for the seed's master port and start with
-`--join=<seed IP>`. Once three masters and three tservers are alive, pod 0
-configures the RF3 zone placement and creates the `grafana` role/database. The
-readiness probe for pod 0 only passes after that, so the StatefulSet is not
-considered ready until RF3 is in place.
+## Storage
 
-There is intentionally no liveness probe. The Longhorn `longhorn` data disks on
-`glemmen150`, `glemmen160` and `glemmen170` are SMR drives; a synchronous 4KiB
-write takes roughly a second, so after a restart a tserver can spend tens of
-minutes replaying WALs and bootstrapping tablets. A liveness probe restarts the
-tserver halfway through that work, which leaves partially written WAL segments
-and causes a new election storm. Readiness alone is used instead, and the
-termination grace period is 600 seconds so a clean shutdown can flush its
-tablets. Do not restart all three pods at once unless the cluster is healthy.
+The YB volumes use Longhorn disks tagged `fast` (the CMR system disks and
+`glemmen130`'s CMR data disk). The large SMR/HDD data disks are deliberately
+excluded.
 
-For the same reason, the tserver metrics snapshotter runs every five minutes
-instead of every 30 seconds, which cuts the amount of internal metrics traffic
-written to YSQL on these disks.
+- **Master volumes:** `yugabyte-fast-master`, two Longhorn replicas. The
+  volumes are small and low-write; keeping a second replica makes replacing a
+  master easier.
+- **Tserver volumes:** `yugabyte-fast-tserver`, one Longhorn replica. YB RF3 is
+  the data durability layer; a second Longhorn replica would only add
+  synchronous write latency. The trade-off is that if the node holding a
+  tserver's only Longhorn replica is lost, the pod's PVC cannot attach
+  elsewhere. The cluster stays available on the other two tservers; delete the
+  affected `datadir0-yb-tserver-*` PVC/PV and let the StatefulSet create a new
+  volume, then let YB remote-bootstrap the tserver from its peers. Do this only
+  while the other two tservers are healthy.
+
+`yugabyte-fast` is the class used by the PVCs from the first chart install;
+those PVCs are already bound and cannot change class in place. New volumes use
+the master/tserver classes above.
 
 ## Secrets
 
-Nothing secret is stored in Git. Create the superuser and Grafana role
-passwords before the StatefulSet starts:
+Nothing secret is stored in Git. Create the three keys before the init Job
+runs:
 
 ```sh
-kubectl create namespace yugabyte --dry-run=client -o yaml | kubectl apply -f -
-
 SUPERUSER_PW="$(openssl rand -hex 24)"
 GRAFANA_PW="$(openssl rand -hex 24)"
+SEAWEEDFS_PW="$(openssl rand -hex 24)"
 
 kubectl -n yugabyte create secret generic yugabyte-auth \
   --from-literal=superuser-password="$SUPERUSER_PW" \
   --from-literal=grafana-password="$GRAFANA_PW" \
+  --from-literal=seaweedfs-password="$SEAWEEDFS_PW" \
   --dry-run=client -o yaml | kubectl apply -f -
 
 kubectl -n monitoring create secret generic grafana-db \
@@ -68,47 +76,53 @@ kubectl -n monitoring create secret generic grafana-db \
   --dry-run=client -o yaml | kubectl apply -f -
 ```
 
-The `grafana-db` Secret in `monitoring` must contain the same password as
-`grafana-password` in `yugabyte-auth`. Grafana reads it through
-`GF_DATABASE_PASSWORD`; the startup script sets the role password from
-`yugabyte-auth` on every pod-0 start.
+`grafana-password` must match the `grafana-db` Secret in `monitoring`.
+`seaweedfs-password` must match the password in the `seaweedfs-filer-config`
+Secret in `seaweedfs`; see `flux/README.md`.
+
+The `yugabyte-init-v1` Job sets the default `yugabyte` superuser password from
+`yugabyte-auth` and creates the `grafana` and `seaweedfs` roles/databases. It is
+idempotent. If the SQL changes, delete the completed Job and bump its name (or
+delete and re-apply it) so it runs again.
 
 ## Administration
 
-The local unix socket is trusted for the `yugabyte` user:
+Use the YSQL service and the superuser password from the Secret:
 
 ```sh
-kubectl -n yugabyte exec -it yugabyte-0 -- /opt/yugabyte/ysql-local.sh -U yugabyte
+SUPERUSER_PW="$(kubectl -n yugabyte get secret yugabyte-auth \
+  -o jsonpath='{.data.superuser-password}' | base64 -d)"
+
+kubectl -n yugabyte exec -it yb-tserver-0 -- \
+  env PGPASSWORD="$SUPERUSER_PW" ysqlsh \
+  -h yb-tservers.yugabyte.svc.cluster.local -U yugabyte
 ```
 
 Useful checks:
 
 ```sh
-kubectl -n yugabyte exec yugabyte-0 -- \
+kubectl -n yugabyte exec yb-tserver-0 -- \
   /home/yugabyte/bin/yb-admin \
-  --master_addresses=yugabyte-0.yugabyte.yugabyte.svc.cluster.local:7100 \
+  --master_addresses=yb-master-0.yb-masters.yugabyte.svc.cluster.local:7100,yb-master-1.yb-masters.yugabyte.svc.cluster.local:7100,yb-master-2.yb-masters.yugabyte.svc.cluster.local:7100 \
   list_all_masters
 
-kubectl -n yugabyte exec yugabyte-0 -- \
+kubectl -n yugabyte exec yb-tserver-0 -- \
   /home/yugabyte/bin/yb-admin \
-  --master_addresses=yugabyte-0.yugabyte.yugabyte.svc.cluster.local:7100 \
+  --master_addresses=yb-master-0.yb-masters.yugabyte.svc.cluster.local:7100,yb-master-1.yb-masters.yugabyte.svc.cluster.local:7100,yb-master-2.yb-masters.yugabyte.svc.cluster.local:7100 \
   list_all_tablet_servers
 ```
 
 ## Grafana
 
 Grafana runs two replicas against this cluster. `/var/lib/grafana` is an
-emptyDir, so both replicas can start without a ReadWriteOnce volume; dashboards,
-data sources and the admin user live in YSQL. The first startup after switching
-to YSQL migrates Grafana's schema, which takes roughly 20-30 minutes on the
-three-node Longhorn-backed cluster. Keep the liveness probe relaxed (or
-temporarily disabled) during that one-time migration.
+emptyDir; dashboards, data sources and the admin user live in YSQL. Grafana's
+startup probe allows an hour for a cold start/migration, and liveness only
+checks the HTTP listener so a database outage does not cause a restart loop.
 
 Grafana 13 also runs a unified-storage data migration that locks the legacy
 `dashboard` table with `LOCK TABLE ... IN SHARE MODE`. YSQL does not support
-that lock mode. On a fresh database there are no legacy dashboards to migrate
-(the sidecars provision directly into unified storage), so mark the migration
-complete after the core schema exists:
+that lock mode. On a fresh database, mark the migration complete after the core
+schema exists:
 
 ```sql
 INSERT INTO unifiedstorage_migration_log
@@ -125,8 +139,15 @@ not supported yet`.
 
 ## Sizing
 
-Each tserver has a 4GiB memory limit, and 10% of that is the tablet-overhead
-budget used by YugabyteDB's tablet-replica limit. Grafana's schema is small, so
-three RF3 replicas fit comfortably. The startup script also raises
-`transaction_max_missed_heartbeat_periods` to 240 so a busy node does not expire
-long DDL transactions.
+Each tserver has a 4GiB memory limit (85% is the YB hard limit), and the chart
+uses the tserver's JVM/PG shared-memory defaults. Grafana's and SeaweedFS's
+schemas are small, so RF3 fits comfortably. The tserver metrics snapshotter is
+set to every five minutes to reduce internal write load on the Longhorn-backed
+disks.
+
+## Retired hand-written cluster
+
+The previous `yugabyted` StatefulSet, its Service and ConfigMap are gone. Its
+PVCs are named `data-yugabyte-0/1/2` and remain bound to the legacy `yugabyte`
+StorageClass for rollback. After the chart-managed cluster has been verified,
+they can be deleted, together with their retained PVs and Longhorn volumes.
