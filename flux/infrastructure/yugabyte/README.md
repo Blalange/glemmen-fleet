@@ -23,8 +23,12 @@ SeaweedFS connect to `yb-tservers.yugabyte.svc.cluster.local:5433`.
 
 ## Topology and replication
 
-- Three masters in a quorum and three tservers, one pod per node with
-  required pod anti-affinity.
+- Three masters in a quorum and three tservers. Required pod anti-affinity
+  keeps masters off nodes that already run another master, and tservers off
+  nodes that already run another tserver. A master and tserver may share a
+  node: only six nodes are eligible for YB pods, so a node loss must not leave
+  a replica permanently unschedulable. A preferred anti-affinity still keeps
+  the two components apart when a free node exists.
 - YSQL replication factor 3. `yugabyted configure` is not used; the chart
   starts the supported master/tserver topology directly.
 - The YB pods prefer the 1xx control-plane nodes (and `glemmen80` as a

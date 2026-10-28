@@ -96,11 +96,24 @@ master:
     successThreshold: 1
   affinity:
     podAntiAffinity:
+      # Keep the three masters on distinct nodes. This selector deliberately
+      # matches only masters: a master may share a node with a tserver, which
+      # lets it reschedule after a node loss even though only six nodes are
+      # eligible for YB pods.
       requiredDuringSchedulingIgnoredDuringExecution:
         - labelSelector:
             matchLabels:
-              app.kubernetes.io/instance: yugabyte
+              app: yb-master
           topologyKey: kubernetes.io/hostname
+      # Keep masters and tservers apart when there is a free node, but allow
+      # co-location rather than leaving a replica permanently unscheduled.
+      preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          podAffinityTerm:
+            labelSelector:
+              matchLabels:
+                app: yb-tserver
+            topologyKey: kubernetes.io/hostname
     nodeAffinity:
       preferredDuringSchedulingIgnoredDuringExecution:
         - weight: 100
@@ -147,11 +160,20 @@ tserver:
     successThreshold: 1
   affinity:
     podAntiAffinity:
+      # Same rule as the masters: tservers stay on distinct nodes, but a
+      # tserver may share a node with a master.
       requiredDuringSchedulingIgnoredDuringExecution:
         - labelSelector:
             matchLabels:
-              app.kubernetes.io/instance: yugabyte
+              app: yb-tserver
           topologyKey: kubernetes.io/hostname
+      preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          podAffinityTerm:
+            labelSelector:
+              matchLabels:
+                app: yb-master
+            topologyKey: kubernetes.io/hostname
     nodeAffinity:
       preferredDuringSchedulingIgnoredDuringExecution:
         - weight: 100
