@@ -1,0 +1,29 @@
+# UniFi Poller (unpoller) dashboards, placed in their own Grafana folder by
+# the grafana_folder annotation (see ../../kube-prometheus-stack/values.yaml).
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+configMapGenerator:
+  - name: grafana-dashboard-unpoller-client-dpi
+    files:
+      - client-dpi.json
+  - name: grafana-dashboard-unpoller-client-insights
+    files:
+      - client-insights.json
+  - name: grafana-dashboard-unpoller-network-sites
+    files:
+      - network-sites.json
+  - name: grafana-dashboard-unpoller-uap-insights
+    files:
+      - uap-insights.json
+  - name: grafana-dashboard-unpoller-usg-insights
+    files:
+      - usg-insights.json
+  - name: grafana-dashboard-unpoller-usw-insights
+    files:
+      - usw-insights.json
+commonAnnotations:
+  grafana_folder: UniFi Poller
+generatorOptions:
+  disableNameSuffixHash: true
+  labels:
+    grafana_dashboard: "1"

@@ -118,17 +118,22 @@ Prometheus is capped at 15GiB of local TSDB blocks (`retentionSize` in
 `monitoring/kube-prometheus-stack/values.yaml`), so its 20Gi PVC stays within
 the 20GB usage budget. The Thanos sidecar uploads completed blocks to the
 `thanos` bucket in Google Drive; the `thanos` HelmRelease runs Query, Store
-Gateway and Compactor against the same bucket. Grafana has an additional
-"Thanos" data source for ranges outside the local retention window.
+Gateway and Compactor against the same bucket. Grafana uses the additional
+"Thanos" data source as its default, because it serves both live Prometheus
+data and the long-term blocks; the built-in Prometheus data source remains
+available for local troubleshooting.
 
-The upstream Thanos component dashboards (Overview, Compact, Query, Query
-Frontend, Store, Receive, Sidecar, Rule and BucketReplicate) live in
+The Thanos component dashboards (Overview, Compact, Query, Query Frontend,
+Store, Receive, Sidecar, Rule and BucketReplicate) live in
 `monitoring/resources/dashboards/thanos/` and are refreshed by
-`scripts/update-grafana-dashboards.py`. Their ConfigMaps carry the
-`grafana_folder: Thanos` annotation, and the Grafana sidecar plus the file
-provider's `foldersFromFilesStructure` setting place them in a dedicated
-"Thanos" folder. Dashboards without the annotation stay at the root (General)
-level.
+`scripts/update-grafana-dashboards.py`. Node Exporter and UniFi Poller
+dashboards live in sibling `node-exporter/` and `unifi/` directories. Their
+ConfigMaps carry a `grafana_folder` annotation, and the Grafana sidecar plus
+the file provider's `foldersFromFilesStructure` setting place them in
+dedicated "Thanos", "Node Exporter" and "UniFi Poller" folders. The chart's
+built-in Kubernetes-mixin and node-exporter-mixin dashboards get the same
+annotation from the HelmRelease post-renderer. Dashboards without the
+annotation stay at the root (General) level.
 
 The rclone bridge creates the `thanos` bucket at startup (same `gdrive:`
 remote as the Longhorn backups). Thanos uses the same S3 key pair, so the

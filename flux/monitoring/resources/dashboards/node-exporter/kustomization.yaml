@@ -1,0 +1,14 @@
+# Node Exporter dashboards, placed in their own Grafana folder by the
+# grafana_folder annotation (see ../../kube-prometheus-stack/values.yaml).
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+configMapGenerator:
+  - name: grafana-dashboard-node-exporter
+    files:
+      - node-exporter-full.json
+commonAnnotations:
+  grafana_folder: Node Exporter
+generatorOptions:
+  disableNameSuffixHash: true
+  labels:
+    grafana_dashboard: "1"

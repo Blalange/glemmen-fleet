@@ -34,3 +34,31 @@ spec:
     - kind: ConfigMap
       name: kube-prometheus-stack-values
       valuesKey: values.yaml
+  # The chart only supports one annotation set for all of its built-in
+  # dashboards, so select the Kubernetes-mixin and node-exporter-mixin
+  # dashboards by ConfigMap name and add the folder annotation the Grafana
+  # sidecar uses. k8s-coredns is deliberately excluded: its dashboard is
+  # CoreDNS-specific, not part of the Kubernetes mixin.
+  postRenderers:
+    - kustomize:
+        patches:
+          - target:
+              kind: ConfigMap
+              name: "kube-prometheus-stack-(apiserver|cluster-total|controller-manager|k8s-resources-.*|kubelet|namespace-by-.*|persistentvolumesusage|pod-total|proxy|scheduler|workload-total)"
+            patch: |
+              apiVersion: v1
+              kind: ConfigMap
+              metadata:
+                name: dashboard-folder
+                annotations:
+                  grafana_folder: Kubernetes
+          - target:
+              kind: ConfigMap
+              name: "kube-prometheus-stack-(node-cluster-rsrc-use|node-rsrc-use|nodes|nodes-aix|nodes-darwin)"
+            patch: |
+              apiVersion: v1
+              kind: ConfigMap
+              metadata:
+                name: dashboard-folder
+                annotations:
+                  grafana_folder: Node Exporter

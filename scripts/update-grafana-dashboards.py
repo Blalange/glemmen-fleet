@@ -26,6 +26,7 @@ from pathlib import Path
 DASHBOARDS = [
     {
         "file": "node-exporter-full.json",
+        "dir": "node-exporter",
         "url": "https://raw.githubusercontent.com/rfmoz/grafana-dashboards/master/prometheus/node-exporter-full.json",
     },
     {
@@ -46,26 +47,32 @@ DASHBOARDS = [
     },
     {
         "file": "client-dpi.json",
+        "dir": "unifi",
         "url": "https://grafana.com/api/dashboards/11310/revisions/latest/download",
     },
     {
         "file": "network-sites.json",
+        "dir": "unifi",
         "url": "https://grafana.com/api/dashboards/11311/revisions/latest/download",
     },
     {
         "file": "usw-insights.json",
+        "dir": "unifi",
         "url": "https://grafana.com/api/dashboards/11312/revisions/latest/download",
     },
     {
         "file": "usg-insights.json",
+        "dir": "unifi",
         "url": "https://grafana.com/api/dashboards/11313/revisions/latest/download",
     },
     {
         "file": "uap-insights.json",
+        "dir": "unifi",
         "url": "https://grafana.com/api/dashboards/11314/revisions/latest/download",
     },
     {
         "file": "client-insights.json",
+        "dir": "unifi",
         "url": "https://grafana.com/api/dashboards/11315/revisions/latest/download",
     },
     {

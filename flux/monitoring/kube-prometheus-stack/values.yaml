@@ -168,25 +168,30 @@ grafana:
       - grafana.glem.men
 
   # Additional data sources. Thanos Query includes the live Prometheus sidecar
-  # and the object-store blocks, so dashboards can use it for ranges beyond the
-  # local retention window. The built-in Prometheus data source stays the
-  # default; select "Thanos" in a dashboard's data source picker for old data.
+  # and the object-store blocks, so it serves both recent and long-term data.
+  # It is the Grafana default; the built-in Prometheus data source stays
+  # available for troubleshooting the local Prometheus.
   additionalDataSources:
     - name: Thanos
       type: prometheus
       uid: thanos
       access: proxy
       url: http://thanos-query.monitoring.svc.cluster.local:9090
+      isDefault: true
       jsonData:
         timeInterval: 30s
 
   # Dashboards whose ConfigMap carries the grafana_folder annotation are
   # written into a subdirectory of the sidecar's dashboard volume; the file
   # provider's foldersFromFilesStructure option turns those directories into
-  # Grafana folders. The Thanos dashboards use this to stay grouped under
-  # "Thanos". Dashboards without the annotation stay at the root of the volume,
-  # which Grafana provisions into the root (General) level.
+  # Grafana folders. The Thanos, Node Exporter, UniFi Poller and Kubernetes
+  # dashboards use this to stay grouped by topic. Dashboards without the
+  # annotation stay at the root of the volume, which Grafana provisions into
+  # the root (General) level.
   sidecar:
+    datasources:
+      # Only one data source can be the default; Thanos is it.
+      isDefaultDatasource: false
     dashboards:
       folderAnnotation: grafana_folder
       provider:
