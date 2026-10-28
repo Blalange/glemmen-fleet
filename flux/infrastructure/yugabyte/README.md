@@ -119,6 +119,14 @@ emptyDir; dashboards, data sources and the admin user live in YSQL. Grafana's
 startup probe allows an hour for a cold start/migration, and liveness only
 checks the HTTP listener so a database outage does not cause a restart loop.
 
+On a fresh or restored database, start with **one** Grafana replica until the
+initial dashboard provisioning has finished, then scale to two. Both replicas'
+sidecars otherwise try to write the unified-storage `resource_version` row at
+the same time; YSQL's read-committed implementation can return `40001`
+serialization errors (`Restart read required`) and one sidecar's dashboards are
+skipped. The provisioning lock normally serializes them, but the initial sync
+is safest with a single replica.
+
 Grafana 13 also runs a unified-storage data migration that locks the legacy
 `dashboard` table with `LOCK TABLE ... IN SHARE MODE`. YSQL does not support
 that lock mode. On a fresh database, mark the migration complete after the core
