@@ -112,6 +112,23 @@ kubectl -n yugabyte exec yb-tserver-0 -- \
   list_all_tablet_servers
 ```
 
+## Monitoring
+
+The `yugabyte` and `yugabyte-tserver-apis` ServiceMonitors in
+`flux/monitoring/resources/servicemonitors/yugabyte.yaml` scrape
+`/prometheus-metrics` from YB-Master (:7000), YB-TServer (:9000), YCQL
+(:12000) and YSQL (:13000) every 60 seconds. YEDIS is disabled.
+
+The raw tserver endpoint includes per-tablet RocksDB and DocDB metrics. A
+255-tablet tserver exposes about 90k such series per pod, so the
+`metricRelabelings` drop every series with a `table_id` label. The upstream
+YugabyteDB Grafana dashboard was trimmed to the panels that use the remaining
+server-level metrics; see `flux/monitoring/resources/dashboards/yugabyte/`.
+The scrape relabeling also rewrites the upstream
+`handler_latency_yb_<server>_<service>_<method>_{sum,count}` names to
+`rpc_latency_{sum,count}` with `server_type`, `service_type` and
+`service_method` labels, which is the format the dashboard expects.
+
 ## Grafana
 
 Grafana runs two replicas against this cluster. `/var/lib/grafana` is an

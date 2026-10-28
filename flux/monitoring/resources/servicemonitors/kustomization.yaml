@@ -7,3 +7,4 @@ resources:
   - kepler.yaml
   - longhorn.yaml
   - tuppr.yaml
+  - yugabyte.yaml

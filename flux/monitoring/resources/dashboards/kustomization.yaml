@@ -8,7 +8,9 @@ resources:
   # Dashboards that live in their own Grafana folder, grouped by topic.
   - thanos/
   - node-exporter/
+  - seaweedfs/
   - unifi/
+  - yugabyte/
 configMapGenerator:
   - name: grafana-dashboard-cluster-specs
     files:

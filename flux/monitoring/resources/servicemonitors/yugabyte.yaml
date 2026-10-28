@@ -1,0 +1,163 @@
+# YugabyteDB metrics for kube-prometheus-stack.
+#
+# YB-Master exposes Prometheus text on :7000/prometheus-metrics and YB-TServer
+# on :9000/prometheus-metrics. The tserver also has YCQL (:12000) and YSQL
+# (:13000) metric endpoints; YEDIS is disabled in this cluster.
+#
+# The raw tserver endpoint includes per-tablet/per-table RocksDB and DocDB
+# metrics. With 255 tablets per tserver that is roughly 90k series per pod, so
+# the metric relabeling below drops every series carrying a table_id. The
+# dashboard only uses the server-level metrics. The remaining series are the
+# RPC histograms, queues, memory, thread and network counters.
+#
+# The dashboard expects the upstream YugabyteDB scrape relabeling:
+# handler_latency_yb_<server>_<service>_<method>_{sum,count} is rewritten to
+# rpc_latency_{sum,count} with server_type/service_type/service_method labels,
+# and saved_name keeps the original metric name. Only names starting with
+# yb_ are rewritten; handler_latency_outbound_* keeps its original name.
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: yugabyte
+  namespace: monitoring
+spec:
+  namespaceSelector:
+    matchNames:
+      - yugabyte
+  selector:
+    matchExpressions:
+      - key: app
+        operator: In
+        values:
+          - yb-master
+          - yb-tserver
+  endpoints:
+    - port: http-ui
+      path: /prometheus-metrics
+      interval: 60s
+      scrapeTimeout: 30s
+      relabelings:
+        - sourceLabels: [__meta_kubernetes_service_label_app]
+          targetLabel: group
+          replacement: ${1}
+        - sourceLabels: [__meta_kubernetes_service_label_app]
+          regex: yb-master
+          targetLabel: export_type
+          replacement: master_export
+        - sourceLabels: [__meta_kubernetes_service_label_app]
+          regex: yb-tserver
+          targetLabel: export_type
+          replacement: tserver_export
+        - targetLabel: job
+          replacement: yugabyte
+        - targetLabel: node_prefix
+          replacement: yugabyte
+      metricRelabelings:
+        - sourceLabels: [table_id]
+          regex: .+
+          action: drop
+        - sourceLabels: [__name__]
+          targetLabel: saved_name
+          replacement: ${1}
+        - sourceLabels: [__name__]
+          regex: handler_latency_(yb_[^_]*)_([^_]*)_([^_]*)(_sum|_count|_bucket)?
+          targetLabel: server_type
+          replacement: ${1}
+        - sourceLabels: [__name__]
+          regex: handler_latency_(yb_[^_]*)_([^_]*)_([^_]*)(_sum|_count|_bucket)?
+          targetLabel: service_type
+          replacement: ${2}
+        - sourceLabels: [__name__]
+          regex: handler_latency_(yb_[^_]*)_([^_]*)_([^_]*)(_sum|_count|_bucket)?
+          targetLabel: service_method
+          replacement: ${3}
+        - sourceLabels: [__name__]
+          regex: handler_latency_(yb_[^_]*)_([^_]*)_([^_]*)(_sum|_count|_bucket)?
+          targetLabel: __name__
+          replacement: rpc_latency${4}
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: yugabyte-tserver-apis
+  namespace: monitoring
+spec:
+  namespaceSelector:
+    matchNames:
+      - yugabyte
+  selector:
+    matchLabels:
+      app: yb-tserver
+  endpoints:
+    - port: http-ycql-met
+      path: /prometheus-metrics
+      interval: 60s
+      scrapeTimeout: 30s
+      relabelings:
+        - targetLabel: job
+          replacement: yugabyte
+        - targetLabel: node_prefix
+          replacement: yugabyte
+        - targetLabel: group
+          replacement: ycql
+        - targetLabel: export_type
+          replacement: cql_export
+      metricRelabelings:
+        - sourceLabels: [table_id]
+          regex: .+
+          action: drop
+        - sourceLabels: [__name__]
+          targetLabel: saved_name
+          replacement: ${1}
+        - sourceLabels: [__name__]
+          regex: handler_latency_(yb_[^_]*)_([^_]*)_([^_]*)(_sum|_count|_bucket)?
+          targetLabel: server_type
+          replacement: ${1}
+        - sourceLabels: [__name__]
+          regex: handler_latency_(yb_[^_]*)_([^_]*)_([^_]*)(_sum|_count|_bucket)?
+          targetLabel: service_type
+          replacement: ${2}
+        - sourceLabels: [__name__]
+          regex: handler_latency_(yb_[^_]*)_([^_]*)_([^_]*)(_sum|_count|_bucket)?
+          targetLabel: service_method
+          replacement: ${3}
+        - sourceLabels: [__name__]
+          regex: handler_latency_(yb_[^_]*)_([^_]*)_([^_]*)(_sum|_count|_bucket)?
+          targetLabel: __name__
+          replacement: rpc_latency${4}
+    - port: http-ysql-met
+      path: /prometheus-metrics
+      interval: 60s
+      scrapeTimeout: 30s
+      relabelings:
+        - targetLabel: job
+          replacement: yugabyte
+        - targetLabel: node_prefix
+          replacement: yugabyte
+        - targetLabel: group
+          replacement: ysql
+        - targetLabel: export_type
+          replacement: ysql_export
+      metricRelabelings:
+        - sourceLabels: [table_id]
+          regex: .+
+          action: drop
+        - sourceLabels: [__name__]
+          targetLabel: saved_name
+          replacement: ${1}
+        - sourceLabels: [__name__]
+          regex: handler_latency_(yb_[^_]*)_([^_]*)_([^_]*)(_sum|_count|_bucket)?
+          targetLabel: server_type
+          replacement: ${1}
+        - sourceLabels: [__name__]
+          regex: handler_latency_(yb_[^_]*)_([^_]*)_([^_]*)(_sum|_count|_bucket)?
+          targetLabel: service_type
+          replacement: ${2}
+        - sourceLabels: [__name__]
+          regex: handler_latency_(yb_[^_]*)_([^_]*)_([^_]*)(_sum|_count|_bucket)?
+          targetLabel: service_method
+          replacement: ${3}
+        - sourceLabels: [__name__]
+          regex: handler_latency_(yb_[^_]*)_([^_]*)_([^_]*)(_sum|_count|_bucket)?
+          targetLabel: __name__
+          replacement: rpc_latency${4}

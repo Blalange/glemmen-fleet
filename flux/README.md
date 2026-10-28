@@ -226,6 +226,17 @@ built-in Kubernetes-mixin and node-exporter-mixin dashboards get the same
 annotation from the HelmRelease post-renderer. Dashboards without the
 annotation stay at the root (General) level.
 
+The SeaweedFS and YugabyteDB dashboards live in the sibling `seaweedfs/` and
+`yugabyte/` directories. SeaweedFS metrics are enabled by `metricsPort: 9327`
+on each component of the `Seaweed` resource; the operator then creates the
+ServiceMonitors and labels the listeners with the component names the
+dashboard expects. The operator's bundled Grafana 4.x dashboard is disabled
+because it is out of date. The YugabyteDB dashboard is a trimmed copy of the
+upstream one: YEDIS is disabled, and the ServiceMonitor drops every per-tablet
+series (`table_id`) to avoid ingesting roughly 300k active series. The
+remaining YB-Master and YB-TServer RPC metrics are relabeled to the
+`rpc_latency_*` names the dashboard uses.
+
 Create the `thanos-objstore-config` Secret from the SeaweedFS credentials (see
 the SeaweedFS section above) before reconciling monitoring; otherwise the
 Prometheus sidecar cannot start.

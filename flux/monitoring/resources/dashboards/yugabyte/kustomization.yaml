@@ -1,0 +1,21 @@
+# Trimmed copy of the upstream YugabyteDB dashboard:
+# https://github.com/yugabyte/yugabyte-db/blob/master/cloud/grafana/YugabyteDB.json
+#
+# The upstream dashboard includes per-tablet RocksDB/DocDB panels. Those are
+# removed here because the ServiceMonitor deliberately drops every series
+# carrying a table_id (a 255-tablet tserver exposes ~90k such series per pod).
+# The YEDIS panels are removed because YEDIS is disabled on this cluster. The
+# Master RPC queue panel uses the current rpcs_in_queue_yb_master_* names.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: monitoring
+configMapGenerator:
+  - name: grafana-dashboard-yugabytedb
+    files:
+      - yugabytedb.json
+commonAnnotations:
+  grafana_folder: YugabyteDB
+generatorOptions:
+  disableNameSuffixHash: true
+  labels:
+    grafana_dashboard: "1"

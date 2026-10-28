@@ -30,5 +30,8 @@ spec:
     # the monitoring Kustomization, so do not render a ServiceMonitor here.
     serviceMonitor:
       enabled: false
+    # The chart bundles an old (Grafana 4.x) SeaweedFS dashboard. Use the
+    # current dashboard from the SeaweedFS chart instead; it lives in
+    # flux/monitoring/resources/dashboards/seaweedfs/.
     grafanaDashboard:
-      enabled: true
+      enabled: false

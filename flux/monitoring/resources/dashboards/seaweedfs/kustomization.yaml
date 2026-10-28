@@ -1,0 +1,20 @@
+# SeaweedFS dashboard from the upstream Helm chart:
+# https://github.com/seaweedfs/seaweedfs/blob/master/k8s/charts/seaweedfs/dashboards/seaweedfs-grafana-dashboard.json
+#
+# Panels for metrics that SeaweedFS 4.51 no longer exports were removed
+# (replica_placement_mismatch, admin_lock and upload_error_total). The
+# SeaweedFS operator creates the ServiceMonitors automatically when
+# metricsPort is set on the Seaweed CR.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: monitoring
+configMapGenerator:
+  - name: grafana-dashboard-seaweedfs
+    files:
+      - seaweedfs.json
+commonAnnotations:
+  grafana_folder: SeaweedFS
+generatorOptions:
+  disableNameSuffixHash: true
+  labels:
+    grafana_dashboard: "1"

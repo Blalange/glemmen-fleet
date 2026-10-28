@@ -12,6 +12,9 @@ spec:
   image: chrislusf/seaweedfs:4.51
   master:
     replicas: 1
+    # Prometheus metrics on :9327. The operator creates the matching
+    # ServiceMonitors for this and the other components.
+    metricsPort: 9327
     volumeSizeLimitMB: 1024
     persistence:
       enabled: true
@@ -24,6 +27,7 @@ spec:
       memory: 256Mi
   volume:
     replicas: 1
+    metricsPort: 9327
     storageClassName: seaweedfs
     requests:
       storage: 50Gi
@@ -34,6 +38,7 @@ spec:
       memory: 1Gi
   filer:
     replicas: 1
+    metricsPort: 9327
     # Filer metadata lives in the existing three-node YugabyteDB cluster, not
     # on a local leveldb/PVC. The Secret is hand-created (not in Git) because it
     # contains the YSQL password; see flux/README.md.
@@ -50,6 +55,7 @@ spec:
   # seaweedfs-s3.seaweedfs.svc.cluster.local:8333.
   s3:
     replicas: 1
+    metricsPort: 9327
     iam: true
     service:
       type: ClusterIP
