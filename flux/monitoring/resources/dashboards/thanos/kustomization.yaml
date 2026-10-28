@@ -1,0 +1,44 @@
+# Thanos dashboards from the upstream examples directory:
+# https://github.com/thanos-io/thanos/tree/main/examples/dashboards
+# Refreshed by scripts/update-grafana-dashboards.py.
+#
+# The grafana_folder annotation makes the Grafana sidecar create (or reuse) a
+# "Thanos" folder and put these dashboards there instead of General. The
+# sidecar only honours the annotation because kube-prometheus-stack sets
+# grafana.sidecar.dashboards.folderAnnotation=grafana_folder.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+configMapGenerator:
+  - name: grafana-dashboard-thanos-overview
+    files:
+      - overview.json
+  - name: grafana-dashboard-thanos-compact
+    files:
+      - compact.json
+  - name: grafana-dashboard-thanos-query
+    files:
+      - query.json
+  - name: grafana-dashboard-thanos-query-frontend
+    files:
+      - query-frontend.json
+  - name: grafana-dashboard-thanos-store
+    files:
+      - store.json
+  - name: grafana-dashboard-thanos-receive
+    files:
+      - receive.json
+  - name: grafana-dashboard-thanos-sidecar
+    files:
+      - sidecar.json
+  - name: grafana-dashboard-thanos-rule
+    files:
+      - rule.json
+  - name: grafana-dashboard-thanos-bucket-replicate
+    files:
+      - bucket-replicate.json
+commonAnnotations:
+  grafana_folder: Thanos
+generatorOptions:
+  disableNameSuffixHash: true
+  labels:
+    grafana_dashboard: "1"

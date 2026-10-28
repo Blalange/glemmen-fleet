@@ -121,6 +121,15 @@ the 20GB usage budget. The Thanos sidecar uploads completed blocks to the
 Gateway and Compactor against the same bucket. Grafana has an additional
 "Thanos" data source for ranges outside the local retention window.
 
+The upstream Thanos component dashboards (Overview, Compact, Query, Query
+Frontend, Store, Receive, Sidecar, Rule and BucketReplicate) live in
+`monitoring/resources/dashboards/thanos/` and are refreshed by
+`scripts/update-grafana-dashboards.py`. Their ConfigMaps carry the
+`grafana_folder: Thanos` annotation, and the Grafana sidecar plus the file
+provider's `foldersFromFilesStructure` setting place them in a dedicated
+"Thanos" folder. Dashboards without the annotation stay at the root (General)
+level.
+
 The rclone bridge creates the `thanos` bucket at startup (same `gdrive:`
 remote as the Longhorn backups). Thanos uses the same S3 key pair, so the
 object-store config is copied from the `rclone-backup-config` Secret into the

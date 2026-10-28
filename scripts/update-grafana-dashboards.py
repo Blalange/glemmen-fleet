@@ -8,11 +8,11 @@ maintained by hand (cluster-specs, disk-health and the Flux dashboards) are not
 listed in DASHBOARDS and are left untouched.
 
 Each entry in DASHBOARDS points at a raw dashboard JSON and names the output
-file. When adding a dashboard here, also add its file to configMapGenerator in
-the dashboard kustomization.yaml. Grafana.com dashboards use the __inputs
-export format, which Grafana's file provisioning ignores; those inputs are
-rewritten to datasource template variables so the dashboards work when loaded
-from a ConfigMap.
+file (and optionally a subdirectory). When adding a dashboard here, also add
+its file to configMapGenerator in the matching kustomization.yaml. Grafana.com
+dashboards use the __inputs export format, which Grafana's file provisioning
+ignores; those inputs are rewritten to datasource template variables so the
+dashboards work when loaded from a ConfigMap.
 
 Stdlib only. Run:  python3 scripts/update-grafana-dashboards.py
 """
@@ -68,6 +68,51 @@ DASHBOARDS = [
         "file": "client-insights.json",
         "url": "https://grafana.com/api/dashboards/11315/revisions/latest/download",
     },
+    {
+        "file": "overview.json",
+        "dir": "thanos",
+        "url": "https://raw.githubusercontent.com/thanos-io/thanos/main/examples/dashboards/overview.json",
+    },
+    {
+        "file": "compact.json",
+        "dir": "thanos",
+        "url": "https://raw.githubusercontent.com/thanos-io/thanos/main/examples/dashboards/compact.json",
+    },
+    {
+        "file": "query.json",
+        "dir": "thanos",
+        "url": "https://raw.githubusercontent.com/thanos-io/thanos/main/examples/dashboards/query.json",
+    },
+    {
+        "file": "query-frontend.json",
+        "dir": "thanos",
+        "url": "https://raw.githubusercontent.com/thanos-io/thanos/main/examples/dashboards/query-frontend.json",
+    },
+    {
+        "file": "store.json",
+        "dir": "thanos",
+        "url": "https://raw.githubusercontent.com/thanos-io/thanos/main/examples/dashboards/store.json",
+    },
+    {
+        "file": "receive.json",
+        "dir": "thanos",
+        "url": "https://raw.githubusercontent.com/thanos-io/thanos/main/examples/dashboards/receive.json",
+    },
+    {
+        "file": "sidecar.json",
+        "dir": "thanos",
+        "url": "https://raw.githubusercontent.com/thanos-io/thanos/main/examples/dashboards/sidecar.json",
+    },
+    {
+        "file": "rule.json",
+        "dir": "thanos",
+        "url": "https://raw.githubusercontent.com/thanos-io/thanos/main/examples/dashboards/rule.json",
+    },
+    {
+        "file": "bucket-replicate.json",
+        "dir": "thanos",
+        "url": "https://raw.githubusercontent.com/thanos-io/thanos/main/examples/dashboards/bucket-replicate.json",
+    },
 ]
 
 DEFAULT_OUTPUT_DIR = Path(__file__).resolve().parent.parent / \
@@ -95,7 +140,8 @@ def validate_json(text, url):
     if not isinstance(payload, dict):
         raise RuntimeError(
             "downloaded JSON from {} is not a dashboard object".format(url))
-    if "title" not in payload or "panels" not in payload:
+    if "title" not in payload or (
+            "panels" not in payload and "rows" not in payload):
         raise RuntimeError(
             "downloaded JSON from {} does not look like a Grafana dashboard".format(url))
     return payload
@@ -213,7 +259,8 @@ def main():
     for dashboard in DASHBOARDS:
         filename = dashboard["file"]
         url = dashboard["url"]
-        path = args.output_dir / filename
+        path = args.output_dir / dashboard.get("dir", "") / filename
+        path.parent.mkdir(parents=True, exist_ok=True)
         try:
             text = fetch(url)
             payload = validate_json(text, url)

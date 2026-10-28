@@ -4,6 +4,9 @@
 # keeps each object below the Kubernetes 1 MiB limit.
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
+resources:
+  # Thanos dashboards, kept in their own "Thanos" Grafana folder.
+  - thanos/
 configMapGenerator:
   - name: grafana-dashboard-cluster-specs
     files:

@@ -180,6 +180,18 @@ grafana:
       jsonData:
         timeInterval: 30s
 
+  # Dashboards whose ConfigMap carries the grafana_folder annotation are
+  # written into a subdirectory of the sidecar's dashboard volume; the file
+  # provider's foldersFromFilesStructure option turns those directories into
+  # Grafana folders. The Thanos dashboards use this to stay grouped under
+  # "Thanos". Dashboards without the annotation stay at the root of the volume,
+  # which Grafana provisions into the root (General) level.
+  sidecar:
+    dashboards:
+      folderAnnotation: grafana_folder
+      provider:
+        foldersFromFilesStructure: true
+
 # Alertmanager configuration
 alertmanager:
   enabled: true
