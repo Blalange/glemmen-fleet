@@ -41,6 +41,26 @@ spec:
                 matchLabels:
                   app.kubernetes.io/name: yugabyte
               topologyKey: kubernetes.io/hostname
+        nodeAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              preference:
+                matchExpressions:
+                  - key: kubernetes.io/hostname
+                    operator: In
+                    values:
+                      - glemmen130
+                      - glemmen150
+                      - glemmen160
+                      - glemmen170
+                      - glemmen180
+            - weight: 50
+              preference:
+                matchExpressions:
+                  - key: kubernetes.io/hostname
+                    operator: In
+                    values:
+                      - glemmen80
       containers:
         - name: yugabyte
           image: yugabytedb/yugabyte:2026.1.0.1-b1

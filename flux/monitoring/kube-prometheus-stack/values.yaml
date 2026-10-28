@@ -25,8 +25,21 @@ prometheus:
           - weight: 100
             preference:
               matchExpressions:
-                - key: node-role.kubernetes.io/control-plane
-                  operator: Exists
+                - key: kubernetes.io/hostname
+                  operator: In
+                  values:
+                    - glemmen130
+                    - glemmen150
+                    - glemmen160
+                    - glemmen170
+                    - glemmen180
+          - weight: 50
+            preference:
+              matchExpressions:
+                - key: kubernetes.io/hostname
+                  operator: In
+                  values:
+                    - glemmen80
 
     # Storage configuration
     # Keep the local volume below the 20Gi budget: Prometheus deletes the
@@ -265,11 +278,11 @@ kubeApiServer:
           - __name__
           - le
       - action: drop
-        regex: 'apiserver_watch_.*'
+        regex: "apiserver_watch_.*"
         sourceLabels:
           - __name__
       - action: drop
-        regex: 'apiserver_(request_body_size_bytes|response_sizes|storage_list_duration_seconds).*'
+        regex: "apiserver_(request_body_size_bytes|response_sizes|storage_list_duration_seconds).*"
         sourceLabels:
           - __name__
 
