@@ -113,6 +113,11 @@ If the Longhorn target reports an error, check
 `kubectl -n longhorn-system logs deploy/rclone-s3`; an expired or revoked
 Google token needs a new `rclone.conf` in the Secret and a rollout restart.
 
+The `Longhorn Monitoring & Backups` Grafana dashboard is an enhanced local
+copy based on Grafana.com dashboard 16888. It adds volume IOPS, throughput,
+read/write latency and per-volume status tables. Because it is now customized,
+`scripts/update-grafana-dashboards.py` does not refresh it from upstream.
+
 ## SeaweedFS object storage
 
 Long-term metrics live in a SeaweedFS cluster in the `seaweedfs` namespace. It

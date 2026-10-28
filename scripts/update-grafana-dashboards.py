@@ -4,8 +4,9 @@
 Downloads dashboard JSON files into the Grafana dashboards directory. The
 Kustomization's configMapGenerator turns them into ConfigMaps labelled
 grafana_dashboard: "1", so no YAML is generated here. Dashboards that are
-maintained by hand (cluster-specs, disk-health and the Flux dashboards) are not
-listed in DASHBOARDS and are left untouched.
+maintained by hand (cluster-specs, disk-health, the enhanced Longhorn
+dashboard and the Flux dashboards) are not listed in DASHBOARDS and are left
+untouched.
 
 Each entry in DASHBOARDS points at a raw dashboard JSON and names the output
 file (and optionally a subdirectory). When adding a dashboard here, also add
@@ -40,10 +41,6 @@ DASHBOARDS = [
     {
         "file": "idrac-overview.json",
         "url": "https://raw.githubusercontent.com/mrlhansen/idrac_exporter/master/grafana/idrac_overview.json",
-    },
-    {
-        "file": "longhorn.json",
-        "url": "https://grafana.com/api/dashboards/16888/revisions/latest/download",
     },
     {
         "file": "client-dpi.json",

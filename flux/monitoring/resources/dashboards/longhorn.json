@@ -60,7 +60,7 @@
       }
     ]
   },
-  "description": "An example dashboard for Longhorn. Updated by ONZACK AG (Robin Hermann)",
+  "description": "Longhorn volume health, capacity, backups, node/disk usage and detailed volume performance (IOPS, throughput, read/write latency and status). Based on the Longhorn dashboard by ONZACK AG (Robin Hermann).",
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
@@ -804,12 +804,1004 @@
       "type": "stat"
     },
     {
-      "collapsed": true,
+      "collapsed": false,
       "gridPos": {
         "h": 1,
         "w": 24,
         "x": 0,
         "y": 19
+      },
+      "id": 200,
+      "title": "Volume Performance & Status",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "description": "Read and write IOPS reported by the Longhorn volume engine.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "smooth",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "showValues": false,
+            "spanNulls": true,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "iops"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 0,
+        "y": 20
+      },
+      "id": 201,
+      "options": {
+        "legend": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true,
+          "sortBy": "Last *",
+          "sortDesc": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "13.0.1",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "editorMode": "code",
+          "expr": "max by (pvc_namespace, pvc, volume) (longhorn_volume_read_iops{pvc_namespace=~\"$namespace\",pvc=~\"$pvc\",volume=~\"$pv_name\"})",
+          "legendFormat": "{{pvc_namespace}}/{{pvc}} read",
+          "range": true,
+          "refId": "read"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "editorMode": "code",
+          "expr": "max by (pvc_namespace, pvc, volume) (longhorn_volume_write_iops{pvc_namespace=~\"$namespace\",pvc=~\"$pvc\",volume=~\"$pv_name\"})",
+          "legendFormat": "{{pvc_namespace}}/{{pvc}} write",
+          "range": true,
+          "refId": "write"
+        }
+      ],
+      "title": "Volume IOPS (read / write)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "description": "Read and write throughput reported by the Longhorn volume engine (bytes/sec).",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "smooth",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "showValues": false,
+            "spanNulls": true,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "Bps"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 12,
+        "y": 20
+      },
+      "id": 202,
+      "options": {
+        "legend": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true,
+          "sortBy": "Last *",
+          "sortDesc": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "13.0.1",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "editorMode": "code",
+          "expr": "max by (pvc_namespace, pvc, volume) (longhorn_volume_read_throughput{pvc_namespace=~\"$namespace\",pvc=~\"$pvc\",volume=~\"$pv_name\"})",
+          "legendFormat": "{{pvc_namespace}}/{{pvc}} read",
+          "range": true,
+          "refId": "read"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "editorMode": "code",
+          "expr": "max by (pvc_namespace, pvc, volume) (longhorn_volume_write_throughput{pvc_namespace=~\"$namespace\",pvc=~\"$pvc\",volume=~\"$pv_name\"})",
+          "legendFormat": "{{pvc_namespace}}/{{pvc}} write",
+          "range": true,
+          "refId": "write"
+        }
+      ],
+      "title": "Volume Throughput (read / write)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "description": "Average read and write latency reported by the Longhorn volume engine (nanoseconds).",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "smooth",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "showValues": false,
+            "spanNulls": true,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "ns"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 0,
+        "y": 29
+      },
+      "id": 203,
+      "options": {
+        "legend": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true,
+          "sortBy": "Last *",
+          "sortDesc": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "13.0.1",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "editorMode": "code",
+          "expr": "max by (pvc_namespace, pvc, volume) (longhorn_volume_read_latency{pvc_namespace=~\"$namespace\",pvc=~\"$pvc\",volume=~\"$pv_name\"})",
+          "legendFormat": "{{pvc_namespace}}/{{pvc}} read",
+          "range": true,
+          "refId": "read"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "editorMode": "code",
+          "expr": "max by (pvc_namespace, pvc, volume) (longhorn_volume_write_latency{pvc_namespace=~\"$namespace\",pvc=~\"$pvc\",volume=~\"$pv_name\"})",
+          "legendFormat": "{{pvc_namespace}}/{{pvc}} write",
+          "range": true,
+          "refId": "write"
+        }
+      ],
+      "title": "Volume Latency (read / write)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "description": "Current IOPS, throughput and latency for each selected Longhorn volume.",
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "footer": {
+              "reducers": []
+            },
+            "inspect": false
+          },
+          "decimals": 2,
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Read IOPS"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "iops"
+              },
+              {
+                "id": "decimals",
+                "value": 2
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Write IOPS"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "iops"
+              },
+              {
+                "id": "decimals",
+                "value": 2
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Read Throughput"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "Bps"
+              },
+              {
+                "id": "decimals",
+                "value": 2
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Write Throughput"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "Bps"
+              },
+              {
+                "id": "decimals",
+                "value": 2
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Read Latency"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "ns"
+              },
+              {
+                "id": "decimals",
+                "value": 2
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Write Latency"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "ns"
+              },
+              {
+                "id": "decimals",
+                "value": 2
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 12,
+        "y": 29
+      },
+      "id": 204,
+      "options": {
+        "cellHeight": "sm",
+        "showHeader": true,
+        "sortBy": [
+          {
+            "desc": true,
+            "displayName": "Read IOPS"
+          }
+        ]
+      },
+      "pluginVersion": "13.0.1",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "editorMode": "code",
+          "expr": "max by (pvc_namespace, pvc, volume) (longhorn_volume_read_iops{pvc_namespace=~\"$namespace\",pvc=~\"$pvc\",volume=~\"$pv_name\"})",
+          "legendFormat": "",
+          "range": false,
+          "refId": "read_iops",
+          "format": "table",
+          "instant": true
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "editorMode": "code",
+          "expr": "max by (pvc_namespace, pvc, volume) (longhorn_volume_write_iops{pvc_namespace=~\"$namespace\",pvc=~\"$pvc\",volume=~\"$pv_name\"})",
+          "legendFormat": "",
+          "range": false,
+          "refId": "write_iops",
+          "format": "table",
+          "instant": true
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "editorMode": "code",
+          "expr": "max by (pvc_namespace, pvc, volume) (longhorn_volume_read_throughput{pvc_namespace=~\"$namespace\",pvc=~\"$pvc\",volume=~\"$pv_name\"})",
+          "legendFormat": "",
+          "range": false,
+          "refId": "read_throughput",
+          "format": "table",
+          "instant": true
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "editorMode": "code",
+          "expr": "max by (pvc_namespace, pvc, volume) (longhorn_volume_write_throughput{pvc_namespace=~\"$namespace\",pvc=~\"$pvc\",volume=~\"$pv_name\"})",
+          "legendFormat": "",
+          "range": false,
+          "refId": "write_throughput",
+          "format": "table",
+          "instant": true
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "editorMode": "code",
+          "expr": "max by (pvc_namespace, pvc, volume) (longhorn_volume_read_latency{pvc_namespace=~\"$namespace\",pvc=~\"$pvc\",volume=~\"$pv_name\"})",
+          "legendFormat": "",
+          "range": false,
+          "refId": "read_latency",
+          "format": "table",
+          "instant": true
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "editorMode": "code",
+          "expr": "max by (pvc_namespace, pvc, volume) (longhorn_volume_write_latency{pvc_namespace=~\"$namespace\",pvc=~\"$pvc\",volume=~\"$pv_name\"})",
+          "legendFormat": "",
+          "range": false,
+          "refId": "write_latency",
+          "format": "table",
+          "instant": true
+        }
+      ],
+      "title": "Volume Performance by PVC",
+      "transformations": [
+        {
+          "id": "merge",
+          "options": {}
+        },
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true
+            },
+            "includeByName": {},
+            "indexByName": {
+              "pvc_namespace": 0,
+              "pvc": 1,
+              "volume": 2,
+              "Value #read_iops": 3,
+              "Value #write_iops": 4,
+              "Value #read_throughput": 5,
+              "Value #write_throughput": 6,
+              "Value #read_latency": 7,
+              "Value #write_latency": 8
+            },
+            "renameByName": {
+              "Value #read_iops": "Read IOPS",
+              "Value #write_iops": "Write IOPS",
+              "Value #read_throughput": "Read Throughput",
+              "Value #write_throughput": "Write Throughput",
+              "Value #read_latency": "Read Latency",
+              "Value #write_latency": "Write Latency",
+              "pvc_namespace": "Namespace",
+              "pvc": "PVC",
+              "volume": "Volume"
+            }
+          }
+        }
+      ],
+      "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "description": "Current attach state, robustness, capacity, usage and encryption for each selected Longhorn volume.",
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "footer": {
+              "reducers": []
+            },
+            "inspect": false
+          },
+          "decimals": 2,
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "State"
+            },
+            "properties": [
+              {
+                "id": "decimals",
+                "value": 0
+              },
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "0": {
+                        "text": "Unknown",
+                        "color": "text",
+                        "index": 0
+                      },
+                      "1": {
+                        "text": "Attached",
+                        "color": "green",
+                        "index": 1
+                      },
+                      "2": {
+                        "text": "Detached",
+                        "color": "text",
+                        "index": 2
+                      },
+                      "3": {
+                        "text": "Attaching",
+                        "color": "blue",
+                        "index": 3
+                      },
+                      "4": {
+                        "text": "Detaching",
+                        "color": "orange",
+                        "index": 4
+                      },
+                      "5": {
+                        "text": "Creating",
+                        "color": "purple",
+                        "index": 5
+                      },
+                      "6": {
+                        "text": "Deleting",
+                        "color": "red",
+                        "index": 6
+                      }
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-text"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Robustness"
+            },
+            "properties": [
+              {
+                "id": "decimals",
+                "value": 0
+              },
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "0": {
+                        "text": "Unknown",
+                        "color": "text",
+                        "index": 0
+                      },
+                      "1": {
+                        "text": "Healthy",
+                        "color": "green",
+                        "index": 1
+                      },
+                      "2": {
+                        "text": "Degraded",
+                        "color": "orange",
+                        "index": 2
+                      },
+                      "3": {
+                        "text": "Faulted",
+                        "color": "red",
+                        "index": 3
+                      }
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-text"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Capacity"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "bytes"
+              },
+              {
+                "id": "decimals",
+                "value": 1
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Actual Size"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "bytes"
+              },
+              {
+                "id": "decimals",
+                "value": 1
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Usage"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "percent"
+              },
+              {
+                "id": "decimals",
+                "value": 1
+              },
+              {
+                "id": "min",
+                "value": 0
+              },
+              {
+                "id": "max",
+                "value": 100
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "mode": "basic",
+                  "type": "gauge",
+                  "valueDisplayMode": "color"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Encrypted"
+            },
+            "properties": [
+              {
+                "id": "decimals",
+                "value": 0
+              },
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "0": {
+                        "text": "No",
+                        "color": "text",
+                        "index": 0
+                      },
+                      "1": {
+                        "text": "Yes",
+                        "color": "green",
+                        "index": 1
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 24,
+        "x": 0,
+        "y": 38
+      },
+      "id": 205,
+      "options": {
+        "cellHeight": "sm",
+        "showHeader": true,
+        "sortBy": [
+          {
+            "desc": true,
+            "displayName": "Usage"
+          }
+        ]
+      },
+      "pluginVersion": "13.0.1",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "editorMode": "code",
+          "expr": "max by (pvc_namespace, pvc, volume) (\n  (longhorn_volume_state{pvc_namespace=~\"$namespace\",pvc=~\"$pvc\",volume=~\"$pv_name\",state=\"attached\"} == 1) * 1\n  or (longhorn_volume_state{pvc_namespace=~\"$namespace\",pvc=~\"$pvc\",volume=~\"$pv_name\",state=\"detached\"} == 1) * 2\n  or (longhorn_volume_state{pvc_namespace=~\"$namespace\",pvc=~\"$pvc\",volume=~\"$pv_name\",state=\"attaching\"} == 1) * 3\n  or (longhorn_volume_state{pvc_namespace=~\"$namespace\",pvc=~\"$pvc\",volume=~\"$pv_name\",state=\"detaching\"} == 1) * 4\n  or (longhorn_volume_state{pvc_namespace=~\"$namespace\",pvc=~\"$pvc\",volume=~\"$pv_name\",state=\"creating\"} == 1) * 5\n  or (longhorn_volume_state{pvc_namespace=~\"$namespace\",pvc=~\"$pvc\",volume=~\"$pv_name\",state=\"deleting\"} == 1) * 6\n)",
+          "legendFormat": "",
+          "range": false,
+          "refId": "state",
+          "format": "table",
+          "instant": true
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "editorMode": "code",
+          "expr": "max by (pvc_namespace, pvc, volume) (\n  (longhorn_volume_robustness{pvc_namespace=~\"$namespace\",pvc=~\"$pvc\",volume=~\"$pv_name\",state=\"unknown\"} == 1) * 0\n  or (longhorn_volume_robustness{pvc_namespace=~\"$namespace\",pvc=~\"$pvc\",volume=~\"$pv_name\",state=\"healthy\"} == 1) * 1\n  or (longhorn_volume_robustness{pvc_namespace=~\"$namespace\",pvc=~\"$pvc\",volume=~\"$pv_name\",state=\"degraded\"} == 1) * 2\n  or (longhorn_volume_robustness{pvc_namespace=~\"$namespace\",pvc=~\"$pvc\",volume=~\"$pv_name\",state=\"faulted\"} == 1) * 3\n)",
+          "legendFormat": "",
+          "range": false,
+          "refId": "robustness",
+          "format": "table",
+          "instant": true
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "editorMode": "code",
+          "expr": "max by (pvc_namespace, pvc, volume) (longhorn_volume_capacity_bytes{pvc_namespace=~\"$namespace\",pvc=~\"$pvc\",volume=~\"$pv_name\"})",
+          "legendFormat": "",
+          "range": false,
+          "refId": "capacity",
+          "format": "table",
+          "instant": true
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "editorMode": "code",
+          "expr": "max by (pvc_namespace, pvc, volume) (longhorn_volume_actual_size_bytes{pvc_namespace=~\"$namespace\",pvc=~\"$pvc\",volume=~\"$pv_name\"})",
+          "legendFormat": "",
+          "range": false,
+          "refId": "actual",
+          "format": "table",
+          "instant": true
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "editorMode": "code",
+          "expr": "100 * max by (pvc_namespace, pvc, volume) (longhorn_volume_actual_size_bytes{pvc_namespace=~\"$namespace\",pvc=~\"$pvc\",volume=~\"$pv_name\"})\n/ max by (pvc_namespace, pvc, volume) (longhorn_volume_capacity_bytes{pvc_namespace=~\"$namespace\",pvc=~\"$pvc\",volume=~\"$pv_name\"})",
+          "legendFormat": "",
+          "range": false,
+          "refId": "usage",
+          "format": "table",
+          "instant": true
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "editorMode": "code",
+          "expr": "max by (pvc_namespace, pvc, volume) (longhorn_volume_encrypted{pvc_namespace=~\"$namespace\",pvc=~\"$pvc\",volume=~\"$pv_name\"})",
+          "legendFormat": "",
+          "range": false,
+          "refId": "encrypted",
+          "format": "table",
+          "instant": true
+        }
+      ],
+      "title": "Volume Status",
+      "transformations": [
+        {
+          "id": "merge",
+          "options": {}
+        },
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true
+            },
+            "includeByName": {},
+            "indexByName": {
+              "pvc_namespace": 0,
+              "pvc": 1,
+              "volume": 2,
+              "Value #state": 3,
+              "Value #robustness": 4,
+              "Value #capacity": 5,
+              "Value #actual": 6,
+              "Value #usage": 7,
+              "Value #encrypted": 8
+            },
+            "renameByName": {
+              "Value #state": "State",
+              "Value #robustness": "Robustness",
+              "Value #capacity": "Capacity",
+              "Value #actual": "Actual Size",
+              "Value #usage": "Usage",
+              "Value #encrypted": "Encrypted",
+              "pvc_namespace": "Namespace",
+              "pvc": "PVC",
+              "volume": "Volume"
+            }
+          }
+        }
+      ],
+      "type": "table"
+    },
+    {
+      "collapsed": true,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 48
       },
       "id": 115,
       "panels": [
@@ -840,7 +1832,7 @@
             "h": 4,
             "w": 4,
             "x": 0,
-            "y": 20
+            "y": 49
           },
           "id": 101,
           "options": {
@@ -903,7 +1895,7 @@
             "h": 4,
             "w": 4,
             "x": 4,
-            "y": 20
+            "y": 49
           },
           "id": 102,
           "options": {
@@ -970,7 +1962,7 @@
             "h": 4,
             "w": 4,
             "x": 8,
-            "y": 20
+            "y": 49
           },
           "id": 103,
           "options": {
@@ -1037,7 +2029,7 @@
             "h": 4,
             "w": 4,
             "x": 12,
-            "y": 20
+            "y": 49
           },
           "id": 104,
           "options": {
@@ -1104,7 +2096,7 @@
             "h": 4,
             "w": 4,
             "x": 16,
-            "y": 20
+            "y": 49
           },
           "id": 105,
           "options": {
@@ -1175,7 +2167,7 @@
             "h": 4,
             "w": 4,
             "x": 20,
-            "y": 20
+            "y": 49
           },
           "id": 106,
           "options": {
@@ -1316,7 +2308,7 @@
             "h": 9,
             "w": 16,
             "x": 0,
-            "y": 24
+            "y": 53
           },
           "id": 110,
           "options": {
@@ -1501,7 +2493,7 @@
             "h": 9,
             "w": 8,
             "x": 16,
-            "y": 24
+            "y": 53
           },
           "id": 111,
           "options": {
@@ -1680,7 +2672,7 @@
             "h": 7,
             "w": 12,
             "x": 0,
-            "y": 33
+            "y": 62
           },
           "id": 112,
           "options": {
@@ -1797,7 +2789,7 @@
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 33
+            "y": 62
           },
           "id": 113,
           "options": {
@@ -1844,7 +2836,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 20
+        "y": 49
       },
       "id": 116,
       "panels": [
@@ -1871,7 +2863,7 @@
             "h": 6,
             "w": 4,
             "x": 0,
-            "y": 21
+            "y": 50
           },
           "id": 18,
           "options": {
@@ -1934,7 +2926,7 @@
             "h": 6,
             "w": 4,
             "x": 4,
-            "y": 21
+            "y": 50
           },
           "id": 21,
           "options": {
@@ -2034,7 +3026,7 @@
             "h": 10,
             "w": 16,
             "x": 8,
-            "y": 21
+            "y": 50
           },
           "id": 24,
           "options": {
@@ -2098,7 +3090,7 @@
             "h": 6,
             "w": 4,
             "x": 0,
-            "y": 27
+            "y": 56
           },
           "id": 20,
           "options": {
@@ -2161,7 +3153,7 @@
             "h": 6,
             "w": 4,
             "x": 4,
-            "y": 27
+            "y": 56
           },
           "id": 22,
           "options": {
@@ -2246,7 +3238,7 @@
             "h": 10,
             "w": 16,
             "x": 8,
-            "y": 31
+            "y": 60
           },
           "id": 23,
           "options": {
@@ -2384,7 +3376,7 @@
             "h": 8,
             "w": 8,
             "x": 0,
-            "y": 33
+            "y": 62
           },
           "id": 26,
           "options": {
@@ -2427,7 +3419,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 21
+        "y": 50
       },
       "id": 117,
       "panels": [
@@ -2492,7 +3484,7 @@
             "h": 10,
             "w": 12,
             "x": 0,
-            "y": 22
+            "y": 51
           },
           "id": 32,
           "options": {
@@ -2574,7 +3566,7 @@
             "h": 10,
             "w": 12,
             "x": 12,
-            "y": 22
+            "y": 51
           },
           "id": 33,
           "options": {
@@ -2651,7 +3643,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 22
+        "y": 51
       },
       "id": 118,
       "panels": [
@@ -2716,7 +3708,7 @@
             "h": 10,
             "w": 12,
             "x": 0,
-            "y": 23
+            "y": 52
           },
           "id": 36,
           "options": {
@@ -2809,7 +3801,7 @@
             "h": 10,
             "w": 12,
             "x": 12,
-            "y": 23
+            "y": 52
           },
           "id": 38,
           "options": {
@@ -2903,7 +3895,7 @@
             "h": 10,
             "w": 8,
             "x": 0,
-            "y": 33
+            "y": 62
           },
           "id": 28,
           "options": {
@@ -2997,7 +3989,7 @@
             "h": 10,
             "w": 8,
             "x": 8,
-            "y": 33
+            "y": 62
           },
           "id": 30,
           "options": {
@@ -3090,7 +4082,7 @@
             "h": 10,
             "w": 8,
             "x": 16,
-            "y": 33
+            "y": 62
           },
           "id": 29,
           "options": {
@@ -3184,7 +4176,7 @@
             "h": 9,
             "w": 12,
             "x": 0,
-            "y": 43
+            "y": 72
           },
           "id": 2,
           "options": {
@@ -3277,7 +4269,7 @@
             "h": 9,
             "w": 12,
             "x": 12,
-            "y": 43
+            "y": 72
           },
           "id": 31,
           "options": {
@@ -3319,7 +4311,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 23
+        "y": 52
       },
       "id": 119,
       "panels": [
@@ -3329,7 +4321,7 @@
             "h": 13,
             "w": 24,
             "x": 0,
-            "y": 24
+            "y": 53
           },
           "id": 48,
           "options": {
@@ -3363,10 +4355,11 @@
   "refresh": "5m",
   "schemaVersion": 42,
   "tags": [
-    "Storage",
+    "Backup",
     "K8s",
     "Longhorn",
-    "Backup"
+    "Performance",
+    "Storage"
   ],
   "templating": {
     "list": [
@@ -3533,7 +4526,7 @@
   "timezone": "browser",
   "title": "Longhorn Monitoring & Backups",
   "uid": "ozk-lh-mon",
-  "version": 35,
+  "version": 36,
   "weekStart": "",
   "gnetId": 16888
 }
