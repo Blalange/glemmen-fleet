@@ -109,4 +109,9 @@ metadata:
 apiVersion: v1
 kind: Namespace
 metadata:
+  name: node-feature-discovery
+---
+apiVersion: v1
+kind: Namespace
+metadata:
   name: system-upgrade

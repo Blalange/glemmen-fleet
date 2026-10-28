@@ -23,7 +23,7 @@ flux/
 │   ├── seaweedfs.yaml          -> flux/infrastructure/seaweedfs (S3 object store)
 │   ├── monitoring-dashboards.yaml / monitoring-alerts.yaml
 │   └── apps.yaml               -> flux/apps (application Kustomizations)
-├── infrastructure/             namespaces, Longhorn, cert-manager, MetalLB, metrics-server, YugabyteDB, SeaweedFS operator
+├── infrastructure/             namespaces, Longhorn, cert-manager, MetalLB, metrics-server, YugabyteDB, SeaweedFS operator, NFD
 ├── ingress/                    Traefik HelmRelease + values
 ├── monitoring/                 kube-prometheus-stack, Thanos, smartctl-exporter, idrac-exporter, unpoller
 └── apps/                       Kustomization objects, Homepage, NetBox + inventory sync
@@ -331,7 +331,7 @@ role passwords are in `yugabyte-auth` (`yugabyte` namespace) and `grafana-db`
 
 ## Dependencies (was Fleet `dependsOn`)
 
-- `infrastructure` (namespaces, Longhorn, cert-manager chart, MetalLB, metrics-server, SeaweedFS operator)
+- `infrastructure` (namespaces, Longhorn, cert-manager chart, MetalLB, metrics-server, SeaweedFS operator, NFD)
 - `infrastructure` -> `longhorn-backup` (rclone S3 gateway for Google Drive backups)
 - `infrastructure` -> `seaweedfs` (SeaweedFS cluster, bucket and S3 credentials)
 - `cert-manager-issuers` -> `cert-manager-certificates` -> `ingress` (Traefik)

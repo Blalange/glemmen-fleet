@@ -1,7 +1,8 @@
 # Infrastructure building blocks, reconciled before anything else:
 # namespaces, Longhorn, cert-manager (chart), MetalLB (chart), metrics-server,
-# tuppr, YugabyteDB and the SeaweedFS operator. CRs that need the charts' CRDs
-# live in subdirectories (resources/) applied by their own Kustomizations.
+# tuppr, YugabyteDB, the SeaweedFS operator and Node Feature Discovery. CRs that
+# need the charts' CRDs live in subdirectories (resources/) applied by their own
+# Kustomizations.
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:
@@ -13,3 +14,4 @@ resources:
   - tuppr/
   - yugabyte/
   - seaweedfs-operator/
+  - nfd/
