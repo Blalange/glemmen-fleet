@@ -30,7 +30,11 @@ spec:
       labels:
         app.kubernetes.io/name: yugabyte
     spec:
-      terminationGracePeriodSeconds: 120
+      # A tserver with a 20Gi Longhorn volume can take a long time to flush its
+      # tablets and WALs on shutdown; 120s was not enough and pods were being
+      # SIGKILLed, which left partially written WAL segments behind. The
+      # start.sh trap forwards SIGTERM to yugabyted, so allow it to finish.
+      terminationGracePeriodSeconds: 600
       securityContext:
         seccompProfile:
           type: RuntimeDefault
@@ -106,27 +110,23 @@ spec:
               command: ["/opt/yugabyte/ready.sh"]
             periodSeconds: 5
             timeoutSeconds: 5
-            failureThreshold: 120
+            # The Longhorn data disks are spinning disks and fsync latency is
+            # high, so a cold start (tablet bootstrap + WAL replay) can take
+            # much longer than the old 10 minute budget.
+            failureThreshold: 720
           readinessProbe:
             exec:
               command: ["/opt/yugabyte/ready.sh"]
             periodSeconds: 10
             timeoutSeconds: 5
             failureThreshold: 3
-          livenessProbe:
-            exec:
-              command:
-                - /opt/yugabyte/ysql-local.sh
-                - -U
-                - yugabyte
-                - -d
-                - yugabyte
-                - -tAc
-                - SELECT 1
-            initialDelaySeconds: 60
-            periodSeconds: 30
-            timeoutSeconds: 10
-            failureThreshold: 6
+          # Deliberately no liveness probe. A restarting tserver has to replay
+          # its WALs and bootstrap every tablet; on these disks that takes tens
+          # of minutes. The previous liveness probe killed pods halfway through
+          # that work (leaving partial WAL segments behind) and the resulting
+          # election storm made the cluster unavailable. A readiness failure
+          # only removes the pod from Service endpoints; it is the correct
+          # signal for a database that is busy catching up.
           resources:
             requests:
               cpu: 500m

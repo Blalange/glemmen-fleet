@@ -81,7 +81,7 @@ data:
       --base_dir="${BASE}/yb_data" \
       --background=false \
       "${JOIN_ARGS[@]}" \
-      --tserver_flags="memory_limit_hard_bytes=${YSQL_MEMORY_LIMIT_BYTES},ysql_enable_auth=true,ysql_auth_method=scram-sha-256,transaction_max_missed_heartbeat_periods=240" \
+      --tserver_flags="memory_limit_hard_bytes=${YSQL_MEMORY_LIMIT_BYTES},ysql_enable_auth=true,ysql_auth_method=scram-sha-256,transaction_max_missed_heartbeat_periods=240,metrics_snapshotter_interval_ms=300000" \
       --master_flags="memory_limit_hard_bytes=1073741824" &
     YBD_PID=$!
     trap 'kill -TERM "${YBD_PID}" 2>/dev/null || true' TERM INT

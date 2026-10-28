@@ -116,12 +116,10 @@ grafana:
   affinity:
     podAntiAffinity:
       requiredDuringSchedulingIgnoredDuringExecution:
-        - weight: 100
-          podAffinityTerm:
-            labelSelector:
-              matchLabels:
-                app.kubernetes.io/name: grafana
-            topologyKey: kubernetes.io/hostname
+        - labelSelector:
+            matchLabels:
+              app.kubernetes.io/name: grafana
+          topologyKey: kubernetes.io/hostname
     nodeAffinity:
       preferredDuringSchedulingIgnoredDuringExecution:
         - weight: 100
@@ -143,16 +141,27 @@ grafana:
                 values:
                   - glemmen80
 
-  # The one-time YugabyteDB schema migration has completed. If the Grafana
-  # database is ever recreated, disable this probe until the migration has
-  # finished; otherwise the liveness probe restarts the pod mid-migration.
-  livenessProbe:
+  # The readiness probe is the database-backed one. Liveness only checks that
+  # the HTTP listener is up: Grafana returns 503 from /api/health while
+  # YugabyteDB is unavailable, and restarting Grafana does not make the
+  # database recover any faster. The startup probe waits for the
+  # database-backed health endpoint during a cold start (including a schema
+  # migration).
+  startupProbe:
     httpGet:
       path: /api/health
       port: grafana
-    initialDelaySeconds: 60
     periodSeconds: 10
-    timeoutSeconds: 30
+    timeoutSeconds: 10
+    # Allow an hour: the first migration can take 20-30 minutes on this
+    # cluster, and a YugabyteDB outage can delay it much longer.
+    failureThreshold: 360
+  livenessProbe:
+    tcpSocket:
+      port: grafana
+    initialDelaySeconds: 30
+    periodSeconds: 10
+    timeoutSeconds: 5
     failureThreshold: 6
 
   # Use secret for admin password

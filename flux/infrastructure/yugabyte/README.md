@@ -34,6 +34,19 @@ configures the RF3 zone placement and creates the `grafana` role/database. The
 readiness probe for pod 0 only passes after that, so the StatefulSet is not
 considered ready until RF3 is in place.
 
+There is intentionally no liveness probe. The Longhorn `longhorn` data disks on
+`glemmen150`, `glemmen160` and `glemmen170` are SMR drives; a synchronous 4KiB
+write takes roughly a second, so after a restart a tserver can spend tens of
+minutes replaying WALs and bootstrapping tablets. A liveness probe restarts the
+tserver halfway through that work, which leaves partially written WAL segments
+and causes a new election storm. Readiness alone is used instead, and the
+termination grace period is 600 seconds so a clean shutdown can flush its
+tablets. Do not restart all three pods at once unless the cluster is healthy.
+
+For the same reason, the tserver metrics snapshotter runs every five minutes
+instead of every 30 seconds, which cuts the amount of internal metrics traffic
+written to YSQL on these disks.
+
 ## Secrets
 
 Nothing secret is stored in Git. Create the superuser and Grafana role
