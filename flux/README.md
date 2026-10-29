@@ -299,9 +299,11 @@ The Alertmanager config mounts it at
 Secret and restarting Alertmanager.
 
 Alertmanager is exposed at <https://alerts.glem.men>; the same URL is set as
-`alertmanagerSpec.externalUrl` so notification links point there. The UI has no
-authentication of its own, so anyone who can reach it can view and silence
-alerts.
+`alertmanagerSpec.externalUrl` so notification links point there. The ingress
+points at a small nginx read-only proxy (`monitoring/resources/alertmanager-proxy.yaml`)
+that forwards only `GET`, `HEAD` and `OPTIONS` and returns `405` for
+`POST`/`PUT`/`PATCH`/`DELETE`, so the UI cannot create or delete silences. The
+UI is still unauthenticated: anyone who can reach it can view alerts.
 
 ## iDRAC hardware metrics
 

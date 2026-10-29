@@ -5,3 +5,4 @@ resources:
   - alerts/
   - servicemonitors/
   - scrapeconfigs/
+  - alertmanager-proxy.yaml

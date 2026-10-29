@@ -315,7 +315,8 @@ alertmanager:
     templates:
       - '/etc/alertmanager/config/*.tmpl'
   # Exposed through Traefik; the wildcard certificate is served from Traefik's
-  # default TLS store, so no per-Ingress TLS secret is needed.
+  # default TLS store, so no per-Ingress TLS secret is needed. The service
+  # override points at the read-only proxy, which rejects CUD requests.
   ingress:
     enabled: true
     ingressClassName: traefik
@@ -324,6 +325,8 @@ alertmanager:
     paths:
       - /
     pathType: Prefix
+    serviceName: alertmanager-readonly-proxy
+    servicePort: 80
   alertmanagerSpec:
     # Used for the "View in Alertmanager" links in notifications and for
     # generated URLs in the UI.

@@ -1,0 +1,146 @@
+# Read-only front end for Alertmanager.
+#
+# Alertmanager has no read-only mode: the UI and API allow creating and
+# deleting silences with POST/DELETE. This proxy forwards only safe methods
+# (GET/HEAD/OPTIONS) and returns 405 for everything else, so the UI can be
+# exposed without allowing changes.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: alertmanager-readonly-proxy
+  namespace: monitoring
+data:
+  nginx.conf: |
+    worker_processes auto;
+    pid /tmp/nginx.pid;
+    error_log /dev/stderr warn;
+
+    events {
+        worker_connections 1024;
+    }
+
+    http {
+        include /etc/nginx/mime.types;
+        default_type application/octet-stream;
+
+        access_log /dev/stdout;
+        client_body_temp_path /tmp/client_temp;
+        proxy_temp_path /tmp/proxy_temp_path;
+        fastcgi_temp_path /tmp/fastcgi_temp;
+        uwsgi_temp_path /tmp/uwsgi_temp;
+        scgi_temp_path /tmp/scgi_temp;
+
+        server {
+            listen 8080;
+            server_name _;
+
+            location / {
+                add_header Allow "GET, HEAD, OPTIONS" always;
+
+                if ($request_method !~ ^(GET|HEAD|OPTIONS)$) {
+                    return 405;
+                }
+
+                proxy_pass http://kube-prometheus-stack-alertmanager.monitoring.svc.cluster.local:9093;
+                proxy_http_version 1.1;
+                proxy_set_header Host $host;
+                proxy_set_header X-Real-IP $remote_addr;
+                proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                proxy_set_header X-Forwarded-Proto $scheme;
+                proxy_set_header Upgrade $http_upgrade;
+                proxy_set_header Connection "upgrade";
+                proxy_read_timeout 60s;
+            }
+        }
+    }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: alertmanager-readonly-proxy
+  namespace: monitoring
+  labels:
+    app.kubernetes.io/name: alertmanager-readonly-proxy
+    app.kubernetes.io/part-of: kube-prometheus-stack
+spec:
+  replicas: 1
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: alertmanager-readonly-proxy
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: alertmanager-readonly-proxy
+        app.kubernetes.io/part-of: kube-prometheus-stack
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 101
+        runAsGroup: 101
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: nginx
+          image: nginxinc/nginx-unprivileged:stable-alpine
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8080
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            readOnlyRootFilesystem: true
+          readinessProbe:
+            httpGet:
+              path: /-/ready
+              port: http
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /-/healthy
+              port: http
+            periodSeconds: 20
+          resources:
+            requests:
+              cpu: 10m
+              memory: 16Mi
+            limits:
+              cpu: 100m
+              memory: 64Mi
+          volumeMounts:
+            - name: config
+              mountPath: /etc/nginx/nginx.conf
+              subPath: nginx.conf
+              readOnly: true
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: config
+          configMap:
+            name: alertmanager-readonly-proxy
+        - name: tmp
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: alertmanager-readonly-proxy
+  namespace: monitoring
+  labels:
+    app.kubernetes.io/name: alertmanager-readonly-proxy
+    app.kubernetes.io/part-of: kube-prometheus-stack
+spec:
+  selector:
+    app.kubernetes.io/name: alertmanager-readonly-proxy
+  ports:
+    - name: http
+      port: 80
+      targetPort: http
