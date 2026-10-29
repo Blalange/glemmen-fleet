@@ -1,0 +1,17 @@
+# Descheduler - keeps nodes balanced by request usage.
+#
+# LowNodeUtilization compares pod *requests* with node allocatable, which is the
+# same view kube-scheduler uses. This matters for DaemonSets: a node can have
+# plenty of free CPU in reality but still be unable to fit a new pod because its
+# requests are full. Metrics-based descheduling would not see that.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: descheduler
+resources:
+  - release.yaml
+configMapGenerator:
+  - name: descheduler-values
+    files:
+      - values.yaml
+generatorOptions:
+  disableNameSuffixHash: true

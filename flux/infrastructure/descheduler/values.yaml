@@ -1,0 +1,97 @@
+# Descheduler policy.
+#
+# LowNodeUtilization uses requested resources (CPU/memory/pods), not live
+# usage. That is deliberate: requests are what prevent a new pod - including a
+# DaemonSet pod such as Kepler - from fitting on a node.
+#
+# This starts in dry-run mode. Review the job logs for a few cycles, then set
+# cmdOptions.dry-run to false.
+kind: CronJob
+
+schedule: "*/15 * * * *"
+startingDeadlineSeconds: 300
+activeDeadlineSeconds: 300
+ttlSecondsAfterFinished: 600
+successfulJobsHistoryLimit: 1
+failedJobsHistoryLimit: 3
+
+image:
+  pullPolicy: IfNotPresent
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 128Mi
+  limits:
+    cpu: 500m
+    memory: 256Mi
+
+# Every node can carry control-plane taints; the job is short-lived and can run
+# anywhere. Prefer the two large workers so it does not compete with the 1xx
+# control-plane nodes for a scheduling slot.
+tolerations:
+  - operator: Exists
+affinity:
+  nodeAffinity:
+    preferredDuringSchedulingIgnoredDuringExecution:
+      - weight: 100
+        preference:
+          matchExpressions:
+            - key: kubernetes.io/hostname
+              operator: In
+              values:
+                - glemmen60
+                - glemmen80
+
+# Keep the chart default so the job can run even when nodes are full.
+priorityClassName: system-cluster-critical
+
+cmdOptions:
+  v: 3
+  dry-run: true
+
+deschedulerPolicyAPIVersion: descheduler/v1alpha2
+deschedulerPolicy:
+  maxNoOfPodsToEvictPerNode: 1
+  maxNoOfPodsToEvictPerNamespace: 1
+  maxNoOfPodsToEvictTotal: 2
+  profiles:
+    - name: default
+      pluginConfig:
+        - name: DefaultEvictor
+          args:
+            # Only evict a pod if the scheduler can place it somewhere else.
+            nodeFit: true
+            # Give evicted/recreated pods time to settle before considering
+            # them again.
+            minPodAge: 30m
+            podProtections:
+              # Do not move stateful workloads (Longhorn volumes, databases,
+              # Prometheus/Alertmanager/Thanos Store Gateway, etc.).
+              extraEnabled:
+                - "PodsWithPVC"
+        - name: LowNodeUtilization
+          args:
+            thresholds:
+              cpu: 30
+              memory: 30
+              pods: 30
+            targetThresholds:
+              cpu: 80
+              memory: 80
+              pods: 80
+            evictableNamespaces:
+              exclude:
+                - kube-system
+                - flux-system
+                - longhorn-system
+                - yugabyte
+                - cert-manager
+                - seaweedfs
+                - system-upgrade
+            evictionLimits:
+              node: 1
+      plugins:
+        balance:
+          enabled:
+            - LowNodeUtilization
