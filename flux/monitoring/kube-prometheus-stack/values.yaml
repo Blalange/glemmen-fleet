@@ -66,20 +66,22 @@ prometheus:
         existingSecret:
           name: thanos-objstore-config
           key: objstore.yml
+      # The Thanos sidecar is nearly idle (7d max ~20m). A small request keeps
+      # it schedulable without reserving a full 200m on every Prometheus node.
       resources:
         requests:
-          cpu: 200m
+          cpu: 50m
           memory: 512Mi
         limits:
           cpu: 1000m
           memory: 2Gi
 
-    # Resource limits. Prometheus runs on a 1xx control-plane node (4 CPU /
-    # 32GiB); these leave room for the sidecar and system pods while allowing
-    # compaction/query bursts.
+    # Prometheus runs on a 1xx control-plane node (4 CPU / 32GiB). The request
+    # is sized from 7d usage (p95 ~350m, max ~430m) plus headroom; the 3 CPU
+    # limit still allows compaction and query bursts.
     resources:
       requests:
-        cpu: 1
+        cpu: 500m
         memory: 4Gi
       limits:
         cpu: 3
@@ -199,10 +201,11 @@ grafana:
   persistence:
     enabled: false
 
-  # Grafana resources
+  # Grafana resources. Grafana is mostly idle (7d max ~70m); 100m covers
+  # dashboard rendering bursts without reserving half a core per replica.
   resources:
     requests:
-      cpu: 500m
+      cpu: 100m
       memory: 1Gi
     limits:
       cpu: 4
@@ -344,9 +347,10 @@ alertmanager:
             requests:
               storage: 3Gi
 
+    # Alertmanager is idle outside notification bursts (7d max ~2m).
     resources:
       requests:
-        cpu: 100m
+        cpu: 20m
         memory: 128Mi
       limits:
         cpu: 500m
@@ -414,9 +418,10 @@ kubeProxy:
 
 # Prometheus operator
 prometheusOperator:
+  # 7d usage peaks around 18m while reconciling; 25m leaves a little headroom.
   resources:
     requests:
-      cpu: 100m
+      cpu: 25m
       memory: 128Mi
     limits:
       cpu: 500m

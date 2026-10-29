@@ -102,9 +102,11 @@ spec:
           volumeMounts:
             - name: media
               mountPath: /webodm/app/media
+          # WebODM is idle between jobs (7d max ~5m). The limit-less CPU
+          # requests are only scheduling reservations, so 50m is enough.
           resources:
             requests:
-              cpu: 250m
+              cpu: 50m
               memory: 512Mi
             limits:
               memory: 2Gi
@@ -124,7 +126,7 @@ spec:
               mountPath: /webodm/app/media
           resources:
             requests:
-              cpu: 250m
+              cpu: 50m
               memory: 512Mi
             limits:
               memory: 4Gi

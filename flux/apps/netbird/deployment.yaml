@@ -94,9 +94,10 @@ spec:
               port: health
             periodSeconds: 30
             failureThreshold: 3
+          # Reverse proxy is idle (7d max <1m); 10m is enough for scheduling.
           resources:
             requests:
-              cpu: 50m
+              cpu: 10m
               memory: 128Mi
             limits:
               cpu: 500m

@@ -71,9 +71,11 @@ upConfig: |
       # *.glem.men wildcard certificate to clients.
       verify_ssl  = true
 
+# 7d usage peaks around 3.5m; 20m keeps polling headroom without reserving
+# a full 100m on the node.
 resources:
   requests:
-    cpu: 100m
+    cpu: 20m
     memory: 128Mi
   limits:
     cpu: 500m

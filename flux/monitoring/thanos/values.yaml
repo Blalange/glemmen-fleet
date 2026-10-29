@@ -71,9 +71,10 @@ query:
                 operator: In
                 values:
                   - glemmen80
+  # Query is mostly idle (7d max ~10m). Keep the 2 CPU limit for query bursts.
   resources:
     requests:
-      cpu: 500m
+      cpu: 100m
       memory: 1Gi
     limits:
       cpu: 2
@@ -97,9 +98,10 @@ storegateway:
             matchExpressions:
               - key: node-role.kubernetes.io/control-plane
                 operator: Exists
+  # Store Gateway serves historical blocks and is mostly idle (7d max ~25m).
   resources:
     requests:
-      cpu: 500m
+      cpu: 100m
       memory: 1Gi
     limits:
       cpu: 2
@@ -126,9 +128,11 @@ compactor:
             matchExpressions:
               - key: node-role.kubernetes.io/control-plane
                 operator: Exists
+  # Compaction is bursty: 7d p95 is ~2m but startup/compaction peaks reached
+  # ~870m. Keep a 250m reservation and let the 2 CPU limit absorb the bursts.
   resources:
     requests:
-      cpu: 500m
+      cpu: 250m
       memory: 1Gi
     limits:
       cpu: 2

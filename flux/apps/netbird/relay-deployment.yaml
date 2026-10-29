@@ -56,9 +56,10 @@ spec:
             tcpSocket:
               port: http
             periodSeconds: 30
+          # 7d usage peaks around 14m; 20m covers relay bursts.
           resources:
             requests:
-              cpu: 50m
+              cpu: 20m
               memory: 64Mi
             limits:
               cpu: 200m

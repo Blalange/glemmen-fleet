@@ -103,9 +103,11 @@ spec:
             initialDelaySeconds: 60
             periodSeconds: 30
             failureThreshold: 6
+          # Tor is idle most of the time (7d max ~16m); 20m is enough of a
+          # reservation and the relay can still burst when the node is idle.
           resources:
             requests:
-              cpu: 100m
+              cpu: 20m
               memory: 256Mi
             limits:
               memory: 1Gi

@@ -88,9 +88,11 @@ spec:
             periodSeconds: 30
             timeoutSeconds: 5
             failureThreshold: 6
+          # 7d usage peaks around 10m; the 4 CPU limit still allows bursts for
+          # recording/transcoding when the node has spare capacity.
           resources:
             requests:
-              cpu: 500m
+              cpu: 100m
               memory: 1Gi
             limits:
               cpu: "4"

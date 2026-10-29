@@ -124,9 +124,11 @@ spec:
             periodSeconds: 30
             timeoutSeconds: 5
             failureThreshold: 6
+          # The backend is idle between requests (7d max <1m); 10m is enough
+          # of a scheduling reservation and the 500m limit still allows bursts.
           resources:
             requests:
-              cpu: 50m
+              cpu: 10m
               memory: 96Mi
             limits:
               cpu: 500m

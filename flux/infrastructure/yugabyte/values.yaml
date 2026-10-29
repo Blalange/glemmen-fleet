@@ -38,6 +38,18 @@ yugabytedUi:
 ybc:
   enabled: false
 
+# The chart defaults the hourly log-cleanup sidecar to 250m CPU, but its 7d
+# usage peaks around 9m. Keep the 250m limit for the cleanup script and reserve
+# only 20m on each master/tserver pod.
+ybCleanup:
+  resources:
+    requests:
+      cpu: 20m
+      memory: 250Mi
+    limits:
+      cpu: 250m
+      memory: 250Mi
+
 # The Prometheus Operator CRDs are installed by the monitoring Kustomization,
 # which is applied after infrastructure. Enable this later if YB metrics are
 # wanted.

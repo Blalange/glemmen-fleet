@@ -111,9 +111,11 @@ spec:
             initialDelaySeconds: 60
             periodSeconds: 30
             failureThreshold: 6
+          # WebTunnel is mostly idle (7d max ~10m); 20m leaves headroom without
+          # reserving a full 100m on the node.
           resources:
             requests:
-              cpu: 100m
+              cpu: 20m
               memory: 256Mi
             limits:
               memory: 1Gi
