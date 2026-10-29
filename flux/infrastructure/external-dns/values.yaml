@@ -24,7 +24,8 @@ registry: txt
 txtOwnerId: glemmen
 domainFilters:
   - glem.men
-annotationFilter: external-dns.alpha.kubernetes.io/hostname
+# external-dns 0.23+ uses the external-dns.kubernetes.io prefix.
+annotationFilter: external-dns.kubernetes.io/hostname
 
 logLevel: info
 interval: 1m

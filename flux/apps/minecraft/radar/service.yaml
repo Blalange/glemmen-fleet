@@ -1,7 +1,7 @@
-# Minecraft Radar uses the custom UDP port 19142, not the standard Bedrock
-# port. The UniFi router forwards UDP 19142 to the shared MetalLB VIP
-# 192.168.6.99 (the same VIP as Traefik and the NetBird STUN listener). Cluster
-# traffic policy keeps the shared VIP usable from every node.
+# Minecraft Radar uses NetherNet on custom ports: TCP 19142 for signaling and
+# UDP 19143-19158 for gameplay. The UniFi router forwards both ranges to the
+# shared MetalLB VIP 192.168.6.99 (the same VIP as Traefik and the NetBird STUN
+# listener). Cluster traffic policy keeps the shared VIP usable from every node.
 apiVersion: v1
 kind: Service
 metadata:
@@ -15,8 +15,9 @@ metadata:
     metallb.io/allow-shared-ip: glemmen-vip
     # external-dns creates the public record. The wildcard *.glem.men already
     # resolves here; this specific record makes the Minecraft endpoint explicit.
-    external-dns.alpha.kubernetes.io/hostname: radar.mc.glem.men
-    external-dns.alpha.kubernetes.io/target: "109.247.229.146"
+    # external-dns 0.23+ uses the external-dns.kubernetes.io prefix.
+    external-dns.kubernetes.io/hostname: radar.mc.glem.men
+    external-dns.kubernetes.io/target: "109.247.229.146"
 spec:
   type: LoadBalancer
   externalTrafficPolicy: Cluster
@@ -24,7 +25,71 @@ spec:
     app.kubernetes.io/name: minecraft-radar
     app.kubernetes.io/instance: minecraft
   ports:
-    - name: bedrock
-      protocol: UDP
+    - name: signaling
+      protocol: TCP
       port: 19142
-      targetPort: bedrock
+      targetPort: signaling
+    - name: game-19143
+      protocol: UDP
+      port: 19143
+      targetPort: 19143
+    - name: game-19144
+      protocol: UDP
+      port: 19144
+      targetPort: 19144
+    - name: game-19145
+      protocol: UDP
+      port: 19145
+      targetPort: 19145
+    - name: game-19146
+      protocol: UDP
+      port: 19146
+      targetPort: 19146
+    - name: game-19147
+      protocol: UDP
+      port: 19147
+      targetPort: 19147
+    - name: game-19148
+      protocol: UDP
+      port: 19148
+      targetPort: 19148
+    - name: game-19149
+      protocol: UDP
+      port: 19149
+      targetPort: 19149
+    - name: game-19150
+      protocol: UDP
+      port: 19150
+      targetPort: 19150
+    - name: game-19151
+      protocol: UDP
+      port: 19151
+      targetPort: 19151
+    - name: game-19152
+      protocol: UDP
+      port: 19152
+      targetPort: 19152
+    - name: game-19153
+      protocol: UDP
+      port: 19153
+      targetPort: 19153
+    - name: game-19154
+      protocol: UDP
+      port: 19154
+      targetPort: 19154
+    - name: game-19155
+      protocol: UDP
+      port: 19155
+      targetPort: 19155
+    - name: game-19156
+      protocol: UDP
+      port: 19156
+      targetPort: 19156
+    - name: game-19157
+      protocol: UDP
+      port: 19157
+      targetPort: 19157
+    - name: game-19158
+      protocol: UDP
+      port: 19158
+      targetPort: 19158

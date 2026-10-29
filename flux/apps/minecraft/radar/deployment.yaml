@@ -48,13 +48,16 @@ spec:
               value: "TRUE"
             - name: VERSION
               value: "LATEST"
-            # RakNet keeps a single UDP listener on the custom port 19142. The
-            # current Bedrock default (NetherNet) needs a TCP port plus a UDP
-            # port range, which is not practical behind one port forward.
+            # Current Bedrock releases only support NetherNet. Clients use
+            # TCP 19142 for signaling, then one of the UDP gameplay ports.
             - name: TRANSPORT
-              value: "raknet"
+              value: "nethernet"
             - name: SERVER_PORT
               value: "19142"
+            # NetherNet advertises these public UDP ports to clients. They must
+            # match the Service and the UniFi port-forward range exactly.
+            - name: SERVER_UDP_PORTS
+              value: "109.247.229.146:19143-19158:19143-19158"
             - name: SERVER_NAME
               value: "Minecraft Radar"
             - name: LEVEL_NAME
@@ -67,6 +70,10 @@ spec:
               value: "false"
             - name: ONLINE_MODE
               value: "true"
+            # The image enables the allow list by default; an empty list would
+            # block every player.
+            - name: ALLOW_LIST
+              value: "false"
             - name: MAX_PLAYERS
               value: "10"
             # The image chowns /data as root, then runs the server as this user.
@@ -79,44 +86,30 @@ spec:
             - name: STOP_SERVER_ANNOUNCE_DELAY
               value: "30"
           ports:
-            - name: bedrock
+            # NetherNet's TCP signaling listener. The UDP gameplay range
+            # (19143-19158) is exposed by the Service without individual
+            # containerPort declarations.
+            - name: signaling
               containerPort: 19142
-              protocol: UDP
-          # The image ships mc-monitor; use it to wait for the first download
-          # and to keep the Service from routing to a starting/dead server.
+              protocol: TCP
+          # The TCP signaling socket opens before the world is fully ready, so
+          # wait for it on startup and use it for readiness/liveness. This is
+          # transport-agnostic and avoids relying on the RakNet-only probe.
           startupProbe:
-            exec:
-              command:
-                - /usr/local/bin/mc-monitor
-                - status-bedrock
-                - --host
-                - 127.0.0.1
-                - --port
-                - "19142"
+            tcpSocket:
+              port: signaling
             periodSeconds: 10
             timeoutSeconds: 5
             failureThreshold: 60
           readinessProbe:
-            exec:
-              command:
-                - /usr/local/bin/mc-monitor
-                - status-bedrock
-                - --host
-                - 127.0.0.1
-                - --port
-                - "19142"
+            tcpSocket:
+              port: signaling
             periodSeconds: 10
             timeoutSeconds: 5
             failureThreshold: 3
           livenessProbe:
-            exec:
-              command:
-                - /usr/local/bin/mc-monitor
-                - status-bedrock
-                - --host
-                - 127.0.0.1
-                - --port
-                - "19142"
+            tcpSocket:
+              port: signaling
             periodSeconds: 30
             timeoutSeconds: 5
             failureThreshold: 3

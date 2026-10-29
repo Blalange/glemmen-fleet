@@ -394,16 +394,16 @@ role passwords are in `yugabyte-auth` (`yugabyte` namespace) and `grafana-db`
 
 `external-dns` runs in the `cert-manager` namespace so it can reuse the
 existing `cloudflare-api-token-glem-men` Secret. It only manages Services with
-the `external-dns.alpha.kubernetes.io/hostname` annotation and uses
-`upsert-only`, so hand-managed records such as the `*.glem.men` wildcard are
-never deleted.
+the `external-dns.kubernetes.io/hostname` annotation (the prefix used by
+external-dns 0.23+) and uses `upsert-only`, so hand-managed records such as the
+`*.glem.men` wildcard are never deleted.
 
 The Minecraft Radar Bedrock server (`flux/apps/minecraft/radar`, resources
 prefixed `minecraft-radar`) is pinned to `glemmen50`, `glemmen60` and
-`glemmen80`. It uses the custom UDP port **19142** instead of the standard
-Bedrock port; connect with `radar.mc.glem.men:19142`. UniFi forwards UDP 19142
-to the shared MetalLB VIP `192.168.6.99`; the DNS record is managed by
-external-dns.
+`glemmen80`. It uses NetherNet on custom ports: **TCP 19142** for signaling and
+**UDP 19143-19158** for gameplay. Connect with `radar.mc.glem.men:19142`. UniFi
+forwards both ranges to the shared MetalLB VIP `192.168.6.99`; the DNS record
+is managed by external-dns.
 
 ## Migration notes
 
