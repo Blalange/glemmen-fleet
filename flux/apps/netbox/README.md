@@ -29,7 +29,7 @@ kubectl -n netbox get secret netbox-secrets \
 ## Sync job
 
 `sync-cronjob.yaml` runs the pinned
-`ghcr.io/blalange/netbox-inventory-toolkit:v0.1.2` image every 10 minutes.
+`ghcr.io/blalange/netbox-inventory-toolkit:v0.1.3` image every 10 minutes.
 `PRUNE=true` removes only taggable objects tagged `gitops`;
 objects created manually in NetBox are never touched. Owners and owner groups
 are not taggable and are never pruned; contacts and contact assignments are
