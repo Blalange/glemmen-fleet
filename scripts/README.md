@@ -46,19 +46,19 @@ The NetBox inventory data and usage notes live in
 [`inventory/`](../inventory/README.md). The collector, sync, language server
 and VS Code extension live in the separate
 [netbox-inventory-toolkit](https://github.com/Blalange/netbox-inventory-toolkit)
-repository and are pinned to `v0.1.4` here.
+repository and are pinned to `0.1.7` here.
 
 ```sh
 # collect live sources into inventory/generated
 UNIFI_URL=https://unifi.glem.men \
-uvx --from "netbox-inventory-toolkit[all] @ git+https://github.com/Blalange/netbox-inventory-toolkit@v0.1.4" \
+uvx --python 3.13 --from "netbox-inventory-toolkit[all]==0.1.7" \
   netbox-inventory-toolkit collect --inventory inventory --sources auto \
   --unifi-secret monitoring/unpoller-unifi \
   --kubectl ./scripts/bin/kubectl --kubeconfig talos/generated/kubeconfig \
   --talosctl ./scripts/bin/talosctl --talosconfig talos/generated/talosconfig
 
 # validate the merged inventory
-uvx --from "netbox-inventory-toolkit[all] @ git+https://github.com/Blalange/netbox-inventory-toolkit@v0.1.4" \
+uvx --python 3.13 --from "netbox-inventory-toolkit[all]==0.1.7" \
   netbox-inventory-toolkit sync --inventory inventory --check --no-dtl
 ```
 

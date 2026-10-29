@@ -1,8 +1,10 @@
 {
   "netboxInventory.server.command": "uvx",
   "netboxInventory.server.args": [
+    "--python",
+    "3.13",
     "--from",
-    "netbox-inventory-toolkit[lsp] @ git+https://github.com/Blalange/netbox-inventory-toolkit@v0.1.4",
+    "netbox-inventory-toolkit[lsp]==0.1.7",
     "netbox-inventory-toolkit",
     "lsp"
   ],
