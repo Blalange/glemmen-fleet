@@ -303,9 +303,9 @@ config:
             icon: github.png
             href: https://github.com/Blalange/glemmen-fleet
             description: Konfigurasjonen for clusteret
-        - Grafana-alarmer:
+        - Alertmanager:
             icon: alertmanager.png
-            href: https://grafana.glem.men/alerting/list
+            href: https://alerts.glem.men
             description: Aktive alarmer og varsler
     # Cluster totals (the same queries as the Cluster Specs Grafana dashboard)
     # plus the live CPU/RAM/network usage card.

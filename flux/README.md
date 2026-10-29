@@ -298,6 +298,11 @@ The Alertmanager config mounts it at
 `smtp_auth_password_file`, so rotating the password only requires updating the
 Secret and restarting Alertmanager.
 
+Alertmanager is exposed at <https://alerts.glem.men>; the same URL is set as
+`alertmanagerSpec.externalUrl` so notification links point there. The UI has no
+authentication of its own, so anyone who can reach it can view and silence
+alerts.
+
 ## iDRAC hardware metrics
 
 `monitoring/idrac-exporter` runs mrlhansen's Redfish exporter and Prometheus

@@ -314,7 +314,20 @@ alertmanager:
       - name: 'null'
     templates:
       - '/etc/alertmanager/config/*.tmpl'
+  # Exposed through Traefik; the wildcard certificate is served from Traefik's
+  # default TLS store, so no per-Ingress TLS secret is needed.
+  ingress:
+    enabled: true
+    ingressClassName: traefik
+    hosts:
+      - alerts.glem.men
+    paths:
+      - /
+    pathType: Prefix
   alertmanagerSpec:
+    # Used for the "View in Alertmanager" links in notifications and for
+    # generated URLs in the UI.
+    externalUrl: https://alerts.glem.men
     # Mounted at /etc/alertmanager/secrets/alertmanager-smtp; referenced by
     # smtp_auth_password_file above.
     secrets:
