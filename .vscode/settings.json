@@ -2,7 +2,7 @@
   "netboxInventory.server.command": "uvx",
   "netboxInventory.server.args": [
     "--from",
-    "netbox-inventory-toolkit[lsp] @ git+https://github.com/Blalange/netbox-inventory-toolkit@v0.1.3",
+    "netbox-inventory-toolkit[lsp] @ git+https://github.com/Blalange/netbox-inventory-toolkit@v0.1.4",
     "netbox-inventory-toolkit",
     "lsp"
   ],
