@@ -1,30 +1,9 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 configMapGenerator:
-  - name: netbox-sync-code
-    files:
-      - inventory_keys.py=scripts/inventory_keys.py
-      - inventory_problems.py=scripts/inventory_problems.py
-      - inventory_racks.py=scripts/inventory_racks.py
-      - inventory_schema.py=scripts/inventory_schema.py
-      - inventory_util.py=scripts/inventory_util.py
-      - dtl_catalog.py=scripts/dtl_catalog.py
-      - sync.py=scripts/sync.py
-      - sync_api.py=scripts/sync_api.py
-      - sync_context.py=scripts/sync_context.py
-      - sync_devices.py=scripts/sync_devices.py
-      - sync_images.py=scripts/sync_images.py
-      - sync_inventory.py=scripts/sync_inventory.py
-      - sync_meta.py=scripts/sync_meta.py
-      - sync_network.py=scripts/sync_network.py
-      - sync_catalog.py=scripts/sync_catalog.py
-      - sync_prune.py=scripts/sync_prune.py
-      - sync_templates.py=scripts/sync_templates.py
-      - sync_reconciler.py=scripts/sync_reconciler.py
-      - sync_validate.py=scripts/sync_validate.py
   - name: netbox-inventory-data
     files:
-      - 00-generated-unifi.yaml=generated/unifi.yaml
+      - 00-generated-network.yaml=generated/network.yaml
       - 10-generated-compute.yaml=generated/compute.yaml
       - 20-generated-module-types.yaml=generated/module-types.yaml
       - 30-manual-defaults.yaml=manual/defaults.yaml

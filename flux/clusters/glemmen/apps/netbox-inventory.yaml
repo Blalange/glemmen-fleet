@@ -1,6 +1,7 @@
-# NetBox inventory ConfigMaps: manual/generated YAML, device images and the
-# sync entrypoint scripts. Kept separate from the NetBox app so the inventory
-# can live at the repository root without Kustomize cross-root file access.
+# NetBox inventory ConfigMaps: manual/generated YAML and device images. Kept
+# separate from the NetBox app so the inventory can live at the repository
+# root without Kustomize cross-root file access. The sync code ships in the
+# netbox-inventory-toolkit image instead of a ConfigMap.
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:

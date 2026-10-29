@@ -5,6 +5,15 @@ settings:
   site: glemmen
   default_tag: production
   rack: Glemmen rack
+  talos_platform: talos-linux
+  roles:
+    control_plane: control-plane
+    worker: worker
+  compute_roles:
+    - server
+  snmp:
+    # Preserve the existing Port N interface names generated from SNMP.
+    port_names: port-number
 
 # UniFi model code -> NetBox device-type slug. The collector reads this mapping
 # so new UniFi hardware does not need a Python change.

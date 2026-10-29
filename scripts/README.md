@@ -42,28 +42,31 @@ Both use `talos/generated/kubeconfig` by default; override with `KUBECONFIG`.
 
 ## NetBox
 
-The NetBox inventory, collector, sync code and usage instructions live in
-[`inventory/`](../inventory/README.md).
+The NetBox inventory data and usage notes live in
+[`inventory/`](../inventory/README.md). The collector, sync, language server
+and VS Code extension live in the separate
+[netbox-inventory-toolkit](https://github.com/Blalange/netbox-inventory-toolkit)
+repository and are pinned to `v0.1.2` here.
 
 ```sh
 # collect live sources into inventory/generated
-env -u REDFISH_USER -u REDFISH_PASS -u IDRAC_USER -u IDRAC_PASS \
-  -u IPMI_USER -u IPMI_PASS \
-  uv run --with pysnmp==7.1.22 --with requests --with PyYAML \
-  python inventory/scripts/collect.py --from-cluster \
+UNIFI_URL=https://unifi.glem.men \
+uvx --from "netbox-inventory-toolkit[all] @ git+https://github.com/Blalange/netbox-inventory-toolkit@v0.1.2" \
+  netbox-inventory-toolkit collect --inventory inventory --sources auto \
+  --unifi-secret monitoring/unpoller-unifi \
   --kubectl ./scripts/bin/kubectl --kubeconfig talos/generated/kubeconfig \
   --talosctl ./scripts/bin/talosctl --talosconfig talos/generated/talosconfig
 
 # validate the merged inventory
-uv run --with pynetbox==7.9.0 --with PyYAML==6.0.3 --with requests==2.32.5 \
-  python inventory/scripts/sync.py --inventory inventory --check
+uvx --from "netbox-inventory-toolkit[all] @ git+https://github.com/Blalange/netbox-inventory-toolkit@v0.1.2" \
+  netbox-inventory-toolkit sync --inventory inventory --check --no-dtl
 ```
 
 The collector also polls SNMP v2c network devices (default community
 `public`) for interfaces, VLANs and LLDP/FDB diagnostics. Use
 `--snmp-community`, `--no-snmp` or `--snmp-report PATH` as needed. BMCs without
 Redfish (iDRAC 6, IBM IMM) are polled with `ipmitool`; install it locally and
-set `IPMI_USER` / `IPMI_PASS` if the factory `root` / `readonly` account is not
+set `IPMI_USER` / `IPMI_PASS` if the factory `root` / `calvin` account is not
 enabled.
 
 The sync enriches device and module types from the Apache-2.0 NetBox Device

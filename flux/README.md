@@ -318,14 +318,17 @@ settings before changing the manifests.
 `apps/netbox` runs NetBox at <https://netbox.glem.men> as a read-only
 visualization of the network inventory. NetBox uses its own PostgreSQL and
 Valkey instances in the `netbox` namespace; uploaded media uses a Longhorn
-`ReadWriteMany` volume. The inventory, collector and sync code live in the
-repository-root [`inventory/`](../inventory/README.md) directory. The
-`netbox-sync` CronJob reconciles it into NetBox every 10 minutes. The
+`ReadWriteMany` volume. The inventory data lives in the repository-root
+[`inventory/`](../inventory/README.md) directory; the collector, sync and
+language server live in the separate
+[netbox-inventory-toolkit](https://github.com/Blalange/netbox-inventory-toolkit)
+repository. The `netbox-sync` CronJob runs the pinned toolkit image and
+reconciles the inventory into NetBox every 10 minutes. The
 `netbox-topology-views` plugin provides the cable/topology map at
 <https://netbox.glem.men/plugins/netbox_topology_views/>. Every object
 created by the job carries the `gitops` tag; pruning is enabled in the CronJob
 and never touches objects created by hand. See `apps/netbox/README.md` for the
-deployment and `inventory/README.md` for the schema and manual sync instructions.
+deployment and `inventory/README.md` for the site inventory and sync notes.
 
 The Grafana database is documented in `infrastructure/yugabyte/README.md`. Its
 role passwords are in `yugabyte-auth` (`yugabyte` namespace) and `grafana-db`

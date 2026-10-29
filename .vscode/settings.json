@@ -1,17 +1,12 @@
 {
-  "glemmenInventory.server.command": "uv",
-  "glemmenInventory.server.args": [
-    "run",
-    "--with",
-    "pygls>=2.1,<3",
-    "--with",
-    "lsprotocol",
-    "--with",
-    "PyYAML",
-    "python",
-    "inventory/scripts/inventory_lsp.py"
+  "netboxInventory.server.command": "uvx",
+  "netboxInventory.server.args": [
+    "--from",
+    "netbox-inventory-toolkit[lsp] @ git+https://github.com/Blalange/netbox-inventory-toolkit@v0.1.2",
+    "netbox-inventory-toolkit",
+    "lsp"
   ],
-  "glemmenInventory.inventory": "inventory",
+  "netboxInventory.inventory": "inventory",
   "yaml.disableSchemaDetection": [
     "inventory/manual/**/*.yaml",
     "inventory/manual/**/*.yml",
