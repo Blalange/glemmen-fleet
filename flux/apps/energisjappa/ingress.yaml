@@ -46,6 +46,14 @@ spec:
                 name: energisjappa-backend
                 port:
                   number: 8080
+          # Public sales terms, opened from the terminal's QR code.
+          - path: /terms-of-sale
+            pathType: Prefix
+            backend:
+              service:
+                name: energisjappa-backend
+                port:
+                  number: 8080
           - path: /
             pathType: Prefix
             backend:
