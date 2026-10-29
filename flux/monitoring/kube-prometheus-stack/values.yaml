@@ -260,7 +260,65 @@ grafana:
 alertmanager:
   enabled: true
   replicas: 1
+  # Alertmanager is the only alerting path. Prometheus evaluates the
+  # PrometheusRule objects and sends firing alerts here; Grafana is only used
+  # for dashboards and for displaying Alertmanager alerts.
+  config:
+    global:
+      resolve_timeout: 5m
+      smtp_smarthost: smtp.gmail.com:587
+      smtp_from: noreply@blalange.org
+      smtp_auth_username: noreply@blalange.org
+      # The password is in the hand-created `alertmanager-smtp` Secret, mounted
+      # by alertmanagerSpec.secrets below. Keep it out of Git.
+      smtp_auth_password_file: /etc/alertmanager/secrets/alertmanager-smtp/auth-password
+      smtp_require_tls: true
+    inhibit_rules:
+      - source_matchers:
+          - 'severity = critical'
+        target_matchers:
+          - 'severity =~ warning|info'
+        equal:
+          - 'namespace'
+          - 'alertname'
+      - source_matchers:
+          - 'severity = warning'
+        target_matchers:
+          - 'severity = info'
+        equal:
+          - 'namespace'
+          - 'alertname'
+      - source_matchers:
+          - 'alertname = InfoInhibitor'
+        target_matchers:
+          - 'severity = info'
+        equal:
+          - 'namespace'
+      - target_matchers:
+          - 'alertname = InfoInhibitor'
+    route:
+      group_by: ['namespace']
+      group_wait: 30s
+      group_interval: 5m
+      repeat_interval: 12h
+      receiver: email
+      routes:
+        - receiver: 'null'
+          matchers:
+            - alertname = "Watchdog"
+    receivers:
+      - name: email
+        email_configs:
+          - to: hexahigh0@gmail.com
+            send_resolved: true
+      - name: 'null'
+    templates:
+      - '/etc/alertmanager/config/*.tmpl'
   alertmanagerSpec:
+    # Mounted at /etc/alertmanager/secrets/alertmanager-smtp; referenced by
+    # smtp_auth_password_file above.
+    secrets:
+      - alertmanager-smtp
     storage:
       volumeClaimTemplate:
         spec:
@@ -325,6 +383,19 @@ kubelet:
   serviceMonitor:
     cAdvisorInterval: 30s
 
+# Talos binds the controller-manager, scheduler and kube-proxy metrics
+# endpoints to localhost, so Prometheus can never scrape them. Stop creating
+# the unusable targets; the matching alert groups are disabled below.
+kubeControllerManager:
+  serviceMonitor:
+    enabled: false
+kubeScheduler:
+  serviceMonitor:
+    enabled: false
+kubeProxy:
+  serviceMonitor:
+    enabled: false
+
 # Prometheus operator
 prometheusOperator:
   resources:
@@ -338,6 +409,12 @@ prometheusOperator:
 # Default rules - pre-configured alerts
 defaultRules:
   create: true
+  disabled:
+    # Disabling the Alertname removes the whole group, including the matching
+    # "InstanceUnreachable" alert that otherwise fires permanently on Talos.
+    KubeControllerManagerDown: true
+    KubeSchedulerDown: true
+    KubeProxyDown: true
   rules:
     alertmanager: true
     etcd: true

@@ -260,6 +260,44 @@ it at 20Gi is a separate maintenance operation (stop Prometheus, delete the
 PVC, let the StatefulSet recreate it) and only makes sense after the sidecar
 has uploaded the local blocks that should be kept.
 
+## Alerts and notifications
+
+Prometheus evaluates the `PrometheusRule` objects and sends firing alerts to
+Alertmanager; Grafana is only used for dashboards and for displaying
+Alertmanager alerts. Do not create Grafana-managed alert rules. The custom
+rules live in `monitoring/resources/alerts/prometheus-rules.yaml`:
+
+- `custom.storage` and `custom.certmanager` — PVC free space/inodes, Pending
+  PVCs, the Prometheus 20 GB budget, and cert-manager certificate expiry.
+- `custom.longhorn` — degraded/faulted volumes, volume read/write latency, and
+  failed or stale backups (26h warning, 7d critical).
+- `custom.yugabyte` — master/tserver availability, YSQL read/write latency,
+  TabletServer p99 latency, and RPC queue backlog.
+- `custom.thanos` — sidecar upload failures, compactor halted, and Query/Store
+  Gateway availability.
+
+The controller-manager, scheduler and kube-proxy ServiceMonitors are disabled
+because Talos binds those metrics to localhost; the corresponding default
+alert groups are disabled in
+`monitoring/kube-prometheus-stack/values.yaml`. `CPUThrottlingHigh` is
+intentionally kept.
+
+Alertmanager sends email through Gmail using the existing Authentik mail
+account (`noreply@blalange.org` → `hexahigh0@gmail.com`). The SMTP password is
+not in Git; create the `alertmanager-smtp` Secret in `monitoring` from the same
+`AUTHENTIK_EMAIL__PASSWORD` value used by Authentik:
+
+```sh
+kubectl -n monitoring create secret generic alertmanager-smtp \
+  --from-literal=auth-password='<Gmail app password>' \
+  --dry-run=client -o yaml | kubectl apply -f -
+```
+
+The Alertmanager config mounts it at
+`/etc/alertmanager/secrets/alertmanager-smtp/auth-password` and uses
+`smtp_auth_password_file`, so rotating the password only requires updating the
+Secret and restarting Alertmanager.
+
 ## iDRAC hardware metrics
 
 `monitoring/idrac-exporter` runs mrlhansen's Redfish exporter and Prometheus

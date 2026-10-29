@@ -76,3 +76,174 @@ spec:
           annotations:
             summary: 'Certificate {{ $labels.namespace }}/{{ $labels.name }} is not ready'
             description: 'Certificate {{ $labels.namespace }}/{{ $labels.name }} has been in a non-ready state for more than 1 hour.'
+    - name: custom.longhorn
+      rules:
+        - alert: LonghornVolumeDegraded
+          expr: longhorn_volume_robustness{state="degraded"} == 1
+          for: 15m
+          labels:
+            severity: warning
+          annotations:
+            summary: 'Longhorn volume {{ $labels.volume }} is degraded'
+            description: 'Longhorn volume {{ $labels.volume }} ({{ $labels.pvc_namespace }}/{{ $labels.pvc }}) has been degraded for more than 15 minutes; one or more replicas are unavailable.'
+        - alert: LonghornVolumeFaulted
+          expr: longhorn_volume_robustness{state="faulted"} == 1
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            summary: 'Longhorn volume {{ $labels.volume }} is faulted'
+            description: 'Longhorn volume {{ $labels.volume }} ({{ $labels.pvc_namespace }}/{{ $labels.pvc }}) has been faulted for more than 5 minutes. Data may be unavailable.'
+        - alert: LonghornVolumeHighReadLatency
+          expr: |
+            max by (pvc_namespace, pvc, volume) (longhorn_volume_read_latency) / 1e6 > 100
+          for: 10m
+          labels:
+            severity: warning
+          annotations:
+            summary: 'Longhorn volume {{ $labels.volume }} has high read latency'
+            description: 'Read latency for {{ $labels.pvc_namespace }}/{{ $labels.pvc }} is {{ printf "%.0f" $value }} ms, above 100 ms for more than 10 minutes.'
+        - alert: LonghornVolumeHighWriteLatency
+          expr: |
+            max by (pvc_namespace, pvc, volume) (longhorn_volume_write_latency) / 1e6 > 100
+          for: 10m
+          labels:
+            severity: warning
+          annotations:
+            summary: 'Longhorn volume {{ $labels.volume }} has high write latency'
+            description: 'Write latency for {{ $labels.pvc_namespace }}/{{ $labels.pvc }} is {{ printf "%.0f" $value }} ms, above 100 ms for more than 10 minutes.'
+        - alert: LonghornBackupFailed
+          expr: longhorn_backup_state == 4
+          for: 30m
+          labels:
+            severity: warning
+          annotations:
+            summary: 'Longhorn backup {{ $labels.backup }} for volume {{ $labels.volume }} failed'
+            description: 'Backup {{ $labels.backup }} (recurring job {{ $labels.recurring_job }}) for volume {{ $labels.volume }} has been in Error state for more than 30 minutes. Investigate the backup target/rclone bridge, then delete or retry the failed backup.'
+        - alert: LonghornBackupStale
+          expr: |
+            (time() - longhorn_volume_last_backup_at > 26 * 3600)
+            and (longhorn_volume_last_backup_at > 0)
+          for: 15m
+          labels:
+            severity: warning
+          annotations:
+            summary: 'Longhorn volume {{ $labels.volume }} has no recent backup'
+            description: 'The last successful backup of {{ $labels.pvc_namespace }}/{{ $labels.pvc }} is older than 26 hours.'
+        - alert: LonghornBackupVeryStale
+          expr: |
+            (time() - longhorn_volume_last_backup_at > 7 * 24 * 3600)
+            and (longhorn_volume_last_backup_at > 0)
+          for: 15m
+          labels:
+            severity: critical
+          annotations:
+            summary: 'Longhorn volume {{ $labels.volume }} has not been backed up for 7 days'
+            description: 'The last successful backup of {{ $labels.pvc_namespace }}/{{ $labels.pvc }} is older than 7 days. Check the recurring backup jobs and the backup target.'
+    - name: custom.yugabyte
+      rules:
+        - alert: YugabyteNodeDown
+          expr: |
+            up{job="yugabyte", export_type=~"master_export|tserver_export"} == 0
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            summary: 'YugabyteDB {{ $labels.pod }} is down'
+            description: 'The {{ $labels.export_type }} metrics endpoint for {{ $labels.pod }} has been unreachable for more than 5 minutes.'
+        - alert: YugabyteYsqlSelectHighLatency
+          expr: |
+            (
+              sum by (exported_instance) (
+                irate(rpc_latency_sum{job="yugabyte", saved_name="handler_latency_yb_ysqlserver_SQLProcessor_SelectStmt_sum"}[5m])
+              )
+              /
+              sum by (exported_instance) (
+                irate(rpc_latency_count{job="yugabyte", saved_name="handler_latency_yb_ysqlserver_SQLProcessor_SelectStmt_count"}[5m])
+              )
+            ) > 50000
+          for: 10m
+          labels:
+            severity: warning
+          annotations:
+            summary: 'YSQL SELECT latency is high on {{ $labels.exported_instance }}'
+            description: 'Average YSQL SELECT latency is {{ printf "%.0f" $value }} microseconds, above 50 ms for more than 10 minutes.'
+        - alert: YugabyteYsqlWriteHighLatency
+          expr: |
+            (
+              sum by (exported_instance) (
+                irate(rpc_latency_sum{job="yugabyte", saved_name=~"handler_latency_yb_ysqlserver_SQLProcessor_(Insert|Update|Delete)Stmt_sum"}[5m])
+              )
+              /
+              sum by (exported_instance) (
+                irate(rpc_latency_count{job="yugabyte", saved_name=~"handler_latency_yb_ysqlserver_SQLProcessor_(Insert|Update|Delete)Stmt_count"}[5m])
+              )
+            ) > 100000
+          for: 10m
+          labels:
+            severity: warning
+          annotations:
+            summary: 'YSQL write latency is high on {{ $labels.exported_instance }}'
+            description: 'Average YSQL INSERT/UPDATE/DELETE latency is {{ printf "%.0f" $value }} microseconds, above 100 ms for more than 10 minutes.'
+        - alert: YugabyteTserverHighLatency
+          expr: |
+            max by (exported_instance, service_method) (
+              rpc_latency{job="yugabyte", export_type="tserver_export", quantile="p99", saved_name=~"handler_latency_yb_tserver_TabletServerService_(Read|Write)"}
+            ) > 100000
+          for: 10m
+          labels:
+            severity: warning
+          annotations:
+            summary: 'YugabyteDB {{ $labels.service_method }} p99 latency is high on {{ $labels.exported_instance }}'
+            description: 'TabletServer {{ $labels.service_method }} p99 latency is {{ printf "%.0f" $value }} microseconds, above 100 ms for more than 10 minutes.'
+        - alert: YugabyteRpcQueueBacklog
+          expr: |
+            max by (exported_instance) (rpcs_in_queue_yb_tserver_TabletServerService) > 100
+          for: 10m
+          labels:
+            severity: warning
+          annotations:
+            summary: 'YugabyteDB TabletServer RPC queue is backing up on {{ $labels.exported_instance }}'
+            description: 'The TabletServer RPC queue has been above 100 requests for more than 10 minutes.'
+    - name: custom.thanos
+      rules:
+        - alert: ThanosShipperUploadFailures
+          expr: increase(thanos_shipper_upload_failures_total[1h]) > 0
+          for: 30m
+          labels:
+            severity: warning
+          annotations:
+            summary: 'Prometheus Thanos sidecar is failing to upload blocks'
+            description: 'Block upload failures were observed in the last hour. Check the Thanos sidecar and the SeaweedFS S3 backup target.'
+        - alert: ThanosShipperDirSyncFailures
+          expr: increase(thanos_shipper_dir_sync_failures_total[1h]) > 0
+          for: 30m
+          labels:
+            severity: warning
+          annotations:
+            summary: 'Prometheus Thanos sidecar is failing to sync block directories'
+            description: 'Directory sync failures were observed in the last hour. Check the Thanos sidecar and its local storage.'
+        - alert: ThanosCompactorHalted
+          expr: thanos_compact_halted == 1
+          for: 15m
+          labels:
+            severity: critical
+          annotations:
+            summary: 'Thanos Compactor is halted'
+            description: 'The Thanos Compactor has been halted for more than 15 minutes. Check its logs and the object store.'
+        - alert: ThanosQueryDown
+          expr: up{job="thanos-query"} == 0
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            summary: 'Thanos Query is down'
+            description: 'Thanos Query has been unreachable for more than 5 minutes; Grafana dashboards cannot query metrics.'
+        - alert: ThanosStoreGatewayDown
+          expr: up{job="thanos-storegateway"} == 0
+          for: 10m
+          labels:
+            severity: warning
+          annotations:
+            summary: 'Thanos Store Gateway is down'
+            description: 'Thanos Store Gateway has been unreachable for more than 10 minutes; long-term metrics may be unavailable.'
