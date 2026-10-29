@@ -7,6 +7,7 @@ resources:
   - energisjappa.yaml
   - frigate.yaml
   - homepage.yaml
+  - minecraft.yaml
   - netbird.yaml
   - netbox-inventory.yaml
   - netbox.yaml

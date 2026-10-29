@@ -1,0 +1,16 @@
+# Dedicated Longhorn class for the Minecraft Radar world. Retain keeps the world
+# if the PVC is deleted by accident, and two replicas survive a node loss.
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: minecraft-radar
+  labels:
+    app.kubernetes.io/part-of: minecraft
+provisioner: driver.longhorn.io
+allowVolumeExpansion: true
+reclaimPolicy: Retain
+volumeBindingMode: Immediate
+parameters:
+  numberOfReplicas: "2"
+  staleReplicaTimeout: "2880"
+  fsType: "ext4"

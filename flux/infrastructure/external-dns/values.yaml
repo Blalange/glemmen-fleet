@@ -1,0 +1,59 @@
+# external-dns policy and provider configuration.
+#
+# The Cloudflare token is the same one used by cert-manager for the glem.men
+# wildcard certificate (DNS-01). It lives in the cert-manager namespace, which
+# is also this release's namespace.
+provider:
+  name: cloudflare
+
+env:
+  - name: CF_API_TOKEN
+    valueFrom:
+      secretKeyRef:
+        name: cloudflare-api-token-glem-men
+        key: api-token
+
+# Only opt-in Services need records. Ingresses already use the *.glem.men
+# wildcard and should not get one record per host.
+sources:
+  - service
+
+# Never delete records created outside external-dns.
+policy: upsert-only
+registry: txt
+txtOwnerId: glemmen
+domainFilters:
+  - glem.men
+annotationFilter: external-dns.alpha.kubernetes.io/hostname
+
+logLevel: info
+interval: 1m
+
+resources:
+  requests:
+    cpu: 20m
+    memory: 64Mi
+  limits:
+    cpu: 200m
+    memory: 128Mi
+
+tolerations:
+  - operator: Exists
+
+affinity:
+  nodeAffinity:
+    preferredDuringSchedulingIgnoredDuringExecution:
+      - weight: 100
+        preference:
+          matchExpressions:
+            - key: kubernetes.io/hostname
+              operator: In
+              values:
+                - glemmen60
+                - glemmen80
+
+# The monitoring CRDs are installed by the monitoring Kustomization, which is
+# applied after infrastructure. Leave this off here; external-dns is still
+# visible through its logs and the Cloudflare record.
+serviceMonitor:
+  enabled: false

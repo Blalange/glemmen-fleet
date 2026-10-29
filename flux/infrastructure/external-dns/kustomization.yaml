@@ -1,0 +1,20 @@
+# external-dns - creates Cloudflare DNS records for annotated Services.
+#
+# It runs in the cert-manager namespace so it can reuse the existing
+# cloudflare-api-token-glem-men Secret that cert-manager uses for the glem.men
+# DNS-01 issuer. No second copy of the token is stored in the cluster.
+#
+# Only Services with external-dns.alpha.kubernetes.io/hostname are processed,
+# and the policy is upsert-only so existing hand-managed records are never
+# deleted.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: cert-manager
+resources:
+  - release.yaml
+configMapGenerator:
+  - name: external-dns-values
+    files:
+      - values.yaml
+generatorOptions:
+  disableNameSuffixHash: true

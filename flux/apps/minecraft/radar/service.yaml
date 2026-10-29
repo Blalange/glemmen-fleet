@@ -1,0 +1,30 @@
+# Minecraft Radar uses the custom UDP port 19142, not the standard Bedrock
+# port. The UniFi router forwards UDP 19142 to the shared MetalLB VIP
+# 192.168.6.99 (the same VIP as Traefik and the NetBird STUN listener). Cluster
+# traffic policy keeps the shared VIP usable from every node.
+apiVersion: v1
+kind: Service
+metadata:
+  name: minecraft-radar
+  labels:
+    app.kubernetes.io/name: minecraft-radar
+    app.kubernetes.io/instance: minecraft
+    app.kubernetes.io/part-of: minecraft
+  annotations:
+    metallb.io/loadBalancerIPs: "192.168.6.99"
+    metallb.io/allow-shared-ip: glemmen-vip
+    # external-dns creates the public record. The wildcard *.glem.men already
+    # resolves here; this specific record makes the Minecraft endpoint explicit.
+    external-dns.alpha.kubernetes.io/hostname: radar.mc.glem.men
+    external-dns.alpha.kubernetes.io/target: "109.247.229.146"
+spec:
+  type: LoadBalancer
+  externalTrafficPolicy: Cluster
+  selector:
+    app.kubernetes.io/name: minecraft-radar
+    app.kubernetes.io/instance: minecraft
+  ports:
+    - name: bedrock
+      protocol: UDP
+      port: 19142
+      targetPort: bedrock

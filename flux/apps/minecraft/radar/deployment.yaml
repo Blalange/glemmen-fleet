@@ -1,0 +1,136 @@
+# Minecraft Radar - Bedrock Dedicated Server. Pinned to the three worker nodes;
+# glemmen50 is currently cordoned/offline, so it runs on glemmen60 or glemmen80.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: minecraft-radar
+  labels:
+    app.kubernetes.io/name: minecraft-radar
+    app.kubernetes.io/instance: minecraft
+    app.kubernetes.io/part-of: minecraft
+spec:
+  replicas: 1
+  # One ReadWriteOnce world volume: never run two server pods at the same time.
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: minecraft-radar
+      app.kubernetes.io/instance: minecraft
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: minecraft-radar
+        app.kubernetes.io/instance: minecraft
+        app.kubernetes.io/part-of: minecraft
+    spec:
+      terminationGracePeriodSeconds: 60
+      securityContext:
+        fsGroup: 1000
+        fsGroupChangePolicy: OnRootMismatch
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: kubernetes.io/hostname
+                    operator: In
+                    values:
+                      - glemmen50
+                      - glemmen60
+                      - glemmen80
+      containers:
+        - name: bedrock
+          image: docker.io/itzg/minecraft-bedrock-server:2026.10.2
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: EULA
+              value: "TRUE"
+            - name: VERSION
+              value: "LATEST"
+            # RakNet keeps a single UDP listener on the custom port 19142. The
+            # current Bedrock default (NetherNet) needs a TCP port plus a UDP
+            # port range, which is not practical behind one port forward.
+            - name: TRANSPORT
+              value: "raknet"
+            - name: SERVER_PORT
+              value: "19142"
+            - name: SERVER_NAME
+              value: "Minecraft Radar"
+            - name: LEVEL_NAME
+              value: "Radar"
+            - name: GAMEMODE
+              value: "survival"
+            - name: DIFFICULTY
+              value: "normal"
+            - name: ALLOW_CHEATS
+              value: "false"
+            - name: ONLINE_MODE
+              value: "true"
+            - name: MAX_PLAYERS
+              value: "10"
+            # The image chowns /data as root, then runs the server as this user.
+            - name: UID
+              value: "1000"
+            - name: GID
+              value: "1000"
+            - name: TZ
+              value: "Europe/Oslo"
+            - name: STOP_SERVER_ANNOUNCE_DELAY
+              value: "30"
+          ports:
+            - name: bedrock
+              containerPort: 19142
+              protocol: UDP
+          # The image ships mc-monitor; use it to wait for the first download
+          # and to keep the Service from routing to a starting/dead server.
+          startupProbe:
+            exec:
+              command:
+                - /usr/local/bin/mc-monitor
+                - status-bedrock
+                - --host
+                - 127.0.0.1
+                - --port
+                - "19142"
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 60
+          readinessProbe:
+            exec:
+              command:
+                - /usr/local/bin/mc-monitor
+                - status-bedrock
+                - --host
+                - 127.0.0.1
+                - --port
+                - "19142"
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          livenessProbe:
+            exec:
+              command:
+                - /usr/local/bin/mc-monitor
+                - status-bedrock
+                - --host
+                - 127.0.0.1
+                - --port
+                - "19142"
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 3
+          volumeMounts:
+            - name: data
+              mountPath: /data
+          resources:
+            requests:
+              cpu: 500m
+              memory: 1Gi
+            limits:
+              cpu: "2"
+              memory: 4Gi
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: minecraft-radar-data

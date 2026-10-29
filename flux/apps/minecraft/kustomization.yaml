@@ -1,0 +1,7 @@
+# All Minecraft servers. Each server lives in its own subdirectory; this parent
+# Kustomization applies all of them into the minecraft namespace.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: minecraft
+resources:
+  - radar/

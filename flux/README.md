@@ -23,10 +23,10 @@ flux/
 │   ├── seaweedfs.yaml          -> flux/infrastructure/seaweedfs (S3 object store)
 │   ├── monitoring-dashboards.yaml / monitoring-alerts.yaml
 │   └── apps.yaml               -> flux/apps (application Kustomizations)
-├── infrastructure/             namespaces, Longhorn, cert-manager, MetalLB, metrics-server, descheduler, YugabyteDB, SeaweedFS operator, NFD
+├── infrastructure/             namespaces, Longhorn, cert-manager, external-dns, MetalLB, metrics-server, descheduler, YugabyteDB, SeaweedFS operator, NFD
 ├── ingress/                    Traefik HelmRelease + values
 ├── monitoring/                 kube-prometheus-stack, Thanos, smartctl-exporter, idrac-exporter, unpoller
-└── apps/                       Kustomization objects, Homepage, NetBox + inventory sync
+└── apps/                       Kustomization objects, Homepage, NetBox + inventory sync, Minecraft servers (Radar)
 ```
 
 The application manifests themselves stay in the repository root (`colibri/`,
@@ -382,7 +382,7 @@ role passwords are in `yugabyte-auth` (`yugabyte` namespace) and `grafana-db`
 
 ## Dependencies (was Fleet `dependsOn`)
 
-- `infrastructure` (namespaces, Longhorn, cert-manager chart, MetalLB, metrics-server, descheduler, SeaweedFS operator, NFD)
+- `infrastructure` (namespaces, Longhorn, cert-manager chart, external-dns, MetalLB, metrics-server, descheduler, SeaweedFS operator, NFD)
 - `infrastructure` -> `longhorn-backup` (rclone S3 gateway for Google Drive backups)
 - `infrastructure` -> `seaweedfs` (SeaweedFS cluster, bucket and S3 credentials)
 - `cert-manager-issuers` -> `cert-manager-certificates` -> `ingress` (Traefik)
@@ -391,6 +391,19 @@ role passwords are in `yugabyte-auth` (`yugabyte` namespace) and `grafana-db`
   applications additionally wait for what they need (`homepage` for example
   waits for `homepage-assets`, `kube-prometheus-stack` and `infrastructure`;
   `netbox` waits for `infrastructure` and `monitoring`).
+
+`external-dns` runs in the `cert-manager` namespace so it can reuse the
+existing `cloudflare-api-token-glem-men` Secret. It only manages Services with
+the `external-dns.alpha.kubernetes.io/hostname` annotation and uses
+`upsert-only`, so hand-managed records such as the `*.glem.men` wildcard are
+never deleted.
+
+The Minecraft Radar Bedrock server (`flux/apps/minecraft/radar`, resources
+prefixed `minecraft-radar`) is pinned to `glemmen50`, `glemmen60` and
+`glemmen80`. It uses the custom UDP port **19142** instead of the standard
+Bedrock port; connect with `radar.mc.glem.men:19142`. UniFi forwards UDP 19142
+to the shared MetalLB VIP `192.168.6.99`; the DNS record is managed by
+external-dns.
 
 ## Migration notes
 

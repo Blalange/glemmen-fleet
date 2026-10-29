@@ -1,0 +1,18 @@
+# Minecraft Radar world and server.properties. The server is pinned to the
+# worker nodes, but Longhorn volumes can attach to whichever of those nodes is
+# running it.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: minecraft-radar-data
+  labels:
+    app.kubernetes.io/name: minecraft-radar
+    app.kubernetes.io/instance: minecraft
+    app.kubernetes.io/part-of: minecraft
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: minecraft-radar
+  resources:
+    requests:
+      storage: 20Gi
