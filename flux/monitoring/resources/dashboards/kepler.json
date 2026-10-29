@@ -115,7 +115,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "thanos"
       },
       "fieldConfig": {
         "defaults": {
@@ -167,7 +167,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "thanos"
           },
           "expr": "sum(((max by (node_name) (kepler_node_cpu_watts{zone=~\"package|psys\", node_name=~\"$node\"})) or (sum by (node_name) (kepler_node_cpu_watts{zone!~\"package|psys\", node_name=~\"$node\"}) unless on (node_name) max by (node_name) (kepler_node_cpu_watts{zone=~\"package|psys\", node_name=~\"$node\"}))))",
           "refId": "A",
@@ -183,7 +183,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "thanos"
       },
       "fieldConfig": {
         "defaults": {
@@ -235,7 +235,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "thanos"
           },
           "expr": "sum(((max by (node_name) (kepler_node_cpu_active_watts{zone=~\"package|psys\", node_name=~\"$node\"})) or (sum by (node_name) (kepler_node_cpu_active_watts{zone!~\"package|psys\", node_name=~\"$node\"}) unless on (node_name) max by (node_name) (kepler_node_cpu_active_watts{zone=~\"package|psys\", node_name=~\"$node\"}))))",
           "refId": "A",
@@ -251,7 +251,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "thanos"
       },
       "fieldConfig": {
         "defaults": {
@@ -303,7 +303,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "thanos"
           },
           "expr": "sum(((max by (node_name) (kepler_node_cpu_idle_watts{zone=~\"package|psys\", node_name=~\"$node\"})) or (sum by (node_name) (kepler_node_cpu_idle_watts{zone!~\"package|psys\", node_name=~\"$node\"}) unless on (node_name) max by (node_name) (kepler_node_cpu_idle_watts{zone=~\"package|psys\", node_name=~\"$node\"}))))",
           "refId": "A",
@@ -319,7 +319,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "thanos"
       },
       "fieldConfig": {
         "defaults": {
@@ -371,7 +371,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "thanos"
           },
           "expr": "sum(((max by (node_name) (increase(kepler_node_cpu_joules_total{zone=~\"package|psys\", node_name=~\"$node\"}[$__range]))) or (sum by (node_name) (increase(kepler_node_cpu_joules_total{zone!~\"package|psys\", node_name=~\"$node\"}[$__range])) unless on (node_name) max by (node_name) (kepler_node_cpu_joules_total{zone=~\"package|psys\", node_name=~\"$node\"})))) / 3.6e6",
           "refId": "A",
@@ -387,7 +387,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "thanos"
       },
       "fieldConfig": {
         "defaults": {
@@ -439,7 +439,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "thanos"
           },
           "expr": "count(count by (node_name) (kepler_node_cpu_watts{node_name=~\"$node\"}))",
           "refId": "A",
@@ -455,7 +455,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "thanos"
       },
       "fieldConfig": {
         "defaults": {
@@ -514,7 +514,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "thanos"
           },
           "expr": "avg(kepler_node_cpu_usage_ratio{node_name=~\"$node\"})",
           "refId": "A",
@@ -530,7 +530,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "thanos"
       },
       "description": "CPU power per node. RAPL nodes use the highest-coverage package zone; glemmen60's two hwmon socket zones are summed.",
       "fieldConfig": {
@@ -617,7 +617,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "thanos"
           },
           "expr": "((max by (node_name) (kepler_node_cpu_watts{zone=~\"package|psys\", node_name=~\"$node\"})) or (sum by (node_name) (kepler_node_cpu_watts{zone!~\"package|psys\", node_name=~\"$node\"}) unless on (node_name) max by (node_name) (kepler_node_cpu_watts{zone=~\"package|psys\", node_name=~\"$node\"})))",
           "refId": "A",
@@ -631,7 +631,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "thanos"
       },
       "description": "CPU power grouped by hardware zone. RAPL zones overlap (package includes core/dram), while glemmen60's hwmon zones are separate CPU sockets. Do not sum the lines naively; the node-level panels already handle both cases.",
       "fieldConfig": {
@@ -718,7 +718,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "thanos"
           },
           "expr": "sum by (zone) (kepler_node_cpu_watts{node_name=~\"$node\"})",
           "refId": "A",
@@ -732,7 +732,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "thanos"
       },
       "description": "Current power, active/idle split, CPU usage and energy over the selected range per node. RAPL nodes use package; glemmen60's separate hwmon socket zones are summed.",
       "fieldConfig": {
@@ -901,7 +901,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "thanos"
           },
           "expr": "((max by (node_name) (kepler_node_cpu_watts{zone=~\"package|psys\", node_name=~\"$node\"})) or (sum by (node_name) (kepler_node_cpu_watts{zone!~\"package|psys\", node_name=~\"$node\"}) unless on (node_name) max by (node_name) (kepler_node_cpu_watts{zone=~\"package|psys\", node_name=~\"$node\"})))",
           "refId": "A",
@@ -912,7 +912,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "thanos"
           },
           "expr": "((max by (node_name) (kepler_node_cpu_active_watts{zone=~\"package|psys\", node_name=~\"$node\"})) or (sum by (node_name) (kepler_node_cpu_active_watts{zone!~\"package|psys\", node_name=~\"$node\"}) unless on (node_name) max by (node_name) (kepler_node_cpu_active_watts{zone=~\"package|psys\", node_name=~\"$node\"})))",
           "refId": "B",
@@ -923,7 +923,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "thanos"
           },
           "expr": "((max by (node_name) (kepler_node_cpu_idle_watts{zone=~\"package|psys\", node_name=~\"$node\"})) or (sum by (node_name) (kepler_node_cpu_idle_watts{zone!~\"package|psys\", node_name=~\"$node\"}) unless on (node_name) max by (node_name) (kepler_node_cpu_idle_watts{zone=~\"package|psys\", node_name=~\"$node\"})))",
           "refId": "C",
@@ -934,7 +934,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "thanos"
           },
           "expr": "avg by (node_name) (kepler_node_cpu_usage_ratio{node_name=~\"$node\"})",
           "refId": "D",
@@ -945,7 +945,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "thanos"
           },
           "expr": "((max by (node_name) (increase(kepler_node_cpu_joules_total{zone=~\"package|psys\", node_name=~\"$node\"}[$__range]))) or (sum by (node_name) (increase(kepler_node_cpu_joules_total{zone!~\"package|psys\", node_name=~\"$node\"}[$__range])) unless on (node_name) max by (node_name) (kepler_node_cpu_joules_total{zone=~\"package|psys\", node_name=~\"$node\"}))) / 3.6e6",
           "refId": "E",
@@ -1004,7 +1004,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "thanos"
       },
       "description": "The ten pods with the highest current CPU power. Pod-level values are Kepler's attribution of node power, so they do not necessarily add up to the node total (kernel and unattributed work account for the rest).",
       "fieldConfig": {
@@ -1091,7 +1091,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "thanos"
           },
           "expr": "topk(10, ((max by (pod_namespace, pod_name, node_name) (kepler_pod_cpu_watts{zone=~\"package|psys\", node_name=~\"$node\", pod_namespace=~\"$namespace\", state=\"running\"})) or (sum by (pod_namespace, pod_name, node_name) (kepler_pod_cpu_watts{zone!~\"package|psys\", node_name=~\"$node\", pod_namespace=~\"$namespace\", state=\"running\"}) unless on (pod_namespace, pod_name, node_name) max by (pod_namespace, pod_name, node_name) (kepler_pod_cpu_watts{zone=~\"package|psys\", node_name=~\"$node\", pod_namespace=~\"$namespace\", state=\"running\"}))))",
           "refId": "A",
@@ -1105,7 +1105,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "thanos"
       },
       "description": "Current CPU power attributed to the eight namespaces with the highest consumption.",
       "fieldConfig": {
@@ -1192,7 +1192,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "thanos"
           },
           "expr": "topk(8, sum by (pod_namespace) (((max by (pod_namespace, pod_name, node_name) (kepler_pod_cpu_watts{zone=~\"package|psys\", node_name=~\"$node\", pod_namespace=~\"$namespace\", state=\"running\"})) or (sum by (pod_namespace, pod_name, node_name) (kepler_pod_cpu_watts{zone!~\"package|psys\", node_name=~\"$node\", pod_namespace=~\"$namespace\", state=\"running\"}) unless on (pod_namespace, pod_name, node_name) max by (pod_namespace, pod_name, node_name) (kepler_pod_cpu_watts{zone=~\"package|psys\", node_name=~\"$node\", pod_namespace=~\"$namespace\", state=\"running\"})))))",
           "refId": "A",
@@ -1206,7 +1206,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "thanos"
       },
       "description": "The twenty pods with the highest current CPU power, with their energy consumption over the selected range. Only running pods are included.",
       "fieldConfig": {
@@ -1327,7 +1327,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "thanos"
           },
           "expr": "topk(20, ((max by (pod_namespace, pod_name, node_name) (kepler_pod_cpu_watts{zone=~\"package|psys\", node_name=~\"$node\", pod_namespace=~\"$namespace\", state=\"running\"})) or (sum by (pod_namespace, pod_name, node_name) (kepler_pod_cpu_watts{zone!~\"package|psys\", node_name=~\"$node\", pod_namespace=~\"$namespace\", state=\"running\"}) unless on (pod_namespace, pod_name, node_name) max by (pod_namespace, pod_name, node_name) (kepler_pod_cpu_watts{zone=~\"package|psys\", node_name=~\"$node\", pod_namespace=~\"$namespace\", state=\"running\"}))))",
           "refId": "A",
@@ -1338,7 +1338,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "thanos"
           },
           "expr": "(((max by (pod_namespace, pod_name, node_name) (increase(kepler_pod_cpu_joules_total{zone=~\"package|psys\", node_name=~\"$node\", pod_namespace=~\"$namespace\", state=\"running\"}[$__range]))) or (sum by (pod_namespace, pod_name, node_name) (increase(kepler_pod_cpu_joules_total{zone!~\"package|psys\", node_name=~\"$node\", pod_namespace=~\"$namespace\", state=\"running\"}[$__range])) unless on (pod_namespace, pod_name, node_name) max by (pod_namespace, pod_name, node_name) (kepler_pod_cpu_joules_total{zone=~\"package|psys\", node_name=~\"$node\", pod_namespace=~\"$namespace\", state=\"running\"}))) / 3.6e6) and on (pod_namespace, pod_name, node_name) topk(20, ((max by (pod_namespace, pod_name, node_name) (kepler_pod_cpu_watts{zone=~\"package|psys\", node_name=~\"$node\", pod_namespace=~\"$namespace\", state=\"running\"})) or (sum by (pod_namespace, pod_name, node_name) (kepler_pod_cpu_watts{zone!~\"package|psys\", node_name=~\"$node\", pod_namespace=~\"$namespace\", state=\"running\"}) unless on (pod_namespace, pod_name, node_name) max by (pod_namespace, pod_name, node_name) (kepler_pod_cpu_watts{zone=~\"package|psys\", node_name=~\"$node\", pod_namespace=~\"$namespace\", state=\"running\"}))))",
           "refId": "B",
@@ -1400,30 +1400,16 @@
     "power",
     "energy",
     "sustainability",
-    "prometheus"
+    "thanos"
   ],
   "templating": {
     "list": [
-      {
-        "current": {},
-        "hide": 0,
-        "includeAll": false,
-        "label": "Datasource",
-        "multi": false,
-        "name": "DS_PROMETHEUS",
-        "options": [],
-        "query": "prometheus",
-        "refresh": 1,
-        "regex": "",
-        "skipUrlSync": false,
-        "type": "datasource"
-      },
       {
         "allValue": ".*",
         "current": {},
         "datasource": {
           "type": "prometheus",
-          "uid": "${DS_PROMETHEUS}"
+          "uid": "thanos"
         },
         "definition": "label_values(kepler_node_cpu_watts, node_name)",
         "hide": 0,
@@ -1444,7 +1430,7 @@
         "current": {},
         "datasource": {
           "type": "prometheus",
-          "uid": "${DS_PROMETHEUS}"
+          "uid": "thanos"
         },
         "definition": "label_values(kepler_pod_cpu_watts, pod_namespace)",
         "hide": 0,

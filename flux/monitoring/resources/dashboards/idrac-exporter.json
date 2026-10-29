@@ -22,7 +22,7 @@
       {
         "datasource": {
           "type": "prometheus",
-          "uid": "${datasource}"
+          "uid": "thanos"
         },
         "enable": true,
         "expr": "last_over_time(idrac_events_log_entry{job=~\"$job\", instance=~\"$instance\"}[$__interval] offset -$__interval) * 1000 < ${__to}\nand \nlast_over_time(idrac_events_log_entry{job=~\"$job\", instance=~\"$instance\"}[$__interval] offset -$__interval) * 1000 > ${__from}",
@@ -71,7 +71,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "${datasource}"
+        "uid": "thanos"
       },
       "fieldConfig": {
         "defaults": {
@@ -160,7 +160,7 @@
           ],
           "datasource": {
             "type": "prometheus",
-            "uid": "${datasource}"
+            "uid": "thanos"
           },
           "editorMode": "code",
           "exemplar": false,
@@ -187,7 +187,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "${datasource}"
+        "uid": "thanos"
       },
       "fieldConfig": {
         "defaults": {
@@ -262,7 +262,7 @@
           ],
           "datasource": {
             "type": "prometheus",
-            "uid": "${datasource}"
+            "uid": "thanos"
           },
           "editorMode": "code",
           "exemplar": false,
@@ -289,7 +289,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "${datasource}"
+        "uid": "thanos"
       },
       "fieldConfig": {
         "defaults": {
@@ -475,7 +475,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${datasource}"
+            "uid": "thanos"
           },
           "editorMode": "code",
           "expr": "idrac_memory_module_info{job=~\"$job\", instance=~\"$instance\"}",
@@ -487,7 +487,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${datasource}"
+            "uid": "thanos"
           },
           "editorMode": "code",
           "expr": "idrac_memory_module_health{job=~\"$job\", instance=~\"$instance\"}",
@@ -500,7 +500,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${datasource}"
+            "uid": "thanos"
           },
           "editorMode": "code",
           "expr": "idrac_memory_module_capacity_bytes{job=~\"$job\", instance=~\"$instance\"}",
@@ -513,7 +513,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${datasource}"
+            "uid": "thanos"
           },
           "editorMode": "code",
           "expr": "idrac_memory_module_speed_mhz{job=~\"$job\", instance=~\"$instance\"}",
@@ -568,7 +568,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "${datasource}"
+        "uid": "thanos"
       },
       "fieldConfig": {
         "defaults": {
@@ -637,7 +637,7 @@
           ],
           "datasource": {
             "type": "prometheus",
-            "uid": "${datasource}"
+            "uid": "thanos"
           },
           "editorMode": "code",
           "exemplar": false,
@@ -733,7 +733,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "${datasource}"
+        "uid": "thanos"
       },
       "fieldConfig": {
         "defaults": {
@@ -794,7 +794,7 @@
           ],
           "datasource": {
             "type": "prometheus",
-            "uid": "${datasource}"
+            "uid": "thanos"
           },
           "editorMode": "code",
           "exemplar": false,
@@ -962,7 +962,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "${datasource}"
+        "uid": "thanos"
       },
       "fieldConfig": {
         "defaults": {
@@ -1023,7 +1023,7 @@
           ],
           "datasource": {
             "type": "prometheus",
-            "uid": "${datasource}"
+            "uid": "thanos"
           },
           "editorMode": "code",
           "exemplar": false,
@@ -1051,7 +1051,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "${datasource}"
+        "uid": "thanos"
       },
       "fieldConfig": {
         "defaults": {
@@ -1112,7 +1112,7 @@
           ],
           "datasource": {
             "type": "prometheus",
-            "uid": "${datasource}"
+            "uid": "thanos"
           },
           "editorMode": "code",
           "exemplar": false,
@@ -1140,7 +1140,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "${datasource}"
+        "uid": "thanos"
       },
       "fieldConfig": {
         "defaults": {
@@ -1215,7 +1215,7 @@
           ],
           "datasource": {
             "type": "prometheus",
-            "uid": "${datasource}"
+            "uid": "thanos"
           },
           "editorMode": "code",
           "exemplar": false,
@@ -1242,7 +1242,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "${datasource}"
+        "uid": "thanos"
       },
       "fieldConfig": {
         "defaults": {
@@ -1319,7 +1319,7 @@
           ],
           "datasource": {
             "type": "prometheus",
-            "uid": "${datasource}"
+            "uid": "thanos"
           },
           "editorMode": "code",
           "exemplar": false,
@@ -1345,7 +1345,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "${datasource}"
+        "uid": "thanos"
       },
       "fieldConfig": {
         "defaults": {
@@ -1515,7 +1515,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${datasource}"
+            "uid": "thanos"
           },
           "editorMode": "code",
           "expr": "idrac_storage_drive_info{job=~\"$job\", instance=~\"$instance\"}",
@@ -1527,7 +1527,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${datasource}"
+            "uid": "thanos"
           },
           "editorMode": "code",
           "expr": "idrac_storage_drive_health{job=~\"$job\", instance=~\"$instance\"}",
@@ -1540,7 +1540,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${datasource}"
+            "uid": "thanos"
           },
           "editorMode": "code",
           "expr": "idrac_storage_drive_capacity_bytes{job=~\"$job\", instance=~\"$instance\"}",
@@ -1593,7 +1593,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "${datasource}"
+        "uid": "thanos"
       },
       "fieldConfig": {
         "defaults": {
@@ -1770,7 +1770,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${datasource}"
+            "uid": "thanos"
           },
           "editorMode": "code",
           "expr": "idrac_network_port_health{job=~\"$job\", instance=~\"$instance\"}",
@@ -1782,7 +1782,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${datasource}"
+            "uid": "thanos"
           },
           "editorMode": "code",
           "expr": "idrac_network_port_link_up{job=~\"$job\", instance=~\"$instance\"}",
@@ -1795,7 +1795,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${datasource}"
+            "uid": "thanos"
           },
           "editorMode": "code",
           "expr": "idrac_network_port_current_speed_mbps{job=~\"$job\", instance=~\"$instance\"}",
@@ -1808,7 +1808,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${datasource}"
+            "uid": "thanos"
           },
           "editorMode": "code",
           "expr": "idrac_network_adapter_health{job=~\"$job\", instance=~\"$instance\"}",
@@ -1884,7 +1884,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "${datasource}"
+        "uid": "thanos"
       },
       "fieldConfig": {
         "defaults": {
@@ -1975,7 +1975,7 @@
           ],
           "datasource": {
             "type": "prometheus",
-            "uid": "${datasource}"
+            "uid": "thanos"
           },
           "editorMode": "code",
           "exemplar": false,
@@ -2000,7 +2000,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "${datasource}"
+        "uid": "thanos"
       },
       "fieldConfig": {
         "defaults": {
@@ -2091,7 +2091,7 @@
           ],
           "datasource": {
             "type": "prometheus",
-            "uid": "${datasource}"
+            "uid": "thanos"
           },
           "editorMode": "code",
           "exemplar": false,
@@ -2129,7 +2129,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "${datasource}"
+        "uid": "thanos"
       },
       "fieldConfig": {
         "defaults": {
@@ -2231,7 +2231,7 @@
           ],
           "datasource": {
             "type": "prometheus",
-            "uid": "${datasource}"
+            "uid": "thanos"
           },
           "editorMode": "code",
           "expr": "avg_over_time(idrac_power_supply_output_watts{instance=~\"$instance\",job=~\"$job\"}[$__rate_interval])",
@@ -2250,7 +2250,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${datasource}"
+            "uid": "thanos"
           },
           "editorMode": "code",
           "expr": "avg_over_time(idrac_power_supply_input_watts{instance=~\"$instance\",job=~\"$job\"}[$__rate_interval])",
@@ -2266,7 +2266,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "${datasource}"
+        "uid": "thanos"
       },
       "fieldConfig": {
         "defaults": {
@@ -2326,7 +2326,7 @@
           ],
           "datasource": {
             "type": "prometheus",
-            "uid": "${datasource}"
+            "uid": "thanos"
           },
           "editorMode": "code",
           "exemplar": false,
@@ -2354,7 +2354,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "${datasource}"
+        "uid": "thanos"
       },
       "fieldConfig": {
         "defaults": {
@@ -2443,7 +2443,7 @@
           ],
           "datasource": {
             "type": "prometheus",
-            "uid": "${datasource}"
+            "uid": "thanos"
           },
           "editorMode": "code",
           "expr": "avg_over_time(idrac_power_control_avg_consumed_watts{instance=~\"$instance\",job=~\"$job\"}[$__rate_interval])",
@@ -2466,7 +2466,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "${datasource}"
+        "uid": "thanos"
       },
       "fieldConfig": {
         "defaults": {
@@ -2526,7 +2526,7 @@
           ],
           "datasource": {
             "type": "prometheus",
-            "uid": "${datasource}"
+            "uid": "thanos"
           },
           "editorMode": "code",
           "exemplar": false,
@@ -2567,7 +2567,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "${datasource}"
+        "uid": "thanos"
       },
       "fieldConfig": {
         "defaults": {
@@ -2700,7 +2700,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${datasource}"
+            "uid": "thanos"
           },
           "editorMode": "code",
           "exemplar": false,
@@ -2807,20 +2807,6 @@
   "templating": {
     "list": [
       {
-        "hide": 0,
-        "includeAll": false,
-        "label": "Datasource",
-        "multi": false,
-        "name": "datasource",
-        "options": [],
-        "query": "prometheus",
-        "queryValue": "",
-        "refresh": 1,
-        "regex": ".+",
-        "skipUrlSync": false,
-        "type": "datasource"
-      },
-      {
         "allValue": "",
         "current": {
           "selected": true,
@@ -2833,7 +2819,7 @@
         },
         "datasource": {
           "type": "prometheus",
-          "uid": "${datasource}"
+          "uid": "thanos"
         },
         "definition": "label_values(idrac_system_machine_info,job)",
         "hide": 0,
@@ -2853,7 +2839,7 @@
         "allValue": ".+",
         "datasource": {
           "type": "prometheus",
-          "uid": "${datasource}"
+          "uid": "thanos"
         },
         "definition": "label_values(idrac_system_machine_info{job=~\"$job\"},instance)",
         "hide": 0,

@@ -70,7 +70,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "thanos"
       },
       "fieldConfig": {
         "defaults": {
@@ -120,7 +120,7 @@
           "refId": "A",
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "thanos"
           }
         }
       ],
@@ -130,7 +130,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "thanos"
       },
       "fieldConfig": {
         "defaults": {
@@ -180,7 +180,7 @@
           "refId": "A",
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "thanos"
           }
         }
       ],
@@ -190,7 +190,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "thanos"
       },
       "fieldConfig": {
         "defaults": {
@@ -244,7 +244,7 @@
           "refId": "A",
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "thanos"
           }
         }
       ],
@@ -254,7 +254,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "thanos"
       },
       "fieldConfig": {
         "defaults": {
@@ -308,7 +308,7 @@
           "refId": "A",
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "thanos"
           }
         }
       ],
@@ -318,7 +318,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "thanos"
       },
       "fieldConfig": {
         "defaults": {
@@ -372,7 +372,7 @@
           "refId": "A",
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "thanos"
           }
         }
       ],
@@ -382,7 +382,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "thanos"
       },
       "fieldConfig": {
         "defaults": {
@@ -436,7 +436,7 @@
           "refId": "A",
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "thanos"
           }
         }
       ],
@@ -446,7 +446,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "thanos"
       },
       "fieldConfig": {
         "defaults": {
@@ -506,7 +506,7 @@
           "refId": "A",
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "thanos"
           }
         }
       ],
@@ -516,7 +516,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "thanos"
       },
       "fieldConfig": {
         "defaults": {
@@ -576,7 +576,7 @@
           "refId": "A",
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "thanos"
           }
         }
       ],
@@ -586,7 +586,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "thanos"
       },
       "fieldConfig": {
         "defaults": {
@@ -681,7 +681,7 @@
           "refId": "A",
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "thanos"
           }
         }
       ],
@@ -691,7 +691,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "thanos"
       },
       "fieldConfig": {
         "defaults": {
@@ -1011,7 +1011,7 @@
           "refId": "A",
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "thanos"
           }
         },
         {
@@ -1022,7 +1022,7 @@
           "refId": "B",
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "thanos"
           }
         },
         {
@@ -1033,7 +1033,7 @@
           "refId": "C",
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "thanos"
           }
         },
         {
@@ -1044,7 +1044,7 @@
           "refId": "D",
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "thanos"
           }
         },
         {
@@ -1055,7 +1055,7 @@
           "refId": "E",
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "thanos"
           }
         },
         {
@@ -1066,7 +1066,7 @@
           "refId": "F",
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "thanos"
           }
         },
         {
@@ -1077,7 +1077,7 @@
           "refId": "G",
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "thanos"
           }
         },
         {
@@ -1088,7 +1088,7 @@
           "refId": "H",
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "thanos"
           }
         },
         {
@@ -1099,7 +1099,7 @@
           "refId": "I",
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "thanos"
           }
         }
       ],
@@ -1159,7 +1159,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "thanos"
       },
       "fieldConfig": {
         "defaults": {
@@ -1241,7 +1241,7 @@
           "refId": "A",
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "thanos"
           }
         }
       ],
@@ -1257,7 +1257,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "thanos"
       },
       "fieldConfig": {
         "defaults": {
@@ -1339,7 +1339,7 @@
           "refId": "A",
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "thanos"
           }
         }
       ],
@@ -1355,7 +1355,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "thanos"
       },
       "fieldConfig": {
         "defaults": {
@@ -1449,7 +1449,7 @@
           "refId": "A",
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "thanos"
           }
         }
       ],
@@ -1459,7 +1459,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "thanos"
       },
       "fieldConfig": {
         "defaults": {
@@ -1553,7 +1553,7 @@
           "refId": "A",
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "thanos"
           }
         }
       ],
@@ -1576,7 +1576,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "thanos"
       },
       "fieldConfig": {
         "defaults": {
@@ -1637,7 +1637,7 @@
           "refId": "A",
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "thanos"
           }
         }
       ],
@@ -1647,7 +1647,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "thanos"
       },
       "fieldConfig": {
         "defaults": {
@@ -1700,7 +1700,7 @@
           "refId": "A",
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "thanos"
           }
         }
       ],
@@ -1710,7 +1710,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "thanos"
       },
       "fieldConfig": {
         "defaults": {
@@ -1804,7 +1804,7 @@
           "refId": "A",
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "thanos"
           }
         }
       ],
@@ -1814,7 +1814,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "thanos"
       },
       "fieldConfig": {
         "defaults": {
@@ -1908,7 +1908,7 @@
           "refId": "A",
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "thanos"
           }
         }
       ],
@@ -1931,7 +1931,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "thanos"
       },
       "description": "SATA fault-focused counters are healthiest at zero, and rising values should be prioritized for investigation.",
       "fieldConfig": {
@@ -2086,7 +2086,7 @@
           "refId": "A",
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "thanos"
           }
         },
         {
@@ -2097,7 +2097,7 @@
           "refId": "B",
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "thanos"
           }
         },
         {
@@ -2108,7 +2108,7 @@
           "refId": "C",
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "thanos"
           }
         },
         {
@@ -2119,7 +2119,7 @@
           "refId": "D",
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "thanos"
           }
         },
         {
@@ -2130,7 +2130,7 @@
           "refId": "E",
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "thanos"
           }
         },
         {
@@ -2141,7 +2141,7 @@
           "refId": "F",
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "thanos"
           }
         },
         {
@@ -2152,7 +2152,7 @@
           "refId": "G",
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "thanos"
           }
         },
         {
@@ -2163,7 +2163,7 @@
           "refId": "H",
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "thanos"
           }
         }
       ],
@@ -2225,7 +2225,7 @@
     "storage",
     "nvme",
     "sata",
-    "prometheus"
+    "thanos"
   ],
   "templating": {
     "list": [
@@ -2234,7 +2234,7 @@
         "current": {},
         "datasource": {
           "type": "prometheus",
-          "uid": "${DS_PROMETHEUS}"
+          "uid": "thanos"
         },
         "includeAll": true,
         "multi": true,
@@ -2250,7 +2250,7 @@
         "current": {},
         "datasource": {
           "type": "prometheus",
-          "uid": "${DS_PROMETHEUS}"
+          "uid": "thanos"
         },
         "includeAll": true,
         "multi": true,
@@ -2266,7 +2266,7 @@
         "current": {},
         "datasource": {
           "type": "prometheus",
-          "uid": "${DS_PROMETHEUS}"
+          "uid": "thanos"
         },
         "includeAll": true,
         "multi": true,
@@ -2282,7 +2282,7 @@
         "current": {},
         "datasource": {
           "type": "prometheus",
-          "uid": "${DS_PROMETHEUS}"
+          "uid": "thanos"
         },
         "includeAll": true,
         "multi": true,
@@ -2298,7 +2298,7 @@
         "current": {},
         "datasource": {
           "type": "prometheus",
-          "uid": "${DS_PROMETHEUS}"
+          "uid": "thanos"
         },
         "includeAll": true,
         "multi": true,
@@ -2308,19 +2308,6 @@
         "refresh": 1,
         "sort": 1,
         "type": "query"
-      },
-      {
-        "current": {},
-        "hide": 0,
-        "includeAll": false,
-        "multi": false,
-        "options": [],
-        "refresh": 1,
-        "regex": "",
-        "skipUrlSync": false,
-        "type": "datasource",
-        "name": "DS_PROMETHEUS",
-        "query": "prometheus"
       }
     ]
   },

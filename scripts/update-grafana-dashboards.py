@@ -13,7 +13,9 @@ file (and optionally a subdirectory). When adding a dashboard here, also add
 its file to configMapGenerator in the matching kustomization.yaml. Grafana.com
 dashboards use the __inputs export format, which Grafana's file provisioning
 ignores; those inputs are rewritten to datasource template variables so the
-dashboards work when loaded from a ConfigMap.
+dashboards work when loaded from a ConfigMap. Every datasource reference is
+then rewritten to the cluster's Thanos data source, so refreshing an upstream
+dashboard cannot reintroduce a Prometheus datasource dependency.
 
 Stdlib only. Run:  python3 scripts/update-grafana-dashboards.py
 """
@@ -163,6 +165,18 @@ DATASOURCE_VARIABLE = {
     "type": "datasource",
 }
 
+THANOS_UID = "thanos"
+
+PROMETHEUS_UIDS = {
+    "prometheus",
+    "${DS_PROMETHEUS}",
+    "${ds_prometheus}",
+    "$DS_PROMETHEUS",
+    "${datasource}",
+    "$datasource",
+    "${DS_UNIFI_POLLER}",
+}
+
 
 def convert_inputs_to_variables(payload):
     """Rewrite __inputs datasources into templating datasource variables.
@@ -170,13 +184,14 @@ def convert_inputs_to_variables(payload):
     Grafana.com dashboards are exported for the import wizard: panels reference
     ${DS_PROMETHEUS} and the datasource is declared in __inputs, which Grafana's
     file/ConfigMap provisioning ignores (the panels would fail with "Datasource
-    ${DS_PROMETHEUS} was not found"). Giving the variable the same name makes
-    Grafana resolve the provisioned Prometheus datasource at render time.
+    ${DS_PROMETHEUS} was not found"). Giving the variable the same name keeps
+    the payload valid until use_thanos_datasource rewrites the references to
+    the provisioned Thanos datasource.
 
     Some exports also contain their own datasource variable whose default value
     is still the import placeholder (for example the Longhorn dashboard's
-    ${datasource}). Clear that stale current value so Grafana selects the
-    provisioned Prometheus datasource when the dashboard loads.
+    ${datasource}). Clear that stale current value so Grafana does not keep a
+    reference to a datasource that does not exist in this cluster.
 
     Returns True when the payload was modified.
     """
@@ -242,6 +257,63 @@ def clear_datasource_current(payload):
     return changed
 
 
+def use_thanos_datasource(payload):
+    """Point every Prometheus datasource reference at Thanos.
+
+    The cluster provisions Thanos as its only Prometheus-compatible data
+    source; the built-in Prometheus data source is disabled in
+    kube-prometheus-stack. Upstream dashboards still reference Prometheus
+    directly or through import/datasource variables, so rewrite those
+    references and drop the now-unused datasource variables.
+
+    Returns True when the payload was modified.
+    """
+    changed = False
+
+    def rewrite(node):
+        nonlocal changed
+        if isinstance(node, dict):
+            # The alert list panel expects an Alertmanager datasource, not the
+            # Prometheus-compatible Thanos one.
+            if node.get("type") == "alertlist":
+                options = node.get("options")
+                if (isinstance(options, dict)
+                        and options.get("datasource") == "prometheus"):
+                    options["datasource"] = "alertmanager"
+                    changed = True
+            datasource = node.get("datasource")
+            if isinstance(datasource, str) and datasource in PROMETHEUS_UIDS:
+                node["datasource"] = THANOS_UID
+                changed = True
+            elif isinstance(datasource, dict):
+                if datasource.get("uid") in PROMETHEUS_UIDS:
+                    datasource["uid"] = THANOS_UID
+                    if "type" not in datasource:
+                        datasource["type"] = "prometheus"
+                    changed = True
+            for value in node.values():
+                rewrite(value)
+        elif isinstance(node, list):
+            for value in node:
+                rewrite(value)
+
+    rewrite(payload)
+
+    templating = payload.get("templating") or {}
+    variables = templating.get("list") or []
+    kept = []
+    for variable in variables:
+        query = variable.get("query")
+        if variable.get("type") == "datasource" and query in (
+                "prometheus", ["prometheus"]):
+            continue
+        kept.append(variable)
+    if kept != variables:
+        templating["list"] = kept
+        changed = True
+    return changed
+
+
 def render_json(payload):
     """Render a dashboard payload as a stable, pretty-printed JSON document."""
     return json.dumps(payload, indent=2, ensure_ascii=False) + "\n"
@@ -275,6 +347,7 @@ def main():
 
         convert_inputs_to_variables(payload)
         clear_datasource_current(payload)
+        use_thanos_datasource(payload)
         text = render_json(payload)
         changed = not path.exists() or path.read_text() != text
         if changed:

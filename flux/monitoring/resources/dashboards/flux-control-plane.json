@@ -47,7 +47,8 @@
   "panels": [
     {
       "datasource": {
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "thanos",
+        "type": "prometheus"
       },
       "description": "",
       "fieldConfig": {
@@ -97,7 +98,8 @@
       "targets": [
         {
           "datasource": {
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "thanos",
+            "type": "prometheus"
           },
           "expr": "sum(go_info{namespace=\"$namespace\",pod=~\".*-controller-.*\"})",
           "interval": "",
@@ -110,7 +112,8 @@
     },
     {
       "datasource": {
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "thanos",
+        "type": "prometheus"
       },
       "description": "",
       "fieldConfig": {
@@ -163,7 +166,8 @@
       "targets": [
         {
           "datasource": {
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "thanos",
+            "type": "prometheus"
           },
           "expr": "max(workqueue_longest_running_processor_seconds{namespace=\"$namespace\",pod=~\".*-controller-.*\"})",
           "hide": false,
@@ -177,7 +181,8 @@
     },
     {
       "datasource": {
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "thanos",
+        "type": "prometheus"
       },
       "description": "",
       "fieldConfig": {
@@ -228,7 +233,8 @@
       "targets": [
         {
           "datasource": {
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "thanos",
+            "type": "prometheus"
           },
           "expr": "sum(go_memstats_alloc_bytes{namespace=\"$namespace\",pod=~\".*-controller-.*\"})",
           "interval": "",
@@ -241,7 +247,8 @@
     },
     {
       "datasource": {
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "thanos",
+        "type": "prometheus"
       },
       "description": "",
       "fieldConfig": {
@@ -293,7 +300,8 @@
       "targets": [
         {
           "datasource": {
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "thanos",
+            "type": "prometheus"
           },
           "expr": "sum(rate(rest_client_requests_total{namespace=\"$namespace\",pod=~\".*-controller-.*\"}[1m]))",
           "interval": "",
@@ -306,7 +314,8 @@
     },
     {
       "datasource": {
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "thanos",
+        "type": "prometheus"
       },
       "description": "",
       "fieldConfig": {
@@ -388,7 +397,8 @@
       "targets": [
         {
           "datasource": {
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "thanos",
+            "type": "prometheus"
           },
           "expr": "sum(rate(rest_client_requests_total{namespace=\"$namespace\"}[1m]))",
           "hide": false,
@@ -398,7 +408,8 @@
         },
         {
           "datasource": {
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "thanos",
+            "type": "prometheus"
           },
           "expr": "sum(rate(rest_client_requests_total{namespace=\"$namespace\",code!~\"2..\"}[1m]))",
           "hide": false,
@@ -413,7 +424,8 @@
     {
       "collapsed": false,
       "datasource": {
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "thanos",
+        "type": "prometheus"
       },
       "gridPos": {
         "h": 1,
@@ -426,7 +438,8 @@
       "targets": [
         {
           "datasource": {
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "thanos",
+            "type": "prometheus"
           },
           "refId": "A"
         }
@@ -436,7 +449,8 @@
     },
     {
       "datasource": {
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "thanos",
+        "type": "prometheus"
       },
       "fieldConfig": {
         "defaults": {
@@ -517,7 +531,8 @@
       "targets": [
         {
           "datasource": {
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "thanos",
+            "type": "prometheus"
           },
           "expr": "rate(process_cpu_seconds_total{namespace=\"$namespace\",pod=~\".*-controller-.*\"}[1m])",
           "interval": "",
@@ -530,7 +545,8 @@
     },
     {
       "datasource": {
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "thanos",
+        "type": "prometheus"
       },
       "fieldConfig": {
         "defaults": {
@@ -612,7 +628,8 @@
       "targets": [
         {
           "datasource": {
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "thanos",
+            "type": "prometheus"
           },
           "expr": "sum(container_memory_working_set_bytes{namespace=\"$namespace\",container!=\"POD\",container!=\"\",pod=~\".*-controller-.*\"}) by (pod)",
           "hide": false,
@@ -627,7 +644,8 @@
     {
       "collapsed": false,
       "datasource": {
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "thanos",
+        "type": "prometheus"
       },
       "gridPos": {
         "h": 1,
@@ -640,7 +658,8 @@
       "targets": [
         {
           "datasource": {
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "thanos",
+            "type": "prometheus"
           },
           "refId": "A"
         }
@@ -650,7 +669,8 @@
     },
     {
       "datasource": {
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "thanos",
+        "type": "prometheus"
       },
       "fieldConfig": {
         "defaults": {
@@ -731,7 +751,8 @@
       "targets": [
         {
           "datasource": {
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "thanos",
+            "type": "prometheus"
           },
           "expr": "workqueue_longest_running_processor_seconds{name=\"kustomization\"}",
           "hide": false,
@@ -745,7 +766,8 @@
     },
     {
       "datasource": {
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "thanos",
+        "type": "prometheus"
       },
       "description": "",
       "fieldConfig": {
@@ -827,7 +849,8 @@
       "targets": [
         {
           "datasource": {
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "thanos",
+            "type": "prometheus"
           },
           "expr": "sum(increase(controller_runtime_reconcile_total{controller=\"kustomization\",result!=\"error\"}[1m])) by (controller)",
           "format": "time_series",
@@ -837,7 +860,8 @@
         },
         {
           "datasource": {
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "thanos",
+            "type": "prometheus"
           },
           "expr": "sum(increase(controller_runtime_reconcile_total{controller=\"kustomization\",result=\"error\"}[1m])) by (controller)",
           "format": "time_series",
@@ -852,7 +876,8 @@
     {
       "collapsed": false,
       "datasource": {
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "thanos",
+        "type": "prometheus"
       },
       "gridPos": {
         "h": 1,
@@ -865,7 +890,8 @@
       "targets": [
         {
           "datasource": {
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "thanos",
+            "type": "prometheus"
           },
           "refId": "A"
         }
@@ -875,7 +901,8 @@
     },
     {
       "datasource": {
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "thanos",
+        "type": "prometheus"
       },
       "description": "",
       "fieldConfig": {
@@ -957,7 +984,8 @@
       "targets": [
         {
           "datasource": {
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "thanos",
+            "type": "prometheus"
           },
           "expr": "sum(increase(controller_runtime_reconcile_total{controller=\"gitrepository\",result!=\"error\"}[1m]))",
           "format": "time_series",
@@ -967,7 +995,8 @@
         },
         {
           "datasource": {
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "thanos",
+            "type": "prometheus"
           },
           "expr": "sum(increase(controller_runtime_reconcile_total{controller=\"gitrepository\",result=\"error\"}[1m]))",
           "format": "time_series",
@@ -981,7 +1010,8 @@
     },
     {
       "datasource": {
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "thanos",
+        "type": "prometheus"
       },
       "description": "",
       "fieldConfig": {
@@ -1063,7 +1093,8 @@
       "targets": [
         {
           "datasource": {
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "thanos",
+            "type": "prometheus"
           },
           "expr": "sum(increase(controller_runtime_reconcile_total{controller=\"ocirepository\",result!=\"error\"}[1m]))",
           "format": "time_series",
@@ -1073,7 +1104,8 @@
         },
         {
           "datasource": {
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "thanos",
+            "type": "prometheus"
           },
           "expr": "sum(increase(controller_runtime_reconcile_total{controller=\"ocirepository\",result=\"error\"}[1m]))",
           "format": "time_series",
@@ -1087,7 +1119,8 @@
     },
     {
       "datasource": {
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "thanos",
+        "type": "prometheus"
       },
       "description": "",
       "fieldConfig": {
@@ -1169,7 +1202,8 @@
       "targets": [
         {
           "datasource": {
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "thanos",
+            "type": "prometheus"
           },
           "expr": "sum(increase(controller_runtime_reconcile_total{controller=\"helmrepository\",result!=\"error\"}[1m]))",
           "format": "time_series",
@@ -1179,7 +1213,8 @@
         },
         {
           "datasource": {
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "thanos",
+            "type": "prometheus"
           },
           "expr": "sum(increase(controller_runtime_reconcile_total{controller=\"helmrepository\",result=\"error\"}[1m]))",
           "format": "time_series",
@@ -1193,7 +1228,8 @@
     },
     {
       "datasource": {
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "thanos",
+        "type": "prometheus"
       },
       "description": "",
       "fieldConfig": {
@@ -1275,7 +1311,8 @@
       "targets": [
         {
           "datasource": {
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "thanos",
+            "type": "prometheus"
           },
           "expr": "sum(increase(controller_runtime_reconcile_total{controller=\"bucket\",result!=\"error\"}[1m]))",
           "format": "time_series",
@@ -1285,7 +1322,8 @@
         },
         {
           "datasource": {
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "thanos",
+            "type": "prometheus"
           },
           "expr": "sum(increase(controller_runtime_reconcile_total{controller=\"bucket\",result=\"error\"}[1m]))",
           "format": "time_series",
@@ -1300,7 +1338,8 @@
     {
       "collapsed": false,
       "datasource": {
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "thanos",
+        "type": "prometheus"
       },
       "gridPos": {
         "h": 1,
@@ -1313,7 +1352,8 @@
       "targets": [
         {
           "datasource": {
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "thanos",
+            "type": "prometheus"
           },
           "refId": "A"
         }
@@ -1323,7 +1363,8 @@
     },
     {
       "datasource": {
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "thanos",
+        "type": "prometheus"
       },
       "fieldConfig": {
         "defaults": {
@@ -1404,7 +1445,8 @@
       "targets": [
         {
           "datasource": {
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "thanos",
+            "type": "prometheus"
           },
           "expr": "histogram_quantile(0.50, sum(rate(controller_runtime_reconcile_time_seconds_bucket{controller=\"helmrelease\"}[5m])) by (le))",
           "hide": true,
@@ -1414,7 +1456,8 @@
         },
         {
           "datasource": {
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "thanos",
+            "type": "prometheus"
           },
           "expr": "histogram_quantile(0.90, sum(rate(controller_runtime_reconcile_time_seconds_bucket{controller=\"helmrelease\"}[5m])) by (le))",
           "hide": true,
@@ -1424,7 +1467,8 @@
         },
         {
           "datasource": {
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "thanos",
+            "type": "prometheus"
           },
           "expr": "histogram_quantile(0.99, sum(rate(controller_runtime_reconcile_time_seconds_bucket{controller=\"helmrelease\"}[5m])) by (le))",
           "hide": false,
@@ -1438,7 +1482,8 @@
     },
     {
       "datasource": {
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "thanos",
+        "type": "prometheus"
       },
       "description": "",
       "fieldConfig": {
@@ -1520,7 +1565,8 @@
       "targets": [
         {
           "datasource": {
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "thanos",
+            "type": "prometheus"
           },
           "expr": "sum(increase(controller_runtime_reconcile_total{controller=\"helmrelease\",result!=\"error\"}[1m])) by (controller)",
           "format": "time_series",
@@ -1530,7 +1576,8 @@
         },
         {
           "datasource": {
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "thanos",
+            "type": "prometheus"
           },
           "expr": "sum(increase(controller_runtime_reconcile_total{controller=\"helmrelease\",result=\"error\"}[1m])) by (controller)",
           "format": "time_series",
@@ -1544,7 +1591,8 @@
     },
     {
       "datasource": {
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "thanos",
+        "type": "prometheus"
       },
       "description": "",
       "fieldConfig": {
@@ -1626,7 +1674,8 @@
       "targets": [
         {
           "datasource": {
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "thanos",
+            "type": "prometheus"
           },
           "expr": "sum(increase(controller_runtime_reconcile_total{controller=\"helmchart\",result!=\"error\"}[1m])) by (controller)",
           "format": "time_series",
@@ -1636,7 +1685,8 @@
         },
         {
           "datasource": {
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "thanos",
+            "type": "prometheus"
           },
           "expr": "sum(increase(controller_runtime_reconcile_total{controller=\"helmchart\",result=\"error\"}[1m])) by (controller)",
           "format": "time_series",
@@ -1660,29 +1710,12 @@
       {
         "current": {
           "selected": false,
-          "text": "Prometheus",
-          "value": "Prometheus"
-        },
-        "hide": 2,
-        "includeAll": false,
-        "multi": false,
-        "name": "DS_PROMETHEUS",
-        "options": [],
-        "query": "prometheus",
-        "refresh": 1,
-        "regex": "",
-        "skipUrlSync": false,
-        "type": "datasource"
-      },
-      {
-        "current": {
-          "selected": false,
           "text": "flux-system",
           "value": "flux-system"
         },
         "datasource": {
           "type": "prometheus",
-          "uid": "${DS_PROMETHEUS}"
+          "uid": "thanos"
         },
         "definition": "workqueue_work_duration_seconds_count",
         "hide": 0,

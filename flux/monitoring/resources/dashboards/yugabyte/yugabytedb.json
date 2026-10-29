@@ -22,7 +22,7 @@
   "panels": [
     {
       "collapsed": false,
-      "datasource": "$datasource",
+      "datasource": "thanos",
       "gridPos": {
         "h": 1,
         "w": 24,
@@ -43,7 +43,7 @@
         "rgba(237, 129, 40, 0.89)",
         "#299c46"
       ],
-      "datasource": "$datasource",
+      "datasource": "thanos",
       "description": "",
       "fieldConfig": {
         "defaults": {
@@ -139,7 +139,7 @@
     },
     {
       "collapsed": false,
-      "datasource": "$datasource",
+      "datasource": "thanos",
       "gridPos": {
         "h": 1,
         "w": 24,
@@ -160,7 +160,7 @@
         "rgba(237, 129, 40, 0.89)",
         "#299c46"
       ],
-      "datasource": "$datasource",
+      "datasource": "thanos",
       "fieldConfig": {
         "defaults": {
           "custom": {}
@@ -255,7 +255,7 @@
     },
     {
       "collapsed": false,
-      "datasource": "$datasource",
+      "datasource": "thanos",
       "gridPos": {
         "h": 1,
         "w": 24,
@@ -272,7 +272,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "$datasource",
+      "datasource": "thanos",
       "fieldConfig": {
         "defaults": {
           "custom": {}
@@ -401,7 +401,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "$datasource",
+      "datasource": "thanos",
       "fieldConfig": {
         "defaults": {
           "custom": {}
@@ -529,7 +529,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "$datasource",
+      "datasource": "thanos",
       "fieldConfig": {
         "defaults": {
           "custom": {}
@@ -626,7 +626,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "$datasource",
+      "datasource": "thanos",
       "description": "",
       "fieldConfig": {
         "defaults": {
@@ -724,7 +724,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "$datasource",
+      "datasource": "thanos",
       "fieldConfig": {
         "defaults": {
           "custom": {}
@@ -821,7 +821,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "$datasource",
+      "datasource": "thanos",
       "fieldConfig": {
         "defaults": {
           "custom": {}
@@ -918,7 +918,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "$datasource",
+      "datasource": "thanos",
       "fieldConfig": {
         "defaults": {
           "custom": {}
@@ -1015,7 +1015,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "$datasource",
+      "datasource": "thanos",
       "fieldConfig": {
         "defaults": {
           "custom": {}
@@ -1112,7 +1112,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "$datasource",
+      "datasource": "thanos",
       "fieldConfig": {
         "defaults": {
           "custom": {}
@@ -1209,7 +1209,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "$datasource",
+      "datasource": "thanos",
       "fieldConfig": {
         "defaults": {
           "custom": {}
@@ -1306,7 +1306,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "$datasource",
+      "datasource": "thanos",
       "fieldConfig": {
         "defaults": {
           "custom": {}
@@ -1403,7 +1403,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "$datasource",
+      "datasource": "thanos",
       "fieldConfig": {
         "defaults": {
           "custom": {}
@@ -1500,7 +1500,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "$datasource",
+      "datasource": "thanos",
       "fieldConfig": {
         "defaults": {
           "custom": {}
@@ -1597,7 +1597,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "$datasource",
+      "datasource": "thanos",
       "fieldConfig": {
         "defaults": {
           "custom": {}
@@ -1691,7 +1691,7 @@
     },
     {
       "collapsed": false,
-      "datasource": "$datasource",
+      "datasource": "thanos",
       "gridPos": {
         "h": 1,
         "w": 24,
@@ -1708,7 +1708,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "$datasource",
+      "datasource": "thanos",
       "fieldConfig": {
         "defaults": {
           "custom": {}
@@ -1810,7 +1810,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "$datasource",
+      "datasource": "thanos",
       "fieldConfig": {
         "defaults": {
           "custom": {}
@@ -1919,7 +1919,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "$datasource",
+      "datasource": "thanos",
       "fieldConfig": {
         "defaults": {
           "custom": {}
@@ -2015,7 +2015,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "$datasource",
+      "datasource": "thanos",
       "fieldConfig": {
         "defaults": {
           "custom": {}
@@ -2117,7 +2117,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "$datasource",
+      "datasource": "thanos",
       "fieldConfig": {
         "defaults": {
           "custom": {}
@@ -2220,7 +2220,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "$datasource",
+      "datasource": "thanos",
       "fieldConfig": {
         "defaults": {
           "custom": {}
@@ -2323,7 +2323,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "$datasource",
+      "datasource": "thanos",
       "fieldConfig": {
         "defaults": {
           "custom": {}
@@ -2429,7 +2429,7 @@
     },
     {
       "collapsed": false,
-      "datasource": "$datasource",
+      "datasource": "thanos",
       "gridPos": {
         "h": 1,
         "w": 24,
@@ -2446,7 +2446,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "$datasource",
+      "datasource": "thanos",
       "fieldConfig": {
         "defaults": {
           "custom": {}
@@ -2575,7 +2575,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "$datasource",
+      "datasource": "thanos",
       "fieldConfig": {
         "defaults": {
           "custom": {}
@@ -2703,7 +2703,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "$datasource",
+      "datasource": "thanos",
       "fieldConfig": {
         "defaults": {
           "custom": {}
@@ -2833,7 +2833,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "$datasource",
+      "datasource": "thanos",
       "fieldConfig": {
         "defaults": {
           "custom": {}
@@ -2963,7 +2963,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "$datasource",
+      "datasource": "thanos",
       "fieldConfig": {
         "defaults": {
           "custom": {}
@@ -3060,7 +3060,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "$datasource",
+      "datasource": "thanos",
       "fieldConfig": {
         "defaults": {
           "custom": {}
@@ -3158,7 +3158,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "$datasource",
+      "datasource": "thanos",
       "fieldConfig": {
         "defaults": {
           "custom": {}
@@ -3255,7 +3255,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "$datasource",
+      "datasource": "thanos",
       "fieldConfig": {
         "defaults": {
           "custom": {}
@@ -3352,7 +3352,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "$datasource",
+      "datasource": "thanos",
       "fieldConfig": {
         "defaults": {
           "custom": {}
@@ -3449,7 +3449,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "$datasource",
+      "datasource": "thanos",
       "fieldConfig": {
         "defaults": {
           "custom": {}
@@ -3546,7 +3546,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "$datasource",
+      "datasource": "thanos",
       "fieldConfig": {
         "defaults": {
           "custom": {}
@@ -3643,7 +3643,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "$datasource",
+      "datasource": "thanos",
       "fieldConfig": {
         "defaults": {
           "custom": {}
@@ -3740,7 +3740,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "$datasource",
+      "datasource": "thanos",
       "fieldConfig": {
         "defaults": {
           "custom": {}
@@ -3838,7 +3838,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "$datasource",
+      "datasource": "thanos",
       "fieldConfig": {
         "defaults": {
           "custom": {}
@@ -3941,7 +3941,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "$datasource",
+      "datasource": "thanos",
       "fieldConfig": {
         "defaults": {
           "custom": {}
@@ -4038,7 +4038,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "$datasource",
+      "datasource": "thanos",
       "fieldConfig": {
         "defaults": {
           "custom": {}
@@ -4135,7 +4135,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "$datasource",
+      "datasource": "thanos",
       "fieldConfig": {
         "defaults": {
           "custom": {}
@@ -4244,7 +4244,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "$datasource",
+      "datasource": "thanos",
       "fieldConfig": {
         "defaults": {
           "custom": {}
@@ -4341,7 +4341,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "$datasource",
+      "datasource": "thanos",
       "fieldConfig": {
         "defaults": {
           "custom": {}
@@ -4458,7 +4458,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "$datasource",
+      "datasource": "thanos",
       "fieldConfig": {
         "defaults": {
           "custom": {}
@@ -4554,7 +4554,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "$datasource",
+      "datasource": "thanos",
       "fieldConfig": {
         "defaults": {
           "custom": {}
@@ -4653,7 +4653,7 @@
     },
     {
       "collapsed": false,
-      "datasource": "$datasource",
+      "datasource": "thanos",
       "gridPos": {
         "h": 1,
         "w": 24,
@@ -4670,7 +4670,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "$datasource",
+      "datasource": "thanos",
       "fieldConfig": {
         "defaults": {
           "custom": {}
@@ -4773,7 +4773,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "$datasource",
+      "datasource": "thanos",
       "fieldConfig": {
         "defaults": {
           "custom": {}
@@ -4882,7 +4882,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "$datasource",
+      "datasource": "thanos",
       "fieldConfig": {
         "defaults": {
           "custom": {}
@@ -4984,7 +4984,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "$datasource",
+      "datasource": "thanos",
       "fieldConfig": {
         "defaults": {
           "custom": {}
@@ -5087,7 +5087,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "$datasource",
+      "datasource": "thanos",
       "fieldConfig": {
         "defaults": {
           "custom": {}
@@ -5190,7 +5190,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "$datasource",
+      "datasource": "thanos",
       "fieldConfig": {
         "defaults": {
           "custom": {}
@@ -5305,7 +5305,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "$datasource",
+      "datasource": "thanos",
       "fieldConfig": {
         "defaults": {
           "custom": {}
@@ -5401,7 +5401,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "$datasource",
+      "datasource": "thanos",
       "fieldConfig": {
         "defaults": {
           "custom": {}
@@ -5504,7 +5504,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "$datasource",
+      "datasource": "thanos",
       "fieldConfig": {
         "defaults": {
           "custom": {}
@@ -5600,7 +5600,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "$datasource",
+      "datasource": "thanos",
       "fieldConfig": {
         "defaults": {
           "custom": {}
@@ -5702,7 +5702,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "$datasource",
+      "datasource": "thanos",
       "fieldConfig": {
         "defaults": {
           "custom": {}
@@ -5805,7 +5805,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "$datasource",
+      "datasource": "thanos",
       "fieldConfig": {
         "defaults": {
           "custom": {}
@@ -5902,7 +5902,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "$datasource",
+      "datasource": "thanos",
       "fieldConfig": {
         "defaults": {
           "custom": {}
@@ -6005,7 +6005,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "$datasource",
+      "datasource": "thanos",
       "fieldConfig": {
         "defaults": {
           "custom": {}
@@ -6114,7 +6114,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "$datasource",
+      "datasource": "thanos",
       "fieldConfig": {
         "defaults": {
           "custom": {}
@@ -6243,7 +6243,7 @@
     },
     {
       "collapsed": false,
-      "datasource": "$datasource",
+      "datasource": "thanos",
       "gridPos": {
         "h": 1,
         "w": 24,
@@ -6260,7 +6260,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "$datasource",
+      "datasource": "thanos",
       "fieldConfig": {
         "defaults": {
           "custom": {}
@@ -6372,24 +6372,9 @@
   "templating": {
     "list": [
       {
-        "current": {},
-        "hide": 0,
-        "includeAll": false,
-        "label": null,
-        "multi": false,
-        "name": "datasource",
-        "options": [],
-        "query": "prometheus",
-        "queryValue": "",
-        "refresh": 1,
-        "regex": "",
-        "skipUrlSync": false,
-        "type": "datasource"
-      },
-      {
         "allValue": null,
         "current": {},
-        "datasource": "$datasource",
+        "datasource": "thanos",
         "definition": "label_values(node_prefix)",
         "hide": 0,
         "includeAll": false,
@@ -6411,7 +6396,7 @@
       {
         "allValue": null,
         "current": {},
-        "datasource": "$datasource",
+        "datasource": "thanos",
         "definition": "label_values(up{node_prefix=\"$dbcluster\", export_type=\"master_export\"}, instance)",
         "hide": 2,
         "includeAll": true,
@@ -6433,7 +6418,7 @@
       {
         "allValue": null,
         "current": {},
-        "datasource": "$datasource",
+        "datasource": "thanos",
         "definition": "label_values(up{node_prefix=\"$dbcluster\", export_type=\"tserver_export\"}, instance)",
         "hide": 2,
         "includeAll": true,

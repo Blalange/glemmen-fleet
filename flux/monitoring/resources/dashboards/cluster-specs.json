@@ -70,7 +70,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "thanos"
       },
       "description": "Number of nodes currently scraped by node-exporter.",
       "fieldConfig": {
@@ -122,7 +122,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "thanos"
           },
           "expr": "count(node_uname_info)",
           "instant": true,
@@ -137,7 +137,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "thanos"
       },
       "description": "Logical CPU cores across all nodes (one idle series per core).",
       "fieldConfig": {
@@ -189,7 +189,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "thanos"
           },
           "expr": "count(node_cpu_seconds_total{mode=\"idle\"})",
           "instant": true,
@@ -204,7 +204,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "thanos"
       },
       "description": "Physical memory installed in all nodes, from node-exporter.",
       "fieldConfig": {
@@ -256,7 +256,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "thanos"
           },
           "expr": "sum(node_memory_MemTotal_bytes)",
           "instant": true,
@@ -271,7 +271,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "thanos"
       },
       "description": "Combined capacity of the physical disks reported by smartctl, before RAID. Duplicates (for example the OS device and the RAID controller pass-through) are removed by serial number, and RAID virtual disks are excluded.",
       "fieldConfig": {
@@ -323,7 +323,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "thanos"
           },
           "expr": "sum(max by (node, serial_number) (smartctl_device_capacity_bytes{device!~\"^(loop|ram|sr|fd|dm-|zram|zd|nbd|rbd|drbd)[0-9]+$\"} * on (node, device) group_left (serial_number, model_name) smartctl_device{device!~\"^(loop|ram|sr|fd|dm-|zram|zd|nbd|rbd|drbd)[0-9]+$\", model_name!=\"IET VIRTUAL-DISK\", model_name!~\"(?i).*(perc|megaraid|serveraid|logical volume|virtual disk).*\"}))",
           "instant": true,
@@ -338,7 +338,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "thanos"
       },
       "description": "Combined capacity of the whole block devices visible to the OS (node_disk_info), with each device's size taken from smartctl. On hardware-RAID machines this is the virtual disk, so it is the usable capacity after RAID.",
       "fieldConfig": {
@@ -390,7 +390,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "thanos"
           },
           "expr": "sum(smartctl_device_capacity_bytes and on (node, device) node_disk_info{device=~\"^(sd[a-z]+|hd[a-z]+|vd[a-z]+|xvd[a-z]+|nvme[0-9]+n[0-9]+|mmcblk[0-9]+)$\"})",
           "instant": true,
@@ -405,7 +405,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "thanos"
       },
       "description": "Combined capacity of all disks managed by Longhorn, from longhorn-manager. Storage reservations are not subtracted.",
       "fieldConfig": {
@@ -457,7 +457,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "thanos"
           },
           "expr": "sum(longhorn_disk_capacity_bytes)",
           "instant": true,
@@ -485,7 +485,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "thanos"
       },
       "description": "Per-node CPU, memory, OS-visible disk capacity, raw physical disk capacity and Longhorn capacity.",
       "fieldConfig": {
@@ -646,7 +646,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "thanos"
           },
           "expr": "count by (node) (node_cpu_seconds_total{mode=\"idle\"})",
           "instant": true,
@@ -657,7 +657,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "thanos"
           },
           "expr": "sum by (node) (node_memory_MemTotal_bytes)",
           "instant": true,
@@ -668,7 +668,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "thanos"
           },
           "expr": "sum by (node) (smartctl_device_capacity_bytes and on (node, device) node_disk_info{device=~\"^(sd[a-z]+|hd[a-z]+|vd[a-z]+|xvd[a-z]+|nvme[0-9]+n[0-9]+|mmcblk[0-9]+)$\"})",
           "instant": true,
@@ -679,7 +679,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "thanos"
           },
           "expr": "sum by (node) (max by (node, serial_number) (smartctl_device_capacity_bytes{device!~\"^(loop|ram|sr|fd|dm-|zram|zd|nbd|rbd|drbd)[0-9]+$\"} * on (node, device) group_left (serial_number, model_name) smartctl_device{device!~\"^(loop|ram|sr|fd|dm-|zram|zd|nbd|rbd|drbd)[0-9]+$\", model_name!=\"IET VIRTUAL-DISK\", model_name!~\"(?i).*(perc|megaraid|serveraid|logical volume|virtual disk).*\"}))",
           "instant": true,
@@ -690,7 +690,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "thanos"
           },
           "expr": "sum by (node) (longhorn_disk_capacity_bytes)",
           "instant": true,
@@ -753,25 +753,10 @@
     "cluster",
     "hardware",
     "specs",
-    "prometheus"
+    "thanos"
   ],
   "templating": {
-    "list": [
-      {
-        "current": {},
-        "hide": 0,
-        "includeAll": false,
-        "label": "Datasource",
-        "multi": false,
-        "name": "DS_PROMETHEUS",
-        "options": [],
-        "query": "prometheus",
-        "refresh": 1,
-        "regex": "",
-        "skipUrlSync": false,
-        "type": "datasource"
-      }
-    ]
+    "list": []
   },
   "time": {
     "from": "now-6h",

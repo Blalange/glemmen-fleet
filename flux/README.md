@@ -209,10 +209,10 @@ Prometheus is capped at 15GiB of local TSDB blocks (`retentionSize` in
 `monitoring/kube-prometheus-stack/values.yaml`), so its 20Gi PVC stays within
 the 20GB usage budget. The Thanos sidecar uploads completed blocks to the
 `thanos` bucket in SeaweedFS; the `thanos` HelmRelease runs Query, Store Gateway
-and Compactor against the same bucket. Grafana uses the additional "Thanos"
-data source as its default, because it serves both live Prometheus data and the
-long-term blocks; the built-in Prometheus data source remains available for
-local troubleshooting.
+and Compactor against the same bucket. Grafana uses Thanos as its only
+Prometheus-compatible data source, because it serves both live Prometheus data
+and the long-term blocks; the chart's built-in Prometheus data source is
+disabled and deleted, and every dashboard queries Thanos directly.
 
 The Thanos component dashboards (Overview, Compact, Query, Query Frontend,
 Store, Receive, Sidecar, Rule and BucketReplicate) live in

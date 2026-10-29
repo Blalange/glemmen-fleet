@@ -217,8 +217,9 @@ grafana:
 
   # Additional data sources. Thanos Query includes the live Prometheus sidecar
   # and the object-store blocks, so it serves both recent and long-term data.
-  # It is the Grafana default; the built-in Prometheus data source stays
-  # available for troubleshooting the local Prometheus.
+  # It is the only Prometheus-compatible data source: the chart's built-in
+  # Prometheus data source is disabled below and removed from Grafana's
+  # database with deleteDatasources.
   additionalDataSources:
     - name: Thanos
       type: prometheus
@@ -228,6 +229,13 @@ grafana:
       isDefault: true
       jsonData:
         timeInterval: 30s
+        prometheusType: Thanos
+
+  # The built-in Prometheus data source is no longer provisioned. Delete it
+  # from Grafana's database as well, since all dashboards query Thanos.
+  deleteDatasources:
+    - name: Prometheus
+      orgId: 1
 
   # Dashboards whose ConfigMap carries the grafana_folder annotation are
   # written into a subdirectory of the sidecar's dashboard volume; the file
@@ -238,7 +246,10 @@ grafana:
   # the root (General) level.
   sidecar:
     datasources:
-      # Only one data source can be the default; Thanos is it.
+      # Only one data source can be the default; Thanos is it. Disable the
+      # chart's built-in Prometheus data source so Thanos is the only
+      # Prometheus-compatible source.
+      defaultDatasourceEnabled: false
       isDefaultDatasource: false
     dashboards:
       folderAnnotation: grafana_folder

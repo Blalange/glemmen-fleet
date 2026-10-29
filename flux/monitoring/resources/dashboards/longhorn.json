@@ -82,7 +82,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "${datasource}"
+        "uid": "thanos"
       },
       "description": "The total number of volumes in the Longhorn storage system",
       "fieldConfig": {
@@ -128,7 +128,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${datasource}"
+            "uid": "thanos"
           },
           "editorMode": "code",
           "expr": "count(longhorn_volume_capacity_bytes{pvc_namespace=~\"$namespace\",pvc=~\"$pvc\",volume=~\"$pv_name\"}) OR on() vector(0)",
@@ -144,7 +144,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "${datasource}"
+        "uid": "thanos"
       },
       "description": "Healthy volumes are volumes that are attaching to a node and have the number of healthy replicas equals to the expected number of replicas.",
       "fieldConfig": {
@@ -194,7 +194,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${datasource}"
+            "uid": "thanos"
           },
           "editorMode": "code",
           "expr": "count(\r\n  (longhorn_volume_robustness{pvc_namespace=~\"$namespace\",pvc=~\"$pvc\",volume=~\"$pv_name\"} == 1)\r\n  or\r\n  (longhorn_volume_robustness{pvc_namespace=~\"$namespace\",pvc=~\"$pvc\",robustness=\"healthy\",volume=~\"$pv_name\"} == 1)\r\n) OR on() vector(0)",
@@ -210,7 +210,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "${datasource}"
+        "uid": "thanos"
       },
       "description": "Note that Longhorn volume actual size is not the size of the filesystem inside a Longhorn volume.  See more at : https://longhorn.io/docs/1.0.2/volumes-and-nodes/volume-size/#volume-actual-size",
       "fieldConfig": {
@@ -303,7 +303,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${datasource}"
+            "uid": "thanos"
           },
           "editorMode": "code",
           "exemplar": true,
@@ -320,7 +320,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "${datasource}"
+        "uid": "thanos"
       },
       "description": "Degraded volumes are volumes that have the number of healthy replicas smaller than the expected number of replicas. e.g. User creates a volume with 2 replicas but 1 replicas is failed.",
       "fieldConfig": {
@@ -370,7 +370,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${datasource}"
+            "uid": "thanos"
           },
           "editorMode": "code",
           "expr": "count(\r\n  (longhorn_volume_robustness{pvc_namespace=~\"$namespace\",pvc=~\"$pvc\",volume=~\"$pv_name\"} == 2)\r\n  or\r\n  (longhorn_volume_robustness{pvc_namespace=~\"$namespace\",pvc=~\"$pvc\",robustness=\"degraded\",volume=~\"$pv_name\"} == 1)\r\n) OR on() vector(0)",
@@ -386,7 +386,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "${datasource}"
+        "uid": "thanos"
       },
       "description": "Fault volumes are volumes that doesn't have any healthy replica.",
       "fieldConfig": {
@@ -436,7 +436,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${datasource}"
+            "uid": "thanos"
           },
           "editorMode": "code",
           "expr": "count(\r\n  (longhorn_volume_robustness{pvc_namespace=~\"$namespace\",pvc=~\"$pvc\",volume=~\"$pv_name\"} == 3)\r\n  or\r\n  (longhorn_volume_robustness{pvc_namespace=~\"$namespace\",pvc=~\"$pvc\",robustness=\"faulted\",volume=~\"$pv_name\"} == 1)\r\n) OR on() vector(0)",
@@ -452,7 +452,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "${datasource}"
+        "uid": "thanos"
       },
       "description": "The capacity of each Longhorn volume",
       "fieldConfig": {
@@ -572,7 +572,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${datasource}"
+            "uid": "thanos"
           },
           "editorMode": "code",
           "expr": "avg by (pvc_namespace, pvc, volume) (longhorn_volume_capacity_bytes{pvc_namespace=~\"$namespace\",pvc=~\"$pvc\",volume=~\"$pv_name\"})",
@@ -586,7 +586,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${datasource}"
+            "uid": "thanos"
           },
           "editorMode": "code",
           "exemplar": false,
@@ -600,7 +600,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${datasource}"
+            "uid": "thanos"
           },
           "editorMode": "code",
           "exemplar": false,
@@ -674,7 +674,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "${datasource}"
+        "uid": "thanos"
       },
       "description": "Attached volumes are volumes that are currently attaching to a node",
       "fieldConfig": {
@@ -724,7 +724,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${datasource}"
+            "uid": "thanos"
           },
           "editorMode": "code",
           "expr": "count(\r\n  (longhorn_volume_state{pvc_namespace=~\"$namespace\",pvc=~\"$pvc\",volume=~\"$pv_name\"} == 2)\r\n  or\r\n  (longhorn_volume_state{pvc_namespace=~\"$namespace\",pvc=~\"$pvc\",state=\"attached\",volume=~\"$pv_name\"} == 1)\r\n) OR on() vector(0)",
@@ -740,7 +740,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "${datasource}"
+        "uid": "thanos"
       },
       "description": "Detached volumes are volumes that aren't currently attaching to a node",
       "fieldConfig": {
@@ -790,7 +790,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${datasource}"
+            "uid": "thanos"
           },
           "editorMode": "code",
           "expr": "count(\r\n  (longhorn_volume_state{pvc_namespace=~\"$namespace\",pvc=~\"$pvc\",volume=~\"$pv_name\"} == 3)\r\n  or\r\n  (longhorn_volume_state{pvc_namespace=~\"$namespace\",pvc=~\"$pvc\",state=\"detached\",volume=~\"$pv_name\"} == 1)\r\n) OR on() vector(0)",
@@ -818,7 +818,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "${datasource}"
+        "uid": "thanos"
       },
       "description": "Read and write IOPS reported by the Longhorn volume engine. Idle (zero) series are hidden; min and mean exclude zero samples.",
       "fieldConfig": {
@@ -906,7 +906,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${datasource}"
+            "uid": "thanos"
           },
           "editorMode": "code",
           "expr": "max by (pvc_namespace, pvc, volume) (longhorn_volume_read_iops{pvc_namespace=~\"$namespace\",pvc=~\"$pvc\",volume=~\"$pv_name\"}) > 0",
@@ -917,7 +917,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${datasource}"
+            "uid": "thanos"
           },
           "editorMode": "code",
           "expr": "max by (pvc_namespace, pvc, volume) (longhorn_volume_write_iops{pvc_namespace=~\"$namespace\",pvc=~\"$pvc\",volume=~\"$pv_name\"}) > 0",
@@ -932,7 +932,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "${datasource}"
+        "uid": "thanos"
       },
       "description": "Read and write throughput reported by the Longhorn volume engine (bytes/sec). Idle (zero) series are hidden; min and mean exclude zero samples.",
       "fieldConfig": {
@@ -1020,7 +1020,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${datasource}"
+            "uid": "thanos"
           },
           "editorMode": "code",
           "expr": "max by (pvc_namespace, pvc, volume) (longhorn_volume_read_throughput{pvc_namespace=~\"$namespace\",pvc=~\"$pvc\",volume=~\"$pv_name\"}) > 0",
@@ -1031,7 +1031,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${datasource}"
+            "uid": "thanos"
           },
           "editorMode": "code",
           "expr": "max by (pvc_namespace, pvc, volume) (longhorn_volume_write_throughput{pvc_namespace=~\"$namespace\",pvc=~\"$pvc\",volume=~\"$pv_name\"}) > 0",
@@ -1046,7 +1046,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "${datasource}"
+        "uid": "thanos"
       },
       "description": "Average read and write latency reported by the Longhorn volume engine (nanoseconds). Idle (zero) series are hidden; min and mean exclude zero samples.",
       "fieldConfig": {
@@ -1134,7 +1134,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${datasource}"
+            "uid": "thanos"
           },
           "editorMode": "code",
           "expr": "max by (pvc_namespace, pvc, volume) (longhorn_volume_read_latency{pvc_namespace=~\"$namespace\",pvc=~\"$pvc\",volume=~\"$pv_name\"}) > 0",
@@ -1145,7 +1145,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${datasource}"
+            "uid": "thanos"
           },
           "editorMode": "code",
           "expr": "max by (pvc_namespace, pvc, volume) (longhorn_volume_write_latency{pvc_namespace=~\"$namespace\",pvc=~\"$pvc\",volume=~\"$pv_name\"}) > 0",
@@ -1160,7 +1160,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "${datasource}"
+        "uid": "thanos"
       },
       "description": "Current IOPS, throughput and latency for each selected Longhorn volume.",
       "fieldConfig": {
@@ -1309,7 +1309,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${datasource}"
+            "uid": "thanos"
           },
           "editorMode": "code",
           "expr": "max by (pvc_namespace, pvc, volume) (longhorn_volume_read_iops{pvc_namespace=~\"$namespace\",pvc=~\"$pvc\",volume=~\"$pv_name\"})",
@@ -1322,7 +1322,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${datasource}"
+            "uid": "thanos"
           },
           "editorMode": "code",
           "expr": "max by (pvc_namespace, pvc, volume) (longhorn_volume_write_iops{pvc_namespace=~\"$namespace\",pvc=~\"$pvc\",volume=~\"$pv_name\"})",
@@ -1335,7 +1335,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${datasource}"
+            "uid": "thanos"
           },
           "editorMode": "code",
           "expr": "max by (pvc_namespace, pvc, volume) (longhorn_volume_read_throughput{pvc_namespace=~\"$namespace\",pvc=~\"$pvc\",volume=~\"$pv_name\"})",
@@ -1348,7 +1348,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${datasource}"
+            "uid": "thanos"
           },
           "editorMode": "code",
           "expr": "max by (pvc_namespace, pvc, volume) (longhorn_volume_write_throughput{pvc_namespace=~\"$namespace\",pvc=~\"$pvc\",volume=~\"$pv_name\"})",
@@ -1361,7 +1361,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${datasource}"
+            "uid": "thanos"
           },
           "editorMode": "code",
           "expr": "max by (pvc_namespace, pvc, volume) (longhorn_volume_read_latency{pvc_namespace=~\"$namespace\",pvc=~\"$pvc\",volume=~\"$pv_name\"})",
@@ -1374,7 +1374,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${datasource}"
+            "uid": "thanos"
           },
           "editorMode": "code",
           "expr": "max by (pvc_namespace, pvc, volume) (longhorn_volume_write_latency{pvc_namespace=~\"$namespace\",pvc=~\"$pvc\",volume=~\"$pv_name\"})",
@@ -1428,7 +1428,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "${datasource}"
+        "uid": "thanos"
       },
       "description": "Current attach state, robustness, capacity, usage and encryption for each selected Longhorn volume.",
       "fieldConfig": {
@@ -1688,7 +1688,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${datasource}"
+            "uid": "thanos"
           },
           "editorMode": "code",
           "expr": "max by (pvc_namespace, pvc, volume) (\n  (longhorn_volume_state{pvc_namespace=~\"$namespace\",pvc=~\"$pvc\",volume=~\"$pv_name\",state=\"attached\"} == 1) * 1\n  or (longhorn_volume_state{pvc_namespace=~\"$namespace\",pvc=~\"$pvc\",volume=~\"$pv_name\",state=\"detached\"} == 1) * 2\n  or (longhorn_volume_state{pvc_namespace=~\"$namespace\",pvc=~\"$pvc\",volume=~\"$pv_name\",state=\"attaching\"} == 1) * 3\n  or (longhorn_volume_state{pvc_namespace=~\"$namespace\",pvc=~\"$pvc\",volume=~\"$pv_name\",state=\"detaching\"} == 1) * 4\n  or (longhorn_volume_state{pvc_namespace=~\"$namespace\",pvc=~\"$pvc\",volume=~\"$pv_name\",state=\"creating\"} == 1) * 5\n  or (longhorn_volume_state{pvc_namespace=~\"$namespace\",pvc=~\"$pvc\",volume=~\"$pv_name\",state=\"deleting\"} == 1) * 6\n)",
@@ -1701,7 +1701,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${datasource}"
+            "uid": "thanos"
           },
           "editorMode": "code",
           "expr": "max by (pvc_namespace, pvc, volume) (\n  (longhorn_volume_robustness{pvc_namespace=~\"$namespace\",pvc=~\"$pvc\",volume=~\"$pv_name\",state=\"unknown\"} == 1) * 0\n  or (longhorn_volume_robustness{pvc_namespace=~\"$namespace\",pvc=~\"$pvc\",volume=~\"$pv_name\",state=\"healthy\"} == 1) * 1\n  or (longhorn_volume_robustness{pvc_namespace=~\"$namespace\",pvc=~\"$pvc\",volume=~\"$pv_name\",state=\"degraded\"} == 1) * 2\n  or (longhorn_volume_robustness{pvc_namespace=~\"$namespace\",pvc=~\"$pvc\",volume=~\"$pv_name\",state=\"faulted\"} == 1) * 3\n)",
@@ -1714,7 +1714,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${datasource}"
+            "uid": "thanos"
           },
           "editorMode": "code",
           "expr": "max by (pvc_namespace, pvc, volume) (longhorn_volume_capacity_bytes{pvc_namespace=~\"$namespace\",pvc=~\"$pvc\",volume=~\"$pv_name\"})",
@@ -1727,7 +1727,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${datasource}"
+            "uid": "thanos"
           },
           "editorMode": "code",
           "expr": "max by (pvc_namespace, pvc, volume) (longhorn_volume_actual_size_bytes{pvc_namespace=~\"$namespace\",pvc=~\"$pvc\",volume=~\"$pv_name\"})",
@@ -1740,7 +1740,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${datasource}"
+            "uid": "thanos"
           },
           "editorMode": "code",
           "expr": "100 * max by (pvc_namespace, pvc, volume) (longhorn_volume_actual_size_bytes{pvc_namespace=~\"$namespace\",pvc=~\"$pvc\",volume=~\"$pv_name\"})\n/ max by (pvc_namespace, pvc, volume) (longhorn_volume_capacity_bytes{pvc_namespace=~\"$namespace\",pvc=~\"$pvc\",volume=~\"$pv_name\"})",
@@ -1753,7 +1753,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${datasource}"
+            "uid": "thanos"
           },
           "editorMode": "code",
           "expr": "max by (pvc_namespace, pvc, volume) (longhorn_volume_encrypted{pvc_namespace=~\"$namespace\",pvc=~\"$pvc\",volume=~\"$pv_name\"})",
@@ -1817,7 +1817,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${datasource}"
+            "uid": "thanos"
           },
           "description": "Longhorn volumes bound to a PVC in the selected Namespace/PVC scope. These are the volumes we expect to be backed up. NOTE: Longhorn does not export backup POLICY as a metric - this dashboard measures observed backup COVERAGE (via longhorn_volume_last_backup_at).",
           "fieldConfig": {
@@ -1866,7 +1866,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${datasource}"
+                "uid": "thanos"
               },
               "editorMode": "code",
               "expr": "count(longhorn_volume_last_backup_at{pvc!=\"\",pvc_namespace=~\"$namespace\",pvc=~\"$pvc\",volume=~\"$pv_name\"}) OR on() vector(0)",
@@ -1880,7 +1880,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${datasource}"
+            "uid": "thanos"
           },
           "description": "Volumes with a successful backup within the 'Stale after' window.",
           "fieldConfig": {
@@ -1929,7 +1929,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${datasource}"
+                "uid": "thanos"
               },
               "editorMode": "code",
               "expr": "count(\n  ((time() - longhorn_volume_last_backup_at{pvc!=\"\",pvc_namespace=~\"$namespace\",pvc=~\"$pvc\",volume=~\"$pv_name\"}) <= $stale_after)\n  and (longhorn_volume_last_backup_at{pvc!=\"\",pvc_namespace=~\"$namespace\",pvc=~\"$pvc\",volume=~\"$pv_name\"} > 0)\n) OR on() vector(0)",
@@ -1943,7 +1943,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${datasource}"
+            "uid": "thanos"
           },
           "description": "Volumes that DO have backups, but the newest one is older than the 'Stale after' window - backups are falling behind schedule.",
           "fieldConfig": {
@@ -1996,7 +1996,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${datasource}"
+                "uid": "thanos"
               },
               "editorMode": "code",
               "expr": "count(\n  ((time() - longhorn_volume_last_backup_at{pvc!=\"\",pvc_namespace=~\"$namespace\",pvc=~\"$pvc\",volume=~\"$pv_name\"}) > $stale_after)\n  and (longhorn_volume_last_backup_at{pvc!=\"\",pvc_namespace=~\"$namespace\",pvc=~\"$pvc\",volume=~\"$pv_name\"} > 0)\n) OR on() vector(0)",
@@ -2010,7 +2010,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${datasource}"
+            "uid": "thanos"
           },
           "description": "Backup-expected volumes that have NEVER been backed up (longhorn_volume_last_backup_at == 0). Either not covered by a backup policy, or the first run hasn't happened yet. Deselect known-OK namespaces/PVCs above to keep this at 0.",
           "fieldConfig": {
@@ -2063,7 +2063,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${datasource}"
+                "uid": "thanos"
               },
               "editorMode": "code",
               "expr": "count(longhorn_volume_last_backup_at{pvc!=\"\",pvc_namespace=~\"$namespace\",pvc=~\"$pvc\",volume=~\"$pv_name\"} == 0) OR on() vector(0)",
@@ -2077,7 +2077,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${datasource}"
+            "uid": "thanos"
           },
           "description": "Longhorn Backup CRs currently in the Error state (longhorn_backup_state == 4), for the selected Backup Job(s) and Namespace/PVC scope.",
           "fieldConfig": {
@@ -2130,7 +2130,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${datasource}"
+                "uid": "thanos"
               },
               "editorMode": "code",
               "expr": "count(\n  (longhorn_backup_state{recurring_job=~\"$recurring_job\"} == 4)\n  and on(volume) longhorn_volume_last_backup_at{pvc!=\"\",pvc_namespace=~\"$namespace\",pvc=~\"$pvc\",volume=~\"$pv_name\"}\n) OR on() vector(0)",
@@ -2144,7 +2144,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${datasource}"
+            "uid": "thanos"
           },
           "description": "Age of the oldest successful backup among backup-expected volumes.",
           "fieldConfig": {
@@ -2201,7 +2201,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${datasource}"
+                "uid": "thanos"
               },
               "editorMode": "code",
               "expr": "max(\n  (time() - longhorn_volume_last_backup_at{pvc!=\"\",pvc_namespace=~\"$namespace\",pvc=~\"$pvc\",volume=~\"$pv_name\"})\n  and (longhorn_volume_last_backup_at{pvc!=\"\",pvc_namespace=~\"$namespace\",pvc=~\"$pvc\",volume=~\"$pv_name\"} > 0)\n) OR on() vector(0)",
@@ -2215,7 +2215,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${datasource}"
+            "uid": "thanos"
           },
           "description": "Every backup-expected Longhorn PVC and the age of its last successful backup. 'Never' (red) = no backup has ever completed for this volume. Sorted worst-first.",
           "fieldConfig": {
@@ -2335,7 +2335,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${datasource}"
+                "uid": "thanos"
               },
               "editorMode": "code",
               "expr": "max by (pvc_namespace, pvc, volume) (\n  time() - longhorn_volume_last_backup_at{pvc!=\"\",pvc_namespace=~\"$namespace\",pvc=~\"$pvc\",volume=~\"$pv_name\"}\n)",
@@ -2346,7 +2346,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${datasource}"
+                "uid": "thanos"
               },
               "editorMode": "code",
               "expr": "sum by (pvc_namespace, pvc, volume) (\n  (longhorn_backup_actual_size_bytes\n  * on(volume) group_left(pvc, pvc_namespace) (max by(volume, pvc, pvc_namespace)(longhorn_volume_capacity_bytes) > bool 0))\n  and on(volume) longhorn_volume_last_backup_at{pvc!=\"\",pvc_namespace=~\"$namespace\",pvc=~\"$pvc\",volume=~\"$pv_name\"}\n)",
@@ -2397,7 +2397,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${datasource}"
+            "uid": "thanos"
           },
           "description": "Per recurring backup job (backup 'group'): number of Backup CRs tracked, how many are in Error state, and total storage consumed. Filtered by the Backup Job variable. Counts ALL Backup CRs including orphaned ones (volumes already deleted) - so 'Failed' here can exceed the 'Failed Backup Jobs' stat, which only counts failures for volumes that still exist. '(manual / no recurring job)' = backups not created by a recurring job.",
           "fieldConfig": {
@@ -2514,7 +2514,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${datasource}"
+                "uid": "thanos"
               },
               "expr": "label_replace(count by (recurring_job) (longhorn_backup_state{recurring_job=~\"$recurring_job\"}), \"recurring_job\", \"(manual / no recurring job)\", \"recurring_job\", \"^$\")",
               "format": "table",
@@ -2524,7 +2524,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${datasource}"
+                "uid": "thanos"
               },
               "expr": "label_replace(\n  (count by (recurring_job) (longhorn_backup_state{recurring_job=~\"$recurring_job\"} == 4))\n  or\n  (0 * count by (recurring_job) (longhorn_backup_state{recurring_job=~\"$recurring_job\"}))\n, \"recurring_job\", \"(manual / no recurring job)\", \"recurring_job\", \"^$\")",
               "format": "table",
@@ -2534,7 +2534,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${datasource}"
+                "uid": "thanos"
               },
               "expr": "label_replace(sum by (recurring_job) (longhorn_backup_actual_size_bytes{recurring_job=~\"$recurring_job\"}), \"recurring_job\", \"(manual / no recurring job)\", \"recurring_job\", \"^$\")",
               "format": "table",
@@ -2582,7 +2582,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${datasource}"
+            "uid": "thanos"
           },
           "description": "Longhorn Backup CRs currently in Error (4) or Unknown (5) state, mapped to their PVC. Filtered by Backup Job + Namespace/PVC. Backup CR names (generic UIDs) are omitted; recurring_job shows which schedule produced it ('' = manual/on-demand).",
           "fieldConfig": {
@@ -2693,7 +2693,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${datasource}"
+                "uid": "thanos"
               },
               "expr": "(\n  (longhorn_backup_state{recurring_job=~\"$recurring_job\"} >= 4)\n  * on(volume) group_left(pvc, pvc_namespace) (max by(volume, pvc, pvc_namespace)(longhorn_volume_capacity_bytes) > bool 0)\n)\nand on(volume) longhorn_volume_last_backup_at{pvc!=\"\",pvc_namespace=~\"$namespace\",pvc=~\"$pvc\"}",
               "format": "table",
@@ -2740,7 +2740,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${datasource}"
+            "uid": "thanos"
           },
           "description": "Total backup storage consumed per PVC (sum of all backup revisions) on the external backup target. Filtered by Backup Job + Namespace/PVC.",
           "fieldConfig": {
@@ -2825,7 +2825,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${datasource}"
+                "uid": "thanos"
               },
               "expr": "sum by (pvc_namespace, pvc) (\n  (longhorn_backup_actual_size_bytes{recurring_job=~\"$recurring_job\"}\n  * on(volume) group_left(pvc, pvc_namespace) (max by(volume, pvc, pvc_namespace)(longhorn_volume_capacity_bytes) > bool 0))\n  and on(volume) longhorn_volume_last_backup_at{pvc!=\"\",pvc_namespace=~\"$namespace\",pvc=~\"$pvc\"}\n)",
               "legendFormat": "{{pvc_namespace}}/{{pvc}}",
@@ -2852,7 +2852,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${datasource}"
+            "uid": "thanos"
           },
           "description": "The total number of nodes in the Longhorn storage system",
           "fieldConfig": {
@@ -2897,7 +2897,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${datasource}"
+                "uid": "thanos"
               },
               "expr": "avg(longhorn_node_count_total) OR on() vector(0)",
               "interval": "",
@@ -2911,7 +2911,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${datasource}"
+            "uid": "thanos"
           },
           "description": "Disabled nodes are nodes that are disabled by the user.  When users disable a node, Longhorn will not use the node's storage for replica scheduling. Note that Longhorn can still attach a volume to disabled nodes because the actual data of the volume could be on a different node.",
           "fieldConfig": {
@@ -2960,7 +2960,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${datasource}"
+                "uid": "thanos"
               },
               "expr": "count(longhorn_node_status{condition=\"allowScheduling\"}==0) OR on() vector(0)",
               "interval": "",
@@ -2974,7 +2974,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${datasource}"
+            "uid": "thanos"
           },
           "fieldConfig": {
             "defaults": {
@@ -3060,7 +3060,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${datasource}"
+                "uid": "thanos"
               },
               "exemplar": true,
               "expr": "(longhorn_node_storage_usage_bytes/longhorn_node_storage_capacity_bytes) * 100",
@@ -3075,7 +3075,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${datasource}"
+            "uid": "thanos"
           },
           "description": "Schedulable nodes are nodes that Longhorn can use their storage for replica scheduling.",
           "fieldConfig": {
@@ -3124,7 +3124,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${datasource}"
+                "uid": "thanos"
               },
               "expr": "(count(longhorn_node_status{condition=\"schedulable\"}==1) OR on() vector(0)) - (count(longhorn_node_status{condition=\"allowScheduling\"}==0) OR on() vector(0))",
               "interval": "",
@@ -3138,7 +3138,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${datasource}"
+            "uid": "thanos"
           },
           "description": "Failed Nodes are nodes that Longhorn cannot attach volumes to and cannot schedule replicas onto. e.g: when the nodes went down.",
           "fieldConfig": {
@@ -3187,7 +3187,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${datasource}"
+                "uid": "thanos"
               },
               "expr": "(avg(longhorn_node_count_total) OR on() vector(0)) - (count(longhorn_node_status{condition=\"ready\"}==1) OR on() vector(0))",
               "interval": "",
@@ -3201,7 +3201,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${datasource}"
+            "uid": "thanos"
           },
           "fieldConfig": {
             "defaults": {
@@ -3273,7 +3273,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${datasource}"
+                "uid": "thanos"
               },
               "expr": "longhorn_node_storage_capacity_bytes",
               "format": "table",
@@ -3323,7 +3323,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${datasource}"
+            "uid": "thanos"
           },
           "fieldConfig": {
             "defaults": {
@@ -3406,7 +3406,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${datasource}"
+                "uid": "thanos"
               },
               "exemplar": true,
               "expr": "count by (node) (\r\n  (longhorn_volume_state == 2)\r\n  or\r\n  (longhorn_volume_state{state=\"attached\"} == 1)\r\n)",
@@ -3435,7 +3435,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${datasource}"
+            "uid": "thanos"
           },
           "description": "The capacity of each Longhorn volume",
           "fieldConfig": {
@@ -3515,7 +3515,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${datasource}"
+                "uid": "thanos"
               },
               "exemplar": true,
               "expr": "(longhorn_disk_usage_bytes/longhorn_disk_capacity_bytes)*100",
@@ -3530,7 +3530,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${datasource}"
+            "uid": "thanos"
           },
           "fieldConfig": {
             "defaults": {
@@ -3593,7 +3593,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${datasource}"
+                "uid": "thanos"
               },
               "expr": "longhorn_disk_capacity_bytes",
               "format": "table",
@@ -3659,7 +3659,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${datasource}"
+            "uid": "thanos"
           },
           "fieldConfig": {
             "defaults": {
@@ -3737,7 +3737,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${datasource}"
+                "uid": "thanos"
               },
               "exemplar": true,
               "expr": "(longhorn_node_cpu_usage_millicpu / longhorn_node_cpu_capacity_millicpu) * 100",
@@ -3752,7 +3752,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${datasource}"
+            "uid": "thanos"
           },
           "fieldConfig": {
             "defaults": {
@@ -3830,7 +3830,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${datasource}"
+                "uid": "thanos"
               },
               "exemplar": true,
               "expr": "( longhorn_node_memory_usage_bytes / longhorn_node_memory_capacity_bytes ) * 100",
@@ -3845,7 +3845,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${datasource}"
+            "uid": "thanos"
           },
           "description": "Instance managers are pods that contains the engine and replica processes of Longhorn volumes. See more at https://longhorn.io/docs/1.0.2/concepts/#11-the-longhorn-manager-and-the-longhorn-engine ",
           "fieldConfig": {
@@ -3924,7 +3924,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${datasource}"
+                "uid": "thanos"
               },
               "exemplar": true,
               "expr": "longhorn_instance_manager_cpu_usage_millicpu",
@@ -3939,7 +3939,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${datasource}"
+            "uid": "thanos"
           },
           "description": "Instance managers are pods that contains the engine and replica processes of Longhorn volumes. See more at https://longhorn.io/docs/1.0.2/concepts/#11-the-longhorn-manager-and-the-longhorn-engine ",
           "fieldConfig": {
@@ -4018,7 +4018,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${datasource}"
+                "uid": "thanos"
               },
               "exemplar": true,
               "expr": "(longhorn_instance_manager_cpu_usage_millicpu/longhorn_instance_manager_cpu_requests_millicpu)*100",
@@ -4033,7 +4033,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${datasource}"
+            "uid": "thanos"
           },
           "description": "Instance managers are pods that contains the engine and replica processes of Longhorn volumes. See more at https://longhorn.io/docs/1.0.2/concepts/#11-the-longhorn-manager-and-the-longhorn-engine ",
           "fieldConfig": {
@@ -4111,7 +4111,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${datasource}"
+                "uid": "thanos"
               },
               "exemplar": true,
               "expr": "longhorn_instance_manager_memory_usage_bytes",
@@ -4126,7 +4126,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${datasource}"
+            "uid": "thanos"
           },
           "description": "Longhorn manager pods manage the control plane of the Longhorn system. e.g. Volume scheduling, attaching, detaching, backup, etc,..",
           "fieldConfig": {
@@ -4205,7 +4205,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${datasource}"
+                "uid": "thanos"
               },
               "exemplar": true,
               "expr": "longhorn_manager_cpu_usage_millicpu",
@@ -4220,7 +4220,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${datasource}"
+            "uid": "thanos"
           },
           "description": "Longhorn manager pods manage the control plane of the Longhorn system. e.g. Volume scheduling, attaching, detaching, backup, etc,..",
           "fieldConfig": {
@@ -4298,7 +4298,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${datasource}"
+                "uid": "thanos"
               },
               "exemplar": true,
               "expr": "longhorn_manager_memory_usage_bytes",
@@ -4327,7 +4327,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${datasource}"
+            "uid": "thanos"
           },
           "description": "Sum of queued items across all Longhorn workqueues.",
           "fieldConfig": {
@@ -4385,7 +4385,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${datasource}"
+                "uid": "thanos"
               },
               "editorMode": "code",
               "expr": "sum(longhorn_workqueue_depth)",
@@ -4400,7 +4400,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${datasource}"
+            "uid": "thanos"
           },
           "description": "Rate at which items are added to Longhorn workqueues.",
           "fieldConfig": {
@@ -4450,7 +4450,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${datasource}"
+                "uid": "thanos"
               },
               "editorMode": "code",
               "expr": "sum(rate(longhorn_workqueue_adds_total[5m]))",
@@ -4465,7 +4465,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${datasource}"
+            "uid": "thanos"
           },
           "description": "Rate of Longhorn workqueue retries.",
           "fieldConfig": {
@@ -4523,7 +4523,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${datasource}"
+                "uid": "thanos"
               },
               "editorMode": "code",
               "expr": "sum(rate(longhorn_workqueue_retries_total[5m]))",
@@ -4538,7 +4538,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${datasource}"
+            "uid": "thanos"
           },
           "description": "Seconds of work in progress that has not been observed by the workqueue.",
           "fieldConfig": {
@@ -4588,7 +4588,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${datasource}"
+                "uid": "thanos"
               },
               "editorMode": "code",
               "expr": "sum(longhorn_workqueue_unfinished_work_seconds)",
@@ -4603,7 +4603,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${datasource}"
+            "uid": "thanos"
           },
           "description": "Highest 99th-percentile wait time before an item is processed.",
           "fieldConfig": {
@@ -4661,7 +4661,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${datasource}"
+                "uid": "thanos"
               },
               "editorMode": "code",
               "expr": "max(histogram_quantile(0.99, sum by (name, le) (rate(longhorn_workqueue_queue_duration_seconds_bucket[5m]))))",
@@ -4676,7 +4676,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${datasource}"
+            "uid": "thanos"
           },
           "description": "Highest 99th-percentile workqueue processing time.",
           "fieldConfig": {
@@ -4734,7 +4734,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${datasource}"
+                "uid": "thanos"
               },
               "editorMode": "code",
               "expr": "max(histogram_quantile(0.99, sum by (name, le) (rate(longhorn_workqueue_work_duration_seconds_bucket[5m]))))",
@@ -4749,7 +4749,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${datasource}"
+            "uid": "thanos"
           },
           "description": "Per-workqueue depth, add/retry rates, queue and work latency, unfinished work and longest-running processor.",
           "fieldConfig": {
@@ -4898,7 +4898,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${datasource}"
+                "uid": "thanos"
               },
               "editorMode": "code",
               "expr": "max by (name) (longhorn_workqueue_depth)",
@@ -4911,7 +4911,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${datasource}"
+                "uid": "thanos"
               },
               "editorMode": "code",
               "expr": "sum by (name) (rate(longhorn_workqueue_adds_total[5m]))",
@@ -4924,7 +4924,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${datasource}"
+                "uid": "thanos"
               },
               "editorMode": "code",
               "expr": "sum by (name) (rate(longhorn_workqueue_retries_total[5m]))",
@@ -4937,7 +4937,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${datasource}"
+                "uid": "thanos"
               },
               "editorMode": "code",
               "expr": "histogram_quantile(0.99, sum by (name, le) (rate(longhorn_workqueue_queue_duration_seconds_bucket[5m])))",
@@ -4950,7 +4950,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${datasource}"
+                "uid": "thanos"
               },
               "editorMode": "code",
               "expr": "histogram_quantile(0.99, sum by (name, le) (rate(longhorn_workqueue_work_duration_seconds_bucket[5m])))",
@@ -4963,7 +4963,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${datasource}"
+                "uid": "thanos"
               },
               "editorMode": "code",
               "expr": "max by (name) (longhorn_workqueue_unfinished_work_seconds)",
@@ -4976,7 +4976,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${datasource}"
+                "uid": "thanos"
               },
               "editorMode": "code",
               "expr": "max by (name) (longhorn_workqueue_longest_running_processor_seconds)",
@@ -5052,7 +5052,7 @@
             "alertInstanceLabelFilter": "",
             "alertName": "Longhorn",
             "dashboardAlerts": false,
-            "datasource": "prometheus",
+            "datasource": "alertmanager",
             "groupBy": [],
             "groupMode": "default",
             "maxItems": 20,
@@ -5088,24 +5088,12 @@
   "templating": {
     "list": [
       {
-        "allowCustomValue": true,
-        "current": {},
-        "includeAll": false,
-        "label": "Datasource",
-        "name": "datasource",
-        "options": [],
-        "query": "prometheus",
-        "refresh": 1,
-        "regex": "",
-        "type": "datasource"
-      },
-      {
         "allValue": ".*",
         "allowCustomValue": true,
         "current": {},
         "datasource": {
           "type": "prometheus",
-          "uid": "${datasource}"
+          "uid": "thanos"
         },
         "definition": "label_values(longhorn_volume_state, pvc_namespace)",
         "description": "Namespace filter. Scopes the whole dashboard (volume + backup panels). Deselect a namespace to exclude it.",
@@ -5129,7 +5117,7 @@
         "current": {},
         "datasource": {
           "type": "prometheus",
-          "uid": "${datasource}"
+          "uid": "thanos"
         },
         "definition": "label_values(longhorn_volume_state{pvc_namespace=~\"$namespace\"}, pvc)",
         "description": "PVC filter (friendly names, chained to the selected namespace).",
@@ -5153,7 +5141,7 @@
         "current": {},
         "datasource": {
           "type": "prometheus",
-          "uid": "${datasource}"
+          "uid": "thanos"
         },
         "definition": "label_values(longhorn_volume_state{pvc_namespace=~\"$namespace\", pvc=~\"$pvc\"},volume)",
         "description": "PV filter (UUID, chained to the selected namespace and pvc-name).",
@@ -5178,7 +5166,7 @@
         "current": {},
         "datasource": {
           "type": "prometheus",
-          "uid": "${datasource}"
+          "uid": "thanos"
         },
         "definition": "label_values(longhorn_backup_state, recurring_job)",
         "description": "Backup job/group filter (the recurring job that created each backup; empty = manual/on-demand). Drives the backup-job panels. NOTE: the per-volume coverage metric has no recurring_job label, so the coverage panels are filtered by Namespace/PVC only.",
