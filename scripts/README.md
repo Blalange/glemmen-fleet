@@ -46,32 +46,30 @@ The NetBox inventory data and usage notes live in
 [`inventory/`](../inventory/README.md). The collector, sync, language server
 and VS Code extension live in the separate
 [netbox-inventory-toolkit](https://github.com/Blalange/netbox-inventory-toolkit)
-repository and are pinned to `0.2.1` here.
+repository and are pinned to `0.3.0` here.
 
 ```sh
+# validate collector settings and inventory/profile coverage
+uvx --python 3.13 --from "netbox-inventory-toolkit[all]==0.3.0" \
+  netbox-inventory-toolkit config check --inventory inventory
+
 # collect live sources into inventory/generated
-UNIFI_URL=https://unifi.glem.men \
-uvx --python 3.13 --from "netbox-inventory-toolkit[all]==0.2.1" \
-  netbox-inventory-toolkit collect --inventory inventory --sources auto \
-  --unifi-secret monitoring/unpoller-unifi \
-  --kubectl ./scripts/bin/kubectl --kubeconfig talos/generated/kubeconfig \
-  --talosctl ./scripts/bin/talosctl --talosconfig talos/generated/talosconfig
+uvx --python 3.13 --from "netbox-inventory-toolkit[all]==0.3.0" \
+  netbox-inventory-toolkit collect --inventory inventory
 
 # suggest manual entries from the inventory and live endpoints
-uvx --python 3.13 --from "netbox-inventory-toolkit[all]==0.2.1" \
+uvx --python 3.13 --from "netbox-inventory-toolkit[all]==0.3.0" \
   netbox-inventory-toolkit discover --inventory inventory --scan-inventory
 
 # validate the merged inventory
-uvx --python 3.13 --from "netbox-inventory-toolkit[all]==0.2.1" \
+uvx --python 3.13 --from "netbox-inventory-toolkit[all]==0.3.0" \
   netbox-inventory-toolkit sync --inventory inventory --check --no-dtl
 ```
 
-The collector also polls SNMP v2c network devices (default community
-`public`) for interfaces, VLANs and LLDP/FDB diagnostics. Use
-`--snmp-community`, `--no-snmp` or `--snmp-report PATH` as needed. BMCs without
-Redfish (iDRAC 6, IBM IMM) are polled with `ipmitool`; install it locally and
-set `IPMI_USER` / `IPMI_PASS` if the factory `root` / `calvin` account is not
-enabled.
+Source credentials, SNMP communities, Redfish/IPMI accounts, UniFi controllers
+and Talos clusters live in `inventory/settings.yml`. The collector polls SNMP
+v2c network devices for interfaces, VLANs and LLDP/FDB diagnostics, and BMCs
+without Redfish (iDRAC 6, IBM IMM) with `ipmitool`; install it locally if needed.
 
 The sync enriches device and module types from the Apache-2.0 NetBox Device
 Type Library (`--dtl`, enabled by default). Definitions and elevation images

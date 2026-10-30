@@ -1,0 +1,80 @@
+version: 1
+
+collector:
+  sources: auto
+  snmp:
+    # Preserve the existing Port N interface names generated from SNMP.
+    port_names: port-number
+    auto_unifi: true
+  kubectl: {from_env: KUBECTL, default: kubectl}
+  kubeconfig: {from_env: KUBECONFIG, default: ../talos/generated/kubeconfig}
+
+defaults:
+  site: glemmen
+  default_tag: production
+  rack: Glemmen rack
+  talos_platform: talos-linux
+  roles:
+    control_plane: control-plane
+    worker: worker
+  compute_roles:
+    - server
+
+  # UniFi model code -> NetBox device-type slug. The collector reads this
+  # mapping so new UniFi hardware does not need a Python change.
+  unifi_models:
+    UDMPRO: ubiquiti-udm-pro
+    US24PRO: ubiquiti-usw-pro-24-poe
+    US8P150: ubiquiti-us-8-poe-150w
+    USWED35: ubiquiti-usw-flex-2-5g-5
+    USWED37: ubiquiti-usw-flex-2-5g-8-poe
+    USMINI: ubiquiti-usw-flex-mini
+    UAP6MP: ubiquiti-u6-pro
+
+  # UniFi controller VLAN names that need a human correction.
+  unifi_vlan_names:
+    4: Server tilbehør
+
+sources:
+  unifi:
+    - name: glemmen
+      url: {from_env: UNIFI_URL, default: https://unifi.glem.men}
+      site: glemmen
+      unifi_site: default
+      username:
+        from_k8s_secret: monitoring/unpoller-unifi#username
+        default: {from_env: UNIFI_USER}
+      password:
+        from_k8s_secret: monitoring/unpoller-unifi#password
+        default: {from_env: UNIFI_PASS}
+      verify_tls: true
+      snmp_credential: glemmen
+
+  snmp:
+    - name: glemmen
+      community: {from_env: SNMP_COMMUNITY, default: public}
+      timeout: 2
+      retries: 1
+      default: true
+
+  redfish:
+    - name: glemmen
+      username: {from_env: REDFISH_USER, default: readonly}
+      password: {from_env: REDFISH_PASS, default: readonly}
+      verify_tls: false
+      default: true
+
+  ipmi:
+    - name: glemmen
+      username: {from_env: IPMI_USER, default: root}
+      password: {from_env: IPMI_PASS, default: calvin}
+      default: true
+
+  talos:
+    - name: glemmen
+      site: glemmen
+      kubectl: {from_env: KUBECTL, default: kubectl}
+      kubeconfig: {from_env: KUBECONFIG, default: ../talos/generated/kubeconfig}
+      talosctl: {from_env: TALOSCTL, default: ../scripts/bin/talosctl}
+      talosconfig: {from_env: TALOSCONFIG, default: ../talos/generated/talosconfig}
+      config_dir: ../talos/nodes

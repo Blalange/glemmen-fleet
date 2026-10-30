@@ -1,35 +1,5 @@
 layer: manual
 
-# Settings used by the collector and the sync job. These are not NetBox objects.
-settings:
-  site: glemmen
-  default_tag: production
-  rack: Glemmen rack
-  talos_platform: talos-linux
-  roles:
-    control_plane: control-plane
-    worker: worker
-  compute_roles:
-    - server
-  snmp:
-    # Preserve the existing Port N interface names generated from SNMP.
-    port_names: port-number
-
-# UniFi model code -> NetBox device-type slug. The collector reads this mapping
-# so new UniFi hardware does not need a Python change.
-unifi_models:
-  UDMPRO: ubiquiti-udm-pro
-  US24PRO: ubiquiti-usw-pro-24-poe
-  US8P150: ubiquiti-us-8-poe-150w
-  USWED35: ubiquiti-usw-flex-2-5g-5
-  USWED37: ubiquiti-usw-flex-2-5g-8-poe
-  USMINI: ubiquiti-usw-flex-mini
-  UAP6MP: ubiquiti-u6-pro
-
-# UniFi controller VLAN names that need a human correction.
-unifi_vlan_names:
-  4: Server tilbehør
-
 sites:
   - name: Glemmen
     slug: glemmen
