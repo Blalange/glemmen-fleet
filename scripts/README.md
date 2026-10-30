@@ -46,23 +46,23 @@ The NetBox inventory data and usage notes live in
 [`inventory/`](../inventory/README.md). The collector, sync, language server
 and VS Code extension live in the separate
 [netbox-inventory-toolkit](https://github.com/Blalange/netbox-inventory-toolkit)
-repository and are pinned to `0.3.1` here.
+repository and are pinned to `0.3.2` here.
 
 ```sh
 # validate collector settings and inventory/profile coverage
-uvx --python 3.13 --from "netbox-inventory-toolkit[all]==0.3.1" \
+uvx --python 3.13 --from "netbox-inventory-toolkit[all]==0.3.2" \
   netbox-inventory-toolkit config check --inventory inventory
 
 # collect live sources into inventory/generated
-uvx --python 3.13 --from "netbox-inventory-toolkit[all]==0.3.1" \
+uvx --python 3.13 --from "netbox-inventory-toolkit[all]==0.3.2" \
   netbox-inventory-toolkit collect --inventory inventory
 
 # suggest manual entries from the inventory and live endpoints
-uvx --python 3.13 --from "netbox-inventory-toolkit[all]==0.3.1" \
+uvx --python 3.13 --from "netbox-inventory-toolkit[all]==0.3.2" \
   netbox-inventory-toolkit discover --inventory inventory --scan-inventory
 
 # validate the merged inventory
-uvx --python 3.13 --from "netbox-inventory-toolkit[all]==0.3.1" \
+uvx --python 3.13 --from "netbox-inventory-toolkit[all]==0.3.2" \
   netbox-inventory-toolkit sync --inventory inventory --check --no-dtl
 ```
 
