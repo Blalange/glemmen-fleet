@@ -4,7 +4,7 @@
     "--python",
     "3.13",
     "--from",
-    "netbox-inventory-toolkit[lsp]==0.2.0",
+    "netbox-inventory-toolkit[lsp]==0.2.1",
     "netbox-inventory-toolkit",
     "lsp"
   ],

@@ -6,7 +6,7 @@ IPAM visualization. It is served at <https://netbox.glem.men>.
 This directory contains the **Glemmen-specific inventory data** only. The
 collector, NetBox sync, language server and VS Code extension live in the
 separate [netbox-inventory-toolkit](https://github.com/Blalange/netbox-inventory-toolkit)
-repository and are consumed at the pinned `0.2.0` release.
+repository and are consumed at the pinned `0.2.1` release.
 
 ## Layout
 
@@ -55,6 +55,7 @@ settings:
     - server
   snmp:
     port_names: port-number
+    auto_unifi: true
   unifi_models: { ... }
   unifi_vlan_names: { ... }
 ```
@@ -84,20 +85,20 @@ Redfish/SNMP/IPMI endpoints:
 
 ```sh
 # inventory-only suggestions (no network traffic)
-uvx --python 3.13 --from "netbox-inventory-toolkit[all]==0.2.0" \
+uvx --python 3.13 --from "netbox-inventory-toolkit[all]==0.2.1" \
   netbox-inventory-toolkit discover --inventory inventory
 
 # probe the addresses already configured in the inventory
-uvx --python 3.13 --from "netbox-inventory-toolkit[all]==0.2.0" \
+uvx --python 3.13 --from "netbox-inventory-toolkit[all]==0.2.1" \
   netbox-inventory-toolkit discover --inventory inventory --scan-inventory
 
 # scan the OOB network for Redfish and SNMP
-uvx --python 3.13 --from "netbox-inventory-toolkit[all]==0.2.0" \
+uvx --python 3.13 --from "netbox-inventory-toolkit[all]==0.2.1" \
   netbox-inventory-toolkit discover --inventory inventory \
   --network 192.168.4.0/24 --protocols redfish,snmp
 
 # write complete new entries to a review file
-uvx --python 3.13 --from "netbox-inventory-toolkit[all]==0.2.0" \
+uvx --python 3.13 --from "netbox-inventory-toolkit[all]==0.2.1" \
   netbox-inventory-toolkit discover --inventory inventory --scan-inventory \
   --write-new inventory/manual/discovered.yaml
 ```
@@ -112,7 +113,7 @@ Use the pinned toolkit revision:
 
 ```sh
 UNIFI_URL=https://unifi.glem.men \
-uvx --python 3.13 --from "netbox-inventory-toolkit[all]==0.2.0" \
+uvx --python 3.13 --from "netbox-inventory-toolkit[all]==0.2.1" \
   netbox-inventory-toolkit collect \
   --inventory inventory \
   --sources auto \
@@ -127,7 +128,7 @@ UniFi credentials come from the environment or from a Secret:
 ```sh
 UNIFI_URL=https://unifi.glem.men \
 UNIFI_USER=... UNIFI_PASS=... \
-uvx --python 3.13 --from "netbox-inventory-toolkit[all]==0.2.0" \
+uvx --python 3.13 --from "netbox-inventory-toolkit[all]==0.2.1" \
   netbox-inventory-toolkit collect --inventory inventory --sources auto
 ```
 
@@ -135,7 +136,7 @@ Or read the existing `monitoring/unpoller-unifi` Secret:
 
 ```sh
 UNIFI_URL=https://unifi.glem.men \
-uvx --python 3.13 --from "netbox-inventory-toolkit[all]==0.2.0" \
+uvx --python 3.13 --from "netbox-inventory-toolkit[all]==0.2.1" \
   netbox-inventory-toolkit collect \
   --inventory inventory \
   --unifi-secret monitoring/unpoller-unifi \
@@ -158,13 +159,13 @@ kubectl -n netbox logs -f job/netbox-sync-manual
 Validate or preview locally with the same pinned toolkit:
 
 ```sh
-uvx --python 3.13 --from "netbox-inventory-toolkit[all]==0.2.0" \
+uvx --python 3.13 --from "netbox-inventory-toolkit[all]==0.2.1" \
   netbox-inventory-toolkit sync --inventory inventory --check --no-dtl
 
 NETBOX_URL=https://netbox.glem.men \
 NETBOX_TOKEN="$(kubectl -n netbox get secret netbox-secrets \
   -o jsonpath='{.data.api_token_full}' | base64 -d)" \
-uvx --python 3.13 --from "netbox-inventory-toolkit[all]==0.2.0" \
+uvx --python 3.13 --from "netbox-inventory-toolkit[all]==0.2.1" \
   netbox-inventory-toolkit sync --inventory inventory --dry-run --prune
 ```
 
@@ -184,7 +185,7 @@ builds this directory into three ConfigMaps:
   inventory is present
 
 The `netbox-sync` CronJob in `flux/apps/netbox/` uses the published image
-`ghcr.io/blalange/netbox-inventory-toolkit:v0.2.0`; it no longer installs
+`ghcr.io/blalange/netbox-inventory-toolkit:v0.2.1`; it no longer installs
 Python packages at runtime or mounts a code ConfigMap.
 
 The GHCR package must be public for the cluster to pull it anonymously. If it

@@ -46,7 +46,7 @@ spec:
               type: RuntimeDefault
           containers:
             - name: sync
-              image: ghcr.io/blalange/netbox-inventory-toolkit:v0.2.0
+              image: ghcr.io/blalange/netbox-inventory-toolkit:v0.2.1
               imagePullPolicy: IfNotPresent
               command: ["netbox-inventory-toolkit", "sync"]
               securityContext:
