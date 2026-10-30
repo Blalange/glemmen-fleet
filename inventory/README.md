@@ -166,7 +166,8 @@ contacting NetBox. `--dry-run` prints the exact create/update/delete plan.
 ## Deployment
 
 The Flux Kustomization `flux/clusters/glemmen/apps/netbox-inventory.yaml`
-builds this directory into three ConfigMaps:
+builds the inventory files into three ConfigMaps. settings.yml is
+collector-only and intentionally not mounted into the sync job:
 
 - `netbox-inventory-data` — the YAML inventory
 - `netbox-device-type-images` — device-type images
