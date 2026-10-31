@@ -23,6 +23,25 @@ allowedRoles:
 allowedKubernetesNamespaces:
     - system-upgrade
 ---
+# The control-plane switch ports carry the UDM Default network
+# (192.168.50.0/24) as tagged VLAN 1, while the Talos server network
+# (192.168.6.0/24) is the untagged/native VLAN. Expose VLAN 1 as bond0.1 so the
+# host (and the hostNetwork PXE proxyDHCP pod) can see that L2 segment too.
+apiVersion: v1alpha1
+kind: VLANConfig
+name: bond0.1
+parent: bond0
+vlanID: 1
+---
+# Address for bond0.1 from the UDM. Only the connected route is needed; a
+# second default route from the Default VLAN would compete with the server
+# VLAN gateway.
+apiVersion: v1alpha1
+kind: DHCPv4Config
+name: bond0.1
+ignoreRoutes: true
+ignoreHostname: true
+---
 # KubeNodeConfig contents are used as-is (unlike .machine.nodeLabels), so the
 # control-plane role label has to be set here as well. All control planes are
 # schedulable workers in this cluster, hence deliberately no NoSchedule taint.

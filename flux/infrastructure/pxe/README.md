@@ -12,7 +12,9 @@ maintenance mode if the disk has no Talos installation.
 ## Boot flow
 
 1. UniFi DHCP leases an address. It must **not** provide PXE options.
-2. The `pxe-dnsmasq` pod answers the PXE options on `192.168.6.0/24`:
+2. The `pxe-dnsmasq` pod answers the PXE options on the server VLAN
+   (`192.168.6.0/24`, `bond0`) and the UDM Default VLAN
+   (`192.168.50.0/24`, tagged VLAN 1 on `bond0.1`):
    - BIOS → `undionly.kpxe` over TFTP
    - UEFI → `ipxe.efi` over TFTP
 3. iPXE asks for DHCP again and is served the generated `boot.ipxe`.
@@ -41,7 +43,8 @@ mode. This keeps the cluster PKI and machine tokens out of the boot server.
 
 ## UniFi configuration
 
-On the `192.168.6.0/24` network:
+On both the server network (`192.168.6.0/24`) and the Default network
+(`192.168.50.0/24`):
 
 - Leave UniFi as the DHCP address server.
 - Remove/disable UniFi's PXE boot filename and next-server options. The
@@ -52,6 +55,15 @@ On the `192.168.6.0/24` network:
 
 The dnsmasq pod uses proxyDHCP only: it does not allocate addresses, routers or
 DNS servers.
+
+The control-plane switch ports must carry the Default network as tagged VLAN 1
+in addition to the untagged server VLAN. Talos creates `bond0.1` for that VLAN
+and gets an address from UniFi with `ignoreRoutes: true`, so it does not install
+a competing default route. ProxyDHCP only needs an address on the subnet; it
+does not use that address as a gateway for the PXE clients.
+
+PXE clients on the Default network must also be able to reach the Talos asset
+server at `192.168.6.99:8080`; allow that inter-VLAN path on the UDM.
 
 ## Matching and adding a node
 
@@ -104,6 +116,7 @@ curl -I http://192.168.6.99:8080/initramfs.xz
 tftp <control-plane-ip> -c get ipxe.efi
 tftp <control-plane-ip> -c get undionly.kpxe
 tftp <control-plane-ip> -c get boot.ipxe
+talosctl -n <control-plane-ip> get links bond0.1
 ```
 
 The dnsmasq logs show the DHCP exchange and which boot file was served. A
