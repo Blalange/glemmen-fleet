@@ -8,10 +8,10 @@
 
 resources:
   requests:
-    cpu: 10m
+    cpu: 128m
     memory: 64Mi
   limits:
-    cpu: 500m
+    cpu: 1 # # smartctl-exporter has some crazy bursts
     memory: 128Mi
 
 # Creates a ServiceMonitor that scrapes the smartctl-exporter pods.
