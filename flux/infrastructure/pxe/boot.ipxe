@@ -7,120 +7,120 @@
 # netboot.xyz.
 
 # glemmen130 (control-plane)
-iseq ${serial} 6L51JZ3 && goto talos_glemmen130
-iseq ${serial} 6l51jz3 && goto talos_glemmen130
-iseq ${uuid} 4c4c4544-004c-3510-8031-b6c04f4a5a33 && goto talos_glemmen130
-iseq ${uuid} 4C4C4544-004C-3510-8031-B6C04F4A5A33 && goto talos_glemmen130
-iseq ${uuid} 4c4c4544004c35108031b6c04f4a5a33 && goto talos_glemmen130
-iseq ${uuid} 4C4C4544004C35108031B6C04F4A5A33 && goto talos_glemmen130
-iseq ${mac} 6c:3c:8c:75:3d:94 && goto talos_glemmen130
-iseq ${mac} 6C:3C:8C:75:3D:94 && goto talos_glemmen130
-iseq ${mac:hexhyp} 6c-3c-8c-75-3d-94 && goto talos_glemmen130
-iseq ${mac:hexhyp} 6C-3C-8C-75-3D-94 && goto talos_glemmen130
-iseq ${mac} 6c:3c:8c:75:3d:95 && goto talos_glemmen130
-iseq ${mac} 6C:3C:8C:75:3D:95 && goto talos_glemmen130
-iseq ${mac:hexhyp} 6c-3c-8c-75-3d-95 && goto talos_glemmen130
-iseq ${mac:hexhyp} 6C-3C-8C-75-3D-95 && goto talos_glemmen130
+iseq ${serial} 6L51JZ3 && goto talos_glemmen130 ||
+iseq ${serial} 6l51jz3 && goto talos_glemmen130 ||
+iseq ${uuid} 4c4c4544-004c-3510-8031-b6c04f4a5a33 && goto talos_glemmen130 ||
+iseq ${uuid} 4C4C4544-004C-3510-8031-B6C04F4A5A33 && goto talos_glemmen130 ||
+iseq ${uuid} 4c4c4544004c35108031b6c04f4a5a33 && goto talos_glemmen130 ||
+iseq ${uuid} 4C4C4544004C35108031B6C04F4A5A33 && goto talos_glemmen130 ||
+iseq ${mac} 6c:3c:8c:75:3d:94 && goto talos_glemmen130 ||
+iseq ${mac} 6C:3C:8C:75:3D:94 && goto talos_glemmen130 ||
+iseq ${mac:hexhyp} 6c-3c-8c-75-3d-94 && goto talos_glemmen130 ||
+iseq ${mac:hexhyp} 6C-3C-8C-75-3D-94 && goto talos_glemmen130 ||
+iseq ${mac} 6c:3c:8c:75:3d:95 && goto talos_glemmen130 ||
+iseq ${mac} 6C:3C:8C:75:3D:95 && goto talos_glemmen130 ||
+iseq ${mac:hexhyp} 6c-3c-8c-75-3d-95 && goto talos_glemmen130 ||
+iseq ${mac:hexhyp} 6C-3C-8C-75-3D-95 && goto talos_glemmen130 ||
 
 # glemmen150 (control-plane)
-iseq ${serial} FL51JZ3 && goto talos_glemmen150
-iseq ${serial} fl51jz3 && goto talos_glemmen150
-iseq ${uuid} 4c4c4544-004c-3510-8031-c6c04f4a5a33 && goto talos_glemmen150
-iseq ${uuid} 4C4C4544-004C-3510-8031-C6C04F4A5A33 && goto talos_glemmen150
-iseq ${uuid} 4c4c4544004c35108031c6c04f4a5a33 && goto talos_glemmen150
-iseq ${uuid} 4C4C4544004C35108031C6C04F4A5A33 && goto talos_glemmen150
-iseq ${mac} 6c:3c:8c:75:39:34 && goto talos_glemmen150
-iseq ${mac} 6C:3C:8C:75:39:34 && goto talos_glemmen150
-iseq ${mac:hexhyp} 6c-3c-8c-75-39-34 && goto talos_glemmen150
-iseq ${mac:hexhyp} 6C-3C-8C-75-39-34 && goto talos_glemmen150
-iseq ${mac} 6c:3c:8c:75:39:35 && goto talos_glemmen150
-iseq ${mac} 6C:3C:8C:75:39:35 && goto talos_glemmen150
-iseq ${mac:hexhyp} 6c-3c-8c-75-39-35 && goto talos_glemmen150
-iseq ${mac:hexhyp} 6C-3C-8C-75-39-35 && goto talos_glemmen150
+iseq ${serial} FL51JZ3 && goto talos_glemmen150 ||
+iseq ${serial} fl51jz3 && goto talos_glemmen150 ||
+iseq ${uuid} 4c4c4544-004c-3510-8031-c6c04f4a5a33 && goto talos_glemmen150 ||
+iseq ${uuid} 4C4C4544-004C-3510-8031-C6C04F4A5A33 && goto talos_glemmen150 ||
+iseq ${uuid} 4c4c4544004c35108031c6c04f4a5a33 && goto talos_glemmen150 ||
+iseq ${uuid} 4C4C4544004C35108031C6C04F4A5A33 && goto talos_glemmen150 ||
+iseq ${mac} 6c:3c:8c:75:39:34 && goto talos_glemmen150 ||
+iseq ${mac} 6C:3C:8C:75:39:34 && goto talos_glemmen150 ||
+iseq ${mac:hexhyp} 6c-3c-8c-75-39-34 && goto talos_glemmen150 ||
+iseq ${mac:hexhyp} 6C-3C-8C-75-39-34 && goto talos_glemmen150 ||
+iseq ${mac} 6c:3c:8c:75:39:35 && goto talos_glemmen150 ||
+iseq ${mac} 6C:3C:8C:75:39:35 && goto talos_glemmen150 ||
+iseq ${mac:hexhyp} 6c-3c-8c-75-39-35 && goto talos_glemmen150 ||
+iseq ${mac:hexhyp} 6C-3C-8C-75-39-35 && goto talos_glemmen150 ||
 
 # glemmen160 (control-plane)
-iseq ${serial} DL51JZ3 && goto talos_glemmen160
-iseq ${serial} dl51jz3 && goto talos_glemmen160
-iseq ${uuid} 4c4c4544-004c-3510-8031-c4c04f4a5a33 && goto talos_glemmen160
-iseq ${uuid} 4C4C4544-004C-3510-8031-C4C04F4A5A33 && goto talos_glemmen160
-iseq ${uuid} 4c4c4544004c35108031c4c04f4a5a33 && goto talos_glemmen160
-iseq ${uuid} 4C4C4544004C35108031C4C04F4A5A33 && goto talos_glemmen160
-iseq ${mac} 6c:3c:8c:75:45:0c && goto talos_glemmen160
-iseq ${mac} 6C:3C:8C:75:45:0C && goto talos_glemmen160
-iseq ${mac:hexhyp} 6c-3c-8c-75-45-0c && goto talos_glemmen160
-iseq ${mac:hexhyp} 6C-3C-8C-75-45-0C && goto talos_glemmen160
-iseq ${mac} 6c:3c:8c:75:45:0d && goto talos_glemmen160
-iseq ${mac} 6C:3C:8C:75:45:0D && goto talos_glemmen160
-iseq ${mac:hexhyp} 6c-3c-8c-75-45-0d && goto talos_glemmen160
-iseq ${mac:hexhyp} 6C-3C-8C-75-45-0D && goto talos_glemmen160
+iseq ${serial} DL51JZ3 && goto talos_glemmen160 ||
+iseq ${serial} dl51jz3 && goto talos_glemmen160 ||
+iseq ${uuid} 4c4c4544-004c-3510-8031-c4c04f4a5a33 && goto talos_glemmen160 ||
+iseq ${uuid} 4C4C4544-004C-3510-8031-C4C04F4A5A33 && goto talos_glemmen160 ||
+iseq ${uuid} 4c4c4544004c35108031c4c04f4a5a33 && goto talos_glemmen160 ||
+iseq ${uuid} 4C4C4544004C35108031C4C04F4A5A33 && goto talos_glemmen160 ||
+iseq ${mac} 6c:3c:8c:75:45:0c && goto talos_glemmen160 ||
+iseq ${mac} 6C:3C:8C:75:45:0C && goto talos_glemmen160 ||
+iseq ${mac:hexhyp} 6c-3c-8c-75-45-0c && goto talos_glemmen160 ||
+iseq ${mac:hexhyp} 6C-3C-8C-75-45-0C && goto talos_glemmen160 ||
+iseq ${mac} 6c:3c:8c:75:45:0d && goto talos_glemmen160 ||
+iseq ${mac} 6C:3C:8C:75:45:0D && goto talos_glemmen160 ||
+iseq ${mac:hexhyp} 6c-3c-8c-75-45-0d && goto talos_glemmen160 ||
+iseq ${mac:hexhyp} 6C-3C-8C-75-45-0D && goto talos_glemmen160 ||
 
 # glemmen170 (control-plane)
-iseq ${serial} 4L51JZ3 && goto talos_glemmen170
-iseq ${serial} 4l51jz3 && goto talos_glemmen170
-iseq ${uuid} 4c4c4544-004c-3510-8031-b4c04f4a5a33 && goto talos_glemmen170
-iseq ${uuid} 4C4C4544-004C-3510-8031-B4C04F4A5A33 && goto talos_glemmen170
-iseq ${uuid} 4c4c4544004c35108031b4c04f4a5a33 && goto talos_glemmen170
-iseq ${uuid} 4C4C4544004C35108031B4C04F4A5A33 && goto talos_glemmen170
-iseq ${mac} 6c:3c:8c:75:3c:b4 && goto talos_glemmen170
-iseq ${mac} 6C:3C:8C:75:3C:B4 && goto talos_glemmen170
-iseq ${mac:hexhyp} 6c-3c-8c-75-3c-b4 && goto talos_glemmen170
-iseq ${mac:hexhyp} 6C-3C-8C-75-3C-B4 && goto talos_glemmen170
-iseq ${mac} 6c:3c:8c:75:3c:b5 && goto talos_glemmen170
-iseq ${mac} 6C:3C:8C:75:3C:B5 && goto talos_glemmen170
-iseq ${mac:hexhyp} 6c-3c-8c-75-3c-b5 && goto talos_glemmen170
-iseq ${mac:hexhyp} 6C-3C-8C-75-3C-B5 && goto talos_glemmen170
+iseq ${serial} 4L51JZ3 && goto talos_glemmen170 ||
+iseq ${serial} 4l51jz3 && goto talos_glemmen170 ||
+iseq ${uuid} 4c4c4544-004c-3510-8031-b4c04f4a5a33 && goto talos_glemmen170 ||
+iseq ${uuid} 4C4C4544-004C-3510-8031-B4C04F4A5A33 && goto talos_glemmen170 ||
+iseq ${uuid} 4c4c4544004c35108031b4c04f4a5a33 && goto talos_glemmen170 ||
+iseq ${uuid} 4C4C4544004C35108031B4C04F4A5A33 && goto talos_glemmen170 ||
+iseq ${mac} 6c:3c:8c:75:3c:b4 && goto talos_glemmen170 ||
+iseq ${mac} 6C:3C:8C:75:3C:B4 && goto talos_glemmen170 ||
+iseq ${mac:hexhyp} 6c-3c-8c-75-3c-b4 && goto talos_glemmen170 ||
+iseq ${mac:hexhyp} 6C-3C-8C-75-3C-B4 && goto talos_glemmen170 ||
+iseq ${mac} 6c:3c:8c:75:3c:b5 && goto talos_glemmen170 ||
+iseq ${mac} 6C:3C:8C:75:3C:B5 && goto talos_glemmen170 ||
+iseq ${mac:hexhyp} 6c-3c-8c-75-3c-b5 && goto talos_glemmen170 ||
+iseq ${mac:hexhyp} 6C-3C-8C-75-3C-B5 && goto talos_glemmen170 ||
 
 # glemmen180 (control-plane)
-iseq ${serial} 2L51JZ3 && goto talos_glemmen180
-iseq ${serial} 2l51jz3 && goto talos_glemmen180
-iseq ${uuid} 4c4c4544-004c-3510-8031-b2c04f4a5a33 && goto talos_glemmen180
-iseq ${uuid} 4C4C4544-004C-3510-8031-B2C04F4A5A33 && goto talos_glemmen180
-iseq ${uuid} 4c4c4544004c35108031b2c04f4a5a33 && goto talos_glemmen180
-iseq ${uuid} 4C4C4544004C35108031B2C04F4A5A33 && goto talos_glemmen180
-iseq ${mac} 6c:3c:8c:75:3c:44 && goto talos_glemmen180
-iseq ${mac} 6C:3C:8C:75:3C:44 && goto talos_glemmen180
-iseq ${mac:hexhyp} 6c-3c-8c-75-3c-44 && goto talos_glemmen180
-iseq ${mac:hexhyp} 6C-3C-8C-75-3C-44 && goto talos_glemmen180
-iseq ${mac} 6c:3c:8c:75:3c:45 && goto talos_glemmen180
-iseq ${mac} 6C:3C:8C:75:3C:45 && goto talos_glemmen180
-iseq ${mac:hexhyp} 6c-3c-8c-75-3c-45 && goto talos_glemmen180
-iseq ${mac:hexhyp} 6C-3C-8C-75-3C-45 && goto talos_glemmen180
+iseq ${serial} 2L51JZ3 && goto talos_glemmen180 ||
+iseq ${serial} 2l51jz3 && goto talos_glemmen180 ||
+iseq ${uuid} 4c4c4544-004c-3510-8031-b2c04f4a5a33 && goto talos_glemmen180 ||
+iseq ${uuid} 4C4C4544-004C-3510-8031-B2C04F4A5A33 && goto talos_glemmen180 ||
+iseq ${uuid} 4c4c4544004c35108031b2c04f4a5a33 && goto talos_glemmen180 ||
+iseq ${uuid} 4C4C4544004C35108031B2C04F4A5A33 && goto talos_glemmen180 ||
+iseq ${mac} 6c:3c:8c:75:3c:44 && goto talos_glemmen180 ||
+iseq ${mac} 6C:3C:8C:75:3C:44 && goto talos_glemmen180 ||
+iseq ${mac:hexhyp} 6c-3c-8c-75-3c-44 && goto talos_glemmen180 ||
+iseq ${mac:hexhyp} 6C-3C-8C-75-3C-44 && goto talos_glemmen180 ||
+iseq ${mac} 6c:3c:8c:75:3c:45 && goto talos_glemmen180 ||
+iseq ${mac} 6C:3C:8C:75:3C:45 && goto talos_glemmen180 ||
+iseq ${mac:hexhyp} 6c-3c-8c-75-3c-45 && goto talos_glemmen180 ||
+iseq ${mac:hexhyp} 6C-3C-8C-75-3C-45 && goto talos_glemmen180 ||
 
 # glemmen50 (worker)
-iseq ${serial} KD65TTR && goto talos_glemmen50
-iseq ${serial} kd65ttr && goto talos_glemmen50
-iseq ${uuid} 601b5291-fbf9-3108-b1e5-f33cca2a2fe5 && goto talos_glemmen50
-iseq ${uuid} 601B5291-FBF9-3108-B1E5-F33CCA2A2FE5 && goto talos_glemmen50
-iseq ${uuid} 601b5291fbf93108b1e5f33cca2a2fe5 && goto talos_glemmen50
-iseq ${uuid} 601B5291FBF93108B1E5F33CCA2A2FE5 && goto talos_glemmen50
+iseq ${serial} KD65TTR && goto talos_glemmen50 ||
+iseq ${serial} kd65ttr && goto talos_glemmen50 ||
+iseq ${uuid} 601b5291-fbf9-3108-b1e5-f33cca2a2fe5 && goto talos_glemmen50 ||
+iseq ${uuid} 601B5291-FBF9-3108-B1E5-F33CCA2A2FE5 && goto talos_glemmen50 ||
+iseq ${uuid} 601b5291fbf93108b1e5f33cca2a2fe5 && goto talos_glemmen50 ||
+iseq ${uuid} 601B5291FBF93108B1E5F33CCA2A2FE5 && goto talos_glemmen50 ||
 
 # glemmen60 (worker)
-iseq ${serial} JVCJGZ1 && goto talos_glemmen60
-iseq ${serial} jvcjgz1 && goto talos_glemmen60
-iseq ${uuid} 4c4c4544-0056-4310-804a-cac04f475a31 && goto talos_glemmen60
-iseq ${uuid} 4C4C4544-0056-4310-804A-CAC04F475A31 && goto talos_glemmen60
-iseq ${uuid} 4c4c454400564310804acac04f475a31 && goto talos_glemmen60
-iseq ${uuid} 4C4C454400564310804ACAC04F475A31 && goto talos_glemmen60
-iseq ${mac} 08:9e:01:d8:7b:f9 && goto talos_glemmen60
-iseq ${mac} 08:9E:01:D8:7B:F9 && goto talos_glemmen60
-iseq ${mac:hexhyp} 08-9e-01-d8-7b-f9 && goto talos_glemmen60
-iseq ${mac:hexhyp} 08-9E-01-D8-7B-F9 && goto talos_glemmen60
+iseq ${serial} JVCJGZ1 && goto talos_glemmen60 ||
+iseq ${serial} jvcjgz1 && goto talos_glemmen60 ||
+iseq ${uuid} 4c4c4544-0056-4310-804a-cac04f475a31 && goto talos_glemmen60 ||
+iseq ${uuid} 4C4C4544-0056-4310-804A-CAC04F475A31 && goto talos_glemmen60 ||
+iseq ${uuid} 4c4c454400564310804acac04f475a31 && goto talos_glemmen60 ||
+iseq ${uuid} 4C4C454400564310804ACAC04F475A31 && goto talos_glemmen60 ||
+iseq ${mac} 08:9e:01:d8:7b:f9 && goto talos_glemmen60 ||
+iseq ${mac} 08:9E:01:D8:7B:F9 && goto talos_glemmen60 ||
+iseq ${mac:hexhyp} 08-9e-01-d8-7b-f9 && goto talos_glemmen60 ||
+iseq ${mac:hexhyp} 08-9E-01-D8-7B-F9 && goto talos_glemmen60 ||
 
 # glemmen80 (worker)
-iseq ${serial} 9SYD132 && goto talos_glemmen80
-iseq ${serial} 9syd132 && goto talos_glemmen80
-iseq ${uuid} 4c4c4544-0053-5910-8044-b9c04f313332 && goto talos_glemmen80
-iseq ${uuid} 4C4C4544-0053-5910-8044-B9C04F313332 && goto talos_glemmen80
-iseq ${uuid} 4c4c4544005359108044b9c04f313332 && goto talos_glemmen80
-iseq ${uuid} 4C4C4544005359108044B9C04F313332 && goto talos_glemmen80
-iseq ${mac} a0:36:9f:93:7d:c8 && goto talos_glemmen80
-iseq ${mac} A0:36:9F:93:7D:C8 && goto talos_glemmen80
-iseq ${mac:hexhyp} a0-36-9f-93-7d-c8 && goto talos_glemmen80
-iseq ${mac:hexhyp} A0-36-9F-93-7D-C8 && goto talos_glemmen80
-iseq ${mac} b8:2a:72:d5:e2:ad && goto talos_glemmen80
-iseq ${mac} B8:2A:72:D5:E2:AD && goto talos_glemmen80
-iseq ${mac:hexhyp} b8-2a-72-d5-e2-ad && goto talos_glemmen80
-iseq ${mac:hexhyp} B8-2A-72-D5-E2-AD && goto talos_glemmen80
+iseq ${serial} 9SYD132 && goto talos_glemmen80 ||
+iseq ${serial} 9syd132 && goto talos_glemmen80 ||
+iseq ${uuid} 4c4c4544-0053-5910-8044-b9c04f313332 && goto talos_glemmen80 ||
+iseq ${uuid} 4C4C4544-0053-5910-8044-B9C04F313332 && goto talos_glemmen80 ||
+iseq ${uuid} 4c4c4544005359108044b9c04f313332 && goto talos_glemmen80 ||
+iseq ${uuid} 4C4C4544005359108044B9C04F313332 && goto talos_glemmen80 ||
+iseq ${mac} a0:36:9f:93:7d:c8 && goto talos_glemmen80 ||
+iseq ${mac} A0:36:9F:93:7D:C8 && goto talos_glemmen80 ||
+iseq ${mac:hexhyp} a0-36-9f-93-7d-c8 && goto talos_glemmen80 ||
+iseq ${mac:hexhyp} A0-36-9F-93-7D-C8 && goto talos_glemmen80 ||
+iseq ${mac} b8:2a:72:d5:e2:ad && goto talos_glemmen80 ||
+iseq ${mac} B8:2A:72:D5:E2:AD && goto talos_glemmen80 ||
+iseq ${mac:hexhyp} b8-2a-72-d5-e2-ad && goto talos_glemmen80 ||
+iseq ${mac:hexhyp} B8-2A-72-D5-E2-AD && goto talos_glemmen80 ||
 
 # No known Talos node matched: fall back to the netboot.xyz menu.
 goto netboot

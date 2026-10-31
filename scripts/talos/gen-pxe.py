@@ -146,8 +146,11 @@ def render() -> str:
         role = "worker" if name in workers else "control-plane"
         lines.append(f"# {name} ({role})")
         for variable, literal in selector_values(values):
+            # iPXE's iseq returns -ERANGE when the values differ. Without the
+            # trailing || the failed comparison aborts the whole script with
+            # "Could not boot image: Result too large".
             lines.append(
-                f"iseq ${{{variable}}} {literal} && goto talos_{name}"
+                f"iseq ${{{variable}}} {literal} && goto talos_{name} ||"
             )
         lines.append("")
 

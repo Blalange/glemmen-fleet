@@ -78,6 +78,10 @@ To add a node, add its serial/UUID/MACs, add `talos/nodes/<host>.yaml`, run the
 generator, and commit both files. Unknown machines automatically use
 netboot.xyz.
 
+The generated `iseq` lines end with `||`: a failed iPXE comparison returns
+`-ERANGE`, and without the trailing `||` iPXE aborts the whole script with
+`Could not boot image: Result too large`.
+
 ## Talos version updates
 
 The asset server resolves the schematic from `talos/schematic.yaml` and
