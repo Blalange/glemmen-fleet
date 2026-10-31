@@ -37,3 +37,13 @@ prometheusRules:
   enabled: true
   extraLabels:
     release: kube-prometheus-stack
+
+affinity:
+  nodeAffinity:
+    requiredDuringSchedulingIgnoredDuringExecution:
+      nodeSelectorTerms:
+        - matchExpressions:
+            - key: status
+              operator: In
+              values:
+                - active
