@@ -127,7 +127,7 @@ master:
                 app: yb-tserver
             topologyKey: kubernetes.io/hostname
     nodeAffinity:
-      preferredDuringSchedulingIgnoredDuringExecution:
+      requiredDuringSchedulingIgnoredDuringExecution:
         - weight: 100
           preference:
             matchExpressions:
@@ -187,7 +187,7 @@ tserver:
                 app: yb-master
             topologyKey: kubernetes.io/hostname
     nodeAffinity:
-      preferredDuringSchedulingIgnoredDuringExecution:
+      requiredDuringSchedulingIgnoredDuringExecution:
         - weight: 100
           preference:
             matchExpressions:
