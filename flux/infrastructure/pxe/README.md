@@ -106,6 +106,34 @@ The dnsmasq logs show the DHCP exchange and which boot file was served. A
 known node should request `boot.ipxe`; an unknown node should reach the
 netboot.xyz menu after the script's fallback.
 
+### Troubleshooting "PXE: No media detected"
+
+If the firmware reports `PXE: No media detected` and dnsmasq logs no
+`DHCPDISCOVER`, the PXE request never reached this VLAN. Check the selected
+boot device first.
+
+On glemmen80 the cabled NIC is the add-in 10G `enp4s0f0`
+(`NIC.Slot.2-1-1`, MAC `A0:36:9F:93:7D:C8`, USW port 26), but the R630 UEFI
+BIOS only exposes PXE devices for the integrated `NIC.Integrated.*` ports.
+`PXE Device 1` is also configured for VLAN 6 (`PxeDev1VlanId=6`), not the
+server VLAN. Booting `PXE Device 1` therefore cannot reach proxyDHCP.
+
+Workarounds for a machine in this state:
+
+- Connect an integrated NIC port to an access port on `192.168.6.0/24` and
+  select `PXE Device 2` or `PXE Device 3` (both have VLAN tagging disabled),
+  not `PXE Device 1`.
+- Use the iDRAC virtual media with the setup ISO.
+- Use a NIC that has a UEFI PXE option ROM visible to the BIOS.
+
+Before attempting PXE on an add-in NIC, check that the BIOS exposes it under
+Network Settings/PXE devices; a NIC that works in the OS is not necessarily
+available to the firmware network stack. On Dell R630 also verify:
+
+- Integrated Devices -> Slot Disablement is not set to `Boot Driver Disabled`.
+- Network Settings / UEFI Network Stack has UEFI PXE IPv4 enabled.
+- Secure Boot is disabled for the unsigned iPXE EFI.
+
 ## Notes and limitations
 
 - The dnsmasq pod is pinned to control-plane nodes and expects `bond0`. If it
