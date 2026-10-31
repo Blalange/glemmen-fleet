@@ -6,21 +6,22 @@ The `glemmen1xx` machines run control plane + etcd + worker roles; `glemmen80`,
 
 ## Files
 
-| Path | Purpose |
-|------|---------|
-| `settings.env` | Versions, endpoint/VIP, node table — used by the scripts, Tuppr and `check-updates.py` |
-| `schematic.yaml` | Image Factory extensions: iscsi-tools, util-linux-tools, btrfs, netbird |
-| `patches/common.yaml` | Common machine config patch (subnets, DNS, kubelet node IP, btrfs, Longhorn system disk) |
-| `patches/netbird.yaml.tpl` | Netbird extension config template (`NB_SETUP_KEY` filled in by `scripts/talos/gen-config.py`) |
-| `nodes/glemmen*.yaml` | Per-node: hostname, bond/addresses, Longhorn disks, VIP, Longhorn node annotation |
-| `pxe.yaml` | SMBIOS serial/UUID/MAC identities used by the PXE chainloader |
-| `../scripts/talos/gen-iso.py` | Creates the schematic (base image) and prints/downloads the generic ISO + installer image |
-| `../scripts/talos/setup-images.py` | Per-node setup ISOs with the maintenance network baked in (`--print` shows the kernel args) |
-| `../scripts/talos/gen-config.py` | Renders secrets + configs into `generated/` (gitignored) and validates them |
-| `../scripts/talos/gen-pxe.py` | Renders `flux/infrastructure/pxe/boot.ipxe` from `pxe.yaml` and the node configs |
-| `../scripts/talos/manage.py` | Day-2 operations (apply, bootstrap, health, logs, cordon/drain, reboot/shutdown, etcd, vip, wipe, upgrades) |
-| `secrets/netbird.env` | Netbird setup key (gitignored, see `secrets/README.md`) |
-| `generated/` | Derived PKI, kubeconfig, machine configs (gitignored — **back this up**) |
+| Path                               | Purpose                                                                                                     |
+| ---------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| `settings.env`                     | Versions, endpoint/VIP, node table — used by the scripts, Tuppr and `check-updates.py`                      |
+| `schematic.yaml`                   | Image Factory extensions: iscsi-tools, util-linux-tools, btrfs, netbird                                     |
+| `patches/common.yaml`              | Common machine config patch (subnets, DNS, kubelet node IP, btrfs, Longhorn system disk)                    |
+| `patches/netbird.yaml.tpl`         | Netbird extension config template (`NB_SETUP_KEY` filled in by `scripts/talos/gen-config.py`)               |
+| `nodes/glemmen*.yaml`              | Per-node: hostname, bond/addresses, Longhorn disks, VIP, Longhorn node annotation                           |
+| `profiles/*.yaml`                  | Reusable, non-host-specific worker profiles (e.g. `ephemeral-worker`)                                       |
+| `pxe.yaml`                         | SMBIOS serial/UUID/MAC identities used by the PXE chainloader                                               |
+| `../scripts/talos/gen-iso.py`      | Creates the schematic (base image) and prints/downloads the generic ISO + installer image                   |
+| `../scripts/talos/setup-images.py` | Per-node setup ISOs with the maintenance network baked in (`--print` shows the kernel args)                 |
+| `../scripts/talos/gen-config.py`   | Renders secrets + configs into `generated/` (gitignored) and validates them                                 |
+| `../scripts/talos/gen-pxe.py`      | Renders `flux/infrastructure/pxe/boot.ipxe` from `pxe.yaml` and the node configs                            |
+| `../scripts/talos/manage.py`       | Day-2 operations (apply, bootstrap, health, logs, cordon/drain, reboot/shutdown, etcd, vip, wipe, upgrades) |
+| `secrets/netbird.env`              | Netbird setup key (gitignored, see `secrets/README.md`)                                                     |
+| `generated/`                       | Derived PKI, kubeconfig, machine configs (gitignored — **back this up**)                                    |
 
 ## First-time setup
 
@@ -89,15 +90,15 @@ kernel arguments before it can be reached in maintenance mode.
 arguments baked into the boot entries,
 so no GRUB editing is needed:
 
-| File | Boot with |
-|------|-----------|
+| File                                       | Boot with  |
+| ------------------------------------------ | ---------- |
 | `talos/generated/iso/setup-glemmen130.iso` | glemmen130 |
 | `talos/generated/iso/setup-glemmen150.iso` | glemmen150 |
 | `talos/generated/iso/setup-glemmen160.iso` | glemmen160 |
 | `talos/generated/iso/setup-glemmen170.iso` | glemmen170 |
 | `talos/generated/iso/setup-glemmen180.iso` | glemmen180 |
-| `talos/generated/iso/setup-glemmen60.iso`  | glemmen60 |
-| `talos/generated/iso/setup-glemmen80.iso`  | glemmen80 |
+| `talos/generated/iso/setup-glemmen60.iso`  | glemmen60  |
+| `talos/generated/iso/setup-glemmen80.iso`  | glemmen80  |
 
 The arguments are derived from `nodes/<host>.yaml`
 (`./scripts/talos/setup-images.py --print` shows them). The PXE boot script
@@ -153,6 +154,46 @@ check the node label/annotation and `talosctl -n <node> get mountstatus`.
 
 btrfs support needs the `siderolabs/btrfs` extension **and** the kernel module;
 both are in the schematic / common patch. Node upgrades preserve the volumes.
+
+## Ephemeral worker nodes
+
+`talos/profiles/ephemeral-worker.yaml` is a reusable worker profile for
+short-lived or unstable machines. It is rendered like the named nodes, but it
+is not listed in `TALOS_NODES` and contains no hostname or static address:
+
+```sh
+./scripts/talos/gen-config.py
+./scripts/talos/manage.py apply ephemeral-worker <maintenance-address>
+```
+
+The generated file is `talos/generated/ephemeral-worker.yaml` (it contains the
+cluster secrets). Every machine gets a unique automatic hostname and uses DHCP;
+the DHCP address must be in `192.168.6.0/24` to match the common kubelet
+`nodeIP` configuration.
+
+What the profile does:
+
+* installs to the first non-rotational SSD it finds, ignoring USB/CD-ROM and
+  disks smaller than 20 GiB;
+* pools all other whole, unpartitioned non-system disks into the `longhorn` LVM
+  volume group and exposes them as one btrfs Longhorn disk at
+  `/var/mnt/longhorn` (Longhorn's recommended way to aggregate data disks);
+  a data disk with an old partition table is left untouched until it is wiped;
+* encrypts `STATE`, `EPHEMERAL` and the Longhorn volume with LUKS2. The TPM key
+  is tried first (bound to PCR 11 so it also works without SecureBoot), with
+  `nodeID` as the fallback on machines without a usable TPM. On a machine
+  without a TPM, expect a failed TPM key sync in the volume logs before Talos
+  falls back;
+* labels the node `glem.men/ephemeral=true` and taints it
+  `glem.men/ephemeral=true:NoSchedule`, so ordinary workloads need an
+  explicit node selector and matching toleration;
+* tags the Longhorn node and disk `ephemeral`. `allowEmptyNodeSelectorVolume`
+  is `false` in `flux/infrastructure/longhorn/values.yaml`, so untagged
+  volumes do not schedule there. A Longhorn StorageClass opts in with
+  `nodeSelector: "ephemeral"` (and optionally `diskSelector: "ephemeral"`).
+
+Longhorn's manager/CSI tolerations for the ephemeral taint are also set in
+`flux/infrastructure/longhorn/values.yaml`.
 
 ## Checking for updates
 

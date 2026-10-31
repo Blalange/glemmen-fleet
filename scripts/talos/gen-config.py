@@ -33,6 +33,7 @@ GENERATED = common.GENERATED_DIR
 PATCHES = common.PATCHES_DIR
 SECRETS = common.SECRETS_DIR
 NODES_DIR = common.NODES_DIR
+PROFILES_DIR = common.PROFILES_DIR
 
 
 def require_setting(settings: dict[str, str], key: str) -> str:
@@ -180,6 +181,52 @@ def generate_node_configs(
         print(f"    {node}.yaml OK ({role})")
 
 
+def generate_profile_configs(talosctl: str, base_dir: Path) -> None:
+    """Render reusable, non-host-specific worker profiles.
+
+    Profiles live in talos/profiles/ and are always merged on top of the worker
+    base config. Unlike nodes/<host>.yaml they are not listed in TALOS_NODES;
+    the resulting generated/<profile>.yaml can be applied to any machine.
+    """
+    profile_files = sorted(PROFILES_DIR.glob("*.yaml"))
+    if not profile_files:
+        return
+
+    node_names = {path.stem for path in NODES_DIR.glob("*.yaml")}
+
+    print("==> Merging profile configs")
+
+    for profile_file in profile_files:
+        profile = profile_file.stem
+        if profile in node_names:
+            collision = NODES_DIR / (profile + ".yaml")
+            common.die(
+                f"profile {profile_file} has the same name as a node config "
+                f"({collision})"
+            )
+
+        output = GENERATED / f"{profile}.yaml"
+        common.run(
+            [
+                talosctl,
+                "machineconfig",
+                "patch",
+                base_dir / "worker.yaml",
+                "--patch",
+                f"@{profile_file}",
+                "-o",
+                output,
+            ]
+        )
+        validation = common.run(
+            [talosctl, "validate", "--config", output, "--mode", "metal"],
+            capture=True,
+        )
+        if validation.stderr.strip():
+            print(validation.stderr.rstrip(), file=sys.stderr)
+        print(f"    {profile}.yaml OK (worker profile)")
+
+
 def write_talosconfig(
     talosctl: str,
     base_dir: Path,
@@ -274,6 +321,7 @@ def main(argv: list[str] | None = None) -> int:
 
     base_dir = generate_base_config(talosctl, settings, installer_image)
     generate_node_configs(talosctl, base_dir, workers)
+    generate_profile_configs(talosctl, base_dir)
     write_talosconfig(talosctl, base_dir, nodes, workers, bootstrap)
 
     print()

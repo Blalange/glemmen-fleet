@@ -1,0 +1,122 @@
+# Reusable machine-config profile for short-lived, ephemeral worker nodes.
+#
+# Unlike talos/nodes/<host>.yaml this profile is not tied to a hostname or an
+# address: it is rendered once into talos/generated/ephemeral-worker.yaml and
+# the same file can be applied to any machine booted in maintenance mode:
+#
+#   ./scripts/talos/manage.py apply ephemeral-worker <maintenance-address>
+#
+# The generated file still contains the cluster secrets, so do not copy it off
+# the management workstation.
+
+# Do not hard-code a hostname. `auto: stable` gives each machine a unique,
+# stable hostname derived from its machine identity (and restores the document
+# that patches/common.yaml removes for the named nodes).
+apiVersion: v1alpha1
+kind: HostnameConfig
+auto: stable
+---
+# Install to the first SSD Talos discovers. The extra predicates keep the
+# installer from picking a USB stick, CD-ROM/ISO or a leftover small device.
+# Talos selects the first matching disk if there is more than one SSD.
+apiVersion: v1alpha1
+kind: UnattendedInstallConfig
+reboot: true
+provisioning:
+  diskSelector:
+    match: '!disk.rotational && !disk.readonly && !disk.cdrom && disk.transport != "usb" && disk.size >= 20u * GiB'
+  wipe: true
+---
+# Use every other (non-system) disk for Longhorn. A machine-independent profile
+# cannot enumerate a fixed number of UserVolumeConfigs, so pool the disks in an
+# LVM volume group and expose the whole pool as one btrfs Longhorn disk. This is
+# also Longhorn's recommended way to aggregate multiple data disks.
+#
+# Only whole, unpartitioned disks are selected: a disk that still carries an
+# old partition table is left alone until it is explicitly wiped.
+apiVersion: v1alpha1
+kind: LVMVolumeGroupConfig
+name: longhorn
+provisioning:
+  volumeSelector:
+    match: '!system_disk && volume.parent_dev_path == "" && !disk.readonly && !disk.cdrom && disk.transport != "usb" && !disk.dev_path.startsWith("/dev/dm-") && !disk.dev_path.startsWith("/dev/md") && disk.size >= 10u * GiB'
+---
+apiVersion: v1alpha1
+kind: LVMLogicalVolumeConfig
+name: longhorn
+type: linear
+provisioning:
+  volumeGroup: longhorn
+  maxSize: 100%
+---
+# btrfs data volume for Longhorn on the LVM logical volume.
+apiVersion: v1alpha1
+kind: UserVolumeConfig
+name: longhorn
+volumeType: disk
+provisioning:
+  diskSelector:
+    match: '"/dev/mapper/longhorn-longhorn" in disk.symlinks'
+filesystem:
+  type: btrfs
+encryption:
+  provider: luks2
+  keys:
+    # TPM is tried first. Binding to PCR 11 only (the signed UKI policy)
+    # keeps this portable across machines with and without SecureBoot.
+    - slot: 0
+      tpm:
+        options:
+          pcrs: []
+    # nodeID is the fallback for machines without a usable TPM.
+    - slot: 1
+      nodeID: {}
+---
+# Encrypt the Talos system volumes as well.
+apiVersion: v1alpha1
+kind: VolumeConfig
+name: STATE
+encryption:
+  provider: luks2
+  keys:
+    - slot: 0
+      tpm:
+        options:
+          pcrs: []
+    - slot: 1
+      nodeID: {}
+---
+apiVersion: v1alpha1
+kind: VolumeConfig
+name: EPHEMERAL
+encryption:
+  provider: luks2
+  keys:
+    - slot: 0
+      tpm:
+        options:
+          pcrs: []
+    - slot: 1
+      nodeID: {}
+---
+# Mark the node as ephemeral and keep normal workloads and Longhorn replicas
+# off it unless they explicitly opt in.
+#
+# Workloads opt in with:
+#   nodeSelector: { glem.men/ephemeral: "true" }
+#   tolerations: [{ key: glem.men/ephemeral, operator: Equal,
+#                   value: "true", effect: NoSchedule }]
+#
+# Longhorn volumes opt in with the node/disk tag "ephemeral" in their
+# StorageClass (the cluster sets allowEmptyNodeSelectorVolume: false, so
+# untagged volumes do not schedule on tagged nodes).
+apiVersion: v1alpha1
+kind: KubeNodeConfig
+labels:
+  glem.men/ephemeral: "true"
+  node.longhorn.io/create-default-disk: config
+annotations:
+  node.longhorn.io/default-node-tags: '["ephemeral"]'
+  node.longhorn.io/default-disks-config: '[{"name":"longhorn","path":"/var/mnt/longhorn","allowScheduling":true,"storageReserved":0,"tags":["ephemeral"]}]'
+taints:
+  glem.men/ephemeral: "true:NoSchedule"

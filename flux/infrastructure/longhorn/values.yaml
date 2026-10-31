@@ -6,8 +6,26 @@
 #   btrfs user volume on the data disk (/var/mnt/longhorn, and /var/mnt/hdd1 on
 #   glemmen130/glemmen80/glemmen60). The disk configuration itself comes from
 #   the node label/annotation set in the Talos machine config, see
-#   ../talos/nodes/*.yaml (node.longhorn.io/create-default-disk + default-disks-config).
+#   ../talos/nodes/*.yaml and ../talos/profiles/ephemeral-worker.yaml
+#   (node.longhorn.io/create-default-disk + default-disks-config).
 # - for that mechanism to be picked up, createDefaultDiskLabeledNodes must be on.
+
+# Ephemeral nodes carry the glem.men/ephemeral=true:NoSchedule taint. Longhorn
+# must tolerate it so its manager, CSI and instance-manager pods can run there
+# when a volume explicitly opts in. The UI deliberately keeps the default (no
+# toleration), so it stays on the regular nodes.
+longhornManager:
+  tolerations:
+    - key: glem.men/ephemeral
+      operator: Equal
+      value: "true"
+      effect: NoSchedule
+longhornDriver:
+  tolerations:
+    - key: glem.men/ephemeral
+      operator: Equal
+      value: "true"
+      effect: NoSchedule
 
 defaultSettings:
   createDefaultDiskLabeledNodes: true
@@ -15,6 +33,12 @@ defaultSettings:
   # Annotation-created disks with storageReserved: 0 would otherwise get the
   # default 30% reservation; the system disk has an explicit reservation.
   storageReservedPercentageForDefaultDisk: 0
+  # Tagged ephemeral nodes are excluded from volumes without a node selector.
+  # A volume must select the "ephemeral" tag explicitly to use those nodes.
+  allowEmptyNodeSelectorVolume: false
+  # System-managed components (instance manager, CSI, engine images) need the
+  # same ephemeral-node toleration as the user-deployed components above.
+  taintToleration: "glem.men/ephemeral=true:NoSchedule"
 
 # Storage class configuration
 persistence:
