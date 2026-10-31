@@ -1,0 +1,164 @@
+# Talos boot assets for the PXE chainloader.
+#
+# The init container resolves the current Image Factory schematic and
+# downloads the matching kernel/initramfs into an emptyDir. nginx serves them
+# on the shared MetalLB VIP; the generated boot.ipxe in the TFTP root points
+# here. Only public boot assets are served, never machine configs or secrets.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pxe-assets
+  labels:
+    app.kubernetes.io/name: pxe-assets
+    app.kubernetes.io/part-of: pxe
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: pxe-assets
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: pxe-assets
+        app.kubernetes.io/part-of: pxe
+    spec:
+      automountServiceAccountToken: false
+      initContainers:
+        - name: fetch-assets
+          # curl is needed here: busybox wget fails on Image Factory's TLS
+          # redirect to the signed asset URL.
+          image: docker.io/curlimages/curl:8.16.0
+          imagePullPolicy: IfNotPresent
+          command:
+            - /bin/sh
+            - -ec
+          args:
+            - |
+              mkdir -p /assets
+
+              fetch() {
+                url="$1"
+                output="$2"
+                curl -fsSL --retry 5 --retry-delay 3 --retry-all-errors \
+                  --connect-timeout 30 -o "$output" "$url"
+              }
+
+              # Resolve the same schematic the Talos installer image uses.
+              schematic_id="$(curl -fsS --retry 5 --retry-delay 3 \
+                --retry-all-errors --connect-timeout 30 \
+                -X POST --data-binary @/config/schematic.yaml \
+                -H 'Content-Type: application/yaml' \
+                https://factory.talos.dev/schematics \
+                | sed -n 's/.*"id":"\([a-f0-9]*\)".*/\1/p')"
+              if [ -z "$schematic_id" ]; then
+                echo "could not resolve the Image Factory schematic" >&2
+                exit 1
+              fi
+              echo "schematic: $schematic_id"
+              echo "talos: $TALOS_VERSION"
+
+              fetch \
+                "https://factory.talos.dev/image/$schematic_id/$TALOS_VERSION/kernel-amd64" \
+                /assets/vmlinuz
+              fetch \
+                "https://factory.talos.dev/image/$schematic_id/$TALOS_VERSION/initramfs-amd64.xz" \
+                /assets/initramfs.xz
+
+              cp /boot-script/boot.ipxe /assets/boot.ipxe
+              : > /assets/healthz
+              chmod -R a+rX /assets
+              ls -lh /assets
+          env:
+            - name: TALOS_VERSION
+              valueFrom:
+                configMapKeyRef:
+                  name: pxe-settings
+                  key: TALOS_VERSION
+          securityContext:
+            runAsUser: 0
+            runAsGroup: 0
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+          resources:
+            requests:
+              cpu: 10m
+              memory: 16Mi
+            limits:
+              memory: 64Mi
+          volumeMounts:
+            - name: assets
+              mountPath: /assets
+            - name: schematic
+              mountPath: /config
+              readOnly: true
+            - name: boot-script
+              mountPath: /boot-script
+              readOnly: true
+      containers:
+        - name: nginx
+          image: docker.io/nginxinc/nginx-unprivileged:1.29-alpine
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8080
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            periodSeconds: 10
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 30
+            failureThreshold: 3
+          securityContext:
+            runAsNonRoot: true
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+          resources:
+            requests:
+              cpu: 10m
+              memory: 16Mi
+            limits:
+              memory: 128Mi
+          volumeMounts:
+            - name: assets
+              mountPath: /usr/share/nginx/html
+              readOnly: true
+      volumes:
+        - name: assets
+          emptyDir: {}
+        - name: schematic
+          configMap:
+            name: pxe-schematic
+        - name: boot-script
+          configMap:
+            name: pxe-boot-script
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: pxe-assets
+  labels:
+    app.kubernetes.io/name: pxe-assets
+    app.kubernetes.io/part-of: pxe
+  annotations:
+    metallb.io/loadBalancerIPs: "192.168.6.99"
+    metallb.io/allow-shared-ip: glemmen-vip
+spec:
+  type: LoadBalancer
+  externalTrafficPolicy: Cluster
+  selector:
+    app.kubernetes.io/name: pxe-assets
+  ports:
+    - name: http
+      port: 8080
+      targetPort: http
+      protocol: TCP

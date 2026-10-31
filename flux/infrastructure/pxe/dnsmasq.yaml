@@ -1,0 +1,132 @@
+# ProxyDHCP + TFTP for legacy and UEFI PXE.
+#
+# UniFi keeps handing out IP addresses; dnsmasq only answers the PXE options.
+# It must run on the server VLAN with host networking, so pin it to a
+# control-plane node (all of them use bond0). If that node is drained the pod
+# reschedules to another control plane.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pxe-dnsmasq
+  labels:
+    app.kubernetes.io/name: pxe-dnsmasq
+    app.kubernetes.io/part-of: pxe
+spec:
+  replicas: 1
+  # Only one proxyDHCP responder may be active on the VLAN at a time.
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: pxe-dnsmasq
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: pxe-dnsmasq
+        app.kubernetes.io/part-of: pxe
+    spec:
+      automountServiceAccountToken: false
+      hostNetwork: true
+      dnsPolicy: Default
+      nodeSelector:
+        node-role.kubernetes.io/control-plane: ""
+      tolerations:
+        - key: node-role.kubernetes.io/control-plane
+          operator: Exists
+          effect: NoSchedule
+      initContainers:
+        # The image bundles iPXE binaries from 2021. Refresh them from
+        # boot.ipxe.org and add the generated boot script. If a download
+        # fails, keep the bundled binary so PXE still works.
+        - name: prepare-tftp
+          image: quay.io/poseidon/dnsmasq:v0.5.0
+          imagePullPolicy: IfNotPresent
+          command:
+            - /bin/sh
+            - -ec
+          args:
+            - |
+              mkdir -p /tftpboot
+              cp -a /var/lib/tftpboot/. /tftpboot/
+
+              fetch() {
+                url="$1"
+                output="$2"
+                temporary="$output.tmp"
+                if curl -fsSL --retry 5 --retry-delay 3 \
+                  --connect-timeout 30 -o "$temporary" "$url"; then
+                  mv "$temporary" "$output"
+                else
+                  rm -f "$temporary"
+                  echo "warning: could not refresh $url; using bundled file" >&2
+                fi
+              }
+
+              fetch https://boot.ipxe.org/x86_64-efi/ipxe.efi /tftpboot/ipxe.efi
+              fetch https://boot.ipxe.org/undionly.kpxe /tftpboot/undionly.kpxe
+              cp /boot-script/boot.ipxe /tftpboot/boot.ipxe
+              chmod -R a+rX /tftpboot
+              ls -lh /tftpboot
+          securityContext:
+            runAsUser: 0
+            runAsGroup: 0
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+          resources:
+            requests:
+              cpu: 5m
+              memory: 16Mi
+            limits:
+              memory: 64Mi
+          volumeMounts:
+            - name: tftpboot
+              mountPath: /tftpboot
+            - name: boot-script
+              mountPath: /boot-script
+              readOnly: true
+      containers:
+        - name: dnsmasq
+          image: quay.io/poseidon/dnsmasq:v0.5.0
+          imagePullPolicy: IfNotPresent
+          args:
+            - -d
+            - -C
+            - /etc/dnsmasq.conf
+          ports:
+            - name: dhcp
+              containerPort: 67
+              protocol: UDP
+            - name: tftp
+              containerPort: 69
+              protocol: UDP
+          securityContext:
+            # dnsmasq needs to bind the privileged DHCP/TFTP ports and open
+            # raw sockets. The pxe namespace is privileged for this pod.
+            runAsUser: 0
+            allowPrivilegeEscalation: true
+            capabilities:
+              add: ["NET_ADMIN"]
+          resources:
+            requests:
+              cpu: 10m
+              memory: 16Mi
+            limits:
+              memory: 64Mi
+          volumeMounts:
+            - name: config
+              mountPath: /etc/dnsmasq.conf
+              subPath: dnsmasq.conf
+              readOnly: true
+            - name: tftpboot
+              mountPath: /var/lib/tftpboot
+              readOnly: true
+      volumes:
+        - name: config
+          configMap:
+            name: pxe-dnsmasq-config
+        - name: boot-script
+          configMap:
+            name: pxe-boot-script
+        - name: tftpboot
+          emptyDir: {}

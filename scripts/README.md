@@ -23,11 +23,12 @@ download tools; if one is missing they print the command above.
 ./scripts/talos/gen-iso.py [--download]      # Image Factory schematic + ISO URLs
 ./scripts/talos/setup-images.py [--print]    # per-node maintenance-mode ISOs
 ./scripts/talos/gen-config.py                # secrets + machine configs + talosconfig
+./scripts/talos/gen-pxe.py                   # render the PXE iPXE boot script
 ./scripts/talos/manage.py update <node>      # apply regenerated config to a running node
 ./scripts/talos/manage.py <command>          # other day-2 operations
 ```
 
-`gen-config.py`, `gen-iso.py` and `setup-images.py` need PyYAML
+`gen-config.py`, `gen-iso.py`, `gen-pxe.py` and `setup-images.py` need PyYAML
 (`python3 -m pip install pyyaml`).
 
 ## Flux

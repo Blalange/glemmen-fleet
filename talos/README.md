@@ -13,9 +13,11 @@ The `glemmen1xx` machines run control plane + etcd + worker roles; `glemmen80`,
 | `patches/common.yaml` | Common machine config patch (subnets, DNS, kubelet node IP, btrfs, Longhorn system disk) |
 | `patches/netbird.yaml.tpl` | Netbird extension config template (`NB_SETUP_KEY` filled in by `scripts/talos/gen-config.py`) |
 | `nodes/glemmen*.yaml` | Per-node: hostname, bond/addresses, Longhorn disks, VIP, Longhorn node annotation |
+| `pxe.yaml` | SMBIOS serial/UUID/MAC identities used by the PXE chainloader |
 | `../scripts/talos/gen-iso.py` | Creates the schematic (base image) and prints/downloads the generic ISO + installer image |
 | `../scripts/talos/setup-images.py` | Per-node setup ISOs with the maintenance network baked in (`--print` shows the kernel args) |
 | `../scripts/talos/gen-config.py` | Renders secrets + configs into `generated/` (gitignored) and validates them |
+| `../scripts/talos/gen-pxe.py` | Renders `flux/infrastructure/pxe/boot.ipxe` from `pxe.yaml` and the node configs |
 | `../scripts/talos/manage.py` | Day-2 operations (apply, bootstrap, health, logs, cordon/drain, reboot/shutdown, etcd, vip, wipe, upgrades) |
 | `secrets/netbird.env` | Netbird setup key (gitignored, see `secrets/README.md`) |
 | `generated/` | Derived PKI, kubeconfig, machine configs (gitignored — **back this up**) |
@@ -43,13 +45,26 @@ echo 'NB_SETUP_KEY=xxxx' > talos/secrets/netbird.env
 `./scripts/download-tools.py` downloads the pinned `talosctl`, `kubectl` and
 `flux` binaries into `scripts/bin/`. The other scripts only use those (or a
 binary from `PATH`/environment override); they no longer download tools
-themselves. `gen-config.py`, `gen-iso.py` and `setup-images.py` need PyYAML
-(`python3 -m pip install pyyaml`).
+themselves. `gen-config.py`, `gen-iso.py`, `gen-pxe.py` and
+`setup-images.py` need PyYAML (`python3 -m pip install pyyaml`).
 
 ## Installing a node (steps 6 and 8)
 
-1. Boot the Image Factory ISO (USB, virtual media, PXE) with UEFI.
-2. Give the node network access in maintenance mode (see below).
+The cluster runs a PXE chainloader (`flux/infrastructure/pxe/`) for nodes whose
+firmware cannot boot the installed disk directly, including Talos installations
+on PCIe NVMe drives. Known nodes are matched by SMBIOS serial/UUID/MAC and load
+the current Talos kernel/initramfs. If Talos is already installed, the network
+boot hands off to the installed system; otherwise the node comes up in
+maintenance mode. Unknown machines fall back to netboot.xyz. The setup ISOs
+remain the fallback when the cluster or network boot infrastructure is down.
+The 1xx nodes use LACP LAG ports, so test PXE on one of them first; if the
+switch does not forward single-link firmware PXE traffic, use a non-LAG
+provisioning port or the ISO for that machine.
+
+1. Boot the node over PXE, or use the Image Factory ISO (USB or virtual media)
+   when PXE is unavailable.
+2. Give the node network access in maintenance mode (see below). The PXE script
+   already includes the same per-node bond/static-IP arguments.
 3. Apply the node's config and let the installer run:
 
    ```sh
@@ -85,7 +100,8 @@ so no GRUB editing is needed:
 | `talos/generated/iso/setup-glemmen80.iso`  | glemmen80 |
 
 The arguments are derived from `nodes/<host>.yaml`
-(`./scripts/talos/setup-images.py --print` shows them). Each ISO contains two
+(`./scripts/talos/setup-images.py --print` shows them). The PXE boot script
+uses the same arguments (`scripts/talos/gen-pxe.py`); each ISO contains two
 boot entries: the default one and a
 "wipe" variant (`talos.experimental.wipe=system`); use the default.
 

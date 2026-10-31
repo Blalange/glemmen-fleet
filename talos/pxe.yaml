@@ -1,0 +1,59 @@
+# Machine identities used by the iPXE boot script.
+#
+# The generator (scripts/talos/gen-pxe.py) emits iseq checks for every value
+# below. Keep the values in sync with the hardware:
+#   serial - SMBIOS serial number (Dell service tag / IBM serial)
+#   uuid   - SMBIOS UUID from `talosctl get systeminformation`
+#   macs   - permanent MAC addresses of the cabled NICs (`talosctl get links`,
+#            permanentAddr). Include every NIC that the firmware might PXE boot
+#            from; the bond MAC is not enough when the members differ.
+#
+# The iPXE environment exposes these as ${serial}, ${uuid} and ${mac}.
+# Unknown machines fall through to netboot.xyz.
+nodes:
+  glemmen130:
+    serial: 6L51JZ3
+    uuid: 4c4c4544-004c-3510-8031-b6c04f4a5a33
+    macs:
+      - 6c:3c:8c:75:3d:94
+      - 6c:3c:8c:75:3d:95
+  glemmen150:
+    serial: FL51JZ3
+    uuid: 4c4c4544-004c-3510-8031-c6c04f4a5a33
+    macs:
+      - 6c:3c:8c:75:39:34
+      - 6c:3c:8c:75:39:35
+  glemmen160:
+    serial: DL51JZ3
+    uuid: 4c4c4544-004c-3510-8031-c4c04f4a5a33
+    macs:
+      - 6c:3c:8c:75:45:0c
+      - 6c:3c:8c:75:45:0d
+  glemmen170:
+    serial: 4L51JZ3
+    uuid: 4c4c4544-004c-3510-8031-b4c04f4a5a33
+    macs:
+      - 6c:3c:8c:75:3c:b4
+      - 6c:3c:8c:75:3c:b5
+  glemmen180:
+    serial: 2L51JZ3
+    uuid: 4c4c4544-004c-3510-8031-b2c04f4a5a33
+    macs:
+      - 6c:3c:8c:75:3c:44
+      - 6c:3c:8c:75:3c:45
+  glemmen50:
+    serial: KD65TTR
+    uuid: 601b5291-fbf9-3108-b1e5-f33cca2a2fe5
+    # No MAC recorded; the machine is currently offline. Serial/UUID match.
+    macs: []
+  glemmen60:
+    serial: JVCJGZ1
+    uuid: 4c4c4544-0056-4310-804a-cac04f475a31
+    macs:
+      - 08:9e:01:d8:7b:f9
+  glemmen80:
+    serial: 9SYD132
+    uuid: 4c4c4544-0053-5910-8044-b9c04f313332
+    macs:
+      - a0:36:9f:93:7d:c8
+      - b8:2a:72:d5:e2:ad

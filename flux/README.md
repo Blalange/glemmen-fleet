@@ -21,9 +21,10 @@ flux/
 │   ├── monitoring-pvc.yaml     -> kube-prometheus-stack/pvc (Grafana volume + SC)
 │   ├── monitoring.yaml         -> flux/monitoring (KPS, Thanos, smartctl, iDRAC, unpoller)
 │   ├── seaweedfs.yaml          -> flux/infrastructure/seaweedfs (S3 object store)
+│   ├── pxe.yaml                -> flux/infrastructure/pxe (proxyDHCP/TFTP + Talos boot assets)
 │   ├── monitoring-dashboards.yaml / monitoring-alerts.yaml
 │   └── apps.yaml               -> flux/apps (application Kustomizations)
-├── infrastructure/             namespaces, Longhorn, cert-manager, external-dns, MetalLB, metrics-server, descheduler, YugabyteDB, SeaweedFS operator, NFD
+├── infrastructure/             namespaces, Longhorn, cert-manager, external-dns, MetalLB, metrics-server, descheduler, YugabyteDB, SeaweedFS operator, NFD, PXE chainloader
 ├── ingress/                    Traefik HelmRelease + values
 ├── monitoring/                 kube-prometheus-stack, Thanos, smartctl-exporter, idrac-exporter, unpoller
 └── apps/                       Kustomization objects, Homepage, NetBox + inventory sync, Minecraft servers (Radar)
@@ -56,6 +57,32 @@ The pinned `flux`/`kubectl` binaries live in `scripts/bin/`; download them with
 Tuppr's Talos/Kubernetes upgrade targets are generated from
 `talos/settings.env`; use `./scripts/check-updates.py` to see available
 Talos, Kubernetes, Flux, Helm and container-image updates.
+
+## PXE boot
+
+`infrastructure/pxe/` provides the network chainloader for nodes whose firmware
+cannot boot the installed disk directly (for example, Talos on a PCIe NVMe
+drive that is not exposed as a boot device). It consists of:
+
+- a host-network `dnsmasq` proxyDHCP/TFTP pod, pinned to a control-plane node,
+  which serves `undionly.kpxe` to BIOS clients and `ipxe.efi` to UEFI clients;
+- a generated `boot.ipxe` that matches known nodes by SMBIOS serial, UUID or
+  MAC and loads the current Talos kernel/initramfs;
+- a small nginx asset server on the shared MetalLB VIP
+  `http://192.168.6.99:8080` serving the kernel, initramfs and boot script.
+
+Known Talos nodes boot the installed Talos system if one exists, otherwise they
+enter maintenance mode with their static maintenance address. Unmatched
+machines fall back to the netboot.xyz menu. No machine configs or secrets are
+served; apply a config with `./scripts/talos/manage.py apply <node>` after a
+node boots in maintenance mode.
+
+UniFi must continue to be the only DHCP address server, but its own PXE
+boot filename/next-server options must be cleared so they do not conflict with
+proxyDHCP. Machine identities live in `talos/pxe.yaml`; regenerate
+`boot.ipxe` with `./scripts/talos/gen-pxe.py` after changing a node's network
+configuration or selectors. See `infrastructure/pxe/README.md` for the full
+runbook.
 
 ## Longhorn backups (Google Drive via rclone)
 
@@ -385,6 +412,7 @@ role passwords are in `yugabyte-auth` (`yugabyte` namespace) and `grafana-db`
 - `infrastructure` (namespaces, Longhorn, cert-manager chart, external-dns, MetalLB, metrics-server, descheduler, SeaweedFS operator, NFD)
 - `infrastructure` -> `longhorn-backup` (rclone S3 gateway for Google Drive backups)
 - `infrastructure` -> `seaweedfs` (SeaweedFS cluster, bucket and S3 credentials)
+- `infrastructure` + `metallb-pool` -> `pxe` (proxyDHCP/TFTP chainloader + Talos boot assets)
 - `cert-manager-issuers` -> `cert-manager-certificates` -> `ingress` (Traefik)
 - `infrastructure` -> `monitoring-pvc`; `infrastructure` + `seaweedfs` -> `monitoring` (kube-prometheus-stack -> Thanos) -> `monitoring-dashboards` / `monitoring-alerts`
 - `apps` waits for `infrastructure`, `monitoring` and `ingress`; the individual

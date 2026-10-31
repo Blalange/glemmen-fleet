@@ -1,0 +1,22 @@
+# PXE chainloader and Talos boot-asset server. Separate from the infrastructure
+# group because the dnsmasq pod needs host networking and the asset Deployment
+# downloads the current kernel/initramfs from Image Factory.
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: pxe
+  namespace: flux-system
+spec:
+  interval: 1h
+  retryInterval: 2m
+  timeout: 15m
+  path: ./flux/infrastructure/pxe
+  prune: true
+  wait: true
+  targetNamespace: pxe
+  dependsOn:
+    - name: infrastructure
+    - name: metallb-pool
+  sourceRef:
+    kind: GitRepository
+    name: flux-system

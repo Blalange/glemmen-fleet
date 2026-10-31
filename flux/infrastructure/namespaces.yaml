@@ -8,6 +8,7 @@
 #   - monitoring:      node-exporter (hostNetwork/hostPID) + smartctl-exporter
 #   - node-feature-discovery: nfd-worker mounts host paths (/sys, /proc, /lib)
 #   - colibri:         the hf-fuse sidecar needs a privileged FUSE mount
+#   - pxe:             the proxyDHCP/TFTP pod needs hostNetwork + NET_ADMIN
 # All other namespaces (and anything added later) stay on the baseline default.
 apiVersion: v1
 kind: Namespace
@@ -121,6 +122,13 @@ apiVersion: v1
 kind: Namespace
 metadata:
   name: node-feature-discovery
+  labels:
+    pod-security.kubernetes.io/enforce: privileged
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: pxe
   labels:
     pod-security.kubernetes.io/enforce: privileged
 ---
