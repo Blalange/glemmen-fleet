@@ -8,15 +8,10 @@ metadata:
 spec:
   interval: 1h
   retryInterval: 2m
-  # Jellyfin's first start and the SeaweedFS CSI mount can take a few minutes.
-  timeout: 15m
+  # The first *arr FluentMigrator run against YSQL can take tens of minutes
+  # because every DDL statement is slow. Startup probes already prevent the
+  # pods from being killed; give Flux enough time to see them become ready.
+  timeout: 45m
   path: ./flux/apps/media
   prune: true
-  wait: true
-  targetNamespace: media
-  dependsOn:
-    - name: infrastructure
-    - name: seaweedfs
-  sourceRef:
-    kind: GitRepository
-    name: flux-system
+  wait: tr
