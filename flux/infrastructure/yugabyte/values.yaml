@@ -128,9 +128,8 @@ master:
             topologyKey: kubernetes.io/hostname
     nodeAffinity:
       requiredDuringSchedulingIgnoredDuringExecution:
-        - weight: 100
-          preference:
-            matchExpressions:
+        nodeSelectorTerms:
+          - matchExpressions:
               - key: kubernetes.io/hostname
                 operator: In
                 values:
@@ -139,13 +138,6 @@ master:
                   - glemmen160
                   - glemmen170
                   - glemmen180
-        - weight: 50
-          preference:
-            matchExpressions:
-              - key: kubernetes.io/hostname
-                operator: In
-                values:
-                  - glemmen80
 
 tserver:
   podLabels:
@@ -188,9 +180,8 @@ tserver:
             topologyKey: kubernetes.io/hostname
     nodeAffinity:
       requiredDuringSchedulingIgnoredDuringExecution:
-        - weight: 100
-          preference:
-            matchExpressions:
+        nodeSelectorTerms:
+          - matchExpressions:
               - key: kubernetes.io/hostname
                 operator: In
                 values:
@@ -199,12 +190,5 @@ tserver:
                   - glemmen160
                   - glemmen170
                   - glemmen180
-        - weight: 50
-          preference:
-            matchExpressions:
-              - key: kubernetes.io/hostname
-                operator: In
-                values:
-                  - glemmen80
 
 useOldPodDisruptionBudget: false
