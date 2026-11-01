@@ -196,7 +196,7 @@ cluster.
 ## First-run configuration
 
 1. **qBittorrent**: the template already configures `/data/downloads`,
-   `/data/downloads/incomplete`, interface `wg0`, host-header validation off,
+   `/data/downloads/incomplete`, interface `tun0` (gluetun names its VPN interface tun0), host-header validation off,
    and the `10.42.0.0/16` authentication bypass. Verify these in
    Options > Downloads/Web UI. The permanent Web UI password is in the
    `qbittorrent-webui` Secret (`username`/`password`); use it if you need the
@@ -228,6 +228,8 @@ cluster.
   `privileged: true` is a valid fallback.
 - qBittorrent shows the Authentik page but then its own login: add
   `10.42.0.0/16` to the Web UI subnet whitelist.
+- qBittorrent says `The configured network interface is invalid`: use `tun0`,
+  not `wg0`. Gluetun creates the WireGuard tunnel as `tun0` inside the pod.
 - Sonarr/Radarr/Prowlarr report `Version string portion was too short or too
   long` or `Failed to load system status`: they are connecting to YSQL. They
   must use SQLite; there is no `media-db` Secret. If an old Deployment still
