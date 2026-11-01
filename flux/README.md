@@ -481,8 +481,9 @@ is managed by external-dns.
   and sync API token); created for the shared YugabyteDB: `yugabyte-auth` in
   `yugabyte` (superuser, Grafana, SeaweedFS and media role passwords) and
   `grafana-db` in `monitoring`; created for iDRAC metrics: `idrac-exporter` in
-  `monitoring`; created for the media stack: `media-db` (the four media role
-  passwords), `qbittorrent-wireguard` (Windscribe profile) and
+  `monitoring`; created for the media stack: `media-db` (the three media role
+  passwords), `qbittorrent-wireguard` (Windscribe profile), `qbittorrent-webui`
+  (qBittorrent admin), `jellyfin-admin` (Jellyfin local admin) and
   `authentik-outpost` (outpost token) in `media`).
 - **Backup target**: Longhorn backs up to `s3://longhorn-backup@us-east-1/`,
   served by the in-cluster `rclone serve s3` bridge in

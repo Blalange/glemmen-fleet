@@ -23,6 +23,22 @@ in the *arr media management settings if import errors mention hardlinks.
 | Seerr | https://seerr.glem.men | Authentik proxy + Seerr login |
 | qBittorrent | https://torrent.glem.men | Authentik proxy; qBittorrent auth bypassed for the pod network |
 
+## Secrets
+
+Everything secret is created by hand and never committed:
+
+| Secret | Purpose |
+|---|---|
+| `media-db` | YSQL passwords for Sonarr/Radarr/Prowlarr (keys `<app>-password`) |
+| `qbittorrent-wireguard` | Windscribe `wg0.conf` with an IPv4 endpoint |
+| `qbittorrent-webui` | qBittorrent break-glass username/password (keys `username`, `password`) |
+| `jellyfin-admin` | Jellyfin local administrator (keys `username`, `password`) |
+| `authentik-outpost` | Authentik outpost token (key `token`) |
+
+The local admin passwords are only for break-glass access; normal Jellyfin and
+qBittorrent access goes through Authentik. Read them with `kubectl -n media get
+secret <name> -o jsonpath=...` when needed.
+
 ## Databases
 
 Sonarr/Radarr/Prowlarr use two YSQL databases each (`<app>-main` and
@@ -177,12 +193,12 @@ cluster.
 
 ## First-run configuration
 
-1. **qBittorrent**: get the temporary Web UI password from the container log if
-   the UI asks for one, then set a permanent password. Set the default save path
-   to `/data/downloads`, the incomplete path to `/data/downloads/incomplete`,
-   and the network interface to `wg0`. Enable "Bypass authentication for clients
-   in whitelisted IP subnets" with `10.42.0.0/16` so the Authentik outpost and
-   the *arr apps can use the API without a second login. Disable UPnP/NAT-PMP.
+1. **qBittorrent**: the template already configures `/data/downloads`,
+   `/data/downloads/incomplete`, interface `wg0`, host-header validation off,
+   and the `10.42.0.0/16` authentication bypass. Verify these in
+   Options > Downloads/Web UI. The permanent Web UI password is in the
+   `qbittorrent-webui` Secret (`username`/`password`); use it if you need the
+   direct-login break-glass page. UPnP/NAT-PMP is disabled.
 2. **Prowlarr**: add indexers, then add Sonarr and Radarr as applications and
    sync. Use `http://sonarr.media.svc.cluster.local:8989` and
    `http://radarr.media.svc.cluster.local:7878` if you configure them manually.
@@ -190,8 +206,14 @@ cluster.
    (any username/password works because of the subnet whitelist), set the root
    folders to `/data/media/tv` and `/data/media/movies`, and confirm downloads
    are imported from `/data/downloads`.
-4. **Jellyfin**: add libraries for `/data/media/movies` and `/data/media/tv`;
-   install and configure the SSO plugin.
+4. **Jellyfin**: the local `admin` account is already created; its password is
+   in the `jellyfin-admin` Secret. Add libraries for `/data/media/movies` and
+   `/data/media/tv`. The SSO-Auth 5.1.1 plugin is already installed under
+   `/config/plugins/SSO-Auth` and configured with the `authentik` OIDC provider
+   (issuer `https://auth.blalange.org/application/o/jellyfin/`, redirect
+   `https://jellyfin.glem.men/sso/OID/redirect/authentik`). If you rebuild the
+   config volume, reinstall the plugin from the K0lin manifest and re-add the
+   provider with `POST /SSO/OID/Add/authentik`.
 5. **Seerr**: add Jellyfin at `http://jellyfin.media.svc.cluster.local:8096`,
    then add Sonarr and Radarr with their API keys.
 
