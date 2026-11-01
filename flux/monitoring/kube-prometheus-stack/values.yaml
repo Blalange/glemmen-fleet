@@ -309,6 +309,9 @@ alertmanager:
         - receiver: 'null'
           matchers:
             - alertname = "Watchdog"
+        - receiver: 'null'
+          matchers:
+            - alertname = "InfoInhibitor"
     receivers:
       - name: email
         email_configs:
