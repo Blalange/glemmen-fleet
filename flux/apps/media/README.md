@@ -27,7 +27,7 @@ in the *arr media management settings if import errors mention hardlinks.
 
 Sonarr/Radarr/Prowlarr use two YSQL databases each (`<app>-main` and
 `<app>-log`); Seerr uses one (`seerr`). The roles/databases are created by
-`yugabyte-init-v2` in `flux/infrastructure/yugabyte/`. Jellyfin has no supported
+`yugabyte-init-v3` in `flux/infrastructure/yugabyte/`. Jellyfin has no supported
 PostgreSQL backend and keeps SQLite on its Longhorn config volume. qBittorrent
 stores its settings in its config volume.
 

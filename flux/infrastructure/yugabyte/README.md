@@ -13,7 +13,7 @@ PostgreSQL backend.
 |---|---|
 | `release.yaml` | `yugabytedb/yugabyte` HelmRepository and HelmRelease (chart `2026.1.2`, image `2026.1.2.0-b137`) |
 | `values.yaml` | Three YB-Masters, three YB-TServers, RF3, storage and probe settings |
-| `init-job.yaml` | One-shot `yugabyte-init-v2` Job that creates the application roles/databases and sets the superuser password |
+| `init-job.yaml` | One-shot `yugabyte-init-v3` Job that creates the application roles/databases and sets the superuser password |
 | `pdb.yaml` | `policy/v1` PodDisruptionBudgets for masters and tservers |
 | `storageclass-fast.yaml` | `yugabyte-fast-master` (two Longhorn replicas) and `yugabyte-fast-tserver` (one Longhorn replica) |
 | `storageclass.yaml` | Legacy `yugabyte` class used by the retired hand-written cluster's PVCs |
@@ -96,7 +96,7 @@ kubectl -n monitoring create secret generic grafana-db \
 Secret in `seaweedfs`; see `flux/README.md`. The four media passwords must match
 the `media-db` Secret in `media`.
 
-The `yugabyte-init-v2` Job sets the default `yugabyte` superuser password from
+The `yugabyte-init-v3` Job sets the default `yugabyte` superuser password from
 `yugabyte-auth` and creates:
 
 - `grafana` → `grafana`

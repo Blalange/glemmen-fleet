@@ -5,9 +5,9 @@
 # waits for the new YB-TServers; on a fresh database it also sets the
 # yugabyte superuser password from yugabyte-auth.
 #
-# The media roles (sonarr/radarr/prowlarr/seerr) were added in v2. Bump the Job
-# name whenever the SQL changes: Jobs are immutable and Flux cannot patch a
-# completed PodTemplate.
+# The media roles (sonarr/radarr/prowlarr/seerr) were added in v2; v3 quotes
+# hyphenated database names. Bump the Job name whenever the SQL changes: Jobs
+# are immutable and Flux cannot patch a completed PodTemplate.
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -91,8 +91,10 @@ data:
 
       if ! ysql "${SUPERUSER_PASSWORD}" -d yugabyte -tAc \
           "SELECT 1 FROM pg_database WHERE datname = '${database}'" | grep -qx 1; then
+        # Database names such as sonarr-main contain a hyphen and must be
+        # quoted as identifiers. Role names are simple unquoted identifiers.
         ysql "${SUPERUSER_PASSWORD}" -d yugabyte \
-          -c "CREATE DATABASE ${database} OWNER ${role}"
+          -c "CREATE DATABASE \"${database}\" OWNER ${role}"
       fi
     }
 
@@ -113,7 +115,7 @@ data:
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: yugabyte-init-v2
+  name: yugabyte-init-v3
   namespace: yugabyte
 spec:
   backoffLimit: 10
