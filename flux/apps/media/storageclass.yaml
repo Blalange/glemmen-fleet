@@ -1,13 +1,15 @@
 # Configuration and metadata volumes for the media applications. They are small
-# and should survive an application removal, so use three Longhorn replicas and
-# Retain rather than the cluster's default one-replica class.
+# and should survive an application removal, so use two Longhorn replicas and
+# Retain rather than the cluster's default one-replica class. Best-effort data
+# locality prefers a replica on the node running the pod.
 apiVersion: storage.k8s.io/v1
 kind: StorageClass
 metadata:
   name: media-config
 provisioner: driver.longhorn.io
 parameters:
-  numberOfReplicas: "3"
+  numberOfReplicas: "2"
+  dataLocality: "best-effort"
   staleReplicaTimeout: "2880"
 allowVolumeExpansion: true
 reclaimPolicy: Retain
