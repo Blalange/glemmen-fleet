@@ -2,14 +2,16 @@
 """Download the pinned command-line tools into scripts/bin/.
 
 Tools:
-  talosctl   version from talos/settings.env (TALOS_VERSION)
-  kubectl    version from talos/settings.env (KUBERNETES_VERSION)
-  flux       version from FLUX_VERSION or the built-in default
+  talosctl    version from talos/settings.env (TALOS_VERSION)
+  kubectl     version from talos/settings.env (KUBERNETES_VERSION)
+  flux        version from FLUX_VERSION or the built-in default
+  pv-migrate  version from PV_MIGRATE_VERSION or the built-in default
 
 Usage:
-  ./scripts/download-tools.py                 # download all missing tools
-  ./scripts/download-tools.py talosctl        # only talosctl
-  ./scripts/download-tools.py flux --force    # re-download flux
+  ./scripts/download-tools.py                    # download all missing tools
+  ./scripts/download-tools.py talosctl           # only talosctl
+  ./scripts/download-tools.py pv-migrate         # only pv-migrate
+  ./scripts/download-tools.py flux --force       # re-download flux
 """
 
 from __future__ import annotations
@@ -26,7 +28,7 @@ sys.path.insert(0, str(SCRIPT_DIR))
 
 import common  # noqa: E402
 
-TOOLS = ("talosctl", "kubectl", "flux")
+TOOLS = ("talosctl", "kubectl", "flux", "pv-migrate")
 
 
 def normalize_version(version: str) -> str:
@@ -40,6 +42,9 @@ def versions() -> dict[str, str]:
         "KUBERNETES_VERSION"
     )
     flux_version = os.environ.get("FLUX_VERSION") or common.DEFAULT_FLUX_VERSION
+    pv_migrate_version = (
+        os.environ.get("PV_MIGRATE_VERSION") or common.DEFAULT_PV_MIGRATE_VERSION
+    )
 
     if not talos_version:
         common.die(f"TALOS_VERSION is not set in {common.TALOS_SETTINGS}")
@@ -50,6 +55,7 @@ def versions() -> dict[str, str]:
         "talosctl": talos_version,
         "kubectl": normalize_version(k8s_version),
         "flux": normalize_version(flux_version),
+        "pv-migrate": normalize_version(pv_migrate_version),
     }
 
 
@@ -70,32 +76,36 @@ def download_binary(url: str, destination: Path, force: bool) -> None:
     print(f"    {destination}")
 
 
-def download_flux(version: str, destination: Path, force: bool) -> None:
+def download_tar_binary(
+    archive_url: str,
+    binary: str,
+    destination: Path,
+    force: bool,
+    *,
+    label: str | None = None,
+) -> None:
     if already_present(destination, force):
         return
 
-    archive_url = (
-        "https://github.com/fluxcd/flux2/releases/download/"
-        f"{version}/flux_{version.lstrip('v')}_linux_amd64.tar.gz"
-    )
-    print(f"==> Downloading flux {version} -> {destination}")
-    with tempfile.TemporaryDirectory(prefix="flux-download-") as temporary:
-        archive = Path(temporary) / "flux.tar.gz"
+    print(f"==> Downloading {label or destination.name} -> {destination}")
+    prefix = f"{destination.name}-download-"
+    with tempfile.TemporaryDirectory(prefix=prefix) as temporary:
+        archive = Path(temporary) / "download.tar.gz"
         common.download_file(archive_url, archive)
         with tarfile.open(archive, "r:gz") as tar:
             member = next(
                 (
                     item
                     for item in tar.getmembers()
-                    if item.name == "flux" or item.name.endswith("/flux")
+                    if item.isfile() and Path(item.name).name == binary
                 ),
                 None,
             )
             if member is None:
-                common.die(f"{archive_url} does not contain a flux binary")
+                common.die(f"{archive_url} does not contain a {binary} binary")
             source = tar.extractfile(member)
             if source is None:
-                common.die(f"cannot read flux binary from {archive_url}")
+                common.die(f"cannot read {binary} binary from {archive_url}")
             destination.parent.mkdir(parents=True, exist_ok=True)
             temporary_binary = destination.with_name(f".{destination.name}.part")
             with temporary_binary.open("wb") as handle:
@@ -108,11 +118,14 @@ def download_flux(version: str, destination: Path, force: bool) -> None:
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         prog="download-tools.py",
-        description="Download pinned talosctl, kubectl and flux binaries into scripts/bin/.",
+        description=(
+            "Download pinned talosctl, kubectl, flux and pv-migrate binaries "
+            "into scripts/bin/."
+        ),
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=(
             "Versions come from talos/settings.env and can be overridden with\n"
-            "TALOS_VERSION, KUBECTL_VERSION and FLUX_VERSION.\n"
+            "TALOS_VERSION, KUBECTL_VERSION, FLUX_VERSION and PV_MIGRATE_VERSION.\n"
         ),
     )
     parser.add_argument(
@@ -144,8 +157,24 @@ def main(argv: list[str] | None = None) -> int:
                 destination,
                 args.force,
             )
+        elif tool == "flux":
+            download_tar_binary(
+                "https://github.com/fluxcd/flux2/releases/download/"
+                f"{version}/flux_{version.lstrip('v')}_linux_amd64.tar.gz",
+                "flux",
+                destination,
+                args.force,
+                label=f"flux {version}",
+            )
         else:
-            download_flux(version, destination, args.force)
+            download_tar_binary(
+                "https://github.com/utkuozdemir/pv-migrate/releases/download/"
+                f"{version}/pv-migrate_{version}_linux_x86_64.tar.gz",
+                "pv-migrate",
+                destination,
+                args.force,
+                label=f"pv-migrate {version}",
+            )
 
     print(f"\nTools are in {common.TOOLS_DIR}")
     return 0

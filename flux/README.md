@@ -282,10 +282,12 @@ the Prometheus pod) or the Prometheus retention update not being applied
 (HelmRelease values are watched through the generated ConfigMap label).
 
 The PVC of an existing cluster may already have been expanded beyond 20Gi;
-Kubernetes cannot shrink it in place. The usage cap still applies. Recreating
-it at 20Gi is a separate maintenance operation (stop Prometheus, delete the
-PVC, let the StatefulSet recreate it) and only makes sense after the sidecar
-has uploaded the local blocks that should be kept.
+Kubernetes cannot shrink it in place. The usage cap still applies. Shrinking it
+is a separate maintenance operation: stop Prometheus, copy the data into a new
+20Gi PVC with `pv-migrate`, and point the StatefulSet at the new claim. Only do
+this after the sidecar has uploaded the local blocks that should be kept. See
+[`scripts/README.md`](../scripts/README.md#persistentvolumeclaims) for the
+`pv-migrate` workflow and download instructions.
 
 ## Alerts and notifications
 

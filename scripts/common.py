@@ -38,6 +38,7 @@ FLUX_SCRIPTS_DIR = SCRIPT_DIR / "flux"
 
 FACTORY_URL = os.environ.get("TALOS_FACTORY_URL", "https://factory.talos.dev").rstrip("/")
 DEFAULT_FLUX_VERSION = "v2.9.6"
+DEFAULT_PV_MIGRATE_VERSION = "v3.7.0"
 
 # Behave like a normal Unix CLI when the consumer of our output goes away
 # (e.g. `manage.py status | head`), instead of raising BrokenPipeError.

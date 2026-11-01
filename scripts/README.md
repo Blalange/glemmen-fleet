@@ -7,15 +7,54 @@ state stay in `talos/` and `flux/`; downloaded CLI tools live in `scripts/bin/`
 ## Tools
 
 ```sh
-./scripts/download-tools.py                 # talosctl + kubectl + flux
+./scripts/download-tools.py                 # talosctl + kubectl + flux + pv-migrate
 ./scripts/download-tools.py talosctl        # one tool
+./scripts/download-tools.py pv-migrate      # PVC migration helper
 ./scripts/download-tools.py flux --force    # re-download
 ```
 
 Versions come from `talos/settings.env` (`TALOS_VERSION`,
-`KUBERNETES_VERSION`) and the built-in Flux default. They can be overridden with
-`TALOS_VERSION`, `KUBECTL_VERSION` and `FLUX_VERSION`. The other scripts never
-download tools; if one is missing they print the command above.
+`KUBERNETES_VERSION`) and the built-in Flux and pv-migrate defaults. They can be
+overridden with `TALOS_VERSION`, `KUBECTL_VERSION`, `FLUX_VERSION` and
+`PV_MIGRATE_VERSION`. The other scripts never download tools; if one is
+missing they print the command above.
+
+## PersistentVolumeClaims
+
+`pv-migrate` copies the contents of one PVC into another. It is useful for
+moving a volume to a different StorageClass or, as with the Prometheus volume,
+for shrinking a volume: Kubernetes cannot reduce a bound PVC in place, so the
+destination PVC is created at the smaller size and `--ignore-sizes` allows the
+copy when the old claim is larger.
+
+Stop the workload using the PVC first and create the destination PVC (same
+namespace, smaller size). Then run:
+
+```sh
+./scripts/bin/pv-migrate \
+  --source-namespace monitoring --source old-pvc \
+  --dest-namespace monitoring --dest new-pvc \
+  --ignore-sizes
+```
+
+For a long copy, use `--detach`; the job continues in the cluster:
+
+```sh
+./scripts/bin/pv-migrate ... --detach --id my-migration
+./scripts/bin/pv-migrate status my-migration --follow
+./scripts/bin/pv-migrate cleanup my-migration
+```
+
+The source and destination PVCs must not be mounted by other pods. Copying a
+subdirectory is possible with `--source-path` and `--dest-path`.
+
+Keep the old claim until the workload has started successfully on the new one.
+The `monitoring` StorageClass uses `reclaimPolicy: Retain`, so deleting the old
+PVC and PV does not delete the backing Longhorn volume; remove the leftover
+`Volume` resource in `longhorn-system` as well when it is no longer needed for
+rollback. Re-add the Longhorn volume labels (notably
+`recurring-job-group.longhorn.io/default=enabled`, `backup-target` and
+`backup-volume`) on the new volume so recurring backups keep running.
 
 ## Talos
 
