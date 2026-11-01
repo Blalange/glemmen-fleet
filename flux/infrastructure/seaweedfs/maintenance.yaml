@@ -1,0 +1,19 @@
+apiVersion: seaweed.seaweedfs.com/v1
+kind: AdminScript
+metadata:
+  name: nightly-balance
+  namespace: default
+spec:
+  clusterRef:
+    name: seaweedfs
+  schedule: "0 2 * * *" # daily at 02:00
+  script: |
+    lock
+    ec.rebuild -apply
+    ec.balance -apply
+    fs.log.purge -daysAgo=7
+    volume.vacuum -garbageThreshold 0.05
+    volume.deleteEmpty -quietFor=24h -apply
+    volume.balance -apply
+    volume.fix.replication -apply
+    unlock

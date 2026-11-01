@@ -7,3 +7,4 @@ resources:
   - seaweed.yaml
   - bucket-thanos.yaml
   - s3-thanos.yaml
+  - maintenance.yaml
