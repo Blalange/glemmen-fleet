@@ -26,7 +26,7 @@ spec:
       cpu: 200m
       memory: 256Mi
   volume:
-    replicas: 1
+    replicas: 2
     metricsPort: 9327
     storageClassName: seaweedfs
     requests:
@@ -37,7 +37,7 @@ spec:
       cpu: 500m
       memory: 1Gi
   filer:
-    replicas: 1
+    replicas: 2
     metricsPort: 9327
     # Filer metadata lives in the existing three-node YugabyteDB cluster, not
     # on a local leveldb/PVC. The Secret is hand-created (not in Git) because it
@@ -54,7 +54,7 @@ spec:
   # Standalone S3 gateway. It exposes SeaweedFS as an S3 endpoint on
   # seaweedfs-s3.seaweedfs.svc.cluster.local:8333.
   s3:
-    replicas: 1
+    replicas: 2
     metricsPort: 9327
     iam: true
     service:
