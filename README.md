@@ -84,9 +84,9 @@ The media stack uses the same SeaweedFS cluster through its CSI driver: one 350 
 
 ### Databases
 
-NetBox uses its own PostgreSQL instance in the `netbox` namespace (see `flux/apps/netbox/`). Grafana, the SeaweedFS filer and the media automation apps share a three-node YugabyteDB (YSQL) cluster in the `yugabyte` namespace (`flux/infrastructure/yugabyte/`) with replication factor 3. The cluster is managed by the official `yugabytedb/yugabyte` Helm chart (three YB-Master and three YB-TServer pods), not the earlier hand-written StatefulSet. Clients connect to `yb-tservers.yugabyte.svc.cluster.local:5433`; the database is not exposed outside the cluster. Sonarr, Radarr and Prowlarr use `<app>-main`/`<app>-log`. Jellyfin and Seerr keep SQLite on Longhorn volumes; Jellyfin has no supported PostgreSQL backend and Seerr's TypeORM migrations do not complete reliably on YSQL.
+NetBox uses its own PostgreSQL instance in the `netbox` namespace (see `flux/apps/netbox/`). Grafana and the SeaweedFS filer share a three-node YugabyteDB (YSQL) cluster in the `yugabyte` namespace (`flux/infrastructure/yugabyte/`) with replication factor 3. The cluster is managed by the official `yugabytedb/yugabyte` Helm chart (three YB-Master and three YB-TServer pods), not the earlier hand-written StatefulSet. Clients connect to `yb-tservers.yugabyte.svc.cluster.local:5433`; the database is not exposed outside the cluster. The media apps use SQLite on Longhorn volumes: the Servarr apps cannot parse YB's `server_version` string, Jellyfin has no supported PostgreSQL backend, and Seerr's TypeORM migrations do not complete reliably on YSQL.
 
-Passwords are stored in Kubernetes Secrets, not in Git: `netbox-secrets` in `netbox` for NetBox, `yugabyte-auth` in `yugabyte` (superuser, `grafana`, `seaweedfs` and media role passwords) plus `grafana-db` in `monitoring` for Grafana, and `media-db` in `media` for the media apps. See `flux/infrastructure/yugabyte/README.md` for setup and administration.
+Passwords are stored in Kubernetes Secrets, not in Git: `netbox-secrets` in `netbox` for NetBox, `yugabyte-auth` in `yugabyte` (superuser, `grafana` and `seaweedfs` role passwords) plus `grafana-db` in `monitoring` for Grafana. See `flux/infrastructure/yugabyte/README.md` for setup and administration.
 
 ## Repository layout
 

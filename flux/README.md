@@ -240,10 +240,11 @@ the privileged `media` namespace. The apps share one SeaweedFS CSI
 is 350Gi. See [`apps/media/README.md`](../apps/media/README.md) for the secrets,
 SeaweedFS PVC expansion, Authentik provider setup and first-run steps.
 
-- **Databases:** Sonarr/Radarr/Prowlarr use YSQL `<app>-main`/`<app>-log`.
-  Jellyfin and Seerr keep SQLite on Longhorn; Jellyfin has no supported
-  PostgreSQL backend and Seerr's TypeORM migrations do not complete reliably
-  on YSQL.
+- **Databases:** all media apps use SQLite on their Longhorn config volumes.
+  YSQL was evaluated for Sonarr/Radarr/Prowlarr, but their
+  `DatabaseVersionParser` cannot parse YB's `server_version` string
+  (`15.12-YB-...`). Jellyfin has no supported PostgreSQL backend, and Seerr's
+  TypeORM migrations do not complete reliably on YSQL.
 - **VPN:** qBittorrent shares its pod with gluetun. The Windscribe WireGuard
   profile lives only in the hand-created `qbittorrent-wireguard` Secret.
   Gluetun's firewall blocks all non-VPN egress.
@@ -479,12 +480,12 @@ is managed by external-dns.
   `thanos-objstore-config` in `monitoring`; created for NetBox:
   `netbox-secrets` in `netbox` (superuser, YSQL/Valkey passwords, Django secret
   and sync API token); created for the shared YugabyteDB: `yugabyte-auth` in
-  `yugabyte` (superuser, Grafana, SeaweedFS and media role passwords) and
+  `yugabyte` (superuser, Grafana and SeaweedFS role passwords) and
   `grafana-db` in `monitoring`; created for iDRAC metrics: `idrac-exporter` in
-  `monitoring`; created for the media stack: `media-db` (the three media role
-  passwords), `qbittorrent-wireguard` (Windscribe profile), `qbittorrent-webui`
-  (qBittorrent admin), `jellyfin-admin` (Jellyfin local admin) and
-  `authentik-outpost` (outpost token) in `media`).
+  `monitoring`; created for the media stack: `qbittorrent-wireguard`
+  (Windscribe profile), `qbittorrent-webui` (qBittorrent admin),
+  `jellyfin-admin` (Jellyfin local admin) and `authentik-outpost` (outpost
+  token) in `media`).
 - **Backup target**: Longhorn backs up to `s3://longhorn-backup@us-east-1/`,
   served by the in-cluster `rclone serve s3` bridge in
   `infrastructure/longhorn/rclone/`. The actual backupstore is a folder

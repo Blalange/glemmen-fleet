@@ -5,9 +5,9 @@
 # waits for the new YB-TServers; on a fresh database it also sets the
 # yugabyte superuser password from yugabyte-auth.
 #
-# The media roles (sonarr/radarr/prowlarr) were added in v2; v3 quotes
-# hyphenated database names. v4 drops the unused seerr database because Seerr
-# runs SQLite on its config volume. Bump the Job name whenever the SQL changes:
+# The media apps were briefly provisioned here, but the Servarr apps cannot
+# parse YugabyteDB's server_version string (15.12-YB-...). They now use SQLite,
+# so v5 removes the media roles. Bump the Job name whenever the SQL changes:
 # Jobs are immutable and Flux cannot patch a completed PodTemplate.
 apiVersion: v1
 kind: ConfigMap
@@ -32,9 +32,6 @@ data:
     SUPERUSER_PASSWORD="${SUPERUSER_PASSWORD:?SUPERUSER_PASSWORD is required}"
     GRAFANA_PASSWORD="${GRAFANA_PASSWORD:?GRAFANA_PASSWORD is required}"
     SEAWEEDFS_PASSWORD="${SEAWEEDFS_PASSWORD:?SEAWEEDFS_PASSWORD is required}"
-    SONARR_PASSWORD="${SONARR_PASSWORD:?SONARR_PASSWORD is required}"
-    RADARR_PASSWORD="${RADARR_PASSWORD:?RADARR_PASSWORD is required}"
-    PROWLARR_PASSWORD="${PROWLARR_PASSWORD:?PROWLARR_PASSWORD is required}"
 
     ysql() {
       local password="$1"
@@ -101,20 +98,12 @@ data:
     create_role_and_database grafana "${GRAFANA_PASSWORD}" grafana
     create_role_and_database seaweedfs "${SEAWEEDFS_PASSWORD}" seaweedfs
 
-    # Servarr uses separate main and log databases per application.
-    create_role_and_database sonarr "${SONARR_PASSWORD}" sonarr-main
-    create_role_and_database sonarr "${SONARR_PASSWORD}" sonarr-log
-    create_role_and_database radarr "${RADARR_PASSWORD}" radarr-main
-    create_role_and_database radarr "${RADARR_PASSWORD}" radarr-log
-    create_role_and_database prowlarr "${PROWLARR_PASSWORD}" prowlarr-main
-    create_role_and_database prowlarr "${PROWLARR_PASSWORD}" prowlarr-log
-
     echo "YugabyteDB roles and databases are ready"
 ---
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: yugabyte-init-v4
+  name: yugabyte-init-v5
   namespace: yugabyte
 spec:
   backoffLimit: 10
@@ -151,21 +140,6 @@ spec:
                 secretKeyRef:
                   name: yugabyte-auth
                   key: seaweedfs-password
-            - name: SONARR_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: yugabyte-auth
-                  key: sonarr-password
-            - name: RADARR_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: yugabyte-auth
-                  key: radarr-password
-            - name: PROWLARR_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: yugabyte-auth
-                  key: prowlarr-password
           volumeMounts:
             - name: init-script
               mountPath: /scripts

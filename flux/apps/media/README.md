@@ -29,7 +29,6 @@ Everything secret is created by hand and never committed:
 
 | Secret | Purpose |
 |---|---|
-| `media-db` | YSQL passwords for Sonarr/Radarr/Prowlarr (keys `<app>-password`) |
 | `qbittorrent-wireguard` | Windscribe `wg0.conf` with an IPv4 endpoint |
 | `qbittorrent-webui` | qBittorrent break-glass username/password (keys `username`, `password`) |
 | `jellyfin-admin` | Jellyfin local administrator (keys `username`, `password`) |
@@ -41,38 +40,18 @@ secret <name> -o jsonpath=...` when needed.
 
 ## Databases
 
-Sonarr/Radarr/Prowlarr use two YSQL databases each (`<app>-main` and
-`<app>-log`). The roles/databases are created by
-`yugabyte-init-v4` in `flux/infrastructure/yugabyte/`. Jellyfin and Seerr keep
-SQLite on their Longhorn config volumes (Jellyfin has no supported PostgreSQL
-backend; Seerr's TypeORM migrations do not complete reliably on YSQL).
-qBittorrent stores its settings in its config volume.
+All media applications use SQLite on their Longhorn config volumes:
 
-The init Job reads passwords from `yugabyte-auth` in the `yugabyte` namespace.
-Create the three keys there and the matching `media-db` Secret in `media` before
-reconciling:
+- Sonarr/Radarr/Prowlarr: `<app>.db` under `/config`
+- Jellyfin: `/config/data/jellyfin.db`
+- Seerr: `/config/db.sqlite3`
+- qBittorrent: its own settings database under `/config`
 
-```sh
-kubectl -n yugabyte patch secret yugabyte-auth --type merge -p "$(cat <<EOF
-{"data":{
-  "sonarr-password":"$(printf %s "$(openssl rand -hex 24)" | base64 -w0)",
-  "radarr-password":"$(printf %s "$(openssl rand -hex 24)" | base64 -w0)",
-  "prowlarr-password":"$(printf %s "$(openssl rand -hex 24)" | base64 -w0)"
-}}
-EOF
-)"
-```
-
-Then create `media-db` with the same values. The simplest way is to read the
-three keys back from `yugabyte-auth`:
-
-```sh
-kubectl -n media create secret generic media-db \
-  --from-literal=sonarr-password="$(kubectl -n yugabyte get secret yugabyte-auth -o jsonpath='{.data.sonarr-password}' | base64 -d)" \
-  --from-literal=radarr-password="$(kubectl -n yugabyte get secret yugabyte-auth -o jsonpath='{.data.radarr-password}' | base64 -d)" \
-  --from-literal=prowlarr-password="$(kubectl -n yugabyte get secret yugabyte-auth -o jsonpath='{.data.prowlarr-password}' | base64 -d)" \
-  --dry-run=client -o yaml | kubectl apply -f -
-```
+YugabyteDB was evaluated for Sonarr/Radarr/Prowlarr, but their
+`DatabaseVersionParser` calls `.NET Version.Parse()` on YSQL's
+`server_version` string (`15.12-YB-2026.1.2.0-b0`), which fails. They therefore
+fall back to the supported SQLite backend. `yugabyte-init-v5` no longer creates
+media roles or databases, and there is no `media-db` Secret.
 
 ## WireGuard
 
@@ -226,8 +205,11 @@ cluster.
   `privileged: true` is a valid fallback.
 - qBittorrent shows the Authentik page but then its own login: add
   `10.42.0.0/16` to the Web UI subnet whitelist.
-- Sonarr/Radarr cannot connect to YSQL: check the app log and `media-db`
-  Secret. If an app's schema is incompatible with YSQL, switch that one app to
-  SQLite by removing its `*__POSTGRES__*` env vars; the config volume remains.
+- Sonarr/Radarr/Prowlarr report `Version string portion was too short or too
+  long` or `Failed to load system status`: they are connecting to YSQL. They
+  must use SQLite; there is no `media-db` Secret. If an old Deployment still
+  has `*__POSTGRES__*` env vars, remove them and recreate the Deployment
+  (`kubectl -n media delete deploy <app>` then re-apply), because a normal
+  `kubectl apply` can retain env entries owned by another manager.
 - Longhorn backup job still includes a SeaweedFS data volume: check the PVC and
   Longhorn volume labels; the PVC must be the recurring-job source.
