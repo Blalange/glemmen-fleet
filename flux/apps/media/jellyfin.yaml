@@ -56,6 +56,12 @@ spec:
             - name: media
               mountPath: /data
               readOnly: true
+          startupProbe:
+            httpGet:
+              path: /health
+              port: http
+            periodSeconds: 10
+            failureThreshold: 120
           readinessProbe:
             httpGet:
               path: /health

@@ -71,6 +71,14 @@ spec:
               mountPath: /config
             - name: media
               mountPath: /data
+          # YSQL executes DDL slowly; the first FluentMigrator run can take
+          # several minutes. Do not let liveness kill it mid-migration.
+          startupProbe:
+            httpGet:
+              path: /ping
+              port: http
+            periodSeconds: 10
+            failureThreshold: 180
           readinessProbe:
             httpGet:
               path: /ping

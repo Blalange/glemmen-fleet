@@ -8,7 +8,9 @@
 #     --from-file=wg0.conf=./Windscribe-Oslo-Rakfisk-WG.conf
 #
 # The supplied file's IPv6 address is removed in the runbook because the cluster
-# and pod network are IPv4-only; see README.md.
+# and pod network are IPv4-only. The custom provider also requires the Endpoint
+# line to contain an IPv4 address, so the Secret uses the resolved Windscribe
+# address instead of the hostname; see README.md.
 apiVersion: apps/v1
 kind: Deployment
 metadata:

@@ -1,11 +1,12 @@
 # YugabyteDB
 
 Three-node [YugabyteDB](https://www.yugabyte.com/) (YSQL) cluster used by
-Grafana, the SeaweedFS filer, and Sonarr/Radarr/Prowlarr/Seerr. NetBox continues
+Grafana, the SeaweedFS filer, and Sonarr/Radarr/Prowlarr. NetBox continues
 to use its own PostgreSQL StatefulSet; the shared YugabyteDB instance was
 retired because NetBox's schema needs index and collation features that YSQL
-does not implement. Jellyfin also stays on SQLite because it has no supported
-PostgreSQL backend.
+does not implement. Jellyfin and Seerr stay on SQLite: Jellyfin has no supported
+PostgreSQL backend and Seerr's TypeORM migrations do not complete reliably on
+YSQL.
 
 ## Components
 
@@ -13,7 +14,7 @@ PostgreSQL backend.
 |---|---|
 | `release.yaml` | `yugabytedb/yugabyte` HelmRepository and HelmRelease (chart `2026.1.2`, image `2026.1.2.0-b137`) |
 | `values.yaml` | Three YB-Masters, three YB-TServers, RF3, storage and probe settings |
-| `init-job.yaml` | One-shot `yugabyte-init-v3` Job that creates the application roles/databases and sets the superuser password |
+| `init-job.yaml` | One-shot `yugabyte-init-v4` Job that creates the application roles/databases and sets the superuser password |
 | `pdb.yaml` | `policy/v1` PodDisruptionBudgets for masters and tservers |
 | `storageclass-fast.yaml` | `yugabyte-fast-master` (two Longhorn replicas) and `yugabyte-fast-tserver` (one Longhorn replica) |
 | `storageclass.yaml` | Legacy `yugabyte` class used by the retired hand-written cluster's PVCs |
@@ -21,7 +22,7 @@ PostgreSQL backend.
 The chart runs YB-Master and YB-TServer as separate StatefulSets, with three
 pods each. `oldNamingStyle` is on, so the stable services are `yb-masters` and
 `yb-tservers`; the latter is the YSQL endpoint on port 5433. Grafana,
-SeaweedFS and the media apps connect to
+SeaweedFS and the *arr apps connect to
 `yb-tservers.yugabyte.svc.cluster.local:5433`.
 
 ## Topology and replication
@@ -74,7 +75,6 @@ SEAWEEDFS_PW="$(openssl rand -hex 24)"
 SONARR_PW="$(openssl rand -hex 24)"
 RADARR_PW="$(openssl rand -hex 24)"
 PROWLARR_PW="$(openssl rand -hex 24)"
-SEERR_PW="$(openssl rand -hex 24)"
 
 kubectl -n yugabyte create secret generic yugabyte-auth \
   --from-literal=superuser-password="$SUPERUSER_PW" \
@@ -83,7 +83,6 @@ kubectl -n yugabyte create secret generic yugabyte-auth \
   --from-literal=sonarr-password="$SONARR_PW" \
   --from-literal=radarr-password="$RADARR_PW" \
   --from-literal=prowlarr-password="$PROWLARR_PW" \
-  --from-literal=seerr-password="$SEERR_PW" \
   --dry-run=client -o yaml | kubectl apply -f -
 
 kubectl -n monitoring create secret generic grafana-db \
@@ -93,10 +92,10 @@ kubectl -n monitoring create secret generic grafana-db \
 
 `grafana-password` must match the `grafana-db` Secret in `monitoring`.
 `seaweedfs-password` must match the password in the `seaweedfs-filer-config`
-Secret in `seaweedfs`; see `flux/README.md`. The four media passwords must match
+Secret in `seaweedfs`; see `flux/README.md`. The three media passwords must match
 the `media-db` Secret in `media`.
 
-The `yugabyte-init-v3` Job sets the default `yugabyte` superuser password from
+The `yugabyte-init-v4` Job sets the default `yugabyte` superuser password from
 `yugabyte-auth` and creates:
 
 - `grafana` → `grafana`
@@ -104,7 +103,6 @@ The `yugabyte-init-v3` Job sets the default `yugabyte` superuser password from
 - `sonarr` → `sonarr-main`, `sonarr-log`
 - `radarr` → `radarr-main`, `radarr-log`
 - `prowlarr` → `prowlarr-main`, `prowlarr-log`
-- `seerr` → `seerr`
 
 It is idempotent. If the SQL changes, bump the Job name (or delete and re-apply
 it) so it runs again; Jobs are immutable.

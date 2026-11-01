@@ -26,13 +26,14 @@ in the *arr media management settings if import errors mention hardlinks.
 ## Databases
 
 Sonarr/Radarr/Prowlarr use two YSQL databases each (`<app>-main` and
-`<app>-log`); Seerr uses one (`seerr`). The roles/databases are created by
-`yugabyte-init-v3` in `flux/infrastructure/yugabyte/`. Jellyfin has no supported
-PostgreSQL backend and keeps SQLite on its Longhorn config volume. qBittorrent
-stores its settings in its config volume.
+`<app>-log`). The roles/databases are created by
+`yugabyte-init-v4` in `flux/infrastructure/yugabyte/`. Jellyfin and Seerr keep
+SQLite on their Longhorn config volumes (Jellyfin has no supported PostgreSQL
+backend; Seerr's TypeORM migrations do not complete reliably on YSQL).
+qBittorrent stores its settings in its config volume.
 
 The init Job reads passwords from `yugabyte-auth` in the `yugabyte` namespace.
-Create the four keys there and the matching `media-db` Secret in `media` before
+Create the three keys there and the matching `media-db` Secret in `media` before
 reconciling:
 
 ```sh
@@ -40,22 +41,20 @@ kubectl -n yugabyte patch secret yugabyte-auth --type merge -p "$(cat <<EOF
 {"data":{
   "sonarr-password":"$(printf %s "$(openssl rand -hex 24)" | base64 -w0)",
   "radarr-password":"$(printf %s "$(openssl rand -hex 24)" | base64 -w0)",
-  "prowlarr-password":"$(printf %s "$(openssl rand -hex 24)" | base64 -w0)",
-  "seerr-password":"$(printf %s "$(openssl rand -hex 24)" | base64 -w0)"
+  "prowlarr-password":"$(printf %s "$(openssl rand -hex 24)" | base64 -w0)"
 }}
 EOF
 )"
 ```
 
 Then create `media-db` with the same values. The simplest way is to read the
-four keys back from `yugabyte-auth`:
+three keys back from `yugabyte-auth`:
 
 ```sh
 kubectl -n media create secret generic media-db \
   --from-literal=sonarr-password="$(kubectl -n yugabyte get secret yugabyte-auth -o jsonpath='{.data.sonarr-password}' | base64 -d)" \
   --from-literal=radarr-password="$(kubectl -n yugabyte get secret yugabyte-auth -o jsonpath='{.data.radarr-password}' | base64 -d)" \
   --from-literal=prowlarr-password="$(kubectl -n yugabyte get secret yugabyte-auth -o jsonpath='{.data.prowlarr-password}' | base64 -d)" \
-  --from-literal=seerr-password="$(kubectl -n yugabyte get secret yugabyte-auth -o jsonpath='{.data.seerr-password}' | base64 -d)" \
   --dry-run=client -o yaml | kubectl apply -f -
 ```
 
@@ -72,10 +71,19 @@ kubectl -n media create secret generic qbittorrent-wireguard \
   --dry-run=client -o yaml | kubectl apply -f -
 ```
 
-Gluetun reads the file at `/gluetun/wireguard/wg0.conf`. If it cannot resolve
-the endpoint hostname, set `WIREGUARD_ENDPOINT_IP` in `qbittorrent.yaml` to the
-resolved IPv4 address. If `/dev/net/tun` is denied, set `privileged: true` on
-the gluetun container; the namespace already permits it.
+Gluetun reads the file at `/gluetun/wireguard/wg0.conf`. Its custom provider
+requires the `Endpoint` line to contain an IPv4 address, not a hostname. Resolve
+`osl-433-wg.whiskergalaxy.com` once and put the address in the Secret:
+
+```sh
+getent ahostsv4 osl-433-wg.whiskergalaxy.com
+# Endpoint = 79.127.150.99:443
+```
+
+The IP at the time of writing is `79.127.150.99`. If Windscribe changes the
+server address or you regenerate the profile, update the Secret. If
+`/dev/net/tun` is denied, set `privileged: true` on the gluetun container; the
+namespace already permits it.
 
 ## Authentik
 

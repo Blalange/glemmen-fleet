@@ -44,23 +44,11 @@ spec:
               value: "5055"
             - name: CONFIG_DIRECTORY
               value: /app/config
+            # Seerr's TypeORM PostgreSQL migrations do not complete reliably
+            # on YSQL (partial DDL and missing migration rows). Keep the
+            # supported SQLite backend; its database lives on seerr-config.
             - name: DB_TYPE
-              value: postgres
-            - name: DB_HOST
-              value: yb-tservers.yugabyte.svc.cluster.local
-            - name: DB_PORT
-              value: "5433"
-            - name: DB_USER
-              value: seerr
-            - name: DB_NAME
-              value: seerr
-            - name: DB_PASS
-              valueFrom:
-                secretKeyRef:
-                  name: media-db
-                  key: seerr-password
-            - name: DB_USE_SSL
-              value: "false"
+              value: sqlite
             - name: LOG_LEVEL
               value: info
           ports:
@@ -69,6 +57,13 @@ spec:
           volumeMounts:
             - name: config
               mountPath: /app/config
+          # TypeORM migrations are slow on YSQL; allow a long first start.
+          startupProbe:
+            httpGet:
+              path: /api/v1/status
+              port: http
+            periodSeconds: 10
+            failureThreshold: 180
           readinessProbe:
             httpGet:
               path: /api/v1/status

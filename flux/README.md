@@ -240,9 +240,10 @@ the privileged `media` namespace. The apps share one SeaweedFS CSI
 is 350Gi. See [`apps/media/README.md`](../apps/media/README.md) for the secrets,
 SeaweedFS PVC expansion, Authentik provider setup and first-run steps.
 
-- **Databases:** Sonarr/Radarr/Prowlarr use YSQL `<app>-main`/`<app>-log`;
-  Seerr uses `seerr`. Jellyfin keeps SQLite on Longhorn because it has no
-  supported PostgreSQL backend.
+- **Databases:** Sonarr/Radarr/Prowlarr use YSQL `<app>-main`/`<app>-log`.
+  Jellyfin and Seerr keep SQLite on Longhorn; Jellyfin has no supported
+  PostgreSQL backend and Seerr's TypeORM migrations do not complete reliably
+  on YSQL.
 - **VPN:** qBittorrent shares its pod with gluetun. The Windscribe WireGuard
   profile lives only in the hand-created `qbittorrent-wireguard` Secret.
   Gluetun's firewall blocks all non-VPN egress.

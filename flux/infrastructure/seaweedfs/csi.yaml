@@ -28,6 +28,8 @@ spec:
       # SeaweedFS layer does not need another copy.
       replication: "000"
       # All media consumers run as uid/gid 1000 (LinuxServer PUID/PGID and the
-      # Jellyfin image). Map every file in the mount to that identity.
-      uidMap: "1000"
-      gidMap: "1000"
+      # Jellyfin image). Map every file in the mount to that identity. The
+      # driver passes these to `weed mount -map.uid/-map.gid`, which expect
+      # `localId:filerId` pairs; a bare id makes weed panic.
+      uidMap: "1000:1000"
+      gidMap: "1000:1000"
