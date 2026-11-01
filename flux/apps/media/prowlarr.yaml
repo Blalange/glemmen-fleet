@@ -12,6 +12,10 @@ metadata:
 spec:
   replicas: 1
   revisionHistoryLimit: 2
+  # The first *arr/Seerr start can spend tens of minutes in YSQL/SQLite
+  # migrations. The default 10m progress deadline would mark the Deployment
+  # failed before the startup probe gives up.
+  progressDeadlineSeconds: 3600
   strategy:
     type: Recreate
   selector:
