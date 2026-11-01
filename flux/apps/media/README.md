@@ -53,6 +53,29 @@ YugabyteDB was evaluated for Sonarr/Radarr/Prowlarr, but their
 fall back to the supported SQLite backend. `yugabyte-init-v5` no longer creates
 media roles or databases, and there is no `media-db` Secret.
 
+## FlareSolverr
+
+FlareSolverr runs as an internal-only service at
+`http://flaresolverr.media.svc.cluster.local:8191`. It is used by Prowlarr as an
+indexer proxy for Cloudflare-protected trackers. It has no Ingress and no SSO;
+only cluster workloads can reach it.
+
+Prowlarr's indexer proxy is configuration, not a Kubernetes resource, so it is
+created through Prowlarr (Settings > Indexers > Indexer Proxies) or its API:
+
+```sh
+api=$(kubectl -n media exec deploy/prowlarr -- sh -c \
+  'grep -o "<ApiKey>[^<]*" /config/config.xml | cut -d">" -f2')
+
+kubectl -n media exec deploy/prowlarr -- sh -c "curl -sS -X POST \
+  -H 'X-Api-Key: $api' -H 'Content-Type: application/json' \
+  http://127.0.0.1:9696/api/v1/indexerproxy \
+  --data '{"name":"FlareSolverr","implementation":"FlareSolverr","configContract":"FlareSolverrSettings","fields":[{"name":"host","value":"http://flaresolverr.media.svc.cluster.local:8191/"},{"name":"requestTimeout","value":60}],"tags":[]}'"
+```
+
+The image is pinned to FlareSolverr `v3.5.2`; update it with the other media
+images when a newer release is available.
+
 ## WireGuard
 
 The WireGuard configuration is never committed. Create the Secret from the

@@ -233,7 +233,7 @@ Store/Compactor pods.
 
 ## Media stack
 
-`apps/media` runs Jellyfin, Sonarr, Radarr, Prowlarr, Seerr and qBittorrent in
+`apps/media` runs Jellyfin, Sonarr, Radarr, Prowlarr, Seerr, FlareSolverr and qBittorrent in
 the privileged `media` namespace. The apps share one SeaweedFS CSI
 `ReadWriteMany` volume at `/data` (`downloads/`, `media/movies/`,
 `media/tv/`). The SeaweedFS cluster has four 100Gi volume servers; the media PVC

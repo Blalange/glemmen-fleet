@@ -1,0 +1,96 @@
+# FlareSolverr provides a headless-browser proxy for Prowlarr indexers that
+# use Cloudflare challenges. It is internal-only: no Ingress, no Authentik
+# exposure. Prowlarr reaches it at http://flaresolverr.media.svc.cluster.local:8191.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: flaresolverr
+  labels:
+    app.kubernetes.io/name: flaresolverr
+    app.kubernetes.io/instance: flaresolverr
+    app.kubernetes.io/part-of: media
+spec:
+  replicas: 1
+  revisionHistoryLimit: 2
+  # One browser process is enough; Recreate avoids two instances contending
+  # for memory during a rollout.
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: flaresolverr
+      app.kubernetes.io/instance: flaresolverr
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: flaresolverr
+        app.kubernetes.io/instance: flaresolverr
+        app.kubernetes.io/part-of: media
+    spec:
+      terminationGracePeriodSeconds: 30
+      containers:
+        - name: flaresolverr
+          image: ghcr.io/flaresolverr/flaresolverr:v3.5.2
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: TZ
+              value: Europe/Oslo
+            - name: LOG_LEVEL
+              value: info
+          ports:
+            - name: http
+              containerPort: 8191
+          volumeMounts:
+            # Chromium needs a reasonably sized /dev/shm. A memory-backed
+            # emptyDir avoids the small default and keeps it out of disk.
+            - name: dshm
+              mountPath: /dev/shm
+          startupProbe:
+            httpGet:
+              path: /health
+              port: http
+            periodSeconds: 5
+            failureThreshold: 60
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            failureThreshold: 6
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 60
+            periodSeconds: 30
+            failureThreshold: 6
+          resources:
+            requests:
+              cpu: 200m
+              memory: 512Mi
+            limits:
+              memory: 2Gi
+      volumes:
+        - name: dshm
+          emptyDir:
+            medium: Memory
+            sizeLimit: 1Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: flaresolverr
+  labels:
+    app.kubernetes.io/name: flaresolverr
+    app.kubernetes.io/instance: flaresolverr
+    app.kubernetes.io/part-of: media
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: flaresolverr
+    app.kubernetes.io/instance: flaresolverr
+  ports:
+    - name: http
+      port: 8191
+      targetPort: http

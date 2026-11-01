@@ -15,6 +15,7 @@ resources:
   - radarr.yaml
   - prowlarr.yaml
   - seerr.yaml
+  - flaresolverr.yaml
   - qbittorrent.yaml
   - authentik-outpost.yaml
   - ingress.yaml
