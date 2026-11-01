@@ -1,6 +1,6 @@
 # Shared media library and download directory, backed by the SeaweedFS CSI
-# driver. 350Gi leaves room for the Thanos bucket on the four 100Gi SeaweedFS
-# volume servers (400Gi total).
+# driver. 600Gi leaves room for the Thanos bucket on the four 100Gi SeaweedFS
+# volume servers (800Gi total).
 #
 # The StorageClass is created by the SeaweedCSIDriver CR in
 # flux/infrastructure/seaweedfs/csi.yaml. It maps files to uid/gid 1000, which
@@ -15,4 +15,4 @@ spec:
   storageClassName: seaweedfs-media
   resources:
     requests:
-      storage: 350Gi
+      storage: 600Gi

@@ -36,6 +36,7 @@ spec:
     replicas: 4
     metricsPort: 9327
     storageClassName: seaweedfs
+    volumeServerDiskCount: 2
     requests:
       storage: 100Gi
       cpu: 100m
