@@ -46,21 +46,6 @@ spec:
               value: "002"
             - name: TZ
               value: Europe/Oslo
-            - name: PROWLARR__POSTGRES__HOST
-              value: yb-tservers.yugabyte.svc.cluster.local
-            - name: PROWLARR__POSTGRES__PORT
-              value: "5433"
-            - name: PROWLARR__POSTGRES__USER
-              value: prowlarr
-            - name: PROWLARR__POSTGRES__PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: media-db
-                  key: prowlarr-password
-            - name: PROWLARR__POSTGRES__MAINDB
-              value: prowlarr-main
-            - name: PROWLARR__POSTGRES__LOGDB
-              value: prowlarr-log
             - name: PROWLARR__AUTH__METHOD
               value: External
             - name: PROWLARR__AUTH__REQUIRED

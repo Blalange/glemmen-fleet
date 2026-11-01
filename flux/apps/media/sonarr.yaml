@@ -46,21 +46,6 @@ spec:
               value: "002"
             - name: TZ
               value: Europe/Oslo
-            - name: SONARR__POSTGRES__HOST
-              value: yb-tservers.yugabyte.svc.cluster.local
-            - name: SONARR__POSTGRES__PORT
-              value: "5433"
-            - name: SONARR__POSTGRES__USER
-              value: sonarr
-            - name: SONARR__POSTGRES__PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: media-db
-                  key: sonarr-password
-            - name: SONARR__POSTGRES__MAINDB
-              value: sonarr-main
-            - name: SONARR__POSTGRES__LOGDB
-              value: sonarr-log
             - name: SONARR__AUTH__METHOD
               value: External
             - name: SONARR__AUTH__REQUIRED
