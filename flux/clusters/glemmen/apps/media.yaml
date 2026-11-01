@@ -14,4 +14,11 @@ spec:
   timeout: 45m
   path: ./flux/apps/media
   prune: true
-  wait: tr
+  wait: true
+  targetNamespace: media
+  dependsOn:
+    - name: infrastructure
+    - name: seaweedfs
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
