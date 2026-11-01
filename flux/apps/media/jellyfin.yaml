@@ -1,0 +1,110 @@
+# Jellyfin 12.4. The database and metadata stay in SQLite on the Longhorn config
+# volume; Jellyfin has no supported PostgreSQL backend yet. Media comes from the
+# shared SeaweedFS CSI volume read-only.
+#
+# SSO: install the SSO-Auth plugin from the K0lin manifest in the Jellyfin UI and
+# configure the existing Authentik `jellyfin` OAuth2 provider. Keep a local admin
+# account as a break-glass login. See README.md.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: jellyfin
+  labels:
+    app.kubernetes.io/name: jellyfin
+    app.kubernetes.io/instance: jellyfin
+    app.kubernetes.io/part-of: media
+spec:
+  replicas: 1
+  revisionHistoryLimit: 2
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: jellyfin
+      app.kubernetes.io/instance: jellyfin
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: jellyfin
+        app.kubernetes.io/instance: jellyfin
+        app.kubernetes.io/part-of: media
+    spec:
+      securityContext:
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        fsGroupChangePolicy: OnRootMismatch
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: jellyfin
+          image: jellyfin/jellyfin:12.4
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: TZ
+              value: Europe/Oslo
+            - name: JELLYFIN_PublishedServerUrl
+              value: https://jellyfin.glem.men
+          ports:
+            - name: http
+              containerPort: 8096
+          volumeMounts:
+            - name: config
+              mountPath: /config
+            - name: cache
+              mountPath: /cache
+            - name: media
+              mountPath: /data
+              readOnly: true
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 20
+            periodSeconds: 10
+            failureThreshold: 6
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 60
+            periodSeconds: 30
+            failureThreshold: 6
+          resources:
+            requests:
+              cpu: 200m
+              memory: 512Mi
+            limits:
+              memory: 4Gi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+      volumes:
+        - name: config
+          persistentVolumeClaim:
+            claimName: jellyfin-config
+        - name: cache
+          emptyDir:
+            sizeLimit: 20Gi
+        - name: media
+          persistentVolumeClaim:
+            claimName: media-data
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: jellyfin
+  labels:
+    app.kubernetes.io/name: jellyfin
+    app.kubernetes.io/instance: jellyfin
+    app.kubernetes.io/part-of: media
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: jellyfin
+    app.kubernetes.io/instance: jellyfin
+  ports:
+    - name: http
+      port: 8096
+      targetPort: http

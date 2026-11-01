@@ -1,0 +1,18 @@
+# Shared media library and download directory, backed by the SeaweedFS CSI
+# driver. 350Gi leaves room for the Thanos bucket on the four 100Gi SeaweedFS
+# volume servers (400Gi total).
+#
+# The StorageClass is created by the SeaweedCSIDriver CR in
+# flux/infrastructure/seaweedfs/csi.yaml. It maps files to uid/gid 1000, which
+# is the identity used by Jellyfin, the LinuxServer *arr apps and qBittorrent.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: media-data
+spec:
+  accessModes:
+    - ReadWriteMany
+  storageClassName: seaweedfs-media
+  resources:
+    requests:
+      storage: 350Gi

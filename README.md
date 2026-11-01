@@ -80,11 +80,13 @@ Longhorn volume backups go to a Google Drive folder through an in-cluster rclone
 
 Prometheus only retains the most recent metrics locally (15 GiB, see `retentionSize`). The Thanos side in `flux/monitoring/thanos/` uploads blocks to the `thanos` bucket in the SeaweedFS cluster under `flux/infrastructure/seaweedfs/`, compacts and downsamples them, and exposes the history through a dedicated Grafana data source.
 
+The media stack uses the same SeaweedFS cluster through its CSI driver: one 350 GiB `ReadWriteMany` volume is mounted at `/data` by Jellyfin, Sonarr, Radarr and qBittorrent. The SeaweedFS data volume servers are four 100 GiB Longhorn volumes; they are excluded from the Longhorn backup job because the media library is treated as re-downloadable. See `flux/apps/media/README.md`.
+
 ### Databases
 
-NetBox uses its own PostgreSQL instance in the `netbox` namespace (see `flux/apps/netbox/`). Grafana uses a separate three-node YugabyteDB (YSQL) cluster in the `yugabyte` namespace (`flux/infrastructure/yugabyte/`) with replication factor 3 and two Grafana replicas. The cluster is managed by the official `yugabytedb/yugabyte` Helm chart (three YB-Master and three YB-TServer pods), not the earlier hand-written StatefulSet. Grafana connects to `yb-tservers.yugabyte.svc.cluster.local:5433`; the database is not exposed outside the cluster.
+NetBox uses its own PostgreSQL instance in the `netbox` namespace (see `flux/apps/netbox/`). Grafana, the SeaweedFS filer and the media automation apps share a three-node YugabyteDB (YSQL) cluster in the `yugabyte` namespace (`flux/infrastructure/yugabyte/`) with replication factor 3. The cluster is managed by the official `yugabytedb/yugabyte` Helm chart (three YB-Master and three YB-TServer pods), not the earlier hand-written StatefulSet. Clients connect to `yb-tservers.yugabyte.svc.cluster.local:5433`; the database is not exposed outside the cluster. Sonarr, Radarr and Prowlarr use `<app>-main`/`<app>-log`; Seerr uses `seerr`. Jellyfin has no supported PostgreSQL backend and keeps SQLite on a Longhorn volume.
 
-Passwords are stored in Kubernetes Secrets, not in Git: `netbox-secrets` in `netbox` for NetBox, and `yugabyte-auth` in `yugabyte` (superuser, `grafana` and `seaweedfs` role passwords) plus `grafana-db` in `monitoring` for Grafana. See `flux/infrastructure/yugabyte/README.md` for setup and administration.
+Passwords are stored in Kubernetes Secrets, not in Git: `netbox-secrets` in `netbox` for NetBox, `yugabyte-auth` in `yugabyte` (superuser, `grafana`, `seaweedfs` and media role passwords) plus `grafana-db` in `monitoring` for Grafana, and `media-db` in `media` for the media apps. See `flux/infrastructure/yugabyte/README.md` for setup and administration.
 
 ## Repository layout
 

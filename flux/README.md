@@ -20,14 +20,15 @@ flux/
 │   ├── ingress.yaml            -> flux/ingress (Traefik, depends on certificates)
 │   ├── monitoring-pvc.yaml     -> kube-prometheus-stack/pvc (Grafana volume + SC)
 │   ├── monitoring.yaml         -> flux/monitoring (KPS, Thanos, smartctl, iDRAC, unpoller)
-│   ├── seaweedfs.yaml          -> flux/infrastructure/seaweedfs (S3 object store)
+│   ├── seaweedfs.yaml          -> flux/infrastructure/seaweedfs (S3 object store + CSI)
+│   ├── longhorn-resources.yaml -> flux/infrastructure/longhorn/resources (recurring jobs)
 │   ├── pxe.yaml                -> flux/infrastructure/pxe (proxyDHCP/TFTP + Talos boot assets)
 │   ├── monitoring-dashboards.yaml / monitoring-alerts.yaml
 │   └── apps.yaml               -> flux/apps (application Kustomizations)
 ├── infrastructure/             namespaces, Longhorn, cert-manager, external-dns, MetalLB, metrics-server, descheduler, YugabyteDB, SeaweedFS operator, NFD, PXE chainloader
 ├── ingress/                    Traefik HelmRelease + values
 ├── monitoring/                 kube-prometheus-stack, Thanos, smartctl-exporter, idrac-exporter, unpoller
-└── apps/                       Kustomization objects, Homepage, NetBox + inventory sync, Minecraft servers (Radar)
+└── apps/                       Kustomization objects, Homepage, NetBox + inventory sync, media stack, Minecraft servers (Radar)
 ```
 
 The application manifests themselves stay in the repository root (`colibri/`,
@@ -230,6 +231,30 @@ verified against SeaweedFS. After changing the secret, restart the Prometheus
 statefulset (so its Thanos sidecar re-reads the config) and the Thanos
 Store/Compactor pods.
 
+## Media stack
+
+`apps/media` runs Jellyfin, Sonarr, Radarr, Prowlarr, Seerr and qBittorrent in
+the privileged `media` namespace. The apps share one SeaweedFS CSI
+`ReadWriteMany` volume at `/data` (`downloads/`, `media/movies/`,
+`media/tv/`). The SeaweedFS cluster has four 100Gi volume servers; the media PVC
+is 350Gi. See [`apps/media/README.md`](../apps/media/README.md) for the secrets,
+SeaweedFS PVC expansion, Authentik provider setup and first-run steps.
+
+- **Databases:** Sonarr/Radarr/Prowlarr use YSQL `<app>-main`/`<app>-log`;
+  Seerr uses `seerr`. Jellyfin keeps SQLite on Longhorn because it has no
+  supported PostgreSQL backend.
+- **VPN:** qBittorrent shares its pod with gluetun. The Windscribe WireGuard
+  profile lives only in the hand-created `qbittorrent-wireguard` Secret.
+  Gluetun's firewall blocks all non-VPN egress.
+- **SSO:** Jellyfin uses the SSO-Auth plugin and the existing Authentik
+  `jellyfin` OAuth2 provider. The other apps are proxied by an in-cluster
+  Authentik outpost connected to `https://auth.blalange.org`; Sonarr, Radarr,
+  Prowlarr and qBittorrent run with application authentication `External`.
+- **Backups:** the SeaweedFS data PVCs are moved to the `daily-trim` recurring
+  job only, so Longhorn's `daily-backup` job does not back up the media
+  library (or the Thanos bucket that shares those volume servers). The 2Gi
+  SeaweedFS master PVC and the media app config volumes remain backed up.
+
 ## Thanos and long-term metrics
 
 Prometheus is capped at 15GiB of local TSDB blocks (`retentionSize` in
@@ -413,8 +438,10 @@ role passwords are in `yugabyte-auth` (`yugabyte` namespace) and `grafana-db`
 
 - `infrastructure` (namespaces, Longhorn, cert-manager chart, external-dns, MetalLB, metrics-server, descheduler, SeaweedFS operator, NFD)
 - `infrastructure` -> `longhorn-backup` (rclone S3 gateway for Google Drive backups)
-- `infrastructure` -> `seaweedfs` (SeaweedFS cluster, bucket and S3 credentials)
+- `infrastructure` -> `seaweedfs` (SeaweedFS cluster, bucket, S3 credentials and CSI driver)
+- `infrastructure` -> `longhorn-resources` (recurring backup/trim jobs)
 - `infrastructure` + `metallb-pool` -> `pxe` (proxyDHCP/TFTP chainloader + Talos boot assets)
+- `infrastructure` + `seaweedfs` -> `media` (Jellyfin, *arr, Seerr, qBittorrent)
 - `cert-manager-issuers` -> `cert-manager-certificates` -> `ingress` (Traefik)
 - `infrastructure` -> `monitoring-pvc`; `infrastructure` + `seaweedfs` -> `monitoring` (kube-prometheus-stack -> Thanos) -> `monitoring-dashboards` / `monitoring-alerts`
 - `apps` waits for `infrastructure`, `monitoring` and `ingress`; the individual
@@ -451,9 +478,11 @@ is managed by external-dns.
   `thanos-objstore-config` in `monitoring`; created for NetBox:
   `netbox-secrets` in `netbox` (superuser, YSQL/Valkey passwords, Django secret
   and sync API token); created for the shared YugabyteDB: `yugabyte-auth` in
-  `yugabyte` (superuser, Grafana and SeaweedFS role passwords) and `grafana-db`
-  in `monitoring`; created for iDRAC metrics: `idrac-exporter` in
-  `monitoring`).
+  `yugabyte` (superuser, Grafana, SeaweedFS and media role passwords) and
+  `grafana-db` in `monitoring`; created for iDRAC metrics: `idrac-exporter` in
+  `monitoring`; created for the media stack: `media-db` (the four media role
+  passwords), `qbittorrent-wireguard` (Windscribe profile) and
+  `authentik-outpost` (outpost token) in `media`).
 - **Backup target**: Longhorn backs up to `s3://longhorn-backup@us-east-1/`,
   served by the in-cluster `rclone serve s3` bridge in
   `infrastructure/longhorn/rclone/`. The actual backupstore is a folder

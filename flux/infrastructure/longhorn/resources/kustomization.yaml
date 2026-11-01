@@ -1,0 +1,8 @@
+# CRs that need Longhorn's CRDs. Applied by the separate `longhorn-resources`
+# Flux Kustomization so a fresh bootstrap does not race the HelmRelease that
+# installs the Longhorn CRDs.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: longhorn-system
+resources:
+  - recurring-jobs.yaml

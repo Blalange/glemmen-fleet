@@ -1,0 +1,33 @@
+# SeaweedFS CSI driver, managed by the operator.
+#
+# The driver exposes the SeaweedFS filer as ordinary Kubernetes volumes over
+# FUSE, including ReadWriteMany. The media stack uses it for the shared
+# /data volume that Jellyfin, the *arr apps and qBittorrent all mount.
+#
+# The driver name is node-global. Keep it distinct from the Longhorn driver and
+# from the `seaweedfs` StorageClass that Longhorn uses for the SeaweedFS data
+# volumes. `seaweedfs-media` is the class for application volumes.
+apiVersion: seaweed.seaweedfs.com/v1
+kind: SeaweedCSIDriver
+metadata:
+  name: seaweedfs
+  namespace: seaweedfs
+spec:
+  seaweedRef:
+    name: seaweedfs
+  driverName: seaweedfs-csi-driver
+  controller:
+    replicas: 1
+  storageClass:
+    name: seaweedfs-media
+    reclaimPolicy: Retain
+    volumeBindingMode: Immediate
+    allowVolumeExpansion: true
+    parameters:
+      # Longhorn already keeps two replicas of every SeaweedFS volume, so the
+      # SeaweedFS layer does not need another copy.
+      replication: "000"
+      # All media consumers run as uid/gid 1000 (LinuxServer PUID/PGID and the
+      # Jellyfin image). Map every file in the mount to that identity.
+      uidMap: "1000"
+      gidMap: "1000"

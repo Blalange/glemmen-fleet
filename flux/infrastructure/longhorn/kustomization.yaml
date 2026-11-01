@@ -2,6 +2,9 @@
 # applied by the separate `longhorn-backup` Flux Kustomization so a missing
 # hand-created Secret cannot block the infrastructure group. See
 # ../../clusters/glemmen/longhorn-backup.yaml.
+#
+# Recurring jobs live in resources/ and are applied by the separate
+# `longhorn-resources` Flux Kustomization after the Longhorn CRDs exist.
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 namespace: longhorn-system

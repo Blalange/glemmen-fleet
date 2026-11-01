@@ -1,0 +1,40 @@
+# Longhorn recurring jobs. These were originally created by hand; keeping them
+# in Git makes a fresh cluster reproduce the same backup/trim schedule.
+#
+# Volumes are opted into the `default` group by Longhorn unless they carry a
+# recurring-job selector. The SeaweedFS data PVCs are moved to the `daily-trim`
+# group only (see flux/infrastructure/seaweedfs/seaweed.yaml), so they are
+# trimmed but not backed up.
+apiVersion: longhorn.io/v1beta2
+kind: RecurringJob
+metadata:
+  name: daily-backup
+  namespace: longhorn-system
+spec:
+  name: daily-backup
+  task: backup
+  cron: "0 4 * * *"
+  retain: 4
+  concurrency: 4
+  groups:
+    - daily-backup
+    - default
+  labels: {}
+  parameters: {}
+---
+apiVersion: longhorn.io/v1beta2
+kind: RecurringJob
+metadata:
+  name: daily-trim
+  namespace: longhorn-system
+spec:
+  name: daily-trim
+  task: filesystem-trim
+  cron: "0 2 * * *"
+  retain: 0
+  concurrency: 2
+  groups:
+    - daily-trim
+    - default
+  labels: {}
+  parameters: {}

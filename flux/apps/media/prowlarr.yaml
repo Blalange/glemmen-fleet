@@ -1,0 +1,113 @@
+# Prowlarr with its main/log databases in YugabyteDB. Authentication is
+# delegated to the in-cluster Authentik outpost (`External`); the API still
+# requires Prowlarr's API key.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: prowlarr
+  labels:
+    app.kubernetes.io/name: prowlarr
+    app.kubernetes.io/instance: prowlarr
+    app.kubernetes.io/part-of: media
+spec:
+  replicas: 1
+  revisionHistoryLimit: 2
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: prowlarr
+      app.kubernetes.io/instance: prowlarr
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: prowlarr
+        app.kubernetes.io/instance: prowlarr
+        app.kubernetes.io/part-of: media
+    spec:
+      terminationGracePeriodSeconds: 30
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: prowlarr
+          image: lscr.io/linuxserver/prowlarr:2.7.0.5723-ls166
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: PUID
+              value: "1000"
+            - name: PGID
+              value: "1000"
+            - name: UMASK
+              value: "002"
+            - name: TZ
+              value: Europe/Oslo
+            - name: PROWLARR__POSTGRES__HOST
+              value: yb-tservers.yugabyte.svc.cluster.local
+            - name: PROWLARR__POSTGRES__PORT
+              value: "5433"
+            - name: PROWLARR__POSTGRES__USER
+              value: prowlarr
+            - name: PROWLARR__POSTGRES__PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: media-db
+                  key: prowlarr-password
+            - name: PROWLARR__POSTGRES__MAINDB
+              value: prowlarr-main
+            - name: PROWLARR__POSTGRES__LOGDB
+              value: prowlarr-log
+            - name: PROWLARR__AUTH__METHOD
+              value: External
+            - name: PROWLARR__AUTH__REQUIRED
+              value: Enabled
+            - name: PROWLARR__SERVER__ALLOWEDHOSTS
+              value: "*"
+          ports:
+            - name: http
+              containerPort: 9696
+          volumeMounts:
+            - name: config
+              mountPath: /config
+          readinessProbe:
+            httpGet:
+              path: /ping
+              port: http
+            initialDelaySeconds: 20
+            periodSeconds: 10
+            failureThreshold: 6
+          livenessProbe:
+            httpGet:
+              path: /ping
+              port: http
+            initialDelaySeconds: 60
+            periodSeconds: 30
+            failureThreshold: 6
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              memory: 1Gi
+      volumes:
+        - name: config
+          persistentVolumeClaim:
+            claimName: prowlarr-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: prowlarr
+  labels:
+    app.kubernetes.io/name: prowlarr
+    app.kubernetes.io/instance: prowlarr
+    app.kubernetes.io/part-of: media
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: prowlarr
+    app.kubernetes.io/instance: prowlarr
+  ports:
+    - name: http
+      port: 9696
+      targetPort: http

@@ -1,0 +1,118 @@
+# Radarr 6 with its main/log databases in YugabyteDB. Authentication is
+# delegated to the in-cluster Authentik outpost (`External`); the API still
+# requires Radarr's API key.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: radarr
+  labels:
+    app.kubernetes.io/name: radarr
+    app.kubernetes.io/instance: radarr
+    app.kubernetes.io/part-of: media
+spec:
+  replicas: 1
+  revisionHistoryLimit: 2
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: radarr
+      app.kubernetes.io/instance: radarr
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: radarr
+        app.kubernetes.io/instance: radarr
+        app.kubernetes.io/part-of: media
+    spec:
+      terminationGracePeriodSeconds: 30
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: radarr
+          image: lscr.io/linuxserver/radarr:6.4.4.10685-ls324
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: PUID
+              value: "1000"
+            - name: PGID
+              value: "1000"
+            - name: UMASK
+              value: "002"
+            - name: TZ
+              value: Europe/Oslo
+            - name: RADARR__POSTGRES__HOST
+              value: yb-tservers.yugabyte.svc.cluster.local
+            - name: RADARR__POSTGRES__PORT
+              value: "5433"
+            - name: RADARR__POSTGRES__USER
+              value: radarr
+            - name: RADARR__POSTGRES__PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: media-db
+                  key: radarr-password
+            - name: RADARR__POSTGRES__MAINDB
+              value: radarr-main
+            - name: RADARR__POSTGRES__LOGDB
+              value: radarr-log
+            - name: RADARR__AUTH__METHOD
+              value: External
+            - name: RADARR__AUTH__REQUIRED
+              value: Enabled
+            - name: RADARR__SERVER__ALLOWEDHOSTS
+              value: "*"
+          ports:
+            - name: http
+              containerPort: 7878
+          volumeMounts:
+            - name: config
+              mountPath: /config
+            - name: media
+              mountPath: /data
+          readinessProbe:
+            httpGet:
+              path: /ping
+              port: http
+            initialDelaySeconds: 20
+            periodSeconds: 10
+            failureThreshold: 6
+          livenessProbe:
+            httpGet:
+              path: /ping
+              port: http
+            initialDelaySeconds: 60
+            periodSeconds: 30
+            failureThreshold: 6
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              memory: 1Gi
+      volumes:
+        - name: config
+          persistentVolumeClaim:
+            claimName: radarr-config
+        - name: media
+          persistentVolumeClaim:
+            claimName: media-data
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: radarr
+  labels:
+    app.kubernetes.io/name: radarr
+    app.kubernetes.io/instance: radarr
+    app.kubernetes.io/part-of: media
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: radarr
+    app.kubernetes.io/instance: radarr
+  ports:
+    - name: http
+      port: 7878
+      targetPort: http

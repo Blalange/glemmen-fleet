@@ -1,0 +1,104 @@
+# In-cluster Authentik proxy outpost for the apps that have no native OIDC.
+#
+# Create the outpost in the Authentik admin UI (or via the API runbook), assign
+# the Sonarr/Radarr/Prowlarr/Seerr/qBittorrent proxy providers to it, and put
+# the outpost token in the hand-created `authentik-outpost` Secret:
+#
+#   kubectl -n media create secret generic authentik-outpost \
+#     --from-literal=token='...'
+#
+# The outpost connects outbound to https://auth.blalange.org and proxies each
+# request to the internal host configured on its Authentik provider.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: authentik-outpost
+  labels:
+    app.kubernetes.io/name: authentik-outpost
+    app.kubernetes.io/instance: authentik-outpost
+    app.kubernetes.io/part-of: media
+spec:
+  replicas: 1
+  revisionHistoryLimit: 2
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: authentik-outpost
+      app.kubernetes.io/instance: authentik-outpost
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: authentik-outpost
+        app.kubernetes.io/instance: authentik-outpost
+        app.kubernetes.io/part-of: media
+    spec:
+      securityContext:
+        runAsUser: 1000
+        runAsGroup: 1000
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: outpost
+          image: ghcr.io/goauthentik/proxy:2026.5.5
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: AUTHENTIK_HOST
+              value: https://auth.blalange.org
+            - name: AUTHENTIK_HOST_BROWSER
+              value: https://auth.blalange.org
+            - name: AUTHENTIK_INSECURE
+              value: "false"
+            - name: AUTHENTIK_LOG_LEVEL
+              value: info
+            - name: AUTHENTIK_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: authentik-outpost
+                  key: token
+          ports:
+            - name: http
+              containerPort: 9000
+          readinessProbe:
+            httpGet:
+              path: /outpost.goauthentik.io/ping
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            failureThreshold: 6
+          livenessProbe:
+            httpGet:
+              path: /outpost.goauthentik.io/ping
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 30
+            failureThreshold: 6
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              memory: 256Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: authentik-outpost
+  labels:
+    app.kubernetes.io/name: authentik-outpost
+    app.kubernetes.io/instance: authentik-outpost
+    app.kubernetes.io/part-of: media
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: authentik-outpost
+    app.kubernetes.io/instance: authentik-outpost
+  ports:
+    - name: http
+      port: 9000
+      targetPort: http

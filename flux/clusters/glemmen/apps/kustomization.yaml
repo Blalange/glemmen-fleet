@@ -1,5 +1,6 @@
 # Application Kustomizations. Most point at flux/apps/; netbox-inventory
-# points at the repository-root inventory directory.
+# points at the repository-root inventory directory, and media also waits for
+# the SeaweedFS CSI driver.
 # Helpers for suspending/resuming everything: scripts/flux/manage.py.
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
@@ -7,6 +8,7 @@ resources:
   - energisjappa.yaml
   - frigate.yaml
   - homepage.yaml
+  - media.yaml
   - minecraft.yaml
   - netbird.yaml
   - netbox-inventory.yaml

@@ -1,0 +1,67 @@
+# Per-application configuration. The *arr apps and Seerr keep their database in
+# YugabyteDB; these volumes only hold config.xml, API keys, logs and metadata.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: jellyfin-config
+spec:
+  accessModes: [ReadWriteOnce]
+  storageClassName: media-config
+  resources:
+    requests:
+      storage: 20Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: sonarr-config
+spec:
+  accessModes: [ReadWriteOnce]
+  storageClassName: media-config
+  resources:
+    requests:
+      storage: 2Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: radarr-config
+spec:
+  accessModes: [ReadWriteOnce]
+  storageClassName: media-config
+  resources:
+    requests:
+      storage: 2Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: prowlarr-config
+spec:
+  accessModes: [ReadWriteOnce]
+  storageClassName: media-config
+  resources:
+    requests:
+      storage: 2Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: seerr-config
+spec:
+  accessModes: [ReadWriteOnce]
+  storageClassName: media-config
+  resources:
+    requests:
+      storage: 2Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: qbittorrent-config
+spec:
+  accessModes: [ReadWriteOnce]
+  storageClassName: media-config
+  resources:
+    requests:
+      storage: 2Gi

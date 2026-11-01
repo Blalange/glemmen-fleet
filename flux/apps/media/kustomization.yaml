@@ -1,0 +1,20 @@
+# Media stack: Jellyfin, Sonarr, Radarr, Prowlarr, Seerr and qBittorrent.
+#
+# They share the `media` namespace because the ReadWriteMany media PVC can only
+# be mounted by pods in one namespace. The namespace is privileged for gluetun
+# (NET_ADMIN + /dev/net/tun); see flux/infrastructure/namespaces.yaml.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: media
+resources:
+  - storageclass.yaml
+  - media-pvc.yaml
+  - config-pvcs.yaml
+  - jellyfin.yaml
+  - sonarr.yaml
+  - radarr.yaml
+  - prowlarr.yaml
+  - seerr.yaml
+  - qbittorrent.yaml
+  - authentik-outpost.yaml
+  - ingress.yaml

@@ -1,9 +1,13 @@
-# One-shot bootstrap for the Grafana and SeaweedFS roles/databases.
+# One-shot bootstrap for the shared application roles/databases.
 #
 # This is a plain Kubernetes Job rather than a Helm hook so it also works when
 # Flux reconciles the chart into an existing namespace. It is idempotent and
 # waits for the new YB-TServers; on a fresh database it also sets the
 # yugabyte superuser password from yugabyte-auth.
+#
+# The media roles (sonarr/radarr/prowlarr/seerr) were added in v2. Bump the Job
+# name whenever the SQL changes: Jobs are immutable and Flux cannot patch a
+# completed PodTemplate.
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -15,7 +19,7 @@ data:
     # Create the application roles and databases on the official-chart cluster.
     #
     # The chart's own setup-credentials Job is disabled (authCredentials is empty),
-    # so this Job owns the superuser password and the Grafana/SeaweedFS roles. It is
+    # so this Job owns the superuser password and every application role. It is
     # idempotent: it can run against a fresh cluster or one that already has the
     # roles/databases.
     set -euo pipefail
@@ -27,6 +31,10 @@ data:
     SUPERUSER_PASSWORD="${SUPERUSER_PASSWORD:?SUPERUSER_PASSWORD is required}"
     GRAFANA_PASSWORD="${GRAFANA_PASSWORD:?GRAFANA_PASSWORD is required}"
     SEAWEEDFS_PASSWORD="${SEAWEEDFS_PASSWORD:?SEAWEEDFS_PASSWORD is required}"
+    SONARR_PASSWORD="${SONARR_PASSWORD:?SONARR_PASSWORD is required}"
+    RADARR_PASSWORD="${RADARR_PASSWORD:?RADARR_PASSWORD is required}"
+    PROWLARR_PASSWORD="${PROWLARR_PASSWORD:?PROWLARR_PASSWORD is required}"
+    SEERR_PASSWORD="${SEERR_PASSWORD:?SEERR_PASSWORD is required}"
 
     ysql() {
       local password="$1"
@@ -91,12 +99,21 @@ data:
     create_role_and_database grafana "${GRAFANA_PASSWORD}" grafana
     create_role_and_database seaweedfs "${SEAWEEDFS_PASSWORD}" seaweedfs
 
+    # Servarr uses separate main and log databases per application.
+    create_role_and_database sonarr "${SONARR_PASSWORD}" sonarr-main
+    create_role_and_database sonarr "${SONARR_PASSWORD}" sonarr-log
+    create_role_and_database radarr "${RADARR_PASSWORD}" radarr-main
+    create_role_and_database radarr "${RADARR_PASSWORD}" radarr-log
+    create_role_and_database prowlarr "${PROWLARR_PASSWORD}" prowlarr-main
+    create_role_and_database prowlarr "${PROWLARR_PASSWORD}" prowlarr-log
+    create_role_and_database seerr "${SEERR_PASSWORD}" seerr
+
     echo "YugabyteDB roles and databases are ready"
 ---
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: yugabyte-init-v1
+  name: yugabyte-init-v2
   namespace: yugabyte
 spec:
   backoffLimit: 10
@@ -133,6 +150,26 @@ spec:
                 secretKeyRef:
                   name: yugabyte-auth
                   key: seaweedfs-password
+            - name: SONARR_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: yugabyte-auth
+                  key: sonarr-password
+            - name: RADARR_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: yugabyte-auth
+                  key: radarr-password
+            - name: PROWLARR_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: yugabyte-auth
+                  key: prowlarr-password
+            - name: SEERR_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: yugabyte-auth
+                  key: seerr-password
           volumeMounts:
             - name: init-script
               mountPath: /scripts

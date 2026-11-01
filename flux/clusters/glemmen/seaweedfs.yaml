@@ -18,6 +18,12 @@ spec:
       kind: Seaweed
       name: seaweedfs
       namespace: seaweedfs
+    # The media PVC uses this driver's StorageClass; do not let the media
+    # Kustomization start before the controller and node plugins are ready.
+    - apiVersion: seaweed.seaweedfs.com/v1
+      kind: SeaweedCSIDriver
+      name: seaweedfs
+      namespace: seaweedfs
   sourceRef:
     kind: GitRepository
     name: flux-system

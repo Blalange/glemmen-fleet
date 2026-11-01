@@ -185,6 +185,9 @@ config:
       - Tjenester og lenker:
           style: row
           columns: 4
+      - Media:
+          style: row
+          columns: 3
       - Cluster:
           style: row
           columns: 2
@@ -307,6 +310,33 @@ config:
             icon: alertmanager.png
             href: https://alerts.glem.men
             description: Aktive alarmer og varsler
+    # Media stack. The UIs are behind Authentik SSO except Jellyfin, which uses
+    # its native OIDC plugin.
+    - Media:
+        - Jellyfin:
+            icon: jellyfin.png
+            href: https://jellyfin.glem.men
+            description: Filmer, serier og musikk
+        - Sonarr:
+            icon: sonarr.png
+            href: https://sonarr.glem.men
+            description: TV-serier og nedlastinger
+        - Radarr:
+            icon: radarr.png
+            href: https://radarr.glem.men
+            description: Filmer og nedlastinger
+        - Prowlarr:
+            icon: prowlarr.png
+            href: https://prowlarr.glem.men
+            description: Indexere for Sonarr og Radarr
+        - Seerr:
+            icon: overseerr.png
+            href: https://seerr.glem.men
+            description: Bestill filmer og serier
+        - qBittorrent:
+            icon: qbittorrent.png
+            href: https://torrent.glem.men
+            description: Torrentklient over WireGuard
     # Cluster totals (the same queries as the Cluster Specs Grafana dashboard)
     # plus the live CPU/RAM/network usage card.
     - Cluster:

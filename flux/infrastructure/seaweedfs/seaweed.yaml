@@ -1,9 +1,16 @@
 # SeaweedFS cluster managed by seaweedfs-operator.
 #
-# One master/volume/filer/S3 pod is enough for this cluster: Longhorn keeps two
-# replicas of the data volumes, and Thanos tolerates short S3 outages. Increase
-# the component replica counts later if the object store becomes shared by more
-# latency-sensitive systems.
+# The volume servers hold both the Thanos bucket and the media library. They are
+# deliberately spread across four nodes and use four 100Gi Longhorn volumes;
+# Longhorn keeps two replicas of each. The data PVCs are excluded from the
+# Longhorn daily-backup job (see storageLabels below) because the media library
+# is re-downloadable. The 2Gi master PVC stays in the backup job.
+#
+# Growing the cluster is a two-part operation: change `volume.replicas` or
+# `volume.requests.storage` here, then recreate the volume StatefulSet with
+# `kubectl -n seaweedfs delete statefulset seaweedfs-volume --cascade=orphan`
+# so the immutable volumeClaimTemplate picks up the new size. Existing PVCs are
+# expanded in place. See flux/apps/media/README.md.
 apiVersion: seaweed.seaweedfs.com/v1
 kind: Seaweed
 metadata:
@@ -26,16 +33,35 @@ spec:
       cpu: 200m
       memory: 256Mi
   volume:
-    replicas: 2
+    replicas: 4
     metricsPort: 9327
     storageClassName: seaweedfs
     requests:
-      storage: 50Gi
+      storage: 100Gi
       cpu: 100m
       memory: 128Mi
     limits:
       cpu: 500m
       memory: 1Gi
+    # Longhorn puts volumes without a recurring-job selector into the `default`
+    # group, which the daily-backup job includes. Marking the generated PVCs as
+    # the recurring-job source and placing them only in `daily-trim` keeps the
+    # filesystem trim but excludes them from backups. The existing PVCs need
+    # the same labels applied by hand once (see flux/apps/media/README.md).
+    storageLabels:
+      recurring-job.longhorn.io/source: enabled
+      recurring-job-group.longhorn.io/daily-trim: enabled
+    # Four volume servers should never share a node. With eight nodes there is
+    # room to reschedule one if its node is drained or fails.
+    affinity:
+      podAntiAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchLabels:
+                app.kubernetes.io/name: seaweedfs
+                app.kubernetes.io/component: volume
+                app.kubernetes.io/instance: seaweedfs
+            topologyKey: kubernetes.io/hostname
   filer:
     replicas: 2
     metricsPort: 9327

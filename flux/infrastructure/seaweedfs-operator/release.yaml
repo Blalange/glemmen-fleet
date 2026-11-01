@@ -26,6 +26,11 @@ spec:
     # seaweedfs namespace is enough. Watching all namespaces lets future apps
     # declare their own buckets and credentials next to the workload.
     watchNamespaces: []
+    # The CSI controller is opt-in: it installs cluster-scoped CSIDriver,
+    # StorageClass and RBAC objects plus privileged node/mount DaemonSets.
+    # The SeaweedCSIDriver CR itself lives in ../seaweedfs/csi.yaml.
+    csiDriver:
+      enabled: true
     # Prometheus Operator (and its ServiceMonitor CRD) is installed later by
     # the monitoring Kustomization, so do not render a ServiceMonitor here.
     serviceMonitor:

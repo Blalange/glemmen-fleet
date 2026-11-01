@@ -1,0 +1,22 @@
+# Media stack: Jellyfin, Sonarr, Radarr, Prowlarr, Seerr and qBittorrent.
+# Waits for the SeaweedFS CSI driver/StorageClass and the shared media PVC.
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: media
+  namespace: flux-system
+spec:
+  interval: 1h
+  retryInterval: 2m
+  # Jellyfin's first start and the SeaweedFS CSI mount can take a few minutes.
+  timeout: 15m
+  path: ./flux/apps/media
+  prune: true
+  wait: true
+  targetNamespace: media
+  dependsOn:
+    - name: infrastructure
+    - name: seaweedfs
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
