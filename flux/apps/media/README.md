@@ -154,31 +154,32 @@ production.
 
 ## SeaweedFS capacity and backups
 
-The media PVC is 350Gi on four 100Gi SeaweedFS volume servers (400Gi total; the
-remainder is headroom for the Thanos bucket and metadata). The `Seaweed` CR
-already requests four 100Gi volumes with required pod anti-affinity.
+The media PVC is 600Gi on four SeaweedFS volume servers, each with two 100Gi
+disks (`volumeServerDiskCount: 2`). That is eight 100Gi data volumes, 800Gi
+total; the remainder is headroom for the Thanos bucket and metadata. Required
+pod anti-affinity keeps one volume server per node.
 
-The current cluster has two 50Gi volume-server PVCs. On the first rollout, after
-Flux applies the new CR:
+`volumeServerDiskCount` is a top-level Seaweed field, not a field under
+`volume`. Changing it, `volume.replicas` or `volume.requests.storage` changes
+the StatefulSet's `volumeClaimTemplates`, which Kubernetes forbids updating in
+place. The operator logs `VolumeClaimTemplatesMismatch` and a rollout can stall
+with `persistentvolumeclaim "mount1" not found`. Recreate the StatefulSet and
+the remaining old pods:
 
 ```sh
-# Recreate the StatefulSet so the immutable volumeClaimTemplate becomes 100Gi.
-# Orphaned pods keep running and are adopted by the new StatefulSet.
 kubectl -n seaweedfs delete statefulset seaweedfs-volume --cascade=orphan
+# Let the operator recreate the StatefulSet with both claim templates, then
+# remove any pods still using the old single-disk template:
+kubectl -n seaweedfs delete pod -l app.kubernetes.io/component=volume
 kubectl -n seaweedfs rollout status statefulset/seaweedfs-volume --timeout=15m
 
-# Expand the two existing PVCs to the new size.
-for pvc in mount0-seaweedfs-volume-0 mount0-seaweedfs-volume-1; do
-  kubectl -n seaweedfs patch pvc "$pvc" --type merge \
-    -p '{"spec":{"resources":{"requests":{"storage":"100Gi"}}}}'
-done
-
-# Exclude the existing data PVCs from the Longhorn daily-backup job while
-# keeping daily-trim. New PVCs get these labels from volume.storageLabels.
-kubectl -n seaweedfs label pvc mount0-seaweedfs-volume-0 mount0-seaweedfs-volume-1 \
-  recurring-job.longhorn.io/source=enabled \
-  recurring-job-group.longhorn.io/daily-trim=enabled --overwrite
+# A two-disk volume server has mount0-* and mount1-* PVCs; expect 8 in total:
+kubectl -n seaweedfs get pvc | grep -E 'mount[01]-seaweedfs-volume'
 ```
+
+Existing PVCs are retained. New `mount1-*` PVCs pick up the recurring-job labels
+from `volume.storageLabels` automatically; existing `mount0-*` PVCs were
+labeled by hand during the original rollout.
 
 Verify that each Longhorn volume loses `recurring-job-group.longhorn.io/default`
 and gains `recurring-job-group.longhorn.io/daily-trim`:

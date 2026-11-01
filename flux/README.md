@@ -236,8 +236,8 @@ Store/Compactor pods.
 `apps/media` runs Jellyfin, Sonarr, Radarr, Prowlarr, Seerr, FlareSolverr and qBittorrent in
 the privileged `media` namespace. The apps share one SeaweedFS CSI
 `ReadWriteMany` volume at `/data` (`downloads/`, `media/movies/`,
-`media/tv/`). The SeaweedFS cluster has four 100Gi volume servers; the media PVC
-is 350Gi. See [`apps/media/README.md`](../apps/media/README.md) for the secrets,
+`media/tv/`). The SeaweedFS cluster has four volume servers with two 100Gi
+disks each; the media PVC is 600Gi. See [`apps/media/README.md`](../apps/media/README.md) for the secrets,
 SeaweedFS PVC expansion, Authentik provider setup and first-run steps.
 
 - **Databases:** all media apps use SQLite on their Longhorn config volumes.

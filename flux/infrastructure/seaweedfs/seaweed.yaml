@@ -1,16 +1,18 @@
 # SeaweedFS cluster managed by seaweedfs-operator.
 #
 # The volume servers hold both the Thanos bucket and the media library. They are
-# deliberately spread across four nodes and use four 100Gi Longhorn volumes;
-# Longhorn keeps two replicas of each. The data PVCs are excluded from the
-# Longhorn daily-backup job (see storageLabels below) because the media library
-# is re-downloadable. The 2Gi master PVC stays in the backup job.
+# deliberately spread across four nodes, with two 100Gi Longhorn volumes per
+# server (`volumeServerDiskCount: 2`). Longhorn keeps two replicas of each data
+# volume. The data PVCs are excluded from the Longhorn daily-backup job (see
+# storageLabels below) because the media library is re-downloadable. The 2Gi
+# master PVC stays in the backup job.
 #
-# Growing the cluster is a two-part operation: change `volume.replicas` or
-# `volume.requests.storage` here, then recreate the volume StatefulSet with
+# Growing the cluster is a two-part operation: change `volume.replicas`,
+# `volume.requests.storage` or `volumeServerDiskCount` here, then recreate the
+# volume StatefulSet with
 # `kubectl -n seaweedfs delete statefulset seaweedfs-volume --cascade=orphan`
-# so the immutable volumeClaimTemplate picks up the new size. Existing PVCs are
-# expanded in place. See flux/apps/media/README.md.
+# and delete the remaining volume pods so the new volumeClaimTemplates are
+# applied. Existing PVCs are retained. See flux/apps/media/README.md.
 apiVersion: seaweed.seaweedfs.com/v1
 kind: Seaweed
 metadata:

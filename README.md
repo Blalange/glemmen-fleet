@@ -80,7 +80,7 @@ Longhorn volume backups go to a Google Drive folder through an in-cluster rclone
 
 Prometheus only retains the most recent metrics locally (15 GiB, see `retentionSize`). The Thanos side in `flux/monitoring/thanos/` uploads blocks to the `thanos` bucket in the SeaweedFS cluster under `flux/infrastructure/seaweedfs/`, compacts and downsamples them, and exposes the history through a dedicated Grafana data source.
 
-The media stack uses the same SeaweedFS cluster through its CSI driver: one 350 GiB `ReadWriteMany` volume is mounted at `/data` by Jellyfin, Sonarr, Radarr and qBittorrent. The SeaweedFS data volume servers are four 100 GiB Longhorn volumes; they are excluded from the Longhorn backup job because the media library is treated as re-downloadable. See `flux/apps/media/README.md`.
+The media stack uses the same SeaweedFS cluster through its CSI driver: one 600 GiB `ReadWriteMany` volume is mounted at `/data` by Jellyfin, Sonarr, Radarr and qBittorrent. The SeaweedFS cluster runs four volume servers with two 100 GiB Longhorn disks each (eight 100 GiB data volumes). They are excluded from the Longhorn backup job because the media library is treated as re-downloadable. See `flux/apps/media/README.md`.
 
 ### Databases
 
