@@ -65,6 +65,15 @@ does not use that address as a gateway for the PXE clients.
 PXE clients on the Default network must also be able to reach the Talos asset
 server at `192.168.6.99:8080`; allow that inter-VLAN path on the UDM.
 
+Because `bond0.1` gives the control-plane nodes a directly connected route to
+the Default network, their `BondConfig` also keeps a lower-metric route for
+`192.168.50.0/24` via `192.168.6.1` (the UDM). Replies from the shared MetalLB
+VIP (`.99`) then return through the UDM, so hairpin NAT from the Default VLAN
+still works. Without that route the reply leaves directly via `bond0.1`, the
+UDM cannot reverse the destination NAT, and clients on the Default VLAN see
+connection timeouts. Keep both routes when editing the control-plane node
+configs.
+
 ## Matching and adding a node
 
 Machine identities live in [`talos/pxe.yaml`](../../../talos/pxe.yaml):
