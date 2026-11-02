@@ -19,6 +19,17 @@ metadata:
   name: seaweedfs
 spec:
   image: chrislusf/seaweedfs:4.51
+
+  # weed admin rejects admin-plane gRPC calls from remote pods unless
+  # jwt.filer_signing.key is configured (or the caller uses mTLS). The admin
+  # server and workers run in separate pods, so render the key to authenticate
+  # worker connections. This also makes the filer require signed HTTP writes
+  # and IAM gRPC calls; the S3 gateway and operator sign their own requests,
+  # and the CSI/media path uses the filer's gRPC API.
+  securityConfig:
+    jwtSigning:
+      filerWrite: true
+
   master:
     replicas: 1
     # Prometheus metrics on :9327. The operator creates the matching

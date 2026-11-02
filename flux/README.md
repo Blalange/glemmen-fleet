@@ -241,6 +241,15 @@ dispatches (volume balance, vacuum, replication repair and similar); they are
 stateless, so the admin can re-dispatch an interrupted job after a worker
 restart.
 
+SeaweedFS refuses admin gRPC calls from remote pods when no
+`jwt.filer_signing.key` is configured, which makes the workers fail with
+`admin gRPC calls require jwt.filer_signing.key or a local client`. The
+cluster therefore sets `securityConfig.jwtSigning.filerWrite: true`; the
+operator generates the key into the `seaweedfs-security-config` Secret and
+mounts it into the admin and worker pods. The same key also makes the filer
+require signed HTTP writes and IAM gRPC calls. The S3 gateway and the operator
+sign their own requests, and the CSI/media path uses the filer's gRPC API.
+
 `weed admin` only binds to loopback without a password, so the operator needs a
 `seaweedfs-admin` Secret before the panel becomes reachable. Create it by hand
 (the password is not in Git) before reconciling the `seaweedfs` Kustomization;
