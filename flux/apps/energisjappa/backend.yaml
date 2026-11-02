@@ -69,9 +69,8 @@ spec:
                   name: energisjappa-secrets
                   key: frigate-password
                   optional: true
-            # Vipps MobilePay Merchant Test environment.
             - name: VIPPS_BASE_URL
-              value: https://apitest.vipps.no
+              value: https://api.vipps.no
             - name: DATABASE_URL
               valueFrom:
                 secretKeyRef:
