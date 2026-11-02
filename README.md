@@ -82,6 +82,8 @@ Prometheus only retains the most recent metrics locally (15 GiB, see `retentionS
 
 The media stack uses the same SeaweedFS cluster through its CSI driver: one 600 GiB `ReadWriteMany` volume is mounted at `/data` by Jellyfin, Sonarr, Radarr and qBittorrent. The SeaweedFS cluster runs four volume servers with two 100 GiB Longhorn disks each (eight 100 GiB data volumes). They are excluded from the Longhorn backup job because the media library is treated as re-downloadable. See `flux/apps/media/README.md`.
 
+The SeaweedFS admin panel is at <https://seaweedfs.glem.men> and is backed by two workers that run the maintenance jobs it dispatches. Its login is stored in the hand-created `seaweedfs-admin` Secret in the `seaweedfs` namespace; see `flux/README.md`.
+
 ### Databases
 
 NetBox uses its own PostgreSQL instance in the `netbox` namespace (see `flux/apps/netbox/`). Grafana and the SeaweedFS filer share a three-node YugabyteDB (YSQL) cluster in the `yugabyte` namespace (`flux/infrastructure/yugabyte/`) with replication factor 3. The cluster is managed by the official `yugabytedb/yugabyte` Helm chart (three YB-Master and three YB-TServer pods), not the earlier hand-written StatefulSet. Clients connect to `yb-tservers.yugabyte.svc.cluster.local:5433`; the database is not exposed outside the cluster. The media apps use SQLite on Longhorn volumes: the Servarr apps cannot parse YB's `server_version` string, Jellyfin has no supported PostgreSQL backend, and Seerr's TypeORM migrations do not complete reliably on YSQL.

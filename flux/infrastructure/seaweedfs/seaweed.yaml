@@ -94,4 +94,43 @@ spec:
       cpu: 500m
       memory: 512Mi
 
+  # Web admin panel for cluster topology, volume/file management and
+  # maintenance jobs. It also dispatches work to the worker Deployment below.
+  # weed admin stays on loopback when it has no password, so the credentials
+  # Secret is required for the Service and Ingress to be reachable. The Secret
+  # is created by hand because it contains the password (see flux/README.md);
+  # updating it requires a restart of the admin pod.
+  admin:
+    metricsPort: 9327
+    credentialsSecret:
+      name: seaweedfs-admin
+    ingress:
+      enabled: true
+      className: traefik
+      host: seaweedfs.glem.men
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+  # Workers execute maintenance and background jobs dispatched by the admin
+  # server (volume balance/vacuum, replication repair, ...). They keep no
+  # durable state: the admin re-dispatches interrupted jobs after a restart,
+  # and the persistence block only provides the scratch working directory.
+  worker:
+    replicas: 2
+    metricsPort: 9327
+    jobType: all
+    maxExecute: 4
+    persistence:
+      enabled: true
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
   volumeServerDiskCount: 4
