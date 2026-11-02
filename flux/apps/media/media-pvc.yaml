@@ -15,4 +15,4 @@ spec:
   storageClassName: seaweedfs-media
   resources:
     requests:
-      storage: 600Gi
+      storage: 700Gi
