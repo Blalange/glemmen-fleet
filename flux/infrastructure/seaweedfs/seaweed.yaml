@@ -131,17 +131,17 @@ spec:
   # durable state: the admin re-dispatches interrupted jobs after a restart,
   # and the persistence block only provides the scratch working directory.
   worker:
-    replicas: 2
+    replicas: 3
     metricsPort: 9327
     jobType: all
-    maxExecute: 4
+    maxExecute: 8
     persistence:
       enabled: true
     requests:
       cpu: 100m
       memory: 128Mi
     limits:
-      cpu: 500m
+      cpu: 1
       memory: 512Mi
 
   volumeServerDiskCount: 4
