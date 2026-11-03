@@ -1,12 +1,14 @@
 # StorageClass for SeaweedFS data. Keep a dedicated class so the object store
-# can be sized/replicated independently of the application volumes.
+# can be sized independently of the application volumes. The SeaweedFS layer
+# keeps two copies of every volume (`replication: "001"` in csi.yaml), so
+# Longhorn stores one replica instead of doubling the copies again.
 apiVersion: storage.k8s.io/v1
 kind: StorageClass
 metadata:
   name: seaweedfs
 provisioner: driver.longhorn.io
 parameters:
-  numberOfReplicas: "2"
+  numberOfReplicas: "1"
   staleReplicaTimeout: "2880"
 allowVolumeExpansion: true
 reclaimPolicy: Retain

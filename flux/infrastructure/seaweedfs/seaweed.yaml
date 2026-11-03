@@ -1,11 +1,12 @@
 # SeaweedFS cluster managed by seaweedfs-operator.
 #
 # The volume servers hold both the Thanos bucket and the media library. They are
-# deliberately spread across four nodes, with two 100Gi Longhorn volumes per
-# server (`volumeServerDiskCount: 2`). Longhorn keeps two replicas of each data
-# volume. The data PVCs are excluded from the Longhorn daily-backup job (see
-# storageLabels below) because the media library is re-downloadable. The 2Gi
-# master PVC stays in the backup job.
+# deliberately spread across four nodes, with four 200Gi Longhorn volumes per
+# server (`volumeServerDiskCount: 4`). The SeaweedFS layer keeps two copies of
+# each data volume (`replication: "001"` in csi.yaml), so Longhorn stores only
+# one replica. The data PVCs are excluded from the Longhorn daily-backup job
+# (see storageLabels below) because the media library is re-downloadable. The
+# 2Gi master PVC stays in the backup job.
 #
 # Growing the cluster is a two-part operation: change `volume.replicas`,
 # `volume.requests.storage` or `volumeServerDiskCount` here, then recreate the
