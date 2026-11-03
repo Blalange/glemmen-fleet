@@ -24,9 +24,7 @@ spec:
     volumeBindingMode: Immediate
     allowVolumeExpansion: true
     parameters:
-      # Longhorn already keeps two replicas of every SeaweedFS volume, so the
-      # SeaweedFS layer does not need another copy.
-      replication: "000"
+      replication: "001"
       # All media consumers run as uid/gid 1000 (LinuxServer PUID/PGID and the
       # Jellyfin image). Map every file in the mount to that identity. The
       # driver passes these to `weed mount -map.uid/-map.gid`, which expect
