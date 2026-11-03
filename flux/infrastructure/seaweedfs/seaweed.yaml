@@ -39,6 +39,7 @@ spec:
     persistence:
       enabled: true
       existingClaim: seaweedfs-master
+    defaultReplication: "001"
     requests:
       cpu: 50m
       memory: 64Mi
