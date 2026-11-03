@@ -75,6 +75,20 @@ spec:
                 app.kubernetes.io/component: volume
                 app.kubernetes.io/instance: seaweedfs
             topologyKey: kubernetes.io/hostname
+      nodeAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+          nodeSelectorTerms:
+            - matchExpressions:
+                - key: kubernetes.io/hostname
+                  operator: In
+                  values:
+                    - glemmen130
+                    - glemmen150
+                    - glemmen160
+                    - glemmen170
+                    - glemmen180
+                    - glemmen60
+
   filer:
     replicas: 2
     metricsPort: 9327
