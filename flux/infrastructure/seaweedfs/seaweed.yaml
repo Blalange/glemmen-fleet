@@ -50,7 +50,7 @@ spec:
     metricsPort: 9327
     storageClassName: seaweedfs
     requests:
-      storage: 100Gi
+      storage: 200Gi
       cpu: 100m
       memory: 128Mi
     limits:
