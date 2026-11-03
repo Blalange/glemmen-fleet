@@ -23,6 +23,16 @@ spec:
     reclaimPolicy: Retain
     volumeBindingMode: Immediate
     allowVolumeExpansion: true
+    # StorageClass parameters are immutable. The operator updates the existing
+    # class in place and does not recreate it, so changing a value here leaves
+    # the SeaweedCSIDriver in ReconcileFailed ("parameters: ... field is
+    # immutable") until the class is deleted once:
+    #
+    #   kubectl delete storageclass seaweedfs-media
+    #
+    # The operator recreates it from this spec on its next reconcile (~30s).
+    # Existing PVs/PVCs are unaffected; parameters only apply to new volumes,
+    # so an already-provisioned volume keeps its original replication.
     parameters:
       replication: "001"
       # All media consumers run as uid/gid 1000 (LinuxServer PUID/PGID and the
