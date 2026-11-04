@@ -58,5 +58,6 @@ labels:
 annotations:
     # Longhorn only reads this when it creates the default disks. Changing the
     # reservation on an existing disk also requires patching the Longhorn Node
-    # CR (nodes.longhorn.io/glemmen60).
+    # CR (nodes.longhorn.io/glemmen60). Talos owns this annotation: update the
+    # machine config as well, or it will revert a kubectl-only patch.
     node.longhorn.io/default-disks-config: '[{"name":"system","path":"/var/mnt/longhorn-system","allowScheduling":true,"storageReserved":170000000000},{"name":"hdd1","path":"/var/mnt/hdd1","allowScheduling":true,"storageReserved":6000000000000}]'

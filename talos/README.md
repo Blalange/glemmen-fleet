@@ -153,8 +153,11 @@ The Longhorn disk configuration is applied *from the Talos node annotations*
 `node.longhorn.io/create-default-disk: config`; Longhorn's Helm values enable
 `createDefaultDiskLabeledNodes`. Longhorn only reads the annotation when it
 creates the default disks. Changing the reservation on an existing disk also
-requires patching the Longhorn Node CR (`nodes.longhorn.io/<node>`). If a disk
-does not show up in the Longhorn UI, check the node label/annotation and
+requires patching the Longhorn Node CR (`nodes.longhorn.io/<node>`). The
+annotation is owned by Talos's `KubeNodeConfig`, so update the machine config
+(or apply the regenerated node config) as well; a `kubectl annotate`/`patch`
+on the Kubernetes Node alone is reverted on the next reconcile. If a disk does
+not show up in the Longhorn UI, check the node label/annotation and
 `talosctl -n <node> get mountstatus`.
 
 btrfs support needs the `siderolabs/btrfs` extension **and** the kernel module;
