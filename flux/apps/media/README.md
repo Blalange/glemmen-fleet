@@ -159,10 +159,11 @@ operator-managed volume servers, each with four 200Gi Longhorn disks
 (`volumeServerDiskCount: 4`), for 3.2TiB of Longhorn-backed raw capacity. A
 fifth volume server on `glemmen60` writes directly to
 `/var/mnt/hdd1/seaweedfs` instead of Longhorn and adds 6TB (5.46TiB) of raw
-volume slots (5588 x 1GiB). The SeaweedFS layer keeps two copies of each volume
-(`replication: "001"`), so the combined 8.66TiB of raw capacity supports about
-4.33TiB of logical data; the 2500Gi (2.44TiB) media PVC fits with room for the
-Thanos bucket and metadata.
+volume slots (5588 x 1GiB). The CSI StorageClass requests `replication: "001"`
+for new volumes, while the older media volumes are erasure-coded 10+4.
+Conservatively, the combined 8.66TiB of raw capacity supports about 4.33TiB of
+logical data if every volume were replicated 001; the 2500Gi (2.44TiB) media
+PVC fits with room for the Thanos bucket and metadata.
 
 The fifth server is a separate Flux HelmRelease using the official SeaweedFS
 chart (`flux/infrastructure/seaweedfs/volume-glemmen60.yaml`). It is not part
