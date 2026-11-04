@@ -1,0 +1,101 @@
+# Fifth SeaweedFS volume server, pinned to glemmen60 and writing directly to
+# the local hdd1 disk. The four operator-managed volume servers stay
+# Longhorn-backed; this release only joins the existing master so the master
+# can place volumes on the hostPath. The chart's master, filer, S3, admin,
+# worker and all-in-one components are disabled.
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: HelmRepository
+metadata:
+  name: seaweedfs
+  namespace: seaweedfs
+spec:
+  interval: 1h
+  url: https://seaweedfs.github.io/seaweedfs/helm
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: seaweedfs-glemmen60
+  namespace: seaweedfs
+spec:
+  interval: 1h
+  timeout: 10m
+  chart:
+    spec:
+      chart: seaweedfs
+      version: 4.51.0
+      sourceRef:
+        kind: HelmRepository
+        name: seaweedfs
+  values:
+    fullnameOverride: seaweedfs-glemmen60
+    image:
+      tag: "4.51"
+
+    global:
+      seaweedfs:
+        # Join the existing operator-managed master instead of starting a new
+        # cluster.
+        masterServer: seaweedfs-master-0.seaweedfs-master-peer.seaweedfs:9333
+        createClusterRole: false
+        # The existing cluster only signs filer writes (securityConfig in
+        # seaweed.yaml). Do not let the chart generate its own JWT keys: a
+        # different key would break writes against the existing filer.
+        securityConfig:
+          jwtSigning:
+            volumeWrite: false
+            volumeRead: false
+            filerWrite: false
+            filerRead: false
+        # Prometheus scrapes this server through the dedicated ServiceMonitor
+        # in flux/monitoring/resources/servicemonitors/. Do not import the
+        # chart's duplicate SeaweedFS Grafana dashboard.
+        monitoring:
+          enabled: false
+        # The chart's defaults point at the disabled chart master/filer
+        # services because of fullnameOverride. Point these at the real
+        # services so `weed shell` and debugging inside the pod work.
+        extraEnvironmentVars:
+          WEED_CLUSTER_SW_MASTER: seaweedfs-master-0.seaweedfs-master-peer.seaweedfs:9333
+          WEED_CLUSTER_SW_FILER: seaweedfs-filer.seaweedfs:8888
+
+    master:
+      enabled: false
+    filer:
+      enabled: false
+    s3:
+      enabled: false
+    admin:
+      enabled: false
+    worker:
+      enabled: false
+    allInOne:
+      enabled: false
+
+    volume:
+      enabled: true
+      replicas: 1
+      port: 8444
+      grpcPort: 18444
+      metricsPort: 9327
+      id: glemmen60
+      # The maxVolumes cap is the real limit; 1% keeps the volume server from
+      # marking volumes read-only before it reaches the cap.
+      minFreeSpacePercent: 1
+      dataDirs:
+        - name: data
+          type: hostPath
+          # The chart appends /object_store/, so the actual host path is
+          # /var/mnt/hdd1/seaweedfs/object_store.
+          hostPathPrefix: /var/mnt/hdd1/seaweedfs
+          # 5588 x 1 GiB = 6.00007 TB. The master uses 1024 MiB volumes.
+          maxVolumes: 5588
+      nodeSelector: |
+        kubernetes.io/hostname: glemmen60
+      resources:
+        requests:
+          cpu: 100m
+          memory: 128Mi
+        limits:
+          cpu: 500m
+          memory: 1Gi

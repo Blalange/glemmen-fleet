@@ -154,10 +154,22 @@ production.
 
 ## SeaweedFS capacity and backups
 
-The media PVC is 600Gi on four SeaweedFS volume servers, each with two 100Gi
-disks (`volumeServerDiskCount: 2`). That is eight 100Gi data volumes, 800Gi
-total; the remainder is headroom for the Thanos bucket and metadata. Required
-pod anti-affinity keeps one volume server per node.
+The media PVC is 2500Gi. It is stored in a SeaweedFS cluster with four
+operator-managed volume servers, each with four 200Gi Longhorn disks
+(`volumeServerDiskCount: 4`), for 3.2TiB of Longhorn-backed raw capacity. A
+fifth volume server on `glemmen60` writes directly to
+`/var/mnt/hdd1/seaweedfs` instead of Longhorn and adds 6TB (5.46TiB) of raw
+volume slots (5588 x 1GiB). The SeaweedFS layer keeps two copies of each volume
+(`replication: "001"`), so the combined 8.66TiB of raw capacity supports about
+4.33TiB of logical data; the 2500Gi (2.44TiB) media PVC fits with room for the
+Thanos bucket and metadata.
+
+The fifth server is a separate Flux HelmRelease using the official SeaweedFS
+chart (`flux/infrastructure/seaweedfs/volume-glemmen60.yaml`). It is not part
+of the operator's `seaweedfs-volume` StatefulSet, so the StatefulSet recreate
+procedure below does not touch it. The Longhorn disk on `glemmen60` reserves
+6TB (`storageReserved`), so Longhorn will not schedule replicas into the space
+promised to the SeaweedFS server.
 
 `volumeServerDiskCount` is a top-level Seaweed field, not a field under
 `volume`. Changing it, `volume.replicas` or `volume.requests.storage` changes
@@ -168,18 +180,18 @@ the remaining old pods:
 
 ```sh
 kubectl -n seaweedfs delete statefulset seaweedfs-volume --cascade=orphan
-# Let the operator recreate the StatefulSet with both claim templates, then
-# remove any pods still using the old single-disk template:
+# Let the operator recreate the StatefulSet with all claim templates, then
+# remove any pods still using the old template:
 kubectl -n seaweedfs delete pod -l app.kubernetes.io/component=volume
 kubectl -n seaweedfs rollout status statefulset/seaweedfs-volume --timeout=15m
 
-# A two-disk volume server has mount0-* and mount1-* PVCs; expect 8 in total:
-kubectl -n seaweedfs get pvc | grep -E 'mount[01]-seaweedfs-volume'
+# Four-disk volume servers have mount0-* through mount3-* PVCs; expect 16:
+kubectl -n seaweedfs get pvc | grep -E 'mount[0-3]-seaweedfs-volume'
 ```
 
-Existing PVCs are retained. New `mount1-*` PVCs pick up the recurring-job labels
-from `volume.storageLabels` automatically; existing `mount0-*` PVCs were
-labeled by hand during the original rollout.
+Existing PVCs are retained. New PVCs pick up the recurring-job labels from
+`volume.storageLabels` automatically; the original `mount0-*` PVCs were
+labeled by hand during the first rollout.
 
 Verify that each Longhorn volume loses `recurring-job-group.longhorn.io/default`
 and gains `recurring-job-group.longhorn.io/daily-trim`:
@@ -189,10 +201,10 @@ kubectl -n longhorn-system get volumes.longhorn.io -o custom-columns=NAME:.metad
 ```
 
 The `seaweedfs-master` PVC stays in the `default` backup group. Because the
-data volume servers are excluded from Longhorn backup, the Thanos bucket on the
-same servers is not backed up either. This is intentional: the media library is
-treated as re-downloadable and the long-term metrics are not duplicated off
-cluster.
+data volume servers are excluded from Longhorn backup, and the fifth server is
+not Longhorn-managed at all, the Thanos bucket on the same servers is not
+backed up either. This is intentional: the media library is treated as
+re-downloadable and the long-term metrics are not duplicated off cluster.
 
 ## First-run configuration
 

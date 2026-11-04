@@ -80,7 +80,7 @@ Longhorn volume backups go to a Google Drive folder through an in-cluster rclone
 
 Prometheus only retains the most recent metrics locally (15 GiB, see `retentionSize`). The Thanos side in `flux/monitoring/thanos/` uploads blocks to the `thanos` bucket in the SeaweedFS cluster under `flux/infrastructure/seaweedfs/`, compacts and downsamples them, and exposes the history through a dedicated Grafana data source.
 
-The media stack uses the same SeaweedFS cluster through its CSI driver: one 600 GiB `ReadWriteMany` volume is mounted at `/data` by Jellyfin, Sonarr, Radarr and qBittorrent. The SeaweedFS cluster runs four volume servers with two 100 GiB Longhorn disks each (eight 100 GiB data volumes). They are excluded from the Longhorn backup job because the media library is treated as re-downloadable. See `flux/apps/media/README.md`.
+The media stack uses the same SeaweedFS cluster through its CSI driver: one 2.5 TiB `ReadWriteMany` volume is mounted at `/data` by Jellyfin, Sonarr, Radarr and qBittorrent. The SeaweedFS cluster runs four operator-managed volume servers, each with four 200 GiB Longhorn disks (3.2 TiB raw), plus a fifth volume server on `glemmen60` that writes directly to `/var/mnt/hdd1/seaweedfs` with 6 TB of raw volume slots. The Longhorn-backed data PVCs are excluded from the Longhorn backup job because the media library is treated as re-downloadable; the hostPath volume is not Longhorn-managed and is not backed up either. See `flux/apps/media/README.md`.
 
 The SeaweedFS admin panel is at <https://seaweedfs.glem.men> and is backed by two workers that run the maintenance jobs it dispatches. Its login is stored in the hand-created `seaweedfs-admin` Secret in the `seaweedfs` namespace; see `flux/README.md`.
 

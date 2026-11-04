@@ -157,7 +157,9 @@ future applications can request their own bucket and key pair next to their
 workload.
 
 The SeaweedFS resource, its master PVC and the `thanos` bucket/IAM objects are
-in `infrastructure/seaweedfs/`. The `seaweedfs` Flux Kustomization depends on
+in `infrastructure/seaweedfs/`. The extra hostPath-backed volume server on
+`glemmen60` is a separate HelmRelease using the official SeaweedFS chart in
+the same directory. The `seaweedfs` Flux Kustomization depends on
 `infrastructure` so the operator's CRDs exist before its custom resources are
 applied.
 
@@ -279,8 +281,10 @@ SeaweedFS Grafana dashboard does not have dedicated admin/worker panels yet.
 `apps/media` runs Jellyfin, Sonarr, Radarr, Prowlarr, Seerr, FlareSolverr and qBittorrent in
 the privileged `media` namespace. The apps share one SeaweedFS CSI
 `ReadWriteMany` volume at `/data` (`downloads/`, `media/movies/`,
-`media/tv/`). The SeaweedFS cluster has four volume servers with two 100Gi
-disks each; the media PVC is 600Gi. See [`apps/media/README.md`](../apps/media/README.md) for the secrets,
+`media/tv/`). The SeaweedFS cluster has four operator-managed volume servers
+with four 200Gi Longhorn disks each (3.2TiB raw), plus a fifth hostPath-backed
+server on `glemmen60` with 6TB of raw slots; the media PVC is 2500Gi. See
+[`apps/media/README.md`](../apps/media/README.md) for the secrets,
 SeaweedFS PVC expansion, Authentik provider setup and first-run steps.
 
 - **Databases:** all media apps use SQLite on their Longhorn config volumes.
@@ -297,8 +301,10 @@ SeaweedFS PVC expansion, Authentik provider setup and first-run steps.
   Prowlarr and qBittorrent run with application authentication `External`.
 - **Backups:** the SeaweedFS data PVCs are moved to the `daily-trim` recurring
   job only, so Longhorn's `daily-backup` job does not back up the media
-  library (or the Thanos bucket that shares those volume servers). The 2Gi
-  SeaweedFS master PVC and the media app config volumes remain backed up.
+  library (or the Thanos bucket that shares those volume servers). The
+  hostPath-backed volume server on `glemmen60` is not Longhorn-managed and is
+  not backed up either. The 2Gi SeaweedFS master PVC and the media app config
+  volumes remain backed up.
 
 ## Thanos and long-term metrics
 

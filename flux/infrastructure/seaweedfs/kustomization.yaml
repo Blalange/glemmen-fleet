@@ -5,6 +5,7 @@ resources:
   - storageclass.yaml
   - pvc.yaml
   - seaweed.yaml
+  - volume-glemmen60.yaml
   - csi.yaml
   - bucket-thanos.yaml
   - s3-thanos.yaml

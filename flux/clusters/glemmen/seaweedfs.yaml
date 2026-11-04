@@ -24,6 +24,12 @@ spec:
       kind: SeaweedCSIDriver
       name: seaweedfs
       namespace: seaweedfs
+    # The extra hostPath-backed volume server on glemmen60 is managed by the
+    # official SeaweedFS chart, not by the operator.
+    - apiVersion: helm.toolkit.fluxcd.io/v2
+      kind: HelmRelease
+      name: seaweedfs-glemmen60
+      namespace: seaweedfs
   sourceRef:
     kind: GitRepository
     name: flux-system

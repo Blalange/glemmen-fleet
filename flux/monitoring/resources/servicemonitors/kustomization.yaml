@@ -6,5 +6,6 @@ resources:
   - flux.yaml
   - kepler.yaml
   - longhorn.yaml
+  - seaweedfs-glemmen60-volume.yaml
   - tuppr.yaml
   - yugabyte.yaml

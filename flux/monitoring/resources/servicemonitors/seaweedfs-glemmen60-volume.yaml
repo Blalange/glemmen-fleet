@@ -1,0 +1,22 @@
+# Metrics for the hostPath-backed SeaweedFS volume server on glemmen60.
+# The chart's own ServiceMonitor is not used because enabling it also imports
+# a duplicate SeaweedFS Grafana dashboard.
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: seaweedfs-glemmen60-volume
+  namespace: monitoring
+spec:
+  namespaceSelector:
+    matchNames:
+      - seaweedfs
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: seaweedfs
+      app.kubernetes.io/instance: seaweedfs-glemmen60
+      app.kubernetes.io/component: volume
+  endpoints:
+    - port: metrics
+      path: /metrics
+      interval: 30s
+      scrapeTimeout: 5s

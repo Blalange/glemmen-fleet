@@ -144,13 +144,18 @@ Longhorn gets its disks from the Talos user volumes (see `nodes/*.yaml`):
   registered as the Longhorn disk `system` with a fixed reservation.
 * `longhorn` — btrfs volume on the 2 TB data disk (`/var/mnt/longhorn`).
 * `hdd1` — btrfs volume on the extra 1 TB / 7.3 TB disk where present
-  (`/var/mnt/hdd1`, glemmen130/glemmen80/glemmen60).
+  (`/var/mnt/hdd1`, glemmen130/glemmen80/glemmen60). On glemmen60 the
+  filesystem is shared: 6 TB is reserved for the hostPath-backed SeaweedFS
+  volume server and the remainder is available to Longhorn.
 
 The Longhorn disk configuration is applied *from the Talos node annotations*
 (`node.longhorn.io/default-disks-config`) together with the label
 `node.longhorn.io/create-default-disk: config`; Longhorn's Helm values enable
-`createDefaultDiskLabeledNodes`. If a disk does not show up in the Longhorn UI,
-check the node label/annotation and `talosctl -n <node> get mountstatus`.
+`createDefaultDiskLabeledNodes`. Longhorn only reads the annotation when it
+creates the default disks. Changing the reservation on an existing disk also
+requires patching the Longhorn Node CR (`nodes.longhorn.io/<node>`). If a disk
+does not show up in the Longhorn UI, check the node label/annotation and
+`talosctl -n <node> get mountstatus`.
 
 btrfs support needs the `siderolabs/btrfs` extension **and** the kernel module;
 both are in the schematic / common patch. Node upgrades preserve the volumes.
