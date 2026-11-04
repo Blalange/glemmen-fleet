@@ -78,7 +78,11 @@ spec:
       port: 8444
       grpcPort: 18444
       metricsPort: 9327
-      id: glemmen60
+      # Do not set `id`. SeaweedFS then uses the pod DNS name plus port as the
+      # node ID, which is also the address maintenance tasks dial. A custom ID
+      # such as `glemmen60` makes EC balance/replication tasks dial a bare
+      # hostname without a port and fail with "missing port in address".
+      #
       # The maxVolumes cap is the real limit; 1% keeps the volume server from
       # marking volumes read-only before it reaches the cap.
       minFreeSpacePercent: 1

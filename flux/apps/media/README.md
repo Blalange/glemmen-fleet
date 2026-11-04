@@ -168,9 +168,11 @@ PVC fits with room for the Thanos bucket and metadata.
 The fifth server is a separate Flux HelmRelease using the official SeaweedFS
 chart (`flux/infrastructure/seaweedfs/volume-glemmen60.yaml`). It is not part
 of the operator's `seaweedfs-volume` StatefulSet, so the StatefulSet recreate
-procedure below does not touch it. The Longhorn disk on `glemmen60` reserves
-6TB (`storageReserved`), so Longhorn will not schedule replicas into the space
-promised to the SeaweedFS server.
+procedure below does not touch it. The chart's `volume.id` is intentionally
+left unset: some SeaweedFS maintenance tasks dial the node ID directly, so the
+ID must be the pod DNS address with a port rather than a bare `glemmen60`.
+The Longhorn disk on `glemmen60` reserves 6TB (`storageReserved`), so Longhorn
+will not schedule replicas into the space promised to the SeaweedFS server.
 
 `volumeServerDiskCount` is a top-level Seaweed field, not a field under
 `volume`. Changing it, `volume.replicas` or `volume.requests.storage` changes
