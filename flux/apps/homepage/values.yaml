@@ -38,7 +38,7 @@ serviceAccount:
 # make clients reload continuously, so keep a single replica. Running more than
 # one would require sticky sessions on the Ingress/Service.
 controller:
-  replicas: 1
+  replicas: 0
   # Recreate also avoids briefly running old and new pods side by side during
   # config updates.
   strategy: Recreate
