@@ -297,6 +297,17 @@ def run(
     return result
 
 
+def _local_binary(name: str) -> Path | None:
+    names = [f"{name}.exe", name] if os.name == "nt" else [name]
+    for candidate_name in names:
+        candidate = TOOLS_DIR / candidate_name
+        if candidate.is_file() and (
+            os.name == "nt" or os.access(candidate, os.X_OK)
+        ):
+            return candidate
+    return None
+
+
 def talosctl() -> str:
     global _TALOSCTL
     if _TALOSCTL is not None:
@@ -310,8 +321,8 @@ def talosctl() -> str:
     # Prefer the pinned binary from scripts/bin: it matches TALOS_VERSION and
     # the running nodes, avoiding client/server version skew from a talosctl in
     # PATH.
-    local = TOOLS_DIR / "talosctl"
-    if local.is_file() and os.access(local, os.X_OK):
+    local = _local_binary("talosctl")
+    if local is not None:
         _TALOSCTL = str(local)
         return _TALOSCTL
 
@@ -336,8 +347,8 @@ def kubectl() -> str:
         _KUBECTL = override
         return _KUBECTL
 
-    local = TOOLS_DIR / "kubectl"
-    if local.is_file() and os.access(local, os.X_OK):
+    local = _local_binary("kubectl")
+    if local is not None:
         _KUBECTL = str(local)
         return _KUBECTL
 

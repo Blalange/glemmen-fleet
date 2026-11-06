@@ -11,6 +11,9 @@ state stay in `talos/` and `flux/`; downloaded CLI tools live in `scripts/bin/`
 ./scripts/download-tools.py talosctl        # one tool
 ./scripts/download-tools.py pv-migrate      # PVC migration helper
 ./scripts/download-tools.py flux --force    # re-download
+./scripts/download-tools.py --check         # report only, exit 1 if stale
+./scripts/download-tools.py --platform linux/arm64       # cross-platform fetch
+./scripts/download-tools.py --os darwin --arch arm64     # same, split form
 ```
 
 Versions come from `talos/settings.env` (`TALOS_VERSION`,
@@ -18,6 +21,21 @@ Versions come from `talos/settings.env` (`TALOS_VERSION`,
 overridden with `TALOS_VERSION`, `KUBECTL_VERSION`, `FLUX_VERSION` and
 `PV_MIGRATE_VERSION`. The other scripts never download tools; if one is
 missing they print the command above.
+
+By default the script targets the host operating system and CPU architecture
+(`linux`, `darwin`, `windows` or `freebsd` on `amd64`, `arm64`, `arm`, etc.)
+and adds a `.exe` suffix on Windows. `--platform OS/ARCH` (or `--os`/`--arch`,
+or `DOWNLOAD_TOOLS_PLATFORM`/`DOWNLOAD_TOOLS_OS`/`DOWNLOAD_TOOLS_ARCH`/`GOOS`/
+`GOARCH`) fetches a different platform into `scripts/bin/<os>_<arch>/` instead
+of overwriting the host binaries. Existing binaries are version-compared
+against the pins: host binaries are executed (`talosctl version --client`,
+`kubectl version --client`, `flux version --client`, `pv-migrate
+--version`) and updated when the version differs, while foreign-platform
+binaries — which cannot be executed locally — are compared via
+`scripts/bin/.tool-versions.json`. `--force` re-downloads unconditionally;
+`--check` (alias `--dry-run`) only reports and exits `1` when a tool is
+missing, outdated or its version cannot be determined. `--check --json`
+emits a machine-readable status summary.
 
 ## PersistentVolumeClaims
 

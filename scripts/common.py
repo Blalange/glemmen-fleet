@@ -253,21 +253,42 @@ def run(
     return result
 
 
+def _is_executable(path: Path) -> bool:
+    if not path.is_file():
+        return False
+    # On Windows every file is executable; os.access(X_OK) is about the
+    # PATHEXT handling done by shutil.which().
+    if os.name == "nt":
+        return True
+    return os.access(path, os.X_OK)
+
+
+def tool_filename(name: str) -> str:
+    """Local file name for a downloaded tool (".exe" on Windows)."""
+    if os.name == "nt" and not name.lower().endswith(".exe"):
+        return f"{name}.exe"
+    return name
+
+
 def find_tool(name: str, env_var: str | None = None) -> str | None:
     if env_var:
         override = os.environ.get(env_var)
         if override:
             candidate = Path(override)
-            if candidate.is_file() and os.access(candidate, os.X_OK):
+            if _is_executable(candidate):
                 return str(candidate)
             found = shutil.which(override)
             if found:
                 return found
             die(f"{env_var}={override} is not an executable")
 
-    local = TOOLS_DIR / name
-    if local.is_file() and os.access(local, os.X_OK):
-        return str(local)
+    local_names = [tool_filename(name)]
+    if tool_filename(name) != name:
+        local_names.append(name)
+    for local_name in local_names:
+        local = TOOLS_DIR / local_name
+        if _is_executable(local):
+            return str(local)
 
     return shutil.which(name)
 
