@@ -44,11 +44,8 @@ query:
     # Created by prometheus.thanosService.enabled in kube-prometheus-stack.
     static:
       - dnssrv+_grpc._tcp.kube-prometheus-stack-thanos-discovery.monitoring.svc.cluster.local
-  # Use the compactor's 5m/1h blocks for long ranges instead of fetching raw
-  # chunks from object storage.
   extraArgs:
     - --log.level=info
-    - --query.auto-downsampling
   # Prefer the control-plane/1xx nodes; fall back to workers when full.
   affinity:
     nodeAffinity:
