@@ -175,11 +175,15 @@ available to the firmware network stack. On Dell R630 also verify:
   (this is already required for glemmen80).
 - glemmen60's Broadcom BCM5716 may not work with `undionly.kpxe`. If it fails,
   add a native-driver `ipxe.pxe` to the TFTP root and use it for BIOS clients.
-- The 1xx nodes are cabled to LACP LAG ports. The firmware PXE phase runs before
-  Talos creates `bond0`, and iPXE does not implement 802.3ad. If the switch does
-  not forward single-link PXE traffic on a LAG member, use a non-LAG
-  provisioning port for the initial boot or keep using the setup ISO. Test one
-  1xx node before relying on PXE there.
+- Most 1xx nodes are cabled to LACP LAG ports. The firmware PXE phase runs
+  before Talos creates `bond0`, and the firmware PXE ROM does not implement
+  802.3ad. If the switch does not forward single-link PXE traffic on a LAG
+  member, use a non-LAG provisioning port for the initial boot or keep using
+  the setup ISO. Test one 1xx node before relying on PXE there.
+- glemmen170 must PXE-boot on every boot: its system disk is an NVMe drive the
+  R250 firmware cannot see. Its ports are therefore plain access ports and its
+  bond is `active-backup`, so the firmware PXE phase can pass traffic. Do not
+  add those two ports to a UniFi LAG.
 - The asset server always serves the current Talos version. Verify that a
   network-booted newer kernel still hands off correctly to an older installed
   Talos version before relying on it across upgrades.
