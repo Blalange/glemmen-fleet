@@ -14,7 +14,7 @@ compatibility reasons.
 |---|---|
 | `release.yaml` | `yugabytedb/yugabyte` HelmRepository and HelmRelease (chart `2026.1.3`, image `2026.1.3.0-b100`) |
 | `values.yaml` | Three YB-Masters, three YB-TServers, RF3, storage and probe settings |
-| `init-job.yaml` | One-shot `yugabyte-init-v5` Job that creates the application roles/databases and sets the superuser password |
+| `init-job.yaml` | One-shot `yugabyte-init-v6` Job that creates the application roles/databases and sets the superuser password |
 | `pdb.yaml` | `policy/v1` PodDisruptionBudgets for masters and tservers |
 | `storageclass-fast.yaml` | `yugabyte-fast-master` (two Longhorn replicas) and `yugabyte-fast-tserver` (one Longhorn replica) |
 | `storageclass.yaml` | Legacy `yugabyte` class used by the retired hand-written cluster's PVCs |
@@ -85,7 +85,7 @@ kubectl -n monitoring create secret generic grafana-db \
 
 `grafana-password` must match the `grafana-db` Secret in `monitoring`.
 `seaweedfs-password` must match the password in the `seaweedfs-filer-config`
-Secret in `seaweedfs`; see `flux/README.md`. The `yugabyte-init-v5` Job sets the default `yugabyte` superuser password from
+Secret in `seaweedfs`; see `flux/README.md`. The `yugabyte-init-v6` Job sets the default `yugabyte` superuser password from
 `yugabyte-auth` and creates:
 
 - `grafana` → `grafana`

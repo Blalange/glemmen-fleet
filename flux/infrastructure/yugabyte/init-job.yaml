@@ -7,8 +7,9 @@
 #
 # The media apps were briefly provisioned here, but the Servarr apps cannot
 # parse YugabyteDB's server_version string (15.12-YB-...). They now use SQLite,
-# so v5 removes the media roles. Bump the Job name whenever the SQL changes:
-# Jobs are immutable and Flux cannot patch a completed PodTemplate.
+# so v5 removes the media roles. Bump the Job name whenever the SQL or the
+# pod template (including the image) changes: Jobs are immutable and Flux
+# cannot patch a completed PodTemplate.
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -103,7 +104,7 @@ data:
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: yugabyte-init-v5
+  name: yugabyte-init-v6
   namespace: yugabyte
 spec:
   backoffLimit: 10
