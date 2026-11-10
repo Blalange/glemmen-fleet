@@ -1,4 +1,5 @@
-# Media stack: Jellyfin, Sonarr, Radarr, Prowlarr, Seerr and qBittorrent.
+# Media stack: Jellyfin, Sonarr, Radarr, Prowlarr, Profilarr, Seerr and
+# qBittorrent.
 # Waits for the SeaweedFS CSI driver/StorageClass and the shared media PVC.
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization

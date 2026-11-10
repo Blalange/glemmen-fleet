@@ -1,7 +1,8 @@
 # Media stack
 
-Jellyfin, Sonarr, Radarr, Prowlarr, Seerr and qBittorrent run in the `media`
-namespace. They share one SeaweedFS-backed `ReadWriteMany` volume at `/data`:
+Jellyfin, Sonarr, Radarr, Prowlarr, Profilarr, Seerr and qBittorrent run in the
+`media` namespace. They share one SeaweedFS-backed `ReadWriteMany` volume at
+`/data`:
 
 ```
 /data/downloads              qBittorrent downloads (incomplete/ below it)
@@ -20,6 +21,7 @@ in the *arr media management settings if import errors mention hardlinks.
 | Sonarr | https://sonarr.glem.men | Authentik proxy, app auth `External` |
 | Radarr | https://radarr.glem.men | Authentik proxy, app auth `External` |
 | Prowlarr | https://prowlarr.glem.men | Authentik proxy, app auth `External` |
+| Profilarr | https://profilarr.glem.men | Authentik proxy, app auth off |
 | Seerr | https://seerr.glem.men | Authentik proxy + Seerr login |
 | qBittorrent | https://torrent.glem.men | Authentik proxy; qBittorrent auth bypassed for the pod network |
 
@@ -45,6 +47,8 @@ All media applications use SQLite on their Longhorn config volumes:
 - Sonarr/Radarr/Prowlarr: `<app>.db` under `/config`
 - Jellyfin: `/config/data/jellyfin.db`
 - Seerr: `/config/db.sqlite3`
+- Profilarr: `/config/data/profilarr.db`, with cloned profile repositories
+  under `/config/data/databases`
 - qBittorrent: its own settings database under `/config`
 
 YugabyteDB was evaluated for Sonarr/Radarr/Prowlarr, but their
@@ -76,6 +80,47 @@ kubectl -n media exec deploy/prowlarr -- sh -c "curl -sS -X POST \
 The image is pinned to FlareSolverr `v3.5.2`; update it with the other media
 images when a newer release is available.
 
+## Profilarr
+
+Profilarr syncs quality profiles, custom formats, delay profiles and media
+management settings from a profile database (TRaSH Guides, Dictionarry, ...)
+into Sonarr and Radarr. It is an admin-only app and its own login is disabled
+(`AUTH=off`); access is only through the Authentik proxy outpost. Do not create
+an Ingress that points at the Profilarr Service directly, or the UI will be
+reachable without authentication.
+
+`ORIGIN` is set to `https://profilarr.glem.men` because SvelteKit validates the
+request origin behind the reverse proxy. If the public hostname changes, update
+it in `profilarr.yaml` as well as the Authentik provider.
+
+The parser (`profilarr-parser`) backs the custom-format and quality-profile
+testing features. It is internal-only at
+`http://profilarr-parser.media.svc.cluster.local:5000`; syncing works without
+it, but the testers return errors if the Deployment is down. Both images are
+pinned to `2.3.1`; keep them on the same tag when updating.
+
+Profilarr stores its SQLite database, cloned profile repositories, logs and
+backups on the `profilarr-config` volume. The Arr API keys are stored in that
+database, so the volume must be retained (the `media-config` StorageClass uses
+`reclaimPolicy: Retain`).
+
+To connect the Arr apps, add them under Settings > Instances:
+
+| App | Internal URL |
+|---|---|
+| Sonarr | `http://sonarr.media.svc.cluster.local:8989` |
+| Radarr | `http://radarr.media.svc.cluster.local:7878` |
+
+Use the API key from each app's `config.xml`, for example:
+
+```sh
+kubectl -n media exec deploy/sonarr -- sh -c \
+  'grep -o "<ApiKey>[^<]*" /config/config.xml | cut -d">" -f2'
+```
+
+Then link a database and sync the entities you want. The first sync can create
+a lot of custom formats; review the changes in Profilarr before pushing them.
+
 ## WireGuard
 
 The WireGuard configuration is never committed. Create the Secret from the
@@ -106,11 +151,11 @@ namespace already permits it.
 ## Authentik
 
 Create two groups in Authentik: `media-users` (normal viewers/requesters) and
-`media-admins` (Sonarr/Radarr/Prowlarr/qBittorrent administrators). Bind the
-Jellyfin and Seerr applications to `media-users`, and the other proxy
+`media-admins` (Sonarr/Radarr/Prowlarr/Profilarr/qBittorrent administrators).
+Bind the Jellyfin and Seerr applications to `media-users`, and the other proxy
 applications to `media-admins`. Do not grant the admin-only apps to
-`media-users`: the *arr apps run with authentication disabled and trust the
-proxy.
+`media-users`: the *arr apps and Profilarr run with their own authentication
+disabled and trust the proxy.
 
 Create an outpost named `glemmen-media` of type Proxy with these providers:
 
@@ -119,6 +164,7 @@ Create an outpost named `glemmen-media` of type Proxy with these providers:
 | Sonarr | Proxy | https://sonarr.glem.men | http://sonarr.media.svc.cluster.local:8989 |
 | Radarr | Proxy | https://radarr.glem.men | http://radarr.media.svc.cluster.local:7878 |
 | Prowlarr | Proxy | https://prowlarr.glem.men | http://prowlarr.media.svc.cluster.local:9696 |
+| Profilarr | Proxy | https://profilarr.glem.men | http://profilarr.media.svc.cluster.local:6868 |
 | Seerr | Proxy | https://seerr.glem.men | http://seerr.media.svc.cluster.local:5055 |
 | qBittorrent | Proxy | https://torrent.glem.men | http://qbittorrent.media.svc.cluster.local:8080 |
 
@@ -234,6 +280,10 @@ re-downloadable and the long-term metrics are not duplicated off cluster.
    provider with `POST /SSO/OID/Add/authentik`.
 5. **Seerr**: add Jellyfin at `http://jellyfin.media.svc.cluster.local:8096`,
    then add Sonarr and Radarr with their API keys.
+6. **Profilarr**: add Sonarr and Radarr under Settings > Instances with the
+   internal URLs above and their API keys, then link a profile database and
+   sync. Do this after Prowlarr has added the indexers and the Arr apps are
+   otherwise configured.
 
 ## Troubleshooting
 

@@ -329,6 +329,10 @@ config:
             icon: prowlarr.png
             href: https://prowlarr.glem.men
             description: Indexere for Sonarr og Radarr
+        - Profilarr:
+            icon: profilarr.png
+            href: https://profilarr.glem.men
+            description: Profiler og custom formats for Radarr og Sonarr
         - Seerr:
             icon: overseerr.png
             href: https://seerr.glem.men

@@ -1,5 +1,6 @@
-# Per-application configuration. The *arr apps and Seerr keep their database in
-# YugabyteDB; these volumes only hold config.xml, API keys, logs and metadata.
+# Per-application configuration. Every app keeps its SQLite database, config,
+# API keys, logs and metadata on these volumes. Profilarr also caches the
+# cloned profile databases and its own backups there.
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
@@ -54,6 +55,17 @@ spec:
   resources:
     requests:
       storage: 2Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: profilarr-config
+spec:
+  accessModes: [ReadWriteOnce]
+  storageClassName: media-config
+  resources:
+    requests:
+      storage: 5Gi
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
