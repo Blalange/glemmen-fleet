@@ -8,12 +8,19 @@ vlan 1
   forbidden "" 
   untagged 1-28 
 exit
+vlan 3 
+  name Servere 
+  normal "" 
+  fixed 25-28 
+  forbidden "" 
+  untagged 25-27 
+exit
 vlan 4 
   name Server-tilbehor 
   normal "" 
-  fixed 1-28 
+  fixed 1-24,28 
   forbidden "" 
-  untagged 1-27 
+  untagged 1-24 
   ip address default-management 192.168.4.2 255.255.255.0 
   ip address default-gateway 192.168.4.1 
 exit
@@ -114,15 +121,15 @@ interface port-channel 24
   frame-type untagged 
 exit
 interface port-channel 25 
-  pvid 4 
+  pvid 3 
   frame-type untagged 
 exit
 interface port-channel 26 
-  pvid 4 
+  pvid 3 
   frame-type untagged 
 exit
 interface port-channel 27 
-  pvid 4 
+  pvid 3 
   frame-type untagged 
 exit
 ip name-server 1.1.1.1 

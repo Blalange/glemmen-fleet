@@ -33,13 +33,13 @@ mode. This keeps the cluster PKI and machine tokens out of the boot server.
 
 ## Endpoints
 
-| URL | Purpose |
-| --- | --- |
-| `http://192.168.6.99:8080/vmlinuz` | Current Talos kernel |
-| `http://192.168.6.99:8080/initramfs.xz` | Current Talos initramfs |
-| `http://192.168.6.99:8080/boot.ipxe` | Generated iPXE script (HTTP copy) |
-| `http://192.168.6.99:8080/healthz` | Asset server health check |
-| TFTP on every control-plane node | `undionly.kpxe`, `ipxe.efi`, `boot.ipxe` |
+| URL                                     | Purpose                                  |
+| --------------------------------------- | ---------------------------------------- |
+| `http://192.168.6.99:8080/vmlinuz`      | Current Talos kernel                     |
+| `http://192.168.6.99:8080/initramfs.xz` | Current Talos initramfs                  |
+| `http://192.168.6.99:8080/boot.ipxe`    | Generated iPXE script (HTTP copy)        |
+| `http://192.168.6.99:8080/healthz`      | Asset server health check                |
+| TFTP on every control-plane node        | `undionly.kpxe`, `ipxe.efi`, `boot.ipxe` |
 
 ## UniFi configuration
 
@@ -182,7 +182,7 @@ available to the firmware network stack. On Dell R630 also verify:
   the setup ISO. Test one 1xx node before relying on PXE there.
 - glemmen170 must PXE-boot on every boot: its system disk is an NVMe drive the
   R250 firmware cannot see. Its ports are therefore plain access ports and its
-  bond is `active-backup`, so the firmware PXE phase can pass traffic. Do not
+  bond is `balance-alb`, so the firmware PXE phase can pass traffic. Do not
   add those two ports to a UniFi LAG.
 - The asset server always serves the current Talos version. Verify that a
   network-booted newer kernel still hands off correctly to an older installed

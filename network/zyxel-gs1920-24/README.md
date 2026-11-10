@@ -1,11 +1,13 @@
 # Zyxel GS1920-24
 
 Switch for miscellaneous server accessories on the `192.168.4.0/24`
-(`Server tilbehør`, VLAN 4) network.
+(`Server tilbehør`, VLAN 4) network, plus the SFP ports 25-27 on the
+`192.168.6.0/24` (`Servere`, VLAN 3) network.
 
 ## Management
 
-- **IP:** `192.168.4.2/24` on VLAN 4 (`Server tilbehør`)
+- **IP:** `192.168.4.2/24` on VLAN 4 (`Server tilbehør`); no management IP on
+  VLAN 3
 - **Default gateway:** `192.168.4.1` (UDM Pro)
 - **Web UI:** <http://192.168.4.2/>
 - **SSH/Telnet:** `192.168.4.2` (`admin`; password is the existing switch
@@ -19,10 +21,11 @@ the UDM Pro's inter-VLAN routing (same firewall zone, no rules).
 
 ## Topology
 
-Ports 1-27 are access ports in VLAN 4; port 28 is the uplink to the UDM Pro
-with VLAN 1 untagged as the native link and VLAN 4 tagged. The UDM Pro port 8
-is configured with the **Default** network as its native network
-(`192.168.50.0/24`) and allows tagged VLAN 4.
+Ports 1-24 are access ports in VLAN 4, ports 25-27 are access ports in VLAN 3
+(`Servere`), and port 28 is the uplink to the UDM Pro with VLAN 1 untagged as
+the native link and VLAN 3 and VLAN 4 tagged. The UDM Pro port 8 is configured
+with the **Default** network as its native network (`192.168.50.0/24`) and must
+allow **both** tagged VLAN 3 and tagged VLAN 4.
 
 The current port-to-device mapping is discovered automatically by the inventory
 collector from the switch's forwarding table (FDB) and LLDP neighbours and
@@ -36,18 +39,61 @@ in NetBox under **Devices → zyxel-gs1920-24 → Interfaces**.
 - **VLAN 1** - only the uplink port 28 is untagged; it has no management IP.
   It is the native link to the UDM Pro port 8 (UDM Default network) and is not
   used by any access device.
+- **VLAN 3 `Servere`** - `192.168.6.0/24`, gateway/DHCP on the UDM Pro
+  (`192.168.6.1`): ports 25-27 untagged with PVID 3; port 28 tagged. The switch
+  has no management address on this VLAN.
 - **VLAN 4 `Server tilbehør`** - `192.168.4.0/24`, gateway/DHCP on the UDM Pro
-  (`192.168.4.1`, DHCP pool `.6`-`.254`): ports 1-27 untagged with PVID 4;
+  (`192.168.4.1`, DHCP pool `.6`-`.254`): ports 1-24 untagged with PVID 4;
   port 28 tagged. The switch management IP is `192.168.4.2`.
 
 Access ports use `frame-type untagged`; the uplink uses the default
-`frame-type all` so it accepts the untagged VLAN 1 and tagged VLAN 4.
+`frame-type all` so it accepts the untagged VLAN 1 and tagged VLAN 3 and 4.
+
+> Moving a port between VLAN 3 and VLAN 4 needs changes on both ends: remove it
+> from the old VLAN's untagged list, add it to the new one, and change the port
+> PVID. The UDM Pro's tagged-network list on port 8 must cover every VLAN used
+> on the switch, otherwise hosts on that VLAN get no DHCP lease or gateway.
 
 > The GS1920 firmware only supports DHCP relay, not a DHCP server. The UDM Pro
-> remains the DHCP server and gateway for `192.168.4.0/24`.
+> remains the DHCP server and gateway for `192.168.4.0/24` and `192.168.6.0/24`.
+
+### Applying the layout
+
+In the web UI the same result is: **Advanced Application -> VLAN -> Static
+VLAN** (port membership + untagged) followed by **VLAN -> Port Setting** (PVID).
+Over SSH/Telnet (`admin`):
+
+```text
+configure
+vlan 3
+  name Servere
+  fixed 25-28
+  untagged 25-27
+exit
+vlan 4
+  no fixed 25-27
+  no untagged 25-27
+exit
+interface port-channel 25
+  pvid 3
+exit
+interface port-channel 26
+  pvid 3
+exit
+interface port-channel 27
+  pvid 3
+exit
+write memory
+```
+
+Verify with `show vlan` and `show interfaces status` (or the web UI's **VLAN
+Status** page) before saving, and remember the UDM Pro side of the uplink.
 
 ## DHCP / addressing
 
+- Hosts on switch ports 25-27 are on the `Servere` network
+  (`192.168.6.0/24`) and get their addressing from the UDM Pro
+  (`192.168.6.1`); no static reservations are documented for them yet.
 - The APC automatic transfer switch has a fixed DHCP reservation at
   `192.168.4.3` (UniFi Network -> client MAC `00:c0:b7:f4:7e:d0`).
 - The iDRACs and IBM IMM are on VLAN 4 at `192.168.4.50`, `.60`, `.80`,

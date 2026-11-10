@@ -9,24 +9,22 @@ apiVersion: v1alpha1
 kind: BondConfig
 name: bond0
 links:
-    - eno8303
-    - eno8403
-bondMode: 802.3ad
+  - eno8303
+  - eno8403
+bondMode: balance-alb
 miimon: 100
 updelay: 200
 downdelay: 200
-xmitHashPolicy: layer3+4
-lacpRate: slow
 up: true
 addresses:
-    - address: 192.168.6.150/24
+  - address: 192.168.6.150/24
 routes:
-    - gateway: 192.168.6.1
-    # Hairpin NAT: replies from the .99 MetalLB VIP must return through the
-    # UDM instead of taking the directly connected bond0.1 route.
-    - destination: 192.168.50.0/24
-      gateway: 192.168.6.1
-      metric: 50
+  - gateway: 192.168.6.1
+  # Hairpin NAT: replies from the .99 MetalLB VIP must return through the
+  # UDM instead of taking the directly connected bond0.1 route.
+  - destination: 192.168.50.0/24
+    gateway: 192.168.6.1
+    metric: 50
 ---
 apiVersion: v1alpha1
 kind: Layer2VIPConfig
@@ -34,19 +32,38 @@ name: 192.168.6.98
 link: bond0
 ---
 apiVersion: v1alpha1
-kind: UserVolumeConfig
-name: longhorn
+kind: UnattendedInstallConfig
+reboot: true
 provisioning:
-    diskSelector:
-        match: 'disk.wwid == "naa.5000c500d45ad4e3"'
-    minSize: 10GiB
-    grow: true
+  diskSelector:
+    match: 'disk.wwid == "eui.e8238fa6bf530001001b448b48dd7460"'
+  wipe: true
+---
+apiVersion: v1alpha1
+kind: UserVolumeConfig
+name: cmr1
+provisioning:
+  diskSelector:
+    match: 'disk.wwid == "naa.5000c500f266c378"'
+  minSize: 10GiB
+  grow: true
 filesystem:
-    type: btrfs
+  type: btrfs
+---
+apiVersion: v1alpha1
+kind: UserVolumeConfig
+name: smr1
+provisioning:
+  diskSelector:
+    match: 'disk.wwid == "naa.5000c500d45ad4e3"'
+  minSize: 10GiB
+  grow: true
+filesystem:
+  type: btrfs
 ---
 apiVersion: v1alpha1
 kind: KubeNodeConfig
 labels:
-    node.longhorn.io/create-default-disk: config
+  node.longhorn.io/create-default-disk: config
 annotations:
-    node.longhorn.io/default-disks-config: '[{"name":"system","path":"/var/mnt/longhorn-system","allowScheduling":true,"storageReserved":600000000000,"tags":["fast"]},{"name":"longhorn","path":"/var/mnt/longhorn","allowScheduling":false,"evictionRequested":true,"storageReserved":0}]'
+  node.longhorn.io/default-disks-config: '[{"name":"system","path":"/var/mnt/longhorn-system","allowScheduling":true,"storageReserved":64000000000,"tags":["nvme", "fast"]},{"name":"cmr1","path":"/var/mnt/cmr1","allowScheduling":true,"storageReserved":0,"tags":["cmr"]},{"name":"smr1","path":"/var/mnt/smr1","allowScheduling":false,"storageReserved":0,"tags":["smr"]}]'
