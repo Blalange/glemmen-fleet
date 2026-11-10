@@ -57,6 +57,9 @@ spec:
                 find /var/lib/postgresql/data/pgdata -mindepth 1 -maxdepth 1 -exec mv -t /var/lib/postgresql/data {} +
                 rmdir /var/lib/postgresql/data/pgdata
               fi
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/postgresql/data
       containers:
         - name: db
           image: webodm/webodm_db:18
