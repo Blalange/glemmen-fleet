@@ -48,7 +48,7 @@ spec:
     spec:
       containers:
         - name: webapp
-          image: webodm/webodm_webapp:3.3.0
+          image: webodm/webodm_webapp:4.0.0
           imagePullPolicy: IfNotPresent
           command:
             - /bin/bash
@@ -111,7 +111,7 @@ spec:
             limits:
               memory: 2Gi
         - name: worker
-          image: webodm/webodm_webapp:3.3.0
+          image: webodm/webodm_webapp:4.0.0
           imagePullPolicy: IfNotPresent
           command:
             - /bin/bash

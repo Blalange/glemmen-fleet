@@ -1,4 +1,4 @@
-# PostgreSQL + PostGIS database (webodm/webodm_db image).
+# PostgreSQL 18 database (webodm/webodm_db image). WebODM 4 dropped PostGIS.
 apiVersion: v1
 kind: Service
 metadata:
@@ -42,10 +42,24 @@ spec:
       labels:
         app.kubernetes.io/name: webodm-db
     spec:
+      initContainers:
+        # Older releases used PGDATA=/var/lib/postgresql/data/pgdata. The 4.x
+        # entrypoint expects the old PostgreSQL 9.5 cluster at the volume root
+        # so its automatic 9.5 -> 18 upgrade can find it. Move it there once.
+        - name: normalize-data-dir
+          image: webodm/webodm_db:18
+          imagePullPolicy: IfNotPresent
+          command: ["/bin/bash", "-c"]
+          args:
+            - |
+              set -e
+              if [ -s /var/lib/postgresql/data/pgdata/PG_VERSION ] && [ ! -s /var/lib/postgresql/data/PG_VERSION ]; then
+                find /var/lib/postgresql/data/pgdata -mindepth 1 -maxdepth 1 -exec mv -t /var/lib/postgresql/data {} +
+                rmdir /var/lib/postgresql/data/pgdata
+              fi
       containers:
         - name: db
-          # webodm/webodm_db has no version tags; it tracks the WebODM release.
-          image: webodm/webodm_db:latest
+          image: webodm/webodm_db:18
           imagePullPolicy: IfNotPresent
           env:
             - name: POSTGRES_DB
@@ -57,8 +71,6 @@ spec:
                 secretKeyRef:
                   name: webodm-db
                   key: password
-            - name: PGDATA
-              value: /var/lib/postgresql/data/pgdata
           ports:
             - name: postgresql
               containerPort: 5432

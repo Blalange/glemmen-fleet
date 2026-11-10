@@ -23,14 +23,14 @@ spec:
   chart:
     spec:
       chart: seaweedfs
-      version: 4.51.0
+      version: 4.53.0
       sourceRef:
         kind: HelmRepository
         name: seaweedfs
   values:
     fullnameOverride: seaweedfs-glemmen60
     image:
-      tag: "4.51"
+      tag: "4.53"
 
     global:
       seaweedfs:

@@ -23,10 +23,13 @@ spec:
     disableWait: true
   upgrade:
     disableWait: true
+    # Helm does not upgrade CRDs from the chart's crds/ directory. Let Flux
+    # replace them so the Prometheus Operator CRDs match v0.95.1.
+    crds: CreateReplace
   chart:
     spec:
       chart: kube-prometheus-stack
-      version: 87.21.0
+      version: 93.1.2
       sourceRef:
         kind: HelmRepository
         name: prometheus-community

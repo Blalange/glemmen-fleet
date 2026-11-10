@@ -20,7 +20,7 @@ spec:
     spec:
       containers:
         - name: relay
-          image: netbirdio/relay:0.78.1
+          image: netbirdio/relay:0.82.1
           imagePullPolicy: IfNotPresent
           ports:
             - name: http

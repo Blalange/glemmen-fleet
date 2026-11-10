@@ -51,7 +51,7 @@ spec:
           type: RuntimeDefault
       containers:
         - name: syncthing-relay
-          image: docker.io/syncthing/relaysrv:2.1.6
+          image: docker.io/syncthing/relaysrv:2.1.7
           imagePullPolicy: IfNotPresent
           # Bypass the image entrypoint: it expects root and su-exec, while
           # this pod runs directly as the unprivileged uid above.

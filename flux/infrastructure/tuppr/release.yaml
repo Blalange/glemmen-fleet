@@ -8,7 +8,7 @@ spec:
   interval: 1h
   url: oci://ghcr.io/home-operations/charts/tuppr
   ref:
-    tag: 0.5.9
+    tag: 0.5.13
 ---
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
@@ -16,6 +16,9 @@ metadata:
   name: tuppr
 spec:
   interval: 1h
+  upgrade:
+    # The chart ships its upgrade CRDs in crds/, which Helm does not update.
+    crds: CreateReplace
   chartRef:
     kind: OCIRepository
     name: tuppr

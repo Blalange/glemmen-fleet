@@ -14,7 +14,6 @@ resources:
   - netbox-inventory.yaml
   - netbox.yaml
   - panel.yaml
-  - snipe-it.yaml
   - unifi.yaml
   - volunteer.yaml
   - warrior.yaml

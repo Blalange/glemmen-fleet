@@ -57,7 +57,7 @@ spec:
       initContainers:
         # Tor insists on a private DataDirectory owned by its user.
         - name: fix-data-permissions
-          image: docker.io/library/busybox:1.37
+          image: docker.io/library/busybox:1.38.0
           command:
             - sh
             - -c
@@ -132,7 +132,7 @@ spec:
             - name: logs
               mountPath: /var/log/tor
         - name: decoy
-          image: docker.io/nginxinc/nginx-unprivileged:1.29-alpine
+          image: docker.io/nginxinc/nginx-unprivileged:1.31.7-alpine
           imagePullPolicy: IfNotPresent
           ports:
             - name: decoy

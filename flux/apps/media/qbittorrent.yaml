@@ -47,7 +47,7 @@ spec:
         # Create the shared directory layout before the apps start. The CSI
         # mount maps files to uid/gid 1000.
         - name: media-dirs
-          image: busybox:1.37.0
+          image: busybox:1.38.0
           imagePullPolicy: IfNotPresent
           command:
             - sh

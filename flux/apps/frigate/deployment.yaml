@@ -47,7 +47,7 @@ spec:
         # The ConfigMap is the source of truth; copy it onto the writable
         # config volume so Frigate can run config migrations if it needs to.
         - name: copy-config
-          image: busybox:1.37
+          image: busybox:1.38.0
           command:
             - sh
             - -c

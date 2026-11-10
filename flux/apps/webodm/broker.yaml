@@ -1,4 +1,4 @@
-# Celery broker (same redis version as the upstream compose file).
+# Celery broker (Valkey, matching the WebODM 4 upstream compose file).
 apiVersion: v1
 kind: Service
 metadata:
@@ -31,7 +31,7 @@ spec:
     spec:
       containers:
         - name: broker
-          image: redis:7.0.10
+          image: valkey/valkey:9.1-alpine
           imagePullPolicy: IfNotPresent
           ports:
             - name: redis

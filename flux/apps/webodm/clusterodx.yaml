@@ -85,7 +85,7 @@ spec:
         # down/missing node is skipped. Keep this list in sync with the
         # StatefulSets in nodeodx.yaml. Adding an existing node is harmless.
         - name: register-nodeodx
-          image: busybox:1.36
+          image: busybox:1.38.0
           command:
             - /bin/sh
             - -c

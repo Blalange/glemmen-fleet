@@ -23,7 +23,7 @@ kind: Seaweed
 metadata:
   name: seaweedfs
 spec:
-  image: chrislusf/seaweedfs:4.51
+  image: chrislusf/seaweedfs:4.53
 
   # weed admin rejects admin-plane gRPC calls from remote pods unless
   # jwt.filer_signing.key is configured (or the caller uses mTLS). The admin

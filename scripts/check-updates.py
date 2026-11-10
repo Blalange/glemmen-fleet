@@ -202,6 +202,18 @@ def load_documents(path: Path) -> list[dict[str, Any]]:
         return []
 
 
+def is_excluded(relative_path: str) -> bool:
+    """Match a path or one of its parents against EXCLUDED_PREFIXES.
+
+    The prefixes end in "/", so compare the path itself with the prefix
+    stripped of its trailing slash as well as the normal prefix match.
+    """
+    return any(
+        relative_path == prefix.rstrip("/") or relative_path.startswith(prefix)
+        for prefix in EXCLUDED_PREFIXES
+    )
+
+
 def repo_yaml_files() -> list[Path]:
     files: list[Path] = []
     for root, directories, filenames in os.walk(common.REPO_ROOT):
@@ -209,7 +221,7 @@ def repo_yaml_files() -> list[Path]:
         relative_root = root_path.relative_to(common.REPO_ROOT)
         if (
             set(relative_root.parts) & EXCLUDED_DIRS
-            or relative_root.as_posix().startswith(EXCLUDED_PREFIXES)
+            or is_excluded(relative_root.as_posix())
         ):
             directories[:] = []
             continue
@@ -218,7 +230,7 @@ def repo_yaml_files() -> list[Path]:
             name
             for name in directories
             if name not in EXCLUDED_DIRS
-            and not (relative_root / name).as_posix().startswith(EXCLUDED_PREFIXES)
+            and not is_excluded((relative_root / name).as_posix())
         ]
         for name in filenames:
             path = root_path / name

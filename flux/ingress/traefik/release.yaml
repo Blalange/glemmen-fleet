@@ -16,10 +16,13 @@ metadata:
 spec:
   interval: 1h
   timeout: 10m
+  upgrade:
+    # The chart ships its CRDs in crds/, which Helm does not upgrade.
+    crds: CreateReplace
   chart:
     spec:
       chart: traefik
-      version: 41.7.1
+      version: 42.3.2
       sourceRef:
         kind: HelmRepository
         name: traefik

@@ -43,7 +43,7 @@ Maintenance and upgrades:
   etcd [members|status|snapshot] [path]   etcd membership, health and snapshots
   wipe <node> <disk>               Wipe a disk (e.g. /dev/sdb), removing old partitions
   reset <node>                     Reset a node (graceful shutdown + wipe)
-  upgrade-k8s <version>            Upgrade Kubernetes (e.g. 1.37.1)
+  upgrade-k8s <version>            Upgrade Kubernetes (e.g. 1.37.2)
   upgrade-talos [version]          Upgrade Talos (default: TALOS_VERSION)
 
 Commands that access a node in maintenance mode accept --insecure (links, disks,
@@ -461,7 +461,7 @@ def normalize_k8s_version(raw: str) -> str:
     if version.startswith("v"):
         version = version[1:]
     if not re.fullmatch(r"\d+\.\d+\.\d+", version):
-        die(f"invalid Kubernetes version {raw!r} (expected e.g. 1.37.1)")
+        die(f"invalid Kubernetes version {raw!r} (expected e.g. 1.37.2)")
     return version
 
 
@@ -1289,7 +1289,7 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--node", help="single node (for 'etcd snapshot')")
 
     p = add("upgrade-k8s", cmd_upgrade_k8s, "Upgrade Kubernetes")
-    p.add_argument("version", help="target version, e.g. 1.37.1")
+    p.add_argument("version", help="target version, e.g. 1.37.2")
     p.add_argument("--dry-run", action="store_true", help="show the upgrade plan")
 
     p = add("upgrade-talos", cmd_upgrade_talos, "Upgrade Talos")

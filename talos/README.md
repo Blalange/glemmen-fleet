@@ -1,6 +1,6 @@
 # Talos
 
-Talos Linux v1.14.2 configuration for the glemmen cluster (Kubernetes 1.37.0).
+Talos Linux v1.14.5 configuration for the glemmen cluster (Kubernetes 1.37.2).
 The `glemmen1xx` machines run control plane + etcd + worker roles; `glemmen80`,
 `glemmen60` and `glemmen50` are workers.
 

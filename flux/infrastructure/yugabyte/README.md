@@ -12,7 +12,7 @@ compatibility reasons.
 
 | Resource | Purpose |
 |---|---|
-| `release.yaml` | `yugabytedb/yugabyte` HelmRepository and HelmRelease (chart `2026.1.2`, image `2026.1.2.0-b137`) |
+| `release.yaml` | `yugabytedb/yugabyte` HelmRepository and HelmRelease (chart `2026.1.3`, image `2026.1.3.0-b100`) |
 | `values.yaml` | Three YB-Masters, three YB-TServers, RF3, storage and probe settings |
 | `init-job.yaml` | One-shot `yugabyte-init-v5` Job that creates the application roles/databases and sets the superuser password |
 | `pdb.yaml` | `policy/v1` PodDisruptionBudgets for masters and tservers |

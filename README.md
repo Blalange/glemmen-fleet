@@ -15,7 +15,7 @@ All ingress services using one of these domains are automatically available on t
 
 ## Infrastructure
 
-The cluster consists of eight physical Talos Linux nodes: `glemmen50`, `glemmen60`, `glemmen80` and `glemmen130`–`glemmen180`. They run Talos Linux `v1.14.4` with Kubernetes `v1.37.1`.
+The cluster consists of eight physical Talos Linux nodes: `glemmen50`, `glemmen60`, `glemmen80` and `glemmen130`–`glemmen180`. They run Talos Linux `v1.14.5` with Kubernetes `v1.37.2`.
 
 `glemmen130`, `glemmen150`, `glemmen160`, `glemmen170` and `glemmen180` are control-plane nodes running etcd. `glemmen50`, `glemmen60` and `glemmen80` are workers.
 

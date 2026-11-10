@@ -1,5 +1,5 @@
 # Dedicated Longhorn StorageClass for Energisjappa (same convention as the
-# snipe-it and colibri-model classes). One replica because each volume lives on
+# other app classes). One replica because each volume lives on
 # a single node anyway, Retain so deleting a PVC can never delete the only copy
 # of the database or the uploaded product images, and Immediate binding so the
 # volumes exist before the pods are scheduled.

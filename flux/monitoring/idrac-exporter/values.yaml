@@ -31,17 +31,24 @@ idracConfig: |
   port: 9348
   timeout: 30
   metrics:
-    system: true
-    sensors: true
-    power: true
-    storage: true
-    memory: true
-    network: true
-    processors: true
-    events: true
-  events:
-    severity: warning
-    maxage: 7d
+    system:
+      enabled: true
+    sensors:
+      enabled: true
+    power:
+      enabled: true
+    storage:
+      enabled: true
+    memory:
+      enabled: true
+    network:
+      enabled: true
+    processors:
+      enabled: true
+    events:
+      enabled: true
+      severity: warning
+      maxage: 7d
 
 resources:
   requests:

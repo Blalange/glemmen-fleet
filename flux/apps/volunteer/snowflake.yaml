@@ -36,7 +36,7 @@ spec:
           type: RuntimeDefault
       containers:
         - name: snowflake-proxy
-          image: docker.io/thetorproject/snowflake-proxy:v2.15.1
+          image: docker.io/thetorproject/snowflake-proxy:v2.15.3
           imagePullPolicy: IfNotPresent
           securityContext:
             allowPrivilegeEscalation: false

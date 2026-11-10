@@ -55,7 +55,7 @@ spec:
         # is refreshed in place. Also create the backup bucket directory up
         # front so Longhorn sees its target as soon as the pod is ready.
         - name: prepare-config
-          image: rclone/rclone:1.75.2
+          image: rclone/rclone:1.76
           workingDir: /tmp
           command:
             - /bin/sh
@@ -84,7 +84,7 @@ spec:
               mountPath: /tmp
       containers:
         - name: rclone
-          image: rclone/rclone:1.75.2
+          image: rclone/rclone:1.76
           workingDir: /tmp
           args:
             - serve

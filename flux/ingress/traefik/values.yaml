@@ -48,7 +48,6 @@ tlsStore:
       - secretName: glem-men-wildcard-tls
 
 service:
-  type: LoadBalancer
   annotations:
     # The IP the UniFi router forwards 80/443 (and future ports) to. The old
     # cluster's keepalived no longer exists, so this cluster owns .99.

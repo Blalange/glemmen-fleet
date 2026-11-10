@@ -237,10 +237,6 @@ config:
             icon: frigate.png
             href: https://frigate.glem.men
             description: Kameraovervåking og opptak
-        - Snipe-IT:
-            icon: snipe-it.png
-            href: https://snipe.glem.men
-            description: Inventar og lån av IT-utstyr
         - NetBox:
             icon: netbox.png
             href: https://netbox.glem.men

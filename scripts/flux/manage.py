@@ -35,7 +35,6 @@ APP_KUSTOMIZATIONS = (
     "homepage",
     "homepage-assets",
     "panel",
-    "snipe-it",
     "unifi",
     "volunteer",
     "warrior",

@@ -53,7 +53,7 @@ spec:
         # Tor refuses a DataDirectory owned by another user or readable by
         # the group/world. Longhorn mounts a fresh root-owned volume.
         - name: fix-data-permissions
-          image: docker.io/library/busybox:1.37
+          image: docker.io/library/busybox:1.38.0
           command:
             - sh
             - -c
@@ -79,7 +79,7 @@ spec:
               mountPath: /data
       containers:
         - name: tor
-          image: docker.io/dockurr/tor:0.4.9.14
+          image: docker.io/dockurr/tor:0.4.9.16
           imagePullPolicy: IfNotPresent
           # Bypass the image entrypoint so Tor runs directly as uid 101; the
           # entrypoint would run as root and chown the volume again.

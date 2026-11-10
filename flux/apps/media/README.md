@@ -53,7 +53,7 @@ All media applications use SQLite on their Longhorn config volumes:
 
 YugabyteDB was evaluated for Sonarr/Radarr/Prowlarr, but their
 `DatabaseVersionParser` calls `.NET Version.Parse()` on YSQL's
-`server_version` string (`15.12-YB-2026.1.2.0-b0`), which fails. They therefore
+`server_version` string (`15.12-YB-2026.1.3.0-b100`), which fails. They therefore
 fall back to the supported SQLite backend. `yugabyte-init-v5` no longer creates
 media roles or databases, and there is no `media-db` Secret.
 

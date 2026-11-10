@@ -29,9 +29,8 @@ spec:
     spec:
       containers:
         - name: reverse-proxy
-          # Keep the proxy in step with the NetBird management/client version
-          # (netbird.blalange.org currently runs 0.78.1).
-          image: netbirdio/reverse-proxy:0.78.1
+          # Keep the proxy in step with the NetBird management/client version.
+          image: netbirdio/reverse-proxy:0.82.1
           imagePullPolicy: IfNotPresent
           ports:
             - name: https

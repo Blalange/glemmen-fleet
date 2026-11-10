@@ -37,7 +37,7 @@ TALOS_SCRIPTS_DIR = SCRIPT_DIR / "talos"
 FLUX_SCRIPTS_DIR = SCRIPT_DIR / "flux"
 
 FACTORY_URL = os.environ.get("TALOS_FACTORY_URL", "https://factory.talos.dev").rstrip("/")
-DEFAULT_FLUX_VERSION = "v2.9.6"
+DEFAULT_FLUX_VERSION = "v2.10.0"
 DEFAULT_PV_MIGRATE_VERSION = "v3.7.0"
 
 # Behave like a normal Unix CLI when the consumer of our output goes away

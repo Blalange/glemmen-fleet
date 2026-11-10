@@ -195,8 +195,8 @@ spec:
             - name: scratch
               mountPath: /tmp
           # glemmen80: 12 threads, 188 GiB allocatable. The monitoring stack,
-          # Frigate, Snipe-IT and WebODM's db/broker already request ~5.6 CPU
-          # and 4.5 GiB, leaving ~6.3 CPU for this worker. The CPU limit still
+          # Frigate and WebODM's db/broker already request ~5.4 CPU and ~4 GiB,
+          # leaving ~6.6 CPU for this worker. The CPU limit still
           # lets NodeODX use 11 of the 12 cores when the other pods are idle.
           resources:
             requests:

@@ -73,11 +73,6 @@ metadata:
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: snipe-it
----
-apiVersion: v1
-kind: Namespace
-metadata:
   name: netbox
 ---
 apiVersion: v1
