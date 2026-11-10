@@ -179,6 +179,11 @@ grafana:
   # repository/the Secret, so the new database starts empty without losing
   # managed state.
   grafana.ini:
+    # YugabyteDB's YSQL does not support LOCK TABLE ... IN SHARE MODE, which
+    # Grafana 13's unified-storage migration uses by default. Grafana's own
+    # database lock still serializes the migrators.
+    unified_storage:
+      migration_locking: false
     database:
       type: postgres
       host: yb-tservers.yugabyte.svc.cluster.local:5433
