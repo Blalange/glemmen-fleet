@@ -126,7 +126,10 @@ spec:
               memory: 256Mi
       containers:
         - name: qbittorrent
-          image: lscr.io/linuxserver/qbittorrent:5.3.0_v2.1.2-ls486
+          # Do not bump to a libtorrent 2.1.x build yet: qBittorrent 5.3.0 with
+          # libtorrent 2.1.2 leaks memory while downloading and gets OOM-killed
+          # (qbittorrent/qBittorrent#25202). The 2.0.15 build is stable.
+          image: lscr.io/linuxserver/qbittorrent:5.3.0_v2.0.15-ls482
           imagePullPolicy: IfNotPresent
           env:
             - name: PUID
@@ -164,9 +167,9 @@ spec:
           resources:
             requests:
               cpu: 200m
-              memory: 2500Mi
+              memory: 512Mi
             limits:
-              memory: 4Gi
+              memory: 2Gi
       volumes:
         - name: config
           persistentVolumeClaim:

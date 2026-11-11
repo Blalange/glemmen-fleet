@@ -312,6 +312,11 @@ kubectl -n media logs -f job/resume-now
   `10.42.0.0/16` to the Web UI subnet whitelist.
 - qBittorrent says `The configured network interface is invalid`: use `tun0`,
   not `wg0`. Gluetun creates the WireGuard tunnel as `tun0` inside the pod.
+- qBittorrent keeps restarting with `OOMKilled`: do not use a build with
+  libtorrent 2.1.x. qBittorrent 5.3.0 with libtorrent 2.1.2 leaks memory while
+  downloading ([qbittorrent/qBittorrent#25202](https://github.com/qbittorrent/qBittorrent/issues/25202)).
+  The image is pinned to the 2.0.15 build; bump it only after the upstream
+  issue is fixed and verified.
 - Sonarr/Radarr/Prowlarr report `Version string portion was too short or too
   long` or `Failed to load system status`: they are connecting to YSQL. They
   must use SQLite; there is no `media-db` Secret. If an old Deployment still
