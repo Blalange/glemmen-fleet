@@ -102,4 +102,9 @@ spec:
           memory: 128Mi
         limits:
           cpu: 500m
-          memory: 1Gi
+          # 1Gi is too small for this server's volume count: it holds hundreds
+          # of 1Gi volumes and vacuum/compaction temporarily doubles the index
+          # memory. weed was OOM-killed at ~937MiB anonymous RSS while
+          # compacting, which is also what corrupted in-flight qBittorrent
+          # chunks. Keep headroom so compaction can finish.
+          memory: 4Gi
