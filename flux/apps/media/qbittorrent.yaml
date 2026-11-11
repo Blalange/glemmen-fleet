@@ -39,6 +39,10 @@ spec:
         app.kubernetes.io/instance: qbittorrent
         app.kubernetes.io/part-of: media
     spec:
+      # Keep BitTorrent traffic on the dedicated media node so its disk and
+      # network load do not disturb the other workers.
+      nodeSelector:
+        kubernetes.io/hostname: glemmen80
       terminationGracePeriodSeconds: 30
       securityContext:
         seccompProfile:
