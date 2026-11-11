@@ -9,7 +9,7 @@
 #            from; the bond MAC is not enough when the members differ.
 #
 # The iPXE environment exposes these as ${serial}, ${uuid} and ${mac}.
-# Unknown machines fall through to netboot.xyz.
+# Unknown machines get the fallback boot menu.
 nodes:
   glemmen130:
     serial: 6L51JZ3

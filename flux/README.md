@@ -74,9 +74,10 @@ drive that is not exposed as a boot device). It consists of:
 
 Known Talos nodes boot the installed Talos system if one exists, otherwise they
 enter maintenance mode with their static maintenance address. Unmatched
-machines fall back to the netboot.xyz menu. No machine configs or secrets are
-served; apply a config with `./scripts/talos/manage.py apply <node>` after a
-node boots in maintenance mode.
+machines get a fallback menu offering netboot.xyz or a generic Talos
+maintenance-mode boot. No machine configs or secrets are served; apply a config
+with `./scripts/talos/manage.py apply <node>` after a node boots in maintenance
+mode.
 
 UniFi must continue to be the only DHCP address server, but its own PXE
 boot filename/next-server options must be cleared so they do not conflict with

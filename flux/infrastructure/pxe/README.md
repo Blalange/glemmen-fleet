@@ -24,12 +24,23 @@ maintenance mode if the disk has no Talos installation.
    - installed Talos → the kernel boots the installed system;
    - no installation → Talos maintenance mode with the node's static
      maintenance address;
-   - unknown machine → `http://boot.netboot.xyz`.
-5. If an asset download fails, the same script falls back to netboot.xyz.
+   - unknown machine → the fallback boot menu.
+5. If loading an asset fails, the same fallback boot menu is shown.
 
 No `talos.config` URL is passed. Machine configs are applied manually with
 `./scripts/talos/manage.py apply <node>` after a node comes up in maintenance
 mode. This keeps the cluster PKI and machine tokens out of the boot server.
+
+## Fallback menu
+
+Machines that do not match a Talos profile, and known nodes whose assets fail
+to load, get an iPXE menu with two choices:
+
+- **Netboot** (key `n`, default after 30 seconds) — chainload
+  `http://boot.netboot.xyz`.
+- **Talos Linux** (key `t`) — boot the current `vmlinuz`/`initramfs.xz` with
+  DHCP, so the machine comes up in Talos maintenance mode. This is useful for
+  provisioning a machine that is not yet in `talos/pxe.yaml`.
 
 ## Endpoints
 
@@ -96,8 +107,7 @@ The generator renders [`boot.ipxe`](boot.ipxe) from that file and
 ```
 
 To add a node, add its serial/UUID/MACs, add `talos/nodes/<host>.yaml`, run the
-generator, and commit both files. Unknown machines automatically use
-netboot.xyz.
+generator, and commit both files. Unknown machines get the fallback menu.
 
 The generated `iseq` lines end with `||`: a failed iPXE comparison returns
 `-ERANGE`, and without the trailing `||` iPXE aborts the whole script with
@@ -129,8 +139,8 @@ talosctl -n <control-plane-ip> get links bond0.1
 ```
 
 The dnsmasq logs show the DHCP exchange and which boot file was served. A
-known node should request `boot.ipxe`; an unknown node should reach the
-netboot.xyz menu after the script's fallback.
+known node should request `boot.ipxe`; an unknown node should show the
+fallback menu, which defaults to netboot.xyz after 30 seconds.
 
 ### Troubleshooting "PXE: No media detected"
 

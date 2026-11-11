@@ -56,11 +56,12 @@ firmware cannot boot the installed disk directly, including Talos installations
 on PCIe NVMe drives. Known nodes are matched by SMBIOS serial/UUID/MAC and load
 the current Talos kernel/initramfs. If Talos is already installed, the network
 boot hands off to the installed system; otherwise the node comes up in
-maintenance mode. Unknown machines fall back to netboot.xyz. The setup ISOs
-remain the fallback when the cluster or network boot infrastructure is down.
-Most 1xx nodes use LACP LAG ports, so test PXE on one of them first; if the
-switch does not forward single-link firmware PXE traffic, use a non-LAG
-provisioning port or the ISO for that machine. glemmen170 is the exception:
+maintenance mode. Unknown machines get a fallback menu offering netboot.xyz or
+a generic Talos maintenance-mode boot. The setup ISOs remain the fallback when
+the cluster or network boot infrastructure is down. Most 1xx nodes use LACP
+LAG ports, so test PXE on one of them first; if the switch does not forward
+single-link firmware PXE traffic, use a non-LAG provisioning port or the ISO
+for that machine. glemmen170 is the exception:
 its system disk is an NVMe drive that the R250 firmware cannot boot, so it
 relies on the PXE chainloader for every boot. Its switch ports are therefore
 plain access ports and its bond uses `balance-alb`, because the firmware PXE

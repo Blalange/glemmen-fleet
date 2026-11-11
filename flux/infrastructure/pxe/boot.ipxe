@@ -3,8 +3,9 @@
 #
 # Known Talos nodes load the current kernel/initramfs from the asset
 # server and then boot their installed Talos system. A node without an
-# installation enters maintenance mode. Unknown machines chain
-# netboot.xyz.
+# installation enters maintenance mode. Unknown machines, and machines
+# whose assets fail to load, get a menu with netboot.xyz and a generic
+# Talos maintenance-mode boot.
 
 # glemmen130 (control-plane)
 iseq ${serial} 6L51JZ3 && goto talos_glemmen130 ||
@@ -122,58 +123,77 @@ iseq ${mac} B8:2A:72:D5:E2:AD && goto talos_glemmen80 ||
 iseq ${mac:hexhyp} b8-2a-72-d5-e2-ad && goto talos_glemmen80 ||
 iseq ${mac:hexhyp} B8-2A-72-D5-E2-AD && goto talos_glemmen80 ||
 
-# No known Talos node matched: fall back to the netboot.xyz menu.
-goto netboot
+# No known Talos node matched: show the fallback boot menu.
+goto fallback
 
 # glemmen130 (control-plane)
 :talos_glemmen130
-kernel http://192.168.6.99:8080/vmlinuz initrd=initramfs.xz talos.platform=metal console=tty0 slab_nomerge pti=on consoleblank=0 printk.devkmsg=on selinux=1 module.sig_enforce=1 proc_mem.force_override=never bond=bond0:eno8303,eno8403:mode=balance-alb,miimon=100 ip=192.168.6.130::192.168.6.1:255.255.255.0:glemmen130:bond0:off:192.168.6.1:1.1.1.1: || goto netboot
-initrd http://192.168.6.99:8080/initramfs.xz || goto netboot
-boot || goto netboot
+kernel http://192.168.6.99:8080/vmlinuz initrd=initramfs.xz talos.platform=metal console=tty0 slab_nomerge pti=on consoleblank=0 printk.devkmsg=on selinux=1 module.sig_enforce=1 proc_mem.force_override=never bond=bond0:eno8303,eno8403:mode=balance-alb,miimon=100 ip=192.168.6.130::192.168.6.1:255.255.255.0:glemmen130:bond0:off:192.168.6.1:1.1.1.1: || goto fallback
+initrd http://192.168.6.99:8080/initramfs.xz || goto fallback
+boot || goto fallback
 
 # glemmen150 (control-plane)
 :talos_glemmen150
-kernel http://192.168.6.99:8080/vmlinuz initrd=initramfs.xz talos.platform=metal console=tty0 slab_nomerge pti=on consoleblank=0 printk.devkmsg=on selinux=1 module.sig_enforce=1 proc_mem.force_override=never bond=bond0:eno8303,eno8403:mode=balance-alb,miimon=100 ip=192.168.6.150::192.168.6.1:255.255.255.0:glemmen150:bond0:off:192.168.6.1:1.1.1.1: || goto netboot
-initrd http://192.168.6.99:8080/initramfs.xz || goto netboot
-boot || goto netboot
+kernel http://192.168.6.99:8080/vmlinuz initrd=initramfs.xz talos.platform=metal console=tty0 slab_nomerge pti=on consoleblank=0 printk.devkmsg=on selinux=1 module.sig_enforce=1 proc_mem.force_override=never bond=bond0:eno8303,eno8403:mode=balance-alb,miimon=100 ip=192.168.6.150::192.168.6.1:255.255.255.0:glemmen150:bond0:off:192.168.6.1:1.1.1.1: || goto fallback
+initrd http://192.168.6.99:8080/initramfs.xz || goto fallback
+boot || goto fallback
 
 # glemmen160 (control-plane)
 :talos_glemmen160
-kernel http://192.168.6.99:8080/vmlinuz initrd=initramfs.xz talos.platform=metal console=tty0 slab_nomerge pti=on consoleblank=0 printk.devkmsg=on selinux=1 module.sig_enforce=1 proc_mem.force_override=never bond=bond0:eno8303,eno8403:mode=balance-alb,miimon=100 ip=192.168.6.160::192.168.6.1:255.255.255.0:glemmen160:bond0:off:192.168.6.1:1.1.1.1: || goto netboot
-initrd http://192.168.6.99:8080/initramfs.xz || goto netboot
-boot || goto netboot
+kernel http://192.168.6.99:8080/vmlinuz initrd=initramfs.xz talos.platform=metal console=tty0 slab_nomerge pti=on consoleblank=0 printk.devkmsg=on selinux=1 module.sig_enforce=1 proc_mem.force_override=never bond=bond0:eno8303,eno8403:mode=balance-alb,miimon=100 ip=192.168.6.160::192.168.6.1:255.255.255.0:glemmen160:bond0:off:192.168.6.1:1.1.1.1: || goto fallback
+initrd http://192.168.6.99:8080/initramfs.xz || goto fallback
+boot || goto fallback
 
 # glemmen170 (control-plane)
 :talos_glemmen170
-kernel http://192.168.6.99:8080/vmlinuz initrd=initramfs.xz talos.platform=metal console=tty0 slab_nomerge pti=on consoleblank=0 printk.devkmsg=on selinux=1 module.sig_enforce=1 proc_mem.force_override=never bond=bond0:eno8303,eno8403:mode=balance-alb,miimon=100 ip=192.168.6.170::192.168.6.1:255.255.255.0:glemmen170:bond0:off:192.168.6.1:1.1.1.1: || goto netboot
-initrd http://192.168.6.99:8080/initramfs.xz || goto netboot
-boot || goto netboot
+kernel http://192.168.6.99:8080/vmlinuz initrd=initramfs.xz talos.platform=metal console=tty0 slab_nomerge pti=on consoleblank=0 printk.devkmsg=on selinux=1 module.sig_enforce=1 proc_mem.force_override=never bond=bond0:eno8303,eno8403:mode=balance-alb,miimon=100 ip=192.168.6.170::192.168.6.1:255.255.255.0:glemmen170:bond0:off:192.168.6.1:1.1.1.1: || goto fallback
+initrd http://192.168.6.99:8080/initramfs.xz || goto fallback
+boot || goto fallback
 
 # glemmen180 (control-plane)
 :talos_glemmen180
-kernel http://192.168.6.99:8080/vmlinuz initrd=initramfs.xz talos.platform=metal console=tty0 slab_nomerge pti=on consoleblank=0 printk.devkmsg=on selinux=1 module.sig_enforce=1 proc_mem.force_override=never bond=bond0:eno8303,eno8403:mode=balance-alb,miimon=100 ip=192.168.6.180::192.168.6.1:255.255.255.0:glemmen180:bond0:off:192.168.6.1:1.1.1.1: || goto netboot
-initrd http://192.168.6.99:8080/initramfs.xz || goto netboot
-boot || goto netboot
+kernel http://192.168.6.99:8080/vmlinuz initrd=initramfs.xz talos.platform=metal console=tty0 slab_nomerge pti=on consoleblank=0 printk.devkmsg=on selinux=1 module.sig_enforce=1 proc_mem.force_override=never bond=bond0:eno8303,eno8403:mode=balance-alb,miimon=100 ip=192.168.6.180::192.168.6.1:255.255.255.0:glemmen180:bond0:off:192.168.6.1:1.1.1.1: || goto fallback
+initrd http://192.168.6.99:8080/initramfs.xz || goto fallback
+boot || goto fallback
 
 # glemmen50 (worker)
 :talos_glemmen50
-kernel http://192.168.6.99:8080/vmlinuz initrd=initramfs.xz talos.platform=metal console=tty0 slab_nomerge pti=on consoleblank=0 printk.devkmsg=on selinux=1 module.sig_enforce=1 proc_mem.force_override=never ip=192.168.6.50::192.168.6.1:255.255.255.0:glemmen50:enp11s0f0:off:192.168.6.1:1.1.1.1: || goto netboot
-initrd http://192.168.6.99:8080/initramfs.xz || goto netboot
-boot || goto netboot
+kernel http://192.168.6.99:8080/vmlinuz initrd=initramfs.xz talos.platform=metal console=tty0 slab_nomerge pti=on consoleblank=0 printk.devkmsg=on selinux=1 module.sig_enforce=1 proc_mem.force_override=never ip=192.168.6.50::192.168.6.1:255.255.255.0:glemmen50:enp11s0f0:off:192.168.6.1:1.1.1.1: || goto fallback
+initrd http://192.168.6.99:8080/initramfs.xz || goto fallback
+boot || goto fallback
 
 # glemmen60 (worker)
 :talos_glemmen60
-kernel http://192.168.6.99:8080/vmlinuz initrd=initramfs.xz talos.platform=metal console=tty0 slab_nomerge pti=on consoleblank=0 printk.devkmsg=on selinux=1 module.sig_enforce=1 proc_mem.force_override=never ip=192.168.6.60::192.168.6.1:255.255.255.0:glemmen60:eno1:off:192.168.6.1:1.1.1.1: || goto netboot
-initrd http://192.168.6.99:8080/initramfs.xz || goto netboot
-boot || goto netboot
+kernel http://192.168.6.99:8080/vmlinuz initrd=initramfs.xz talos.platform=metal console=tty0 slab_nomerge pti=on consoleblank=0 printk.devkmsg=on selinux=1 module.sig_enforce=1 proc_mem.force_override=never ip=192.168.6.60::192.168.6.1:255.255.255.0:glemmen60:eno1:off:192.168.6.1:1.1.1.1: || goto fallback
+initrd http://192.168.6.99:8080/initramfs.xz || goto fallback
+boot || goto fallback
 
 # glemmen80 (worker)
 :talos_glemmen80
-kernel http://192.168.6.99:8080/vmlinuz initrd=initramfs.xz talos.platform=metal console=tty0 slab_nomerge pti=on consoleblank=0 printk.devkmsg=on selinux=1 module.sig_enforce=1 proc_mem.force_override=never ip=192.168.6.80::192.168.6.1:255.255.255.0:glemmen80:enp4s0f0:off:192.168.6.1:1.1.1.1: || goto netboot
-initrd http://192.168.6.99:8080/initramfs.xz || goto netboot
-boot || goto netboot
+kernel http://192.168.6.99:8080/vmlinuz initrd=initramfs.xz talos.platform=metal console=tty0 slab_nomerge pti=on consoleblank=0 printk.devkmsg=on selinux=1 module.sig_enforce=1 proc_mem.force_override=never ip=192.168.6.80::192.168.6.1:255.255.255.0:glemmen80:enp4s0f0:off:192.168.6.1:1.1.1.1: || goto fallback
+initrd http://192.168.6.99:8080/initramfs.xz || goto fallback
+boot || goto fallback
+
+:fallback
+menu Glemmen fleet network boot
+item --gap -- ------------------------------------------------
+item --key n netboot Netboot (netboot.xyz)
+item --key t talos_generic Talos Linux (maintenance mode, DHCP)
+item --gap -- ------------------------------------------------
+choose --default netboot --timeout 30000 target && goto ${target}
+goto shell
 
 :netboot
 imgfree
-echo No Talos profile matched; chainloading netboot.xyz
+echo Chainloading netboot.xyz
 chain --autofree http://boot.netboot.xyz || shell
+
+:talos_generic
+kernel http://192.168.6.99:8080/vmlinuz initrd=initramfs.xz talos.platform=metal console=tty0 slab_nomerge pti=on consoleblank=0 printk.devkmsg=on selinux=1 module.sig_enforce=1 proc_mem.force_override=never || goto fallback
+initrd http://192.168.6.99:8080/initramfs.xz || goto fallback
+boot || goto fallback
+
+:shell
+echo Type 'exit' to return to the boot menu.
+shell
+goto fallback

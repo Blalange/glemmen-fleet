@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """Render the iPXE boot script used by the PXE chainloader.
 
-The script matches known Talos nodes by SMBIOS serial, UUID or MAC, boots the
-current Talos kernel/initramfs from the asset server and falls through to
-netboot.xyz for every other machine.
+The script matches known Talos nodes by SMBIOS serial, UUID or MAC and boots
+the current Talos kernel/initramfs from the asset server. Every other machine,
+and any boot that fails to load its assets, gets a fallback menu offering
+netboot.xyz or a generic Talos maintenance-mode boot.
 
 Usage:
   ./scripts/talos/gen-pxe.py            # write flux/infrastructure/pxe/boot.ipxe
@@ -137,8 +138,9 @@ def render() -> str:
         "#",
         "# Known Talos nodes load the current kernel/initramfs from the asset",
         "# server and then boot their installed Talos system. A node without an",
-        "# installation enters maintenance mode. Unknown machines chain",
-        "# netboot.xyz.",
+        "# installation enters maintenance mode. Unknown machines, and machines",
+        "# whose assets fail to load, get a menu with netboot.xyz and a generic",
+        "# Talos maintenance-mode boot.",
         "",
     ]
 
@@ -156,8 +158,8 @@ def render() -> str:
 
     lines.extend(
         [
-            "# No known Talos node matched: fall back to the netboot.xyz menu.",
-            "goto netboot",
+            "# No known Talos node matched: show the fallback boot menu.",
+            "goto fallback",
             "",
         ]
     )
@@ -171,20 +173,40 @@ def render() -> str:
                 f":talos_{name}",
                 (
                     f"kernel {asset_url}/vmlinuz {' '.join(arguments)} "
-                    "|| goto netboot"
+                    "|| goto fallback"
                 ),
-                f"initrd {asset_url}/initramfs.xz || goto netboot",
-                "boot || goto netboot",
+                f"initrd {asset_url}/initramfs.xz || goto fallback",
+                "boot || goto fallback",
                 "",
             ]
         )
 
+    generic_arguments = " ".join(BASE_KERNEL_ARGS)
     lines.extend(
         [
+            ":fallback",
+            "menu Glemmen fleet network boot",
+            "item --gap -- ------------------------------------------------",
+            "item --key n netboot Netboot (netboot.xyz)",
+            "item --key t talos_generic Talos Linux (maintenance mode, DHCP)",
+            "item --gap -- ------------------------------------------------",
+            "choose --default netboot --timeout 30000 target && goto ${target}",
+            "goto shell",
+            "",
             ":netboot",
             "imgfree",
-            "echo No Talos profile matched; chainloading netboot.xyz",
+            "echo Chainloading netboot.xyz",
             "chain --autofree http://boot.netboot.xyz || shell",
+            "",
+            ":talos_generic",
+            f"kernel {asset_url}/vmlinuz {generic_arguments} || goto fallback",
+            f"initrd {asset_url}/initramfs.xz || goto fallback",
+            "boot || goto fallback",
+            "",
+            ":shell",
+            "echo Type 'exit' to return to the boot menu.",
+            "shell",
+            "goto fallback",
             "",
         ]
     )
