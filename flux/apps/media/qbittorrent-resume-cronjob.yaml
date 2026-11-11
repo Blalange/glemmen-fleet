@@ -43,8 +43,10 @@ data:
     count="$(printf '%s' "${hashes}" | awk -F'|' '{print NF}')"
     echo "Resuming ${count} errored torrent(s): ${hashes}"
 
+    # qBittorrent 5.x renamed /torrents/resume to /torrents/start; the old
+    # endpoint returns 404 "Endpoint does not exist" on 5.3.0.
     qbit_curl -X POST --data-urlencode "hashes=${hashes}" \
-      "${qbit_url}/api/v2/torrents/resume"
+      "${qbit_url}/api/v2/torrents/start"
 ---
 apiVersion: batch/v1
 kind: CronJob
