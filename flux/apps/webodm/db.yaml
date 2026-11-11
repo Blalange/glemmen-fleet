@@ -57,6 +57,8 @@ spec:
                 find /var/lib/postgresql/data/pgdata -mindepth 1 -maxdepth 1 -exec mv -t /var/lib/postgresql/data {} +
                 rmdir /var/lib/postgresql/data/pgdata
               fi
+              # PostgreSQL refuses a data directory with group/world access.
+              chmod 700 /var/lib/postgresql/data
           volumeMounts:
             - name: data
               mountPath: /var/lib/postgresql/data
