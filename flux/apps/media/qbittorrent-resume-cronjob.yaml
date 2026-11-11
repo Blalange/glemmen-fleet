@@ -1,0 +1,109 @@
+# qBittorrent can leave a torrent in the `error` state after gluetun
+# reconnects or a tracker/disk error. The *arr apps will not retry it by
+# themselves, so resume errored torrents every 15 minutes.
+#
+# The job talks to the ClusterIP Service from a pod IP in 10.42.0.0/16, which is
+# in qBittorrent's Web UI authentication bypass subnet, so it needs no
+# credentials. Inbound port 8080 is allowed by gluetun's FIREWALL_INPUT_PORTS.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: qbittorrent-resume-errored-script
+  labels:
+    app.kubernetes.io/name: qbittorrent-resume-errored
+    app.kubernetes.io/instance: qbittorrent
+    app.kubernetes.io/part-of: media
+data:
+  resume-errored.sh: |
+    #!/bin/sh
+    set -eu
+
+    qbit_url="${QBITTORRENT_URL:?QBITTORRENT_URL is required}"
+
+    qbit_curl() {
+      curl -sS --fail-with-body --retry 3 --retry-connrefused --retry-delay 2 \
+        --connect-timeout 5 --max-time 20 \
+        -H "Referer: ${qbit_url}/" "$@"
+    }
+
+    # /torrents/info returns a compact JSON array. Hash is the only field with
+    # that name, so grep is enough here and the image does not need jq.
+    errored="$(qbit_curl "${qbit_url}/api/v2/torrents/info?filter=errored")"
+
+    hashes="$(printf '%s' "${errored}" \
+      | grep -o '"hash":"[a-fA-F0-9]*"' \
+      | cut -d'"' -f4 \
+      | paste -sd '|' -)"
+
+    if [ -z "${hashes}" ]; then
+      echo "No errored torrents"
+      exit 0
+    fi
+
+    count="$(printf '%s' "${hashes}" | awk -F'|' '{print NF}')"
+    echo "Resuming ${count} errored torrent(s): ${hashes}"
+
+    qbit_curl -X POST --data-urlencode "hashes=${hashes}" \
+      "${qbit_url}/api/v2/torrents/resume"
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: qbittorrent-resume-errored
+  labels:
+    app.kubernetes.io/name: qbittorrent-resume-errored
+    app.kubernetes.io/instance: qbittorrent
+    app.kubernetes.io/part-of: media
+spec:
+  schedule: "*/15 * * * *"
+  concurrencyPolicy: Forbid
+  startingDeadlineSeconds: 60
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      activeDeadlineSeconds: 120
+      template:
+        metadata:
+          labels:
+            app.kubernetes.io/name: qbittorrent-resume-errored
+            app.kubernetes.io/instance: qbittorrent
+            app.kubernetes.io/part-of: media
+        spec:
+          restartPolicy: Never
+          automountServiceAccountToken: false
+          securityContext:
+            seccompProfile:
+              type: RuntimeDefault
+          containers:
+            - name: resume-errored
+              image: docker.io/curlimages/curl:8.23.0
+              imagePullPolicy: IfNotPresent
+              command: ["/bin/sh", "/scripts/resume-errored.sh"]
+              env:
+                - name: QBITTORRENT_URL
+                  value: http://qbittorrent.media.svc.cluster.local:8080
+              securityContext:
+                runAsUser: 100
+                runAsGroup: 101
+                runAsNonRoot: true
+                readOnlyRootFilesystem: true
+                allowPrivilegeEscalation: false
+                capabilities:
+                  drop: ["ALL"]
+              resources:
+                requests:
+                  cpu: 10m
+                  memory: 16Mi
+                limits:
+                  memory: 64Mi
+              volumeMounts:
+                - name: script
+                  mountPath: /scripts
+                  readOnly: true
+          volumes:
+            - name: script
+              configMap:
+                name: qbittorrent-resume-errored-script
+                defaultMode: 0555

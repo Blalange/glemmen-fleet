@@ -19,5 +19,6 @@ resources:
   - seerr.yaml
   - flaresolverr.yaml
   - qbittorrent.yaml
+  - qbittorrent-resume-cronjob.yaml
   - authentik-outpost.yaml
   - ingress.yaml

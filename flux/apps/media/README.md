@@ -255,6 +255,22 @@ not Longhorn-managed at all, the Thanos bucket on the same servers is not
 backed up either. This is intentional: the media library is treated as
 re-downloadable and the long-term metrics are not duplicated off cluster.
 
+## Errored downloads
+
+qBittorrent can leave torrents in the `error` state after gluetun reconnects or
+a transient tracker/disk failure. The `qbittorrent-resume-errored` CronJob runs
+every 15 minutes, asks `/api/v2/torrents/info?filter=errored` for the torrent
+hashes and resumes them with `/api/v2/torrents/resume`. It reaches the
+ClusterIP Service from a pod IP in `10.42.0.0/16`, which is in qBittorrent's
+Web UI authentication bypass subnet, so it needs no credentials.
+
+To trigger it without waiting for the next run:
+
+```sh
+kubectl -n media create job --from=cronjob/qbittorrent-resume-errored resume-now
+kubectl -n media logs -f job/resume-now
+```
+
 ## First-run configuration
 
 1. **qBittorrent**: the template already configures `/data/downloads`,
