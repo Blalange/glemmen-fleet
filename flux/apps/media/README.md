@@ -200,6 +200,10 @@ production.
 
 ## SeaweedFS capacity and backups
 
+EC metadata failures (stale `.vif` stubs causing `different encode run` or
+`size mismatch` errors) are diagnosed and repaired using the runbook in
+[`flux/infrastructure/seaweedfs/README.md`](../../infrastructure/seaweedfs/README.md).
+
 The media PVC is 2500Gi. It is stored in a SeaweedFS cluster with four
 operator-managed volume servers, each with four 200Gi Longhorn disks
 (`volumeServerDiskCount: 4`), for 3.2TiB of Longhorn-backed raw capacity. A
@@ -260,9 +264,14 @@ re-downloadable and the long-term metrics are not duplicated off cluster.
 qBittorrent can leave torrents in the `error` state after gluetun reconnects or
 a transient tracker/disk failure. The `qbittorrent-resume-errored` CronJob runs
 every 15 minutes, asks `/api/v2/torrents/info?filter=errored` for the torrent
-hashes and resumes them with `/api/v2/torrents/resume`. It reaches the
+hashes and resumes them with `/api/v2/torrents/start`. It reaches the
 ClusterIP Service from a pod IP in `10.42.0.0/16`, which is in qBittorrent's
 Web UI authentication bypass subnet, so it needs no credentials.
+
+qBittorrent 5.x renamed the old `/api/v2/torrents/resume` endpoint to
+`/api/v2/torrents/start`; the old endpoint returns `404 Endpoint does not
+exist` on 5.3.0. The CronJob is pinned to the 5.x image, so it uses `start`.
+If the image is ever downgraded below 5.0, switch the script back to `resume`.
 
 To trigger it without waiting for the next run:
 
