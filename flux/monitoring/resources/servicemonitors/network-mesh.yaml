@@ -1,0 +1,31 @@
+# Scrapes the node-to-node network probe DaemonSet. The pods use hostNetwork,
+# so their pod IP is the node's InternalIP; the metrics endpoint listens on
+# 9101 on every node. The 'node' relabeling matches node-exporter and makes
+# per-probe metrics (up, mesh_probe_info, ...) easy to group by host.
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  name: network-mesh-probe
+  namespace: monitoring
+  labels:
+    app.kubernetes.io/name: network-mesh-probe
+spec:
+  namespaceSelector:
+    matchNames:
+      - monitoring
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: network-mesh-probe
+  podMetricsEndpoints:
+    - port: http
+      path: /metrics
+      interval: 30s
+      scrapeTimeout: 10s
+      # The probe's own metrics already carry a `node` label (the probe's
+      # NODE_NAME). Honour it instead of letting the target label below
+      # collide and turn it into `exported_node`; the values are identical.
+      honorLabels: true
+      relabelings:
+        - sourceLabels: [__meta_kubernetes_pod_node_name]
+          targetLabel: node
+          action: replace

@@ -1,0 +1,23 @@
+# Node-to-node network probe (host-network DaemonSet) and its ConfigMap/RBAC.
+#
+# Kept out of the `monitoring` group on purpose. The DaemonSet can never be
+# fully ready while a node is down, and `monitoring` uses wait: true; putting
+# the probe there would make every node outage fail the monitoring health
+# check. This Kustomization does not wait for workload readiness.
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: network-mesh
+  namespace: flux-system
+spec:
+  interval: 1h
+  retryInterval: 2m
+  path: ./flux/monitoring/network-mesh
+  prune: true
+  targetNamespace: monitoring
+  wait: false
+  dependsOn:
+    - name: infrastructure
+  sourceRef:
+    kind: GitRepository
+    name: flux-system

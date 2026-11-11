@@ -20,6 +20,7 @@ flux/
 │   ├── ingress.yaml            -> flux/ingress (Traefik, depends on certificates)
 │   ├── monitoring-pvc.yaml     -> kube-prometheus-stack/pvc (Grafana volume + SC)
 │   ├── monitoring.yaml         -> flux/monitoring (KPS, Thanos, smartctl, iDRAC, unpoller)
+│   ├── network-mesh.yaml       -> flux/monitoring/network-mesh (host-network probe, wait: false)
 │   ├── seaweedfs.yaml          -> flux/infrastructure/seaweedfs (S3 object store + CSI)
 │   ├── longhorn-resources.yaml -> flux/infrastructure/longhorn/resources (recurring jobs)
 │   ├── pxe.yaml                -> flux/infrastructure/pxe (proxyDHCP/TFTP + Talos boot assets)
@@ -27,7 +28,7 @@ flux/
 │   └── apps.yaml               -> flux/apps (application Kustomizations)
 ├── infrastructure/             namespaces, Longhorn, cert-manager, external-dns, MetalLB, metrics-server, descheduler, YugabyteDB, SeaweedFS operator, NFD, PXE chainloader
 ├── ingress/                    Traefik HelmRelease + values
-├── monitoring/                 kube-prometheus-stack, Thanos, smartctl-exporter, idrac-exporter, unpoller
+├── monitoring/                 kube-prometheus-stack, Thanos, smartctl-exporter, idrac-exporter, network-mesh, unpoller
 └── apps/                       Kustomization objects, Homepage, NetBox + inventory sync, media stack, Minecraft servers (Radar)
 ```
 

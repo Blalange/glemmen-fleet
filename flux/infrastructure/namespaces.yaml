@@ -5,7 +5,7 @@
 # Privileged:
 #   - longhorn-system: Longhorn's privileged daemonsets/installer
 #   - metallb-system:  the speaker needs NET_ADMIN/NET_RAW and friends
-#   - monitoring:      node-exporter (hostNetwork/hostPID) + smartctl-exporter
+#   - monitoring:      node-exporter (hostNetwork/hostPID), smartctl-exporter, network-mesh-probe
 #   - node-feature-discovery: nfd-worker mounts host paths (/sys, /proc, /lib)
 #   - colibri:         the hf-fuse sidecar needs a privileged FUSE mount
 #   - pxe:             the proxyDHCP/TFTP pod needs hostNetwork + NET_ADMIN

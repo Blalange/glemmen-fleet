@@ -1,7 +1,11 @@
 # Monitoring stack: kube-prometheus-stack (+ the StorageClass/static Grafana
 # PVC), Thanos for long-term metrics, smartctl-exporter, idrac-exporter, kepler
-# and unpoller. Dashboards, alert rules, ServiceMonitors and ScrapeConfigs live
-# in resources/ (applied after the CRDs exist).
+# and unpoller. Dashboards, alert rules, ServiceMonitors, PodMonitors and
+# ScrapeConfigs live in resources/ (applied after the CRDs exist).
+#
+# The node-to-node network probe is deliberately not part of this group: it is
+# applied by its own Flux Kustomization so that a down node, which leaves its
+# DaemonSet pod unready, cannot hold the monitoring health check hostage.
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:

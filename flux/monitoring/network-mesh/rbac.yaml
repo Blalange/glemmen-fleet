@@ -1,0 +1,36 @@
+# The probe needs to list cluster nodes to discover its peers. It only reads
+# the node objects (name, InternalIP and Ready condition); it does not watch
+# them, so get/list is enough.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: network-mesh-probe
+  namespace: monitoring
+  labels:
+    app.kubernetes.io/name: network-mesh-probe
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: network-mesh-probe
+  labels:
+    app.kubernetes.io/name: network-mesh-probe
+rules:
+  - apiGroups: [""]
+    resources: ["nodes"]
+    verbs: ["get", "list"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: network-mesh-probe
+  labels:
+    app.kubernetes.io/name: network-mesh-probe
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: network-mesh-probe
+subjects:
+  - kind: ServiceAccount
+    name: network-mesh-probe
+    namespace: monitoring
