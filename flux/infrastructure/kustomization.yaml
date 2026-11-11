@@ -13,7 +13,6 @@ resources:
   - metallb/
   - metrics-server/
   - descheduler/
-  - tuppr/
   - yugabyte/
   - seaweedfs-operator/
   - nfd/
