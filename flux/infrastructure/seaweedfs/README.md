@@ -192,3 +192,63 @@ work includes the EC source-volume cleanup/re-encode path
 [PR #9458](https://github.com/seaweedfs/seaweedfs/pull/9458)); re-check the
 behavior on each SeaweedFS upgrade. The repair is data-plane only, so it cannot
 be expressed in the Flux manifests in this directory.
+
+## Orphaned volume cleanup
+
+`orphan-cleanup.yaml` defines the suspended CronJob
+`seaweedfs-orphan-cleanup` and its script. It is manual only: the CronJob has
+`suspend: true`, so its schedule never fires. Trigger a run with:
+
+```sh
+name="seaweedfs-orphan-cleanup-$(date +%Y%m%d-%H%M%S)"
+kubectl -n seaweedfs create job --from=cronjob/seaweedfs-orphan-cleanup "$name"
+kubectl -n seaweedfs logs -f "job/$name"
+```
+
+A run does the following:
+
+1. Runs `volume.fsck` read-only over every volume and calculates the orphaned
+   bytes per volume. It keeps the `MAX_VOLUMES` (default 100) volumes with the
+   most orphaned bytes.
+2. Decodes each selected EC volume with `ec.decode` so the deletion phase can
+   operate on a regular volume.
+3. Runs `volume.fsck -reallyDeleteFromVolume` and `volume.vacuum` only on the
+   selected volumes.
+4. Runs `volume.deleteEmpty -apply -quietFor=24h` to remove empty volumes.
+5. Re-encodes the decoded volumes with `ec.encode` only when they are still at
+   least `EC_FULL_PERCENT` (default 95%) full after vacuum. Volumes below that
+   threshold stay regular so a later run can clean them again without decoding
+   the same volume twice.
+
+The scan uses `-cutoffTimeAgo=5h` so chunks whose filer metadata has not been
+committed yet are not mistaken for orphans. Deletion deliberately does not use
+`-forcePurging`: SeaweedFS only purges orphans that all online replicas agree
+on. The job holds the SeaweedFS admin lock while each `weed shell` phase runs,
+so other admin maintenance waits. If `volume.list` reports duplicate volume IDs
+in more than one collection, the run aborts before decoding or deleting because
+volume-ID operations would be ambiguous.
+
+Decoding selected EC volumes touches their shards. Review the EC `.vif` stub
+section above before the first production run; an all-stub volume should not be
+decoded until a canonical encode run exists. A failed decode is logged and that
+volume is left untouched.
+
+For a safe preview, set `DRY_RUN=true` on the CronJob and create the Job
+immediately, before Flux restores the manifest value:
+
+```sh
+kubectl -n seaweedfs set env cronjob/seaweedfs-orphan-cleanup DRY_RUN=true
+name="seaweedfs-orphan-cleanup-dryrun-$(date +%Y%m%d-%H%M%S)"
+kubectl -n seaweedfs create job --from=cronjob/seaweedfs-orphan-cleanup "$name"
+kubectl -n seaweedfs logs -f "job/$name"
+```
+
+The preview still performs the read-only scan but stops before decoding,
+deleting or vacuuming anything. The running Job keeps the values it was created
+with even after Flux reconciles the CronJob back to `DRY_RUN=false`.
+`MAX_VOLUMES=1` can be set the same way for a first small run.
+
+A run exits non-zero if a decode, purge, vacuum or re-encode fails. Volumes
+whose purge is skipped are excluded from re-encoding and are retried by a
+later run. The job uses the same `chrislusf/seaweedfs:4.53` image as the
+cluster; keep the tag in sync when upgrading SeaweedFS.

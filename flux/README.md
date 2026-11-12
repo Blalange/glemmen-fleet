@@ -286,6 +286,10 @@ The admin and worker metrics use the same `metricsPort: 9327` as the other
 components, so the operator creates ServiceMonitors for them as well. The
 SeaweedFS Grafana dashboard does not have dedicated admin/worker panels yet.
 
+Orphaned volume cleanup is a separate, manual-only suspended CronJob; see
+[`infrastructure/seaweedfs/README.md`](infrastructure/seaweedfs/README.md#orphaned-volume-cleanup)
+for the runbook.
+
 ## Media stack
 
 `apps/media` runs Jellyfin, Sonarr, Radarr, Prowlarr, Seerr, FlareSolverr and qBittorrent in

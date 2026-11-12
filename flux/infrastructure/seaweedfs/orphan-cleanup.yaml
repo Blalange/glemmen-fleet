@@ -1,0 +1,432 @@
+# Manual orphan cleanup for the SeaweedFS volume servers.
+#
+# The CronJob is suspended and its schedule never fires, so it only runs when
+# an operator creates a Job from it:
+#
+#   kubectl -n seaweedfs create job --from=cronjob/seaweedfs-orphan-cleanup \
+#     "seaweedfs-orphan-cleanup-$(date +%Y%m%d-%H%M%S)"
+#
+# A run scans every volume with volume.fsck, keeps the MAX_VOLUMES (100)
+# volumes with the most orphaned bytes, and runs deletion and vacuum only on
+# those. Selected EC volumes are decoded before deletion; after vacuum they are
+# re-encoded only when they are still at least EC_FULL_PERCENT (95%) full.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: seaweedfs-orphan-cleanup-script
+  labels:
+    app.kubernetes.io/name: seaweedfs-orphan-cleanup
+    app.kubernetes.io/instance: seaweedfs
+data:
+  cleanup.sh: |
+    #!/bin/sh
+    # SeaweedFS orphan cleanup. The read-only scan covers all volumes; the
+    # destructive phases cover only the selected top volumes.
+    set -eu
+
+    MASTER="${WEED_MASTER:?WEED_MASTER is required}"
+    FILER="${WEED_FILER:?WEED_FILER is required}"
+    MAX_VOLUMES="${MAX_VOLUMES:-100}"
+    FSCK_CUTOFF="${FSCK_CUTOFF:-5h}"
+    EC_FULL_PERCENT="${EC_FULL_PERCENT:-95}"
+    DELETE_EMPTY_QUIET="${DELETE_EMPTY_QUIET:-24h}"
+    DRY_RUN="${DRY_RUN:-false}"
+
+    WORK="/tmp/orphan-cleanup"
+    TMP="$WORK/tmp"
+
+    rm -rf "$WORK"
+    mkdir -p "$TMP"
+    : > "$WORK/decoded.txt"
+    : > "$WORK/purge-skipped.txt"
+
+    log() {
+      printf '%s %s\n' "$(date -u '+%Y-%m-%dT%H:%M:%SZ')" "$*"
+    }
+
+    weed_shell() {
+      weed shell -master="$MASTER" -filer="$FILER"
+    }
+
+    log_stderr() {
+      lse_file="$1"
+      if [ -s "$lse_file" ]; then
+        log "diagnostics from ${lse_file##*/}:"
+        sed 's/^/  /' "$lse_file"
+      fi
+    }
+
+    # Run the commands in CMDFILE in one weed shell session, wrapped in the
+    # cluster-wide admin lock. The unlock is written even when a command fails,
+    # so a failed command does not leave the lease behind.
+    run_locked() {
+      rl_out="$1"
+      rl_cmds="$2"
+      if [ ! -f "$rl_cmds" ]; then
+        log "missing command file $rl_cmds"
+        return 1
+      fi
+      if ! { printf 'lock\n'; cat "$rl_cmds"; printf 'unlock\n'; } \
+          | weed_shell >"$rl_out" 2>"$rl_out.err"; then
+        log "weed shell failed for ${rl_cmds##*/}; stderr:"
+        sed 's/^/  /' "$rl_out.err" >&2 || true
+        return 1
+      fi
+    }
+
+    log "Scanning all volumes for orphaned data (read-only)"
+    cat > "$WORK/fsck-scan.cmds" <<EOF
+    volume.fsck -cutoffTimeAgo="$FSCK_CUTOFF" -tempPath="$TMP"
+    EOF
+    if ! run_locked "$WORK/fsck-scan.out" "$WORK/fsck-scan.cmds"; then
+      log "Orphan scan failed; aborting before any destructive step"
+      exit 1
+    fi
+    log_stderr "$WORK/fsck-scan.out.err"
+
+    # One line per volume/replica, e.g.
+    #   dataNode:... volume:123 entries:10 orphan:2 20.00% 1048576B
+    # Replicas and EC shard holders report duplicate entries; the largest
+    # orphan size is the volume's score.
+    awk -F '\t' '
+      /^dataNode:/ && NF >= 6 {
+        split($2, vid, ":")
+        split($6, bytes, "B")
+        id = vid[2] + 0
+        size = bytes[1] + 0
+        if (id > 0 && (!(id in max) || size > max[id])) {
+          max[id] = size
+        }
+      }
+      END {
+        for (id in max) print max[id], id
+      }
+    ' "$WORK/fsck-scan.out" | sort -nr | head -n "$MAX_VOLUMES" > "$WORK/top.txt"
+
+    if [ -s "$WORK/top.txt" ]; then
+      log "Volumes with the most orphaned bytes (bytes, volume id):"
+      sed 's/^/  /' "$WORK/top.txt"
+    else
+      log "No orphaned data found"
+    fi
+
+    log "Reading volume topology"
+    cat > "$WORK/volume-list.cmds" <<EOF
+    volume.list -v 5
+    EOF
+    if ! run_locked "$WORK/volume-list.out" "$WORK/volume-list.cmds"; then
+      log "volume.list failed; aborting before any destructive step"
+      exit 1
+    fi
+
+    # Regular volume lines look like "volume Id:123, Size:...", EC lines like
+    # "ec volume id:123 collection:...".
+    sed -n \
+      -e 's/.*volume Id:\([0-9][0-9]*\),.*/\1/p' \
+      -e 's/.*ec volume id:\([0-9][0-9]*\).*/\1/p' \
+      "$WORK/volume-list.out" | sort -u > "$WORK/known.txt"
+    sed -n 's/.*ec volume id:\([0-9][0-9]*\).*/\1/p' \
+      "$WORK/volume-list.out" | sort -u > "$WORK/ec.txt"
+
+    # The scan can take a long time; drop IDs that disappeared meanwhile so a
+    # deleted volume does not abort the fsck delete batch later.
+    awk 'FILENAME == ARGV[1] { known[$1] = 1; next }
+         { id = $2; if (id in known) print }' \
+      "$WORK/known.txt" "$WORK/top.txt" > "$WORK/selected.txt"
+
+    top_count=$(wc -l < "$WORK/top.txt" | tr -d ' ')
+    selected_count=$(wc -l < "$WORK/selected.txt" | tr -d ' ')
+    if [ "$selected_count" -lt "$top_count" ]; then
+      log "Dropped $((top_count - selected_count)) volume(s) that disappeared from the topology"
+    fi
+
+    if [ "$DRY_RUN" = "true" ]; then
+      log "DRY_RUN=true; stopping after detection"
+      if [ -s "$WORK/selected.txt" ]; then
+        while IFS= read -r size id; do
+          log "  volume $id: $size orphaned bytes"
+        done < "$WORK/selected.txt"
+      fi
+      exit 0
+    fi
+
+    if grep -q 'exist in more than one collection' "$WORK/volume-list.out"; then
+      log "Duplicate volume IDs detected; aborting before any destructive step"
+      exit 1
+    fi
+
+    awk 'FILENAME == ARGV[1] { ec[$1] = 1; next }
+         { if ($2 in ec) print $2 }' \
+      "$WORK/ec.txt" "$WORK/selected.txt" > "$WORK/ec-selected.txt"
+    awk 'FILENAME == ARGV[1] { ec[$1] = 1; next }
+         { if (!($2 in ec)) print $2 }' \
+      "$WORK/ec.txt" "$WORK/selected.txt" > "$WORK/regular.txt"
+
+    failed=0
+    if [ -s "$WORK/ec-selected.txt" ]; then
+      log "Decoding selected EC volumes before deletion"
+      while IFS= read -r id; do
+        [ -n "$id" ] || continue
+        printf 'ec.decode -volumeId=%s\n' "$id" > "$WORK/ec-decode-$id.cmds"
+        if run_locked "$WORK/ec-decode-$id.out" "$WORK/ec-decode-$id.cmds"; then
+          printf '%s\n' "$id" >> "$WORK/decoded.txt"
+          log "Decoded EC volume $id"
+        else
+          log "Failed to decode EC volume $id; leaving it unchanged"
+          failed=1
+        fi
+      done < "$WORK/ec-selected.txt"
+    fi
+
+    cat "$WORK/regular.txt" "$WORK/decoded.txt" | sort -u > "$WORK/cleanup.txt"
+    cleanup_count=$(wc -l < "$WORK/cleanup.txt" | tr -d ' ')
+
+    if [ -s "$WORK/cleanup.txt" ]; then
+      # Decoding can take hours and an empty EC volume is removed without
+      # creating a regular volume. Refresh the topology so fsck does not abort
+      # the whole batch on an ID that no longer exists.
+      log "Refreshing volume topology before deletion"
+      if ! run_locked "$WORK/volume-list-predelete.out" "$WORK/volume-list.cmds"; then
+        log "Pre-deletion volume.list failed; aborting before any destructive step"
+        exit 1
+      fi
+      sed -n \
+        -e 's/.*volume Id:\([0-9][0-9]*\),.*/\1/p' \
+        -e 's/.*ec volume id:\([0-9][0-9]*\).*/\1/p' \
+        "$WORK/volume-list-predelete.out" | sort -u > "$WORK/known-predelete.txt"
+      awk 'FILENAME == ARGV[1] { known[$1] = 1; next }
+           { if ($1 in known) print }' \
+        "$WORK/known-predelete.txt" "$WORK/cleanup.txt" > "$WORK/cleanup-refreshed.txt"
+      mv "$WORK/cleanup-refreshed.txt" "$WORK/cleanup.txt"
+      dropped=$((cleanup_count - $(wc -l < "$WORK/cleanup.txt" | tr -d ' ')))
+      cleanup_count=$(wc -l < "$WORK/cleanup.txt" | tr -d ' ')
+      if [ "$dropped" -gt 0 ]; then
+        log "Dropped $dropped volume(s) that no longer exist before deletion"
+      fi
+
+      awk 'FILENAME == ARGV[1] { known[$1] = 1; next }
+           { if ($1 in known) print }' \
+        "$WORK/known-predelete.txt" "$WORK/decoded.txt" > "$WORK/decoded-refreshed.txt"
+      mv "$WORK/decoded-refreshed.txt" "$WORK/decoded.txt"
+    fi
+
+    if [ -s "$WORK/cleanup.txt" ]; then
+      cleanup_ids=$(awk '{ printf "%s%s", sep, $1; sep = "," }' "$WORK/cleanup.txt")
+      log "Applying deletion and vacuum to $cleanup_count volume(s)"
+
+      log "Deleting orphaned needles (volume.fsck -reallyDeleteFromVolume)"
+      cat > "$WORK/fsck-delete.cmds" <<EOF
+    volume.fsck -reallyDeleteFromVolume -volumeId="$cleanup_ids" -cutoffTimeAgo="$FSCK_CUTOFF" -tempPath="$TMP"
+    EOF
+      delete_ok=1
+      if ! run_locked "$WORK/fsck-delete.out" "$WORK/fsck-delete.cmds"; then
+        log "Orphan deletion command failed"
+        delete_ok=0
+        failed=1
+      fi
+
+      if grep -q 'refusing to apply -reallyDeleteFromVolume' "$WORK/fsck-delete.out"; then
+        log "SeaweedFS refused deletion because of unresolved chunk manifests"
+        delete_ok=0
+        failed=1
+      fi
+
+      sed -n 's/.*skip purging volume \([0-9][0-9]*\).*/\1/p' \
+        "$WORK/fsck-delete.out" > "$WORK/purge-skipped.txt"
+      sed -n 's/.*skip purging for Erasure Coded volume \([0-9][0-9]*\).*/\1/p' \
+        "$WORK/fsck-delete.out" >> "$WORK/purge-skipped.txt"
+      sort -u -o "$WORK/purge-skipped.txt" "$WORK/purge-skipped.txt"
+      if [ -s "$WORK/purge-skipped.txt" ]; then
+        log "Purge was skipped for volume(s):"
+        sed 's/^/  /' "$WORK/purge-skipped.txt"
+        failed=1
+      fi
+
+      log "Vacuuming the cleaned volumes (volume.vacuum)"
+      cat > "$WORK/vacuum.cmds" <<EOF
+    volume.vacuum -volumeId="$cleanup_ids" -garbageThreshold=0
+    EOF
+      vacuum_ok=1
+      if ! run_locked "$WORK/vacuum.out" "$WORK/vacuum.cmds"; then
+        log "Vacuum command failed"
+        vacuum_ok=0
+        failed=1
+      fi
+    else
+      delete_ok=0
+      vacuum_ok=0
+      log "No volumes selected for deletion/vacuum"
+    fi
+
+    log "Deleting empty volumes (volume.deleteEmpty)"
+    cat > "$WORK/delete-empty.cmds" <<EOF
+    volume.deleteEmpty -apply -quietFor="$DELETE_EMPTY_QUIET"
+    EOF
+    if ! run_locked "$WORK/delete-empty.out" "$WORK/delete-empty.cmds"; then
+      log "volume.deleteEmpty failed"
+      failed=1
+    else
+      log_stderr "$WORK/delete-empty.out.err"
+    fi
+
+    if [ -s "$WORK/decoded.txt" ]; then
+      if [ "$delete_ok" -eq 1 ] && [ "$vacuum_ok" -eq 1 ]; then
+        log "Checking whether decoded volumes are still at least $EC_FULL_PERCENT% full"
+        if ! run_locked "$WORK/volume-list-after.out" "$WORK/volume-list.cmds"; then
+          log "Post-cleanup volume.list failed; skipping re-encode"
+          failed=1
+        elif ! grep -q 'Topology volumeSizeLimit:' "$WORK/volume-list-after.out"; then
+          log "Could not read volumeSizeLimit from volume.list; skipping re-encode"
+          failed=1
+        else
+          awk 'FILENAME == ARGV[1] { skip[$1] = 1; next }
+               { if (!($1 in skip)) print $1 }' \
+            "$WORK/purge-skipped.txt" "$WORK/decoded.txt" \
+            | sort -u > "$WORK/reencode-candidates.txt"
+
+          awk -v full="$EC_FULL_PERCENT" '
+            FILENAME == ARGV[1] { candidate[$1] = 1; next }
+            /^Topology volumeSizeLimit:/ {
+              for (i = 1; i <= NF; i++) {
+                if ($i ~ /^volumeSizeLimit:/) {
+                  split($i, parts, ":")
+                  limit = parts[2] + 0
+                }
+              }
+            }
+            /volume Id:/ {
+              line = $0
+              if (!match(line, /Id:[0-9]+/)) next
+              id = substr(line, RSTART + 3, RLENGTH - 3) + 0
+              if (!(id in candidate)) next
+              if (!match(line, /Size:[0-9]+/)) next
+              size = substr(line, RSTART + 5, RLENGTH - 5) + 0
+              if (limit > 0 && size * 100 >= limit * 1024 * 1024 * full) print id
+            }
+          ' "$WORK/reencode-candidates.txt" "$WORK/volume-list-after.out" \
+            | sort -u > "$WORK/reencode.txt"
+
+          reencode_candidate_count=$(wc -l < "$WORK/reencode-candidates.txt" | tr -d ' ')
+          if [ "$reencode_candidate_count" -eq 0 ]; then
+            log "No decoded volumes are eligible for re-encode because their purge was skipped"
+          elif [ -s "$WORK/reencode.txt" ]; then
+            reencode_ids=$(awk '{ printf "%s%s", sep, $1; sep = "," }' "$WORK/reencode.txt")
+            reencode_count=$(wc -l < "$WORK/reencode.txt" | tr -d ' ')
+            log "Re-encoding $reencode_count decoded volume(s) that are at least $EC_FULL_PERCENT% full"
+            cat > "$WORK/ec-encode.cmds" <<EOF
+    ec.encode -volumeIds="$reencode_ids" -batchSize=10
+    EOF
+            if ! run_locked "$WORK/ec-encode.out" "$WORK/ec-encode.cmds"; then
+              log "EC re-encode failed"
+              failed=1
+            fi
+          else
+            log "No decoded volumes are at least $EC_FULL_PERCENT% full; leaving them as regular volumes"
+          fi
+        fi
+      else
+        log "Skipping re-encode because deletion or vacuum did not complete successfully"
+      fi
+    else
+      log "No decoded EC volumes remain for re-encode"
+    fi
+
+    if [ "$failed" -ne 0 ]; then
+      log "Cleanup finished with errors"
+      exit 1
+    fi
+    log "Cleanup finished successfully"
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: seaweedfs-orphan-cleanup
+  labels:
+    app.kubernetes.io/name: seaweedfs-orphan-cleanup
+    app.kubernetes.io/instance: seaweedfs
+spec:
+  # Manual only. The dummy schedule (February 31st) is kept so unsuspending
+  # the CronJob cannot accidentally start a periodic run.
+  suspend: true
+  schedule: "0 0 31 2 *"
+  concurrencyPolicy: Forbid
+  startingDeadlineSeconds: 300
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      # A failed run is retried manually after reading the logs; an automatic
+      # retry would repeat the expensive read-only scan.
+      backoffLimit: 0
+      activeDeadlineSeconds: 86400
+      template:
+        metadata:
+          labels:
+            app.kubernetes.io/name: seaweedfs-orphan-cleanup
+            app.kubernetes.io/instance: seaweedfs
+        spec:
+          restartPolicy: Never
+          automountServiceAccountToken: false
+          securityContext:
+            runAsUser: 1000
+            runAsGroup: 1000
+            runAsNonRoot: true
+            fsGroup: 1000
+            seccompProfile:
+              type: RuntimeDefault
+          containers:
+            - name: cleanup
+              # Keep this tag in sync with spec.image in seaweed.yaml.
+              image: chrislusf/seaweedfs:4.53
+              imagePullPolicy: IfNotPresent
+              command: ["/bin/sh", "/scripts/cleanup.sh"]
+              workingDir: /tmp
+              env:
+                - name: WEED_MASTER
+                  value: seaweedfs-master-0.seaweedfs-master-peer.seaweedfs:9333
+                - name: WEED_FILER
+                  value: seaweedfs-filer.seaweedfs:8888
+                - name: MAX_VOLUMES
+                  value: "100"
+                - name: FSCK_CUTOFF
+                  value: 5h
+                - name: EC_FULL_PERCENT
+                  value: "95"
+                - name: DELETE_EMPTY_QUIET
+                  value: 24h
+                - name: DRY_RUN
+                  value: "false"
+                - name: HOME
+                  value: /tmp
+                - name: TMPDIR
+                  value: /tmp
+              securityContext:
+                runAsUser: 1000
+                runAsGroup: 1000
+                runAsNonRoot: true
+                readOnlyRootFilesystem: true
+                allowPrivilegeEscalation: false
+                capabilities:
+                  drop: ["ALL"]
+              resources:
+                requests:
+                  cpu: 100m
+                  memory: 256Mi
+                  ephemeral-storage: 1Gi
+                limits:
+                  memory: 2Gi
+                  ephemeral-storage: 10Gi
+              volumeMounts:
+                - name: script
+                  mountPath: /scripts
+                  readOnly: true
+                - name: tmp
+                  mountPath: /tmp
+          volumes:
+            - name: script
+              configMap:
+                name: seaweedfs-orphan-cleanup-script
+                defaultMode: 0555
+            - name: tmp
+              emptyDir:
+                sizeLimit: 10Gi
