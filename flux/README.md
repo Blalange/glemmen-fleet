@@ -274,6 +274,14 @@ restarting the admin pod; the workers reconnect automatically:
 kubectl -n seaweedfs rollout restart statefulset/seaweedfs-admin
 ```
 
+The admin server persists maintenance-task state, its configuration and the
+session-signing keys on the 2Gi `seaweedfs-admin-data` PVC through `-dataDir`.
+The operator CRD has no `admin.persistence` field, so the `Seaweed` resource
+mounts the claim via the generic `volumes`/`volumeMounts` fields. The claim has
+no recurring-job selector and therefore stays in the Longhorn `default` group,
+which the daily backup includes. Without the PVC, `weed admin` wrote this state
+to the container's ephemeral working directory and lost it on every restart.
+
 The admin and worker metrics use the same `metricsPort: 9327` as the other
 components, so the operator creates ServiceMonitors for them as well. The
 SeaweedFS Grafana dashboard does not have dedicated admin/worker panels yet.

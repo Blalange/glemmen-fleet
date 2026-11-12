@@ -12,3 +12,21 @@ spec:
   resources:
     requests:
       storage: 2Gi
+---
+# State volume for the admin server. `weed admin` keeps maintenance-task state,
+# its configuration and the session-signing keys under -dataDir; without a
+# persistent mount those live in the pod's ephemeral filesystem and are lost on
+# restart. The admin runs as a single replica, so ReadWriteOnce is enough. No
+# recurring-job selector places it in the `default` Longhorn group, so the
+# daily backup keeps it (unlike the re-downloadable volume-server PVCs).
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: seaweedfs-admin-data
+spec:
+  storageClassName: seaweedfs
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 2Gi

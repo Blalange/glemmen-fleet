@@ -6,7 +6,7 @@
 # layer keeps two copies of each data volume (`replication: "001"` in csi.yaml),
 # so Longhorn stores only one replica. The data PVCs are excluded from the
 # Longhorn daily-backup job (see storageLabels below) because the media library
-# is re-downloadable. The 2Gi master PVC stays in the backup job.
+# is re-downloadable. The 2Gi master and admin PVCs stay in the backup job.
 #
 # A fifth volume server on glemmen60 writes directly to /var/mnt/hdd1 and is
 # managed by the official SeaweedFS chart in volume-glemmen60.yaml. It is not
@@ -46,11 +46,11 @@ spec:
       existingClaim: seaweedfs-master
     defaultReplication: "001"
     requests:
-      cpu: 50m
-      memory: 64Mi
+      cpu: 100m
+      memory: 256Mi
     limits:
       cpu: 200m
-      memory: 256Mi
+      memory: 1Gi
   volume:
     replicas: 4
     metricsPort: 9327
@@ -139,6 +139,20 @@ spec:
       enabled: true
       className: traefik
       host: seaweedfs.glem.men
+    # weed admin keeps maintenance-task state, its configuration and the
+    # session-signing keys under -dataDir. The flag defaults to the current
+    # directory, which is ephemeral inside the pod, so point it at a PVC.
+    # The CRD has no admin.persistence field; mount the claim through the
+    # generic component volume fields instead.
+    extraArgs:
+      - -dataDir=/var/lib/seaweedfs-admin
+    volumeMounts:
+      - name: admin-data
+        mountPath: /var/lib/seaweedfs-admin
+    volumes:
+      - name: admin-data
+        persistentVolumeClaim:
+          claimName: seaweedfs-admin-data
     requests:
       cpu: 100m
       memory: 128Mi
