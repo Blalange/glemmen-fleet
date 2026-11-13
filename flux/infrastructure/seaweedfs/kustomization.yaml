@@ -9,4 +9,6 @@ resources:
   - csi.yaml
   - bucket-thanos.yaml
   - s3-thanos.yaml
+  - bucket-loki.yaml
+  - s3-loki.yaml
   - orphan-cleanup.yaml

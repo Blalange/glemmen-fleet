@@ -1,0 +1,63 @@
+# S3 identity and key pair used by Loki's write/read/backend pods and the
+# compactor. The operator generates the key pair in the `loki-s3-credentials`
+# Secret; copy it into the `loki-s3` Secret in the monitoring namespace (see
+# flux/README.md).
+apiVersion: seaweed.seaweedfs.com/v1
+kind: S3Identity
+metadata:
+  name: loki
+spec:
+  seaweedRef:
+    name: seaweedfs
+  account:
+    displayName: Loki
+---
+apiVersion: seaweed.seaweedfs.com/v1
+kind: S3Credentials
+metadata:
+  name: loki
+spec:
+  seaweedRef:
+    name: seaweedfs
+  identityRef:
+    name: loki
+  secretRef:
+    name: loki-s3-credentials
+  reclaimPolicy: Retain
+---
+apiVersion: seaweed.seaweedfs.com/v1
+kind: S3Policy
+metadata:
+  name: loki
+spec:
+  seaweedRef:
+    name: seaweedfs
+  statements:
+    - effect: Allow
+      actions:
+        - s3:ListBucket
+        - s3:GetBucketLocation
+      resources:
+        - loki
+    - effect: Allow
+      actions:
+        - s3:GetObject
+        - s3:PutObject
+        - s3:DeleteObject
+        - s3:AbortMultipartUpload
+      resources:
+        - loki/*
+---
+apiVersion: seaweed.seaweedfs.com/v1
+kind: S3PolicyBinding
+metadata:
+  name: loki
+spec:
+  seaweedRef:
+    name: seaweedfs
+  policyRef:
+    name: loki
+  subjects:
+    - kind: S3Identity
+      name: loki
+  reclaimPolicy: Retain

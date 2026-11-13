@@ -1,13 +1,20 @@
 # SeaweedFS
 
-The cluster runs SeaweedFS 4.53 as the storage backend for the media library and
-the Thanos bucket. The four operator-managed volume servers use erasure coding
-(EC) 10+4, so every EC volume is split into 14 shards and needs at least 10
-shards to be readable.
+The cluster runs SeaweedFS 4.53 as the storage backend for the media library,
+the Thanos bucket and the Loki bucket. The four operator-managed volume servers
+use erasure coding (EC) 10+4, so every EC volume is split into 14 shards and
+needs at least 10 shards to be readable.
 
 This directory contains the operator manifests, the volume servers, the CSI
 driver and the storage classes. The media library is mounted through the
 `seaweedfs-media` StorageClass as a 2500Gi `ReadWriteMany` volume.
+
+The operator also manages the S3 buckets used by the observability stack:
+`thanos` for long-term metrics and `loki` for logs. Their key pairs are
+generated into the `thanos-s3-credentials` and `loki-s3-credentials` Secrets;
+copy them into the `monitoring` namespace as documented in
+[`../../README.md`](../../README.md#seaweedfs-object-storage) and
+[`../../README.md`](../../README.md#loki-and-log-collection).
 
 ## EC `.vif` stub metadata bug (November 2026)
 

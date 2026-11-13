@@ -1,0 +1,10 @@
+# The Loki log-storage bucket. The `loki` S3 identity in s3-loki.yaml writes
+# chunks and the TSDB index here; the monitoring namespace's `loki-s3` Secret
+# carries the generated key pair (see flux/README.md).
+apiVersion: seaweed.seaweedfs.com/v1
+kind: Bucket
+metadata:
+  name: loki
+spec:
+  clusterRef:
+    name: seaweedfs
