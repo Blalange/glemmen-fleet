@@ -1,15 +1,7 @@
-# Loki runs in SimpleScalable mode: two read, two write and two backend
-# replicas, plus two gateways. Chunks and the TSDB index live in the `loki`
-# bucket in SeaweedFS; the write StatefulSet keeps only its WAL on Longhorn.
-deploymentMode: SimpleScalable
-
-# Applied to the write/read/backend pods only (not the gateway, caches or
-# canary). The chart already runs Loki with -config.expand-env=true, so the
-# ${...} references below are expanded from the `loki-s3` Secret at runtime.
-defaults:
-  extraEnvFrom:
-    - secretRef:
-        name: loki-s3
+# Loki runs as a single binary (Monolithic) with one replica. Chunks and the
+# TSDB index live in the `loki` bucket in SeaweedFS; the local volume keeps
+# the WAL and query caches.
+deploymentMode: Monolithic
 
 loki:
   # Single-tenant cluster: Alloy and Grafana do not send an X-Scope-OrgID
@@ -18,9 +10,8 @@ loki:
   auth_enabled: false
 
   commonConfig:
-    # Two write replicas must both accept a write; keep the ring consistent
-    # with the replica count.
-    replication_factor: 2
+    # One Loki instance, one ring member.
+    replication_factor: 1
 
   schemaConfig:
     configs:
@@ -52,53 +43,49 @@ loki:
     retention_enabled: true
     delete_request_store: s3
 
+# The SimpleScalable targets are disabled; the single binary runs all Loki
+# components. The chart's validation still reads their replicas, so zero them.
 write:
-  replicas: 2
+  enabled: false
+  replicas: 0
+
+read:
+  enabled: false
+  replicas: 0
+
+backend:
+  enabled: false
+  replicas: 0
+
+singleBinary:
+  replicas: 1
+  # The rules sidecar is only needed for Loki ruler rules; the Prometheus
+  # alert rules live in monitoring/resources/alerts.
+  sidecar: false
+  # The single binary runs all Loki components. The chart adds
+  # -config.expand-env=true, so the S3 credentials are expanded from the
+  # `loki-s3` Secret at runtime.
+  extraEnvFrom:
+    - secretRef:
+        name: loki-s3
   persistence:
-    size: 10Gi
+    enabled: true
+    size: 20Gi
     storageClass: monitoring
   resources:
     requests:
       cpu: 250m
       memory: 1Gi
     limits:
-      cpu: 1
-      memory: 2Gi
-  # The chart's default maxUnavailable: 1 keeps one of the two replicas
-  # available during voluntary disruptions.
-  podDisruptionBudget:
-    enabled: true
-
-read:
-  replicas: 2
-  resources:
-    requests:
-      cpu: 100m
-      memory: 512Mi
-    limits:
-      cpu: 1
-      memory: 2Gi
-  # The chart's default maxUnavailable: 1 keeps one of the two replicas
-  # available during voluntary disruptions.
-  podDisruptionBudget:
-    enabled: true
-
-backend:
-  replicas: 2
-  resources:
-    requests:
-      cpu: 100m
-      memory: 512Mi
-    limits:
       cpu: 2
       memory: 4Gi
-  # The chart's default maxUnavailable: 1 keeps one of the two replicas
-  # available during voluntary disruptions.
+  # A one-replica workload cannot make progress during a voluntary drain if a
+  # PDB demands one available pod.
   podDisruptionBudget:
-    enabled: true
+    enabled: false
 
 gateway:
-  replicas: 2
+  replicas: 1
   # Alloy ships every pod log line to Loki; do not also log every successful
   # push/query request from the gateway.
   verboseLogging: false
@@ -110,8 +97,7 @@ gateway:
       cpu: 100m
       memory: 64Mi
   podDisruptionBudget:
-    enabled: true
-    minAvailable: 1
+    enabled: false
 
 # Keep the caches small; the object store is local and fast.
 chunksCache:
@@ -120,9 +106,7 @@ chunksCache:
 resultsCache:
   allocatedMemory: 512
 
-# A single canary Deployment is enough to test the write/read path. The chart
-# defaults to a DaemonSet; a DaemonSet pod on a down node would stay unready
-# and block this Kustomization's health check.
+# A single canary Deployment is enough to test the write/read path.
 lokiCanary:
   kind: Deployment
   podDisruptionBudget:
