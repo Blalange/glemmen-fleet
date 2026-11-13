@@ -17,6 +17,11 @@ alloy:
       valueFrom:
         fieldRef:
           fieldPath: spec.nodeName
+  # Talos writes its service and kernel logs under /var/log, and the
+  # kube-apiserver audit log under /var/log/audit/kube. The Alloy container
+  # runs as root, which is required for the 0600 audit files.
+  mounts:
+    varlog: true
   resources:
     requests:
       cpu: 100m
@@ -48,6 +53,10 @@ alloy:
           target_label  = "pod"
         }
         rule {
+          source_labels = ["__meta_kubernetes_pod_container_name"]
+          target_label  = "container"
+        }
+        rule {
           source_labels = ["__meta_kubernetes_pod_label_app_kubernetes_io_name"]
           target_label  = "app"
         }
@@ -64,6 +73,36 @@ alloy:
       loki.source.kubernetes "pods" {
         targets    = discovery.relabel.pods.output
         forward_to = [loki.write.local.receiver]
+      }
+
+      // Talos host logs and the kube-apiserver audit log are written to the
+      // host filesystem. Talos has no journald; its service logs (machined,
+      // apid, etcd, kubelet, containerd, kernel, ...) are /var/log/*.log.
+      local.file_match "host" {
+        path_targets = [
+          {
+            __path__ = "/var/log/*.log",
+            job      = "talos-host",
+            log_type = "talos",
+            node     = sys.env("NODE_NAME"),
+            cluster  = "glemmen",
+          },
+          {
+            __path__ = "/var/log/audit/kube/kube-apiserver.log",
+            job      = "kube-apiserver-audit",
+            log_type = "audit",
+            node     = sys.env("NODE_NAME"),
+            cluster  = "glemmen",
+          },
+        ]
+      }
+
+      loki.source.file "host" {
+        targets       = local.file_match.host.targets
+        forward_to    = [loki.write.local.receiver]
+        // Skip the historical contents of the current files; only new host
+        // and audit lines are ingested.
+        tail_from_end = true
       }
 
       loki.write "local" {
