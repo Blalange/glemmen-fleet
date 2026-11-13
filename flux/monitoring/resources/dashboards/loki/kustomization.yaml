@@ -1,0 +1,22 @@
+# Loki log dashboard, maintained locally instead of using the upstream
+# chart's "loki-logs" dashboard. The upstream dashboard assumes the Loki
+# mixin demo labels (app_instance and namespace = prod) and logfmt log lines,
+# which do not match this cluster. This copy uses the Alloy stream labels
+# (namespace, pod, container), Loki's detected_level metadata, and the
+# provisioned `loki` and `thanos` data sources.
+#
+# The chart's original dashboard is disabled in flux/logging/loki/values.yaml
+# so the two copies cannot race for the same Grafana UID.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: monitoring
+configMapGenerator:
+  - name: grafana-dashboard-loki-logs
+    files:
+      - loki-logs.json
+commonAnnotations:
+  grafana_folder: Loki
+generatorOptions:
+  disableNameSuffixHash: true
+  labels:
+    grafana_dashboard: "1"

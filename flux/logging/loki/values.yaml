@@ -131,6 +131,13 @@ monitoring:
       grafana_folder: Loki
     labels:
       grafana_dashboard: "1"
+    # The upstream dashboard hard-codes the Loki mixin demo values
+    # (app_instance and namespace = prod) and parses logfmt, so it is empty in
+    # this cluster. The local replacement lives in
+    # flux/monitoring/resources/dashboards/loki/ and uses the Alloy stream
+    # labels and the provisioned Loki/Thanos data sources.
+    loki-logs:
+      enabled: false
   rules:
     enabled: true
     labels:
