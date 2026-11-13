@@ -19,6 +19,9 @@ configMapGenerator:
   - name: grafana-dashboard-disk-health
     files:
       - disk-health.json
+  - name: grafana-dashboard-fleet-overview
+    files:
+      - fleet-overview.json
   - name: grafana-dashboard-flux-cluster
     files:
       - flux-cluster.json
