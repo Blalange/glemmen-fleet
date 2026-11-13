@@ -64,9 +64,10 @@ write:
     limits:
       cpu: 1
       memory: 2Gi
+  # The chart's default maxUnavailable: 1 keeps one of the two replicas
+  # available during voluntary disruptions.
   podDisruptionBudget:
     enabled: true
-    minAvailable: 1
 
 read:
   replicas: 2
@@ -77,9 +78,10 @@ read:
     limits:
       cpu: 1
       memory: 2Gi
+  # The chart's default maxUnavailable: 1 keeps one of the two replicas
+  # available during voluntary disruptions.
   podDisruptionBudget:
     enabled: true
-    minAvailable: 1
 
 backend:
   replicas: 2
@@ -90,9 +92,10 @@ backend:
     limits:
       cpu: 2
       memory: 4Gi
+  # The chart's default maxUnavailable: 1 keeps one of the two replicas
+  # available during voluntary disruptions.
   podDisruptionBudget:
     enabled: true
-    minAvailable: 1
 
 gateway:
   replicas: 2
