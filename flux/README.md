@@ -440,6 +440,10 @@ source, or use the "Loki / Logs" dashboard in the "Loki" folder. Useful queries:
 - `{log_type="talos", filename="/var/log/kernel.log"}` — kernel only
 - `{log_type="audit"}` — Kubernetes audit; add `| json` to query fields
 
+The API server audit log is high-volume because the Talos audit policy records
+most requests. Filter it by `verb` or `objectRef.resource` in Explore, or add a
+`loki.process` drop stage if the volume becomes a problem.
+
 Loki runs as a single binary with one replica. A restart briefly interrupts
 ingestion and queries; Alloy retries while Loki is unavailable. This is the
 deliberate non-HA logging setup.
