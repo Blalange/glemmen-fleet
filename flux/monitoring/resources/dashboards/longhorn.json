@@ -5052,7 +5052,6 @@
             "alertInstanceLabelFilter": "",
             "alertName": "Longhorn",
             "dashboardAlerts": false,
-            "datasource": "alertmanager",
             "groupBy": [],
             "groupMode": "default",
             "maxItems": 20,
