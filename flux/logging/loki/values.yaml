@@ -1,0 +1,150 @@
+# Loki runs in SimpleScalable mode: two read, two write and two backend
+# replicas, plus two gateways. Chunks and the TSDB index live in the `loki`
+# bucket in SeaweedFS; the write StatefulSet keeps only its WAL on Longhorn.
+deploymentMode: SimpleScalable
+
+# Applied to the write/read/backend pods only (not the gateway, caches or
+# canary). The chart already runs Loki with -config.expand-env=true, so the
+# ${...} references below are expanded from the `loki-s3` Secret at runtime.
+defaults:
+  extraEnvFrom:
+    - secretRef:
+        name: loki-s3
+
+loki:
+  # Single-tenant cluster: Alloy and Grafana do not send an X-Scope-OrgID
+  # header. Enabling multi-tenancy later would require setting that header on
+  # both the write path and the datasource.
+  auth_enabled: false
+
+  commonConfig:
+    # Two write replicas must both accept a write; keep the ring consistent
+    # with the replica count.
+    replication_factor: 2
+
+  schemaConfig:
+    configs:
+      - from: 2024-04-01
+        store: tsdb
+        object_store: s3
+        schema: v13
+        index:
+          prefix: loki_index_
+          period: 24h
+
+  storage:
+    type: s3
+    bucketNames:
+      chunks: loki
+      ruler: loki
+    s3:
+      endpoint: seaweedfs-s3.seaweedfs.svc.cluster.local:8333
+      region: us-east-1
+      s3ForcePathStyle: true
+      insecure: true
+      accessKeyId: ${LOKI_S3_ACCESS_KEY}
+      secretAccessKey: ${LOKI_S3_SECRET_KEY}
+
+  limits_config:
+    retention_period: 30d
+
+  compactor:
+    retention_enabled: true
+    delete_request_store: s3
+
+write:
+  replicas: 2
+  persistence:
+    size: 10Gi
+    storageClass: monitoring
+  resources:
+    requests:
+      cpu: 250m
+      memory: 1Gi
+    limits:
+      cpu: 1
+      memory: 2Gi
+  podDisruptionBudget:
+    enabled: true
+    minAvailable: 1
+
+read:
+  replicas: 2
+  resources:
+    requests:
+      cpu: 100m
+      memory: 512Mi
+    limits:
+      cpu: 1
+      memory: 2Gi
+  podDisruptionBudget:
+    enabled: true
+    minAvailable: 1
+
+backend:
+  replicas: 2
+  resources:
+    requests:
+      cpu: 100m
+      memory: 512Mi
+    limits:
+      cpu: 2
+      memory: 4Gi
+  podDisruptionBudget:
+    enabled: true
+    minAvailable: 1
+
+gateway:
+  replicas: 2
+  # Alloy ships every pod log line to Loki; do not also log every successful
+  # push/query request from the gateway.
+  verboseLogging: false
+  resources:
+    requests:
+      cpu: 10m
+      memory: 32Mi
+    limits:
+      cpu: 100m
+      memory: 64Mi
+  podDisruptionBudget:
+    enabled: true
+    minAvailable: 1
+
+# Keep the caches small; the object store is local and fast.
+chunksCache:
+  allocatedMemory: 2048
+
+resultsCache:
+  allocatedMemory: 512
+
+# A single canary Deployment is enough to test the write/read path. The chart
+# defaults to a DaemonSet; a DaemonSet pod on a down node would stay unready
+# and block this Kustomization's health check.
+lokiCanary:
+  kind: Deployment
+  podDisruptionBudget:
+    enabled: false
+  resources:
+    requests:
+      cpu: 10m
+      memory: 32Mi
+    limits:
+      cpu: 100m
+      memory: 64Mi
+
+monitoring:
+  serviceMonitor:
+    enabled: true
+    interval: 30s
+    labels:
+      release: kube-prometheus-stack
+  dashboards:
+    enabled: true
+    annotations:
+      grafana_folder: Loki
+    labels:
+      grafana_dashboard: "1"
+  rules:
+    enabled: true
+    labels:
+      release: kube-prometheus-stack

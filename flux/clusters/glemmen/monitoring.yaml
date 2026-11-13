@@ -8,8 +8,9 @@ spec:
   interval: 1h
   retryInterval: 2m
   # Grafana runs its schema migrations on the first rollout after switching
-  # from SQLite.
-  timeout: 30m
+  # from SQLite, and this rollout also starts the second Prometheus and
+  # Alertmanager replicas.
+  timeout: 45m
   path: ./flux/monitoring
   prune: true
   wait: true

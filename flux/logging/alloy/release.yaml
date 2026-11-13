@@ -1,0 +1,42 @@
+# Grafana Alloy runs as a DaemonSet and ships pod logs to Loki.
+#
+# The Alloy config is in values.yaml. It discovers pods through the Kubernetes
+# API, keeps only the pods on its own node, and writes to the Loki gateway.
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: HelmRepository
+metadata:
+  name: grafana
+spec:
+  interval: 1h
+  url: https://grafana.github.io/helm-charts
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: alloy
+spec:
+  interval: 1h
+  timeout: 15m
+  # The chart ships a ServiceMonitor, so the kube-prometheus-stack CRDs must
+  # exist first. Loki is the write target, so wait for it as well.
+  dependsOn:
+    - name: kube-prometheus-stack
+    - name: loki
+  # Alloy runs as a DaemonSet. A pod on a down node can never report ready, so
+  # waiting for the release would keep this Kustomization stuck until the node
+  # returns. The same trade-off is used for kube-prometheus-stack.
+  install:
+    disableWait: true
+  upgrade:
+    disableWait: true
+  chart:
+    spec:
+      chart: alloy
+      version: 1.15.0
+      sourceRef:
+        kind: HelmRepository
+        name: grafana
+  valuesFrom:
+    - kind: ConfigMap
+      name: alloy-values
+      valuesKey: values.yaml

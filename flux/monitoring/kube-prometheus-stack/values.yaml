@@ -3,12 +3,19 @@
 
 # Prometheus configuration
 prometheus:
+  # Two replicas run side by side for high availability. The operator gives
+  # each pod its own `prometheus_replica` external label, and Thanos Query
+  # deduplicates on that label (the chart default), so the duplicated samples
+  # do not double up in Grafana.
+  podDisruptionBudget:
+    enabled: true
+    minAvailable: 1
   prometheusSpec:
-    replicas: 1
+    replicas: 2
     # Prometheus is a StatefulSet: its updateStrategy only supports RollingUpdate
-    # or OnDelete (the CRD rejects Recreate). With one replica the old pod is
-    # terminated before the new one is created, so the RWO volume is never
-    # attached to two pods at once.
+    # or OnDelete (the CRD rejects Recreate). Each replica has its own RWO
+    # volumeClaimTemplate, so a rolling update never attaches one volume to two
+    # pods at once.
     # Scrape configuration. 30s halves ingestion while still matching the
     # Grafana/Thanos data source interval.
     scrapeInterval: 30s
@@ -17,6 +24,9 @@ prometheus:
     externalLabels:
       cluster: glemmen
 
+    # Keep the two replicas on different nodes; the chart renders the hard
+    # podAntiAffinity from this setting.
+    podAntiAffinity: hard
     # Prefer the control-plane/1xx nodes. This is a soft preference so
     # Prometheus can still move to a worker if the 1xx nodes are full.
     affinity:
@@ -171,6 +181,17 @@ grafana:
       secretKeyRef:
         name: grafana-db
         key: password
+    # Authentik OAuth2 client credentials. The `grafana-authentik` Secret is
+    # created by hand in the monitoring namespace (see ../../README.md); it is
+    # not in Git.
+    GF_AUTH_GENERIC_OAUTH_CLIENT_ID:
+      secretKeyRef:
+        name: grafana-authentik
+        key: client-id
+    GF_AUTH_GENERIC_OAUTH_CLIENT_SECRET:
+      secretKeyRef:
+        name: grafana-authentik
+        key: client-secret
 
   # Grafana's SQLite database is replaced by the three-node YugabyteDB (YSQL)
   # in the `yugabyte` namespace (flux/infrastructure/yugabyte). The role
@@ -190,15 +211,35 @@ grafana:
       name: grafana
       user: grafana
       ssl_mode: disable
-    # Let the Homepage dashboard at glem.men embed Grafana panels (the WAN
-    # traffic graph). Embedding needs allow_embedding, and anonymous Viewer
-    # access is what lets the panel render for visitors who are not logged in.
-    # Note: this makes all dashboards readable by anyone who can reach Grafana.
+    # All dashboards require a login. Anonymous access used to back the
+    # Homepage WAN iframe; that panel is now a normal link, so embedding is
+    # disabled as well.
+    server:
+      root_url: https://grafana.glem.men
     security:
-      allow_embedding: true
+      allow_embedding: false
+      cookie_secure: true
     auth.anonymous:
+      enabled: false
+    # Authentik is the only SSO provider. The login page still shows the local
+    # admin form, which is the break-glass path if Authentik is unavailable.
+    # The client ID and secret come from GF_AUTH_GENERIC_OAUTH_CLIENT_* above.
+    auth.generic_oauth:
       enabled: true
-      org_role: Viewer
+      name: Authentik
+      allow_sign_up: true
+      auto_login: false
+      scopes: openid profile email
+      auth_url: https://auth.blalange.org/application/o/authorize/
+      token_url: https://auth.blalange.org/application/o/token/
+      api_url: https://auth.blalange.org/application/o/userinfo/
+      login_attribute_path: preferred_username
+      email_attribute_path: email
+      name_attribute_path: name
+      groups_attribute_path: groups
+      # Members of the Authentik "Grafana Admins" group become Grafana org
+      # admins; everyone else gets read-only Viewer access.
+      role_attribute_path: "contains(groups[*], 'Grafana Admins') && 'Admin' || 'Viewer'"
 
   # Grafana's state lives in YugabyteDB; the local volume is only used for
   # plugins and generated files. An emptyDir lets both replicas run without a
@@ -227,7 +268,8 @@ grafana:
   # and the object-store blocks, so it serves both recent and long-term data.
   # It is the only Prometheus-compatible data source: the chart's built-in
   # Prometheus data source is disabled below and removed from Grafana's
-  # database with deleteDatasources.
+  # database with deleteDatasources. Loki is the log source behind the
+  # Loki/Alloy stack in ../../logging.
   additionalDataSources:
     - name: Thanos
       type: prometheus
@@ -238,6 +280,13 @@ grafana:
       jsonData:
         timeInterval: 30s
         prometheusType: Thanos
+    - name: Loki
+      type: loki
+      uid: loki
+      access: proxy
+      url: http://loki-gateway.monitoring.svc.cluster.local
+      jsonData:
+        maxLines: 1000
 
   # The built-in Prometheus data source is no longer provisioned. Delete it
   # from Grafana's database as well, since all dashboards query Thanos.
@@ -267,7 +316,12 @@ grafana:
 # Alertmanager configuration
 alertmanager:
   enabled: true
-  replicas: 1
+  # Two replicas gossip silences and notification state through the
+  # operator-managed headless service. Each replica keeps its own 3Gi PVC, so
+  # the two pods can run on different nodes without sharing a volume.
+  podDisruptionBudget:
+    enabled: true
+    minAvailable: 1
   # Alertmanager is the only alerting path. Prometheus evaluates the
   # PrometheusRule objects and sends firing alerts here; Grafana is only used
   # for dashboards and for displaying Alertmanager alerts.
@@ -339,6 +393,33 @@ alertmanager:
     serviceName: alertmanager-readonly-proxy
     servicePort: 80
   alertmanagerSpec:
+    # Keep the two replicas on different nodes; the chart renders the hard
+    # podAntiAffinity from this setting.
+    replicas: 2
+    podAntiAffinity: hard
+    # Prefer the control-plane/1xx nodes, but fall back to a worker when they
+    # are full.
+    affinity:
+      nodeAffinity:
+        preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            preference:
+              matchExpressions:
+                - key: kubernetes.io/hostname
+                  operator: In
+                  values:
+                    - glemmen130
+                    - glemmen150
+                    - glemmen160
+                    - glemmen170
+                    - glemmen180
+          - weight: 50
+            preference:
+              matchExpressions:
+                - key: kubernetes.io/hostname
+                  operator: In
+                  values:
+                    - glemmen80
     # Used for the "View in Alertmanager" links in notifications and for
     # generated URLs in the UI.
     externalUrl: https://alerts.glem.men

@@ -38,7 +38,9 @@ bucket:
   enabled: false
 
 query:
-  # Single-node cluster; a second replica would only add resource use.
+  # One Query replica is enough for this cluster; Prometheus and Alertmanager
+  # carry the HA requirement. Grafana dashboards lose the query path if this
+  # pod or its node fails.
   replicaCount: 1
   endpoints:
     # Created by prometheus.thanosService.enabled in kube-prometheus-stack.
@@ -106,6 +108,12 @@ storegateway:
 
 compactor:
   replicaCount: 1
+  # The two Prometheus replicas upload overlapping blocks with different
+  # `prometheus_replica` labels. Tell the compactor to treat that label as the
+  # replica identity so it deduplicates the blocks at rest as well as Thanos
+  # Query does at query time.
+  extraArgs:
+    - --deduplication.replica-label=prometheus_replica
   # Scratch space for the blocks the compactor rewrites.
   persistence:
     size: 20Gi

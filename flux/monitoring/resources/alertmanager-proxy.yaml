@@ -63,7 +63,9 @@ metadata:
     app.kubernetes.io/name: alertmanager-readonly-proxy
     app.kubernetes.io/part-of: kube-prometheus-stack
 spec:
-  replicas: 1
+  # Two replicas keep the alerts UI available when one proxy pod or node goes
+  # down. The proxy is stateless and only forwards GET/HEAD/OPTIONS.
+  replicas: 2
   strategy:
     type: RollingUpdate
     rollingUpdate:
@@ -78,6 +80,13 @@ spec:
         app.kubernetes.io/name: alertmanager-readonly-proxy
         app.kubernetes.io/part-of: kube-prometheus-stack
     spec:
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchLabels:
+                  app.kubernetes.io/name: alertmanager-readonly-proxy
+              topologyKey: kubernetes.io/hostname
       automountServiceAccountToken: false
       securityContext:
         runAsNonRoot: true

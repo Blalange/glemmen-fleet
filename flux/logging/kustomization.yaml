@@ -1,0 +1,13 @@
+# Log collection: Loki for storage/query and Alloy as the node agent.
+#
+# This is a separate Flux Kustomization from `monitoring` so that a log
+# pipeline problem cannot hold the core Prometheus/Alertmanager/Grafana health
+# check hostage. It depends on `monitoring` for the Prometheus Operator CRDs
+# (ServiceMonitor/PrometheusRule) and the Grafana sidecar that loads the Loki
+# dashboards.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: monitoring
+resources:
+  - loki/
+  - alloy/
