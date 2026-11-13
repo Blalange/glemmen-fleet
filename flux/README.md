@@ -414,7 +414,12 @@ kubectl -n monitoring create secret generic loki-s3 \
 
 Alloy runs as a DaemonSet in the same namespace and reads pod logs through the
 Kubernetes API, filtered to the node it runs on, so each log line is collected
-once. It writes to the `loki-gateway` Service. The Loki chart's ServiceMonitor,
+once. Pod logs carry a `container` label in addition to `namespace`, `pod`,
+`node` and `app`. Alloy also mounts the host `/var/log` read-only and collects
+Talos service/kernel logs with `log_type="talos"` and the kube-apiserver audit
+log with `log_type="audit"`. Talos has no journald; `/var/log/*.log` is the
+equivalent. `tail_from_end = true` skips the historical contents of the current
+files, so only new lines are ingested. The Loki chart's ServiceMonitor,
 recording rules and dashboards are enabled; the dashboards land in the "Loki"
 Grafana folder. Grafana has a Loki data source alongside Thanos.
 
@@ -425,6 +430,15 @@ Reconcile the separate logging Kustomization after monitoring and SeaweedFS:
 kubectl -n monitoring get pods -l app.kubernetes.io/name=loki
 kubectl -n monitoring get pods -l app.kubernetes.io/name=alloy
 ```
+
+View logs in Grafana at <https://grafana.glem.men/explore> with the `Loki` data
+source, or use the "Loki / Logs" dashboard in the "Loki" folder. Useful queries:
+
+- `{cluster="glemmen"}` — all pod logs
+- `{namespace="monitoring", container="loki"}` — one container
+- `{log_type="talos"}` — Talos host/service/kernel logs
+- `{log_type="talos", filename="/var/log/kernel.log"}` — kernel only
+- `{log_type="audit"}` — Kubernetes audit; add `| json` to query fields
 
 Loki runs as a single binary with one replica. A restart briefly interrupts
 ingestion and queries; Alloy retries while Loki is unavailable. This is the

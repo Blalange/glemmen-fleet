@@ -269,6 +269,10 @@ config:
             widget:
               type: prometheus
               url: http://kube-prometheus-stack-prometheus.monitoring.svc.cluster.local:9090
+        - Loki:
+            icon: grafana.png
+            href: https://grafana.glem.men/explore
+            description: Logger for podder, Talos-verter og Kubernetes audit
         - Longhorn:
             icon: longhorn.png
             href: https://grafana.glem.men/d/ozk-lh-mon/longhorn-monitoring-backups
