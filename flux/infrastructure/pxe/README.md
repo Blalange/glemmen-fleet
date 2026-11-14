@@ -13,8 +13,9 @@ maintenance mode if the disk has no Talos installation.
 
 1. UniFi DHCP leases an address. It must **not** provide PXE options.
 2. The `pxe-dnsmasq` pod answers the PXE options on the server VLAN
-   (`192.168.6.0/24`, `bond0`) and the UDM Default VLAN
-   (`192.168.50.0/24`, tagged VLAN 1 on `bond0.1`):
+   (`192.168.6.0/24`, `eno8303` on the 1xx nodes and `bond0` on older nodes)
+   and the UDM Default VLAN (`192.168.50.0/24`, tagged VLAN 1 on the legacy
+   `bond0.1` interface):
    - BIOS → `undionly.kpxe` over TFTP
    - UEFI → `ipxe.efi` over TFTP
 3. iPXE asks for DHCP again and is served the generated `boot.ipxe`.
@@ -67,17 +68,19 @@ On both the server network (`192.168.6.0/24`) and the Default network
 The dnsmasq pod uses proxyDHCP only: it does not allocate addresses, routers or
 DNS servers.
 
-The control-plane switch ports must carry the Default network as tagged VLAN 1
-in addition to the untagged server VLAN. Talos creates `bond0.1` for that VLAN
-and gets an address from UniFi with `ignoreRoutes: true`, so it does not install
-a competing default route. ProxyDHCP only needs an address on the subnet; it
-does not use that address as a gateway for the PXE clients.
+The 1xx switch ports carry the Default network as tagged VLAN 1 and the ECMP
+network as tagged VLAN 7, in addition to the untagged server VLAN. Talos creates
+`bond0.1` (a legacy name; on the converted nodes it is a VLAN subinterface of
+`eno8303`) for VLAN 1 and gets an address from UniFi with `ignoreRoutes: true`,
+so it does not install a competing default route. ProxyDHCP only needs an
+address on the subnet; it does not use that address as a gateway for the PXE
+clients.
 
 PXE clients on the Default network must also be able to reach the Talos asset
 server at `192.168.6.99:8080`; allow that inter-VLAN path on the UDM.
 
 Because `bond0.1` gives the control-plane nodes a directly connected route to
-the Default network, their `BondConfig` also keeps a lower-metric route for
+the Default network, their `LinkConfig` also keeps a lower-metric route for
 `192.168.50.0/24` via `192.168.6.1` (the UDM). Replies from the shared MetalLB
 VIP (`.99`) then return through the UDM, so hairpin NAT from the Default VLAN
 still works. Without that route the reply leaves directly via `bond0.1`, the
@@ -172,9 +175,10 @@ available to the firmware network stack. On Dell R630 also verify:
 
 ## Notes and limitations
 
-- The dnsmasq pod is pinned to control-plane nodes and expects `bond0`. If it
-  reschedules, it moves to another control plane; there is a short PXE outage
-  during the move.
+- The dnsmasq pod is pinned to control-plane nodes and uses `bind-dynamic`, so
+  it listens on whichever server-VLAN interface the node has (`eno8303` or
+  `bond0`). If it reschedules, it moves to another control plane; there is a
+  short PXE outage during the move.
 - The service is part of the cluster. If the cluster is down, neither the PXE
   server nor the asset server is available; keep the setup ISOs as
   disaster-recovery media.
@@ -185,15 +189,16 @@ available to the firmware network stack. On Dell R630 also verify:
   (this is already required for glemmen80).
 - glemmen60's Broadcom BCM5716 may not work with `undionly.kpxe`. If it fails,
   add a native-driver `ipxe.pxe` to the TFTP root and use it for BIOS clients.
-- Most 1xx nodes are cabled to LACP LAG ports. The firmware PXE phase runs
-  before Talos creates `bond0`, and the firmware PXE ROM does not implement
-  802.3ad. If the switch does not forward single-link PXE traffic on a LAG
-  member, use a non-LAG provisioning port for the initial boot or keep using
-  the setup ISO. Test one 1xx node before relying on PXE there.
+- All 1xx switch ports are independent access/trunk ports, not LAG members.
+  The firmware PXE phase uses `eno8303` before Talos starts; the second NIC and
+  the tagged VLANs are only used after the OS boots. If a firmware cannot reach
+  proxyDHCP on an independent port, use a provisioning port or the setup ISO.
+  Test one 1xx node before relying on PXE there.
 - glemmen170 must PXE-boot on every boot: its system disk is an NVMe drive the
-  R250 firmware cannot see. Its ports are therefore plain access ports and its
-  bond is `balance-alb`, so the firmware PXE phase can pass traffic. Do not
-  add those two ports to a UniFi LAG.
+  R250 firmware cannot see. Its ports use the same independent-link layout
+  (untagged server VLAN plus tagged VLAN 1 and VLAN 7), so the firmware PXE
+  phase can pass traffic on `eno8303`. Do not add those two ports to a UniFi
+  LAG.
 - The asset server always serves the current Talos version. Verify that a
   network-booted newer kernel still hands off correctly to an older installed
   Talos version before relying on it across upgrades.

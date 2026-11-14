@@ -18,6 +18,17 @@ addresses:
 routes:
     - gateway: 192.168.6.1
 ---
+# Tagged VLAN 7 on the 10G SFP+ link. The switch port (USW Pro 24 PoE port
+# 26) must carry VLAN 7 as a tagged network. This lets glemmen80 use both
+# 1 Gbit/s links of each 1xx node without a second physical link.
+apiVersion: v1alpha1
+kind: VLANConfig
+name: enp4s0f0.7
+parent: enp4s0f0
+vlanID: 7
+addresses:
+    - address: 192.168.7.80/24
+---
 # Install to the ST91000640NS (slot moved to sda); overrides the common install target.
 apiVersion: v1alpha1
 kind: UnattendedInstallConfig
@@ -53,5 +64,6 @@ apiVersion: v1alpha1
 kind: KubeNodeConfig
 labels:
     node.longhorn.io/create-default-disk: config
+    glem.men/ecmp-node: "true"
 annotations:
     node.longhorn.io/default-disks-config: '[{"name":"system","path":"/var/mnt/longhorn-system","allowScheduling":true,"storageReserved":300000000000},{"name":"hdd1","path":"/var/mnt/hdd1","allowScheduling":false,"evictionRequested":true,"storageReserved":0},{"name":"hdd2","path":"/var/mnt/hdd2","allowScheduling":false,"evictionRequested":true,"storageReserved":0}]'

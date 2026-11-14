@@ -1,12 +1,15 @@
 # Infrastructure building blocks, reconciled before anything else:
-# namespaces, Longhorn, cert-manager (chart), external-dns, MetalLB (chart),
-# metrics-server, descheduler, tuppr, YugabyteDB, the SeaweedFS operator and
-# Node Feature Discovery. CRs that need the charts' CRDs live in subdirectories
-# (resources/) applied by their own Kustomizations.
+# namespaces, Calico (operator + Installation), Longhorn, cert-manager (chart),
+# external-dns, MetalLB (chart), metrics-server, descheduler, tuppr,
+# YugabyteDB, the SeaweedFS operator and Node Feature Discovery. CRs that need
+# the charts' CRDs live in subdirectories (resources/) applied by their own
+# Kustomizations.
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:
   - namespaces.yaml
+  - calico/
+  - ecmp-route-agent/
   - longhorn/
   - cert-manager/
   - external-dns/

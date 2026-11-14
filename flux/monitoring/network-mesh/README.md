@@ -8,13 +8,16 @@ own network stack and targets the other nodes' `InternalIP` addresses on port
 Every five minutes each probe:
 
 - sends 4 ICMP echo requests to every peer (200 ms apart, 1 s timeout),
-- uploads 32 MiB of zeroes to every peer's `/upload` endpoint,
-- downloads 32 MiB of zeroes from every peer's `/download` endpoint.
+- uploads 32 MiB total over 8 parallel HTTP connections to every peer's
+  `/upload` endpoint,
+- downloads 32 MiB total over 8 parallel HTTP connections from every peer's
+  `/download` endpoint.
 
 The results are exposed on `/metrics` and scraped by the `network-mesh-probe`
 PodMonitor. The **Network Mesh** Grafana dashboard (`glemmen-network-mesh`)
 renders four source/destination matrices: ping RTT, packet loss, upload
-throughput and download throughput.
+throughput and download throughput. Each matrix has an `avg` and a `max` row
+per source, aggregated over the dashboard time range.
 
 ## Why host networking and HTTP transfers?
 
@@ -23,13 +26,16 @@ path rather than a pod overlay. Using HTTP for the throughput tests keeps the
 probe self-contained: the same process is both the test client and the test
 server, so no extra iperf3 image, port or orchestration is needed. The
 `/upload` handler reads and discards the body; `/download` streams zeroes
-without buffering the whole transfer.
+without buffering the whole transfer. Each transfer is split across
+`TRANSFER_FLOWS` parallel HTTP connections so multipath/ECMP links are
+exercised; the total payload stays at 32 MiB per direction.
 
-The 32 MiB payload takes roughly 0.3 s on a 1 Gbit/s link and 0.03 s on a
-10 Gbit/s link. Tests are phase-shifted across nodes so the whole mesh is not
-saturated at once. For `N` nodes a full cycle sends `N * (N - 1) * 2 * 32 MiB`;
-with the eight current nodes that is about 3.5 GiB every five minutes, or
-roughly 0.1 Gbit/s of aggregate average background traffic.
+The 32 MiB total payload is split across 8 parallel connections; the aggregate
+takes roughly 0.3 s on a 1 Gbit/s link and 0.03 s on a 10 Gbit/s link. Tests
+are phase-shifted across nodes so the whole mesh is not saturated at once. For
+`N` nodes a full cycle sends `N * (N - 1) * 2 * 32 MiB`; with the eight current
+nodes that is about 3.5 GiB every five minutes, or roughly 0.1 Gbit/s of
+aggregate average background traffic.
 
 ## Layout
 
@@ -58,7 +64,8 @@ The DaemonSet passes these environment variables:
 | `PING_COUNT` | `4` | ICMP echo requests per peer |
 | `PING_INTERVAL_MS` | `200` | Delay between ICMP requests |
 | `PING_TIMEOUT_SECONDS` | `1` | Per-request reply timeout |
-| `TRANSFER_BYTES` | `33554432` | Bytes per HTTP upload/download test |
+| `TRANSFER_BYTES` | `33554432` | Total bytes per HTTP upload/download test |
+| `TRANSFER_FLOWS` | `8` | Parallel HTTP connections per transfer |
 | `TRANSFER_TIMEOUT_SECONDS` | `15` | HTTP connect/read timeout |
 | `PORT` | `9101` | Metrics and transfer server port |
 
@@ -90,9 +97,10 @@ keeps the probe's value where both exist).
 | `mesh_ping_sent_packets` | source, destination | Echo requests sent |
 | `mesh_ping_received_packets` | source, destination | Echo replies received |
 | `mesh_ping_success` | source, destination | 1 when no packet was lost |
-| `mesh_transfer_mbps` | source, destination, direction | Measured throughput |
-| `mesh_transfer_bytes` | source, destination, direction | Bytes transferred |
+| `mesh_transfer_mbps` | source, destination, direction | Aggregate measured throughput |
+| `mesh_transfer_bytes` | source, destination, direction | Total bytes transferred |
 | `mesh_transfer_seconds` | source, destination, direction | Transfer duration |
+| `mesh_transfer_flows` | source, destination, direction | Parallel HTTP flows used |
 | `mesh_transfer_success` | source, destination, direction | 1 when the test completed |
 | `mesh_last_test_timestamp_seconds` | source, destination, test | Last test completion time |
 | `mesh_probe_info` | node, version | Static probe info |

@@ -6,15 +6,8 @@ kind: HostnameConfig
 hostname: glemmen160
 ---
 apiVersion: v1alpha1
-kind: BondConfig
-name: bond0
-links:
-  - eno8303
-  - eno8403
-bondMode: balance-alb
-miimon: 100
-updelay: 200
-downdelay: 200
+kind: LinkConfig
+name: eno8303
 up: true
 addresses:
   - address: 192.168.6.160/24
@@ -27,9 +20,46 @@ routes:
     metric: 50
 ---
 apiVersion: v1alpha1
+kind: LinkConfig
+name: eno8403
+up: true
+---
+# Second ECMP path. VLAN 7 ("Servere ECMP" in UniFi) is already tagged on the
+# server ports; the untagged server VLAN stays available for firmware PXE on
+# eno8403 as well.
+apiVersion: v1alpha1
+kind: VLANConfig
+name: eno8403.7
+parent: eno8403
+vlanID: 7
+addresses:
+  - address: 192.168.7.160/24
+---
+# Keep the legacy interface name so the PXE proxyDHCP pod keeps working.
+apiVersion: v1alpha1
+kind: VLANConfig
+name: bond0.1
+parent: eno8303
+vlanID: 1
+---
+apiVersion: v1alpha1
 kind: Layer2VIPConfig
 name: 192.168.6.98
-link: bond0
+link: eno8303
+---
+apiVersion: v1alpha1
+kind: SysctlConfig
+params:
+  net.ipv4.ip_forward: "1"
+  net.ipv4.fib_multipath_hash_policy: "1"
+  net.ipv4.fib_multipath_use_neigh: "1"
+  net.ipv4.conf.all.rp_filter: "0"
+  net.ipv4.conf.default.rp_filter: "0"
+  net.ipv4.conf.eno8303/rp_filter: "0"
+  net.ipv4.conf.eno8403/rp_filter: "0"
+  net.ipv4.conf.eno8403.7/rp_filter: "0"
+  net.ipv4.conf.all.accept_redirects: "0"
+  net.ipv4.conf.all.send_redirects: "0"
 ---
 apiVersion: v1alpha1
 kind: UnattendedInstallConfig
@@ -65,5 +95,6 @@ apiVersion: v1alpha1
 kind: KubeNodeConfig
 labels:
   node.longhorn.io/create-default-disk: config
+  glem.men/ecmp-node: "true"
 annotations:
   node.longhorn.io/default-disks-config: '[{"name":"system","path":"/var/mnt/longhorn-system","allowScheduling":true,"storageReserved":64000000000,"tags":["nvme", "fast"]},{"name":"cmr1","path":"/var/mnt/cmr1","allowScheduling":true,"storageReserved":0,"tags":["cmr"]},{"name":"smr1","path":"/var/mnt/smr1","allowScheduling":false,"storageReserved":0,"tags":["smr"]}]'

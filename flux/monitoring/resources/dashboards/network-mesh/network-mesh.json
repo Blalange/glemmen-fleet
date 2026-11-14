@@ -299,7 +299,7 @@
         "type": "prometheus",
         "uid": "thanos"
       },
-      "description": "Average ICMP round-trip time from the row node to the column node. The diagonal is blank because a node does not ping itself.",
+      "description": "Average and maximum ICMP RTT over the dashboard time range. Each source has an avg and a max row.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -396,21 +396,34 @@
             "uid": "thanos"
           },
           "editorMode": "code",
-          "expr": "mesh_ping_rtt_ms",
+          "expr": "label_join(label_replace(avg_over_time(mesh_ping_rtt_ms[$__range]), \"agg\", \"avg\", \"source\", \".*\"), \"row\", \" \", \"source\", \"agg\")",
           "format": "table",
           "instant": true,
           "legendFormat": "__auto",
           "range": false,
           "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "thanos"
+          },
+          "editorMode": "code",
+          "expr": "label_join(label_replace(max_over_time(mesh_ping_rtt_ms[$__range]), \"agg\", \"max\", \"source\", \".*\"), \"row\", \" \", \"source\", \"agg\")",
+          "format": "table",
+          "instant": true,
+          "legendFormat": "__auto",
+          "range": false,
+          "refId": "B"
         }
       ],
-      "title": "Ping RTT - average (ms)",
+      "title": "Ping RTT - avg / max (ms)",
       "transformations": [
         {
           "id": "groupingToMatrix",
           "options": {
             "columnField": "destination",
-            "rowField": "source",
+            "rowField": "row",
             "valueField": "Value"
           }
         },
@@ -421,7 +434,7 @@
               "Time": true
             },
             "renameByName": {
-              "source\\destination": "Source \\ Destination"
+              "row\\destination": "Source \\ Destination"
             }
           }
         },
@@ -445,7 +458,7 @@
         "type": "prometheus",
         "uid": "thanos"
       },
-      "description": "ICMP packet loss from the row node to the column node.",
+      "description": "Average and maximum ICMP packet loss over the dashboard time range. Each source has an avg and a max row.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -542,21 +555,34 @@
             "uid": "thanos"
           },
           "editorMode": "code",
-          "expr": "mesh_ping_loss_percent",
+          "expr": "label_join(label_replace(avg_over_time(mesh_ping_loss_percent[$__range]), \"agg\", \"avg\", \"source\", \".*\"), \"row\", \" \", \"source\", \"agg\")",
           "format": "table",
           "instant": true,
           "legendFormat": "__auto",
           "range": false,
           "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "thanos"
+          },
+          "editorMode": "code",
+          "expr": "label_join(label_replace(max_over_time(mesh_ping_loss_percent[$__range]), \"agg\", \"max\", \"source\", \".*\"), \"row\", \" \", \"source\", \"agg\")",
+          "format": "table",
+          "instant": true,
+          "legendFormat": "__auto",
+          "range": false,
+          "refId": "B"
         }
       ],
-      "title": "Packet loss (%)",
+      "title": "Packet loss - avg / max (%)",
       "transformations": [
         {
           "id": "groupingToMatrix",
           "options": {
             "columnField": "destination",
-            "rowField": "source",
+            "rowField": "row",
             "valueField": "Value"
           }
         },
@@ -567,7 +593,7 @@
               "Time": true
             },
             "renameByName": {
-              "source\\destination": "Source \\ Destination"
+              "row\\destination": "Source \\ Destination"
             }
           }
         },
@@ -591,7 +617,7 @@
         "type": "prometheus",
         "uid": "thanos"
       },
-      "description": "HTTP upload throughput from the row node to the column node. Each test sends 32 MiB.",
+      "description": "Average and maximum aggregate HTTP upload throughput over the dashboard time range, using parallel flows. Each source has an avg and a max row.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -688,21 +714,34 @@
             "uid": "thanos"
           },
           "editorMode": "code",
-          "expr": "mesh_transfer_mbps{direction=\"upload\"}",
+          "expr": "label_join(label_replace(avg_over_time(mesh_transfer_mbps{direction=\"upload\"}[$__range]), \"agg\", \"avg\", \"source\", \".*\"), \"row\", \" \", \"source\", \"agg\")",
           "format": "table",
           "instant": true,
           "legendFormat": "__auto",
           "range": false,
           "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "thanos"
+          },
+          "editorMode": "code",
+          "expr": "label_join(label_replace(max_over_time(mesh_transfer_mbps{direction=\"upload\"}[$__range]), \"agg\", \"max\", \"source\", \".*\"), \"row\", \" \", \"source\", \"agg\")",
+          "format": "table",
+          "instant": true,
+          "legendFormat": "__auto",
+          "range": false,
+          "refId": "B"
         }
       ],
-      "title": "Upload throughput (Mbit/s)",
+      "title": "Upload throughput - avg / max (Mbit/s)",
       "transformations": [
         {
           "id": "groupingToMatrix",
           "options": {
             "columnField": "destination",
-            "rowField": "source",
+            "rowField": "row",
             "valueField": "Value"
           }
         },
@@ -713,7 +752,7 @@
               "Time": true
             },
             "renameByName": {
-              "source\\destination": "Source \\ Destination"
+              "row\\destination": "Source \\ Destination"
             }
           }
         },
@@ -737,7 +776,7 @@
         "type": "prometheus",
         "uid": "thanos"
       },
-      "description": "HTTP download throughput from the column node to the row node. Each test receives 32 MiB.",
+      "description": "Average and maximum aggregate HTTP download throughput over the dashboard time range, using parallel flows. Each source has an avg and a max row.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -834,21 +873,34 @@
             "uid": "thanos"
           },
           "editorMode": "code",
-          "expr": "mesh_transfer_mbps{direction=\"download\"}",
+          "expr": "label_join(label_replace(avg_over_time(mesh_transfer_mbps{direction=\"download\"}[$__range]), \"agg\", \"avg\", \"source\", \".*\"), \"row\", \" \", \"source\", \"agg\")",
           "format": "table",
           "instant": true,
           "legendFormat": "__auto",
           "range": false,
           "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "thanos"
+          },
+          "editorMode": "code",
+          "expr": "label_join(label_replace(max_over_time(mesh_transfer_mbps{direction=\"download\"}[$__range]), \"agg\", \"max\", \"source\", \".*\"), \"row\", \" \", \"source\", \"agg\")",
+          "format": "table",
+          "instant": true,
+          "legendFormat": "__auto",
+          "range": false,
+          "refId": "B"
         }
       ],
-      "title": "Download throughput (Mbit/s)",
+      "title": "Download throughput - avg / max (Mbit/s)",
       "transformations": [
         {
           "id": "groupingToMatrix",
           "options": {
             "columnField": "destination",
-            "rowField": "source",
+            "rowField": "row",
             "valueField": "Value"
           }
         },
@@ -859,7 +911,7 @@
               "Time": true
             },
             "renameByName": {
-              "source\\destination": "Source \\ Destination"
+              "row\\destination": "Source \\ Destination"
             }
           }
         },
@@ -892,7 +944,7 @@
           "showLineNumbers": false,
           "showMiniMap": false
         },
-        "content": "## Node-to-node network tests\n\nOne `network-mesh-probe` pod runs on every node with host networking. Every\nfive minutes each probe tests every other node:\n\n- **Ping** - 4 ICMP echo requests, 200 ms apart. The table shows the average\n  RTT and packet loss.\n- **Upload** - sends a 32 MiB zero-filled body to the peer's `/upload`\n  endpoint and measures HTTP throughput.\n- **Download** - reads 32 MiB from the peer's `/download` endpoint and\n  measures HTTP throughput.\n\nRows are the node running the test (`source`), columns are the peer\n(`destination`). Upload tests send data from row to column; download tests\nsend data from column to row. The tests are phase-shifted across nodes, so the\nfull mesh is not saturated at once. The dashboard uses the latest instant-query\nvalues; the time picker only affects the surrounding context.\n\nMetrics are scraped from `<node-ip>:9101/metrics` on every node by the\n`network-mesh-probe` PodMonitor. Long-term history is available through the\nThanos data source.\n"
+        "content": "## Node-to-node network tests\n\nOne `network-mesh-probe` pod runs on every node with host networking. Every five minutes each probe tests every other node:\n\n- **Ping** - 4 ICMP echo requests, 200 ms apart. The table shows the average and maximum RTT and packet loss over the selected range.\n- **Upload** - sends 32 MiB total across 8 parallel HTTP connections to the peer's `/upload` endpoint and measures aggregate HTTP throughput.\n- **Download** - reads 32 MiB total across 8 parallel HTTP connections from the peer's `/download` endpoint and measures aggregate HTTP throughput.\n\nRows are the node running the test (`source`), columns are the peer (`destination`). Each source has an `avg` and a `max` row; the values are computed over the dashboard time range. Upload tests send data from row to column; download tests send data from column to row. The tests are phase-shifted across nodes, so the full mesh is not saturated at once.\n\nMetrics are scraped from `<node-ip>:9101/metrics` on every node by the `network-mesh-probe` PodMonitor. Long-term history is available through the Thanos data source.\n"
       },
       "title": "How this works",
       "type": "text"

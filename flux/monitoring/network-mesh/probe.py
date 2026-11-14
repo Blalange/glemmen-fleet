@@ -24,6 +24,7 @@ Only the Python standard library is used, so the container image can be
 python:3.13-slim with the script mounted from a ConfigMap.
 """
 
+import concurrent.futures
 import http.client
 import json
 import math
@@ -40,7 +41,7 @@ import urllib.parse
 import urllib.request
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
-VERSION = "1.0.0"
+VERSION = "1.1.0"
 
 SA_DIR = "/var/run/secrets/kubernetes.io/serviceaccount"
 SA_TOKEN = os.path.join(SA_DIR, "token")
@@ -79,6 +80,7 @@ PING_INTERVAL = max(0.05, env_float("PING_INTERVAL_MS", 200.0) / 1000.0)
 PING_TIMEOUT = max(0.1, env_float("PING_TIMEOUT_SECONDS", 1.0))
 TRANSFER_BYTES = max(1024, env_int("TRANSFER_BYTES", 32 * 1024 * 1024))
 TRANSFER_TIMEOUT = max(1.0, env_float("TRANSFER_TIMEOUT_SECONDS", 15.0))
+TRANSFER_FLOWS = max(1, min(64, env_int("TRANSFER_FLOWS", 8)))
 MAX_TRANSFER_BYTES = 1024 * 1024 * 1024
 STATIC_PEERS_RAW = os.environ.get("STATIC_PEERS", "")
 
@@ -275,9 +277,8 @@ class ZeroStream(object):
         return self.size
 
 
-def transfer(host, port, direction, size=TRANSFER_BYTES,
-             timeout=TRANSFER_TIMEOUT):
-    """Run one HTTP upload or download and return its throughput."""
+def _transfer_one(host, port, direction, size, timeout):
+    """Run one HTTP upload or download flow."""
     result = {
         "direction": direction,
         "bytes": size,
@@ -327,6 +328,51 @@ def transfer(host, port, direction, size=TRANSFER_BYTES,
     result["seconds"] = elapsed
     if result["success"]:
         result["mbps"] = (result["bytes"] * 8.0) / (elapsed * 1_000_000.0)
+    return result
+
+
+def transfer(host, port, direction, size=TRANSFER_BYTES,
+             timeout=TRANSFER_TIMEOUT):
+    """Run parallel HTTP flows and return aggregate throughput."""
+    flows = max(1, min(TRANSFER_FLOWS, size)) if size > 0 else 1
+    base, extra = divmod(size, flows)
+    chunks = [base + (1 if index < extra else 0) for index in range(flows)]
+
+    started = time.perf_counter()
+    results = []
+    try:
+        with concurrent.futures.ThreadPoolExecutor(
+                max_workers=flows) as pool:
+            futures = [
+                pool.submit(_transfer_one, host, port, direction, chunk,
+                            timeout)
+                for chunk in chunks
+            ]
+            for future in futures:
+                results.append(future.result())
+    except Exception as exc:
+        results.append({"bytes": 0, "success": False, "error": str(exc)})
+
+    elapsed = time.perf_counter() - started
+    total_bytes = sum(result.get("bytes", 0) for result in results)
+    errors = [result.get("error") for result in results
+              if result.get("error")]
+    success = (
+        len(results) == len(chunks)
+        and all(result.get("success") for result in results)
+        and total_bytes == size
+    )
+    result = {
+        "direction": direction,
+        "bytes": total_bytes,
+        "success": success,
+        "error": errors[0] if errors
+        else (None if success else "incomplete transfer"),
+        "seconds": elapsed,
+        "flows": flows,
+    }
+    if success:
+        result["mbps"] = (total_bytes * 8.0) / (elapsed * 1_000_000.0)
     return result
 
 
@@ -419,6 +465,7 @@ METRIC_HELP = {
     "mesh_transfer_mbps": "Measured HTTP transfer throughput in Mbit/s.",
     "mesh_transfer_bytes": "Bytes transferred in the last HTTP test.",
     "mesh_transfer_seconds": "Duration of the last HTTP transfer in seconds.",
+    "mesh_transfer_flows": "Parallel HTTP flows used for the last transfer.",
     "mesh_last_test_timestamp_seconds":
         "Unix time at which the last test of this type finished.",
 }
@@ -561,6 +608,8 @@ class ProbeState(object):
                     test.get("bytes", 0))
                 add("mesh_transfer_seconds", direction_labels,
                     test.get("seconds", 0.0))
+                add("mesh_transfer_flows", direction_labels,
+                    test.get("flows", 0))
                 add("mesh_last_test_timestamp_seconds",
                     dict(labels, test=direction),
                     pair.get(direction + "_time", 0))
@@ -624,6 +673,7 @@ class Handler(BaseHTTPRequestHandler):
                 "ping_interval_ms": PING_INTERVAL * 1000.0,
                 "ping_timeout_seconds": PING_TIMEOUT,
                 "transfer_bytes": TRANSFER_BYTES,
+                "transfer_flows": TRANSFER_FLOWS,
                 "transfer_timeout_seconds": TRANSFER_TIMEOUT,
                 "peers": [
                     {"name": peer["name"], "host": peer["host"],
@@ -790,8 +840,9 @@ class Scheduler(object):
 
 def main():
     log("starting mesh-probe {} on {} (port {}, interval {:.0f}s, "
-        "{} bytes/transfer)".format(
-            VERSION, NODE_NAME, PORT, INTERVAL, TRANSFER_BYTES))
+        "{} bytes/transfer, {} flows)".format(
+            VERSION, NODE_NAME, PORT, INTERVAL, TRANSFER_BYTES,
+            TRANSFER_FLOWS))
     if not STATIC_PEERS and not os.path.exists(SA_TOKEN):
         log("warning: {} is missing; waiting for Kubernetes API".format(
             SA_TOKEN))

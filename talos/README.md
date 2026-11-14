@@ -58,19 +58,18 @@ the current Talos kernel/initramfs. If Talos is already installed, the network
 boot hands off to the installed system; otherwise the node comes up in
 maintenance mode. Unknown machines get a fallback menu offering netboot.xyz or
 a generic Talos maintenance-mode boot. The setup ISOs remain the fallback when
-the cluster or network boot infrastructure is down. Most 1xx nodes use LACP
-LAG ports, so test PXE on one of them first; if the switch does not forward
-single-link firmware PXE traffic, use a non-LAG provisioning port or the ISO
-for that machine. glemmen170 is the exception:
-its system disk is an NVMe drive that the R250 firmware cannot boot, so it
-relies on the PXE chainloader for every boot. Its switch ports are therefore
-plain access ports and its bond uses `balance-alb`, because the firmware PXE
-ROM cannot speak LACP.
+the cluster or network boot infrastructure is down. All 1xx nodes use
+independent links with PXE on `eno8303`; the switch ports carry the server VLAN
+untagged plus VLAN 1 and VLAN 7 tagged. Test PXE on one node first; if the
+firmware cannot reach the proxyDHCP, use a non-LAG provisioning port or the
+ISO. glemmen170 is the exception: its system disk is an NVMe drive that the
+R250 firmware cannot boot, so it relies on the PXE chainloader for every boot.
+Its switch ports are already converted to the same independent-link layout.
 
 1. Boot the node over PXE, or use the Image Factory ISO (USB or virtual media)
    when PXE is unavailable.
 2. Give the node network access in maintenance mode (see below). The PXE script
-   already includes the same per-node bond/static-IP arguments.
+   already includes the same per-node static-IP arguments.
 3. Apply the node's config and let the installer run:
 
    ```sh
@@ -89,8 +88,8 @@ ROM cannot speak LACP.
 
 ### Maintenance-mode network
 
-The nodes have no DHCP on their bonded interfaces, so each machine normally needs
-kernel arguments before it can be reached in maintenance mode.
+The nodes have no DHCP on their primary interfaces, so each machine normally
+needs kernel arguments before it can be reached in maintenance mode.
 `scripts/talos/setup-images.py` builds a per-node ISO with exactly those
 arguments baked into the boot entries,
 so no GRUB editing is needed:
@@ -121,8 +120,7 @@ If you boot the generic ISO instead, press `e` in GRUB and append the arguments
 manually (example for glemmen130):
 
 ```
-bond=bond0:eno8303,eno8403:mode=802.3ad,xmit_hash_policy=layer3+4,lacp_rate=slow,miimon=100 \
-ip=192.168.6.130::192.168.6.1:255.255.255.0:glemmen130:bond0:off:192.168.6.1:1.1.1.1:
+ip=192.168.6.130::192.168.6.1:255.255.255.0:glemmen130:eno8303:off:192.168.6.1:1.1.1.1:
 ```
 
 (For glemmen80 use `enp4s0f0` without `bond=`. glemmen60 uses `eno1` - a

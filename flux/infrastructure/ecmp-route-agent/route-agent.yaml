@@ -1,0 +1,206 @@
+# ECMP route agent for the dual-link 1xx nodes and glemmen80.
+#
+# Felix route programming is disabled (FelixConfiguration
+# programClusterRoutes: Disabled); this agent is the single owner of pod-CIDR
+# routes on every node. On nodes with two independent uplinks it installs a
+# two-nexthop multipath route:
+#
+#   nexthop via 192.168.6.<peer> dev eno8303 weight 1
+#   nexthop via 192.168.7.<peer> dev eno8403.7 weight 1
+#
+# The agent only uses the VLAN 7 path when the peer's 192.168.7.x address is
+# actually reachable (ping), so nodes that have not been converted yet, or
+# whose switch port is not tagged for VLAN 7, automatically fall back to the
+# single server-VLAN path. It never rewrites a route that is already correct,
+# because replacing a live multipath route rehashes flows and causes TCP
+# reordering.
+#
+# The agent runs on every node, including unconverted nodes and glemmen60, so
+# disabling Felix does not leave any node without cluster routes.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: ecmp-system
+  labels:
+    pod-security.kubernetes.io/enforce: privileged
+    pod-security.kubernetes.io/audit: privileged
+    pod-security.kubernetes.io/warn: privileged
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ecmp-route-agent-script
+  namespace: ecmp-system
+data:
+  agent.sh: |
+    #!/bin/sh
+    set -u
+
+    NODE_NAME="${NODE_NAME:-$(hostname)}"
+
+    # Resolve interfaces from their addresses rather than from `ip route get`:
+    # during an in-place conversion a stale bond0 can still win the default
+    # route lookup even though the address has moved to eno8303. Prefer a
+    # non-bond interface, but fall back to bond0 on unconverted nodes.
+    iface_for_prefix() {
+      ip -o -4 addr show 2>/dev/null \
+        | awk -v pat="$1" '$4 ~ pat { print $2 }' \
+        | grep -v '^bond' | head -1
+    }
+    iface_for_prefix_any() {
+      ip -o -4 addr show 2>/dev/null \
+        | awk -v pat="$1" '$4 ~ pat { print $2; exit }'
+    }
+
+    SERVER_IFACE=""
+    VLAN7_IFACE=""
+
+    case "${NODE_NAME}" in
+      glemmen60)  LOCAL_POD=10.42.2.0/24 ;;
+      glemmen80)  LOCAL_POD=10.42.4.0/24 ;;
+      glemmen130) LOCAL_POD=10.42.1.0/24 ;;
+      glemmen150) LOCAL_POD=10.42.0.0/24 ;;
+      glemmen160) LOCAL_POD=10.42.3.0/24 ;;
+      glemmen170) LOCAL_POD=10.42.6.0/24 ;;
+      glemmen180) LOCAL_POD=10.42.5.0/24 ;;
+      *) LOCAL_POD="" ;;
+    esac
+
+    route_is() {
+      ip route show "$1" 2>/dev/null | tr '\n' ' ' | grep -q "$2"
+    }
+
+    DESTINATIONS="glemmen60 glemmen80 glemmen130 glemmen150 glemmen160 glemmen170 glemmen180"
+
+    while true; do
+      NEW_SERVER=$(iface_for_prefix '^192\.168\.6\.')
+      [ -z "${NEW_SERVER}" ] && \
+        NEW_SERVER=$(iface_for_prefix_any '^192\.168\.6\.')
+      NEW_VLAN7=$(iface_for_prefix '^192\.168\.7\.')
+      [ -z "${NEW_VLAN7}" ] && \
+        NEW_VLAN7=$(iface_for_prefix_any '^192\.168\.7\.')
+
+      if [ -n "${NEW_SERVER}" ]; then
+        if [ "${NEW_SERVER}" != "${SERVER_IFACE}" ] || \
+           [ "${NEW_VLAN7}" != "${VLAN7_IFACE}" ]; then
+          SERVER_IFACE="${NEW_SERVER}"
+          VLAN7_IFACE="${NEW_VLAN7}"
+          echo "ECMP agent on ${NODE_NAME}: server=${SERVER_IFACE} vlan7=${VLAN7_IFACE:-none}"
+        fi
+      fi
+
+      # Keep this node's own pod block blackholed. Felix used to install this
+      # guard route; now that Felix route programming is disabled, unassigned
+      # addresses in the block must not follow the default route.
+      if [ -n "${LOCAL_POD}" ] && ! route_is "${LOCAL_POD}" "^blackhole"; then
+        ip route replace blackhole "${LOCAL_POD}" 2>/dev/null || true
+      fi
+
+      if [ -n "${SERVER_IFACE}" ]; then
+        for dst in ${DESTINATIONS}; do
+          [ "${dst}" = "${NODE_NAME}" ] && continue
+
+          case "${dst}" in
+            glemmen60)  DST_POD=10.42.2.0/24; DST_SRV=192.168.6.60;  DST_V7=192.168.7.60 ;;
+            glemmen80)  DST_POD=10.42.4.0/24; DST_SRV=192.168.6.80;  DST_V7=192.168.7.80 ;;
+            glemmen130) DST_POD=10.42.1.0/24; DST_SRV=192.168.6.130; DST_V7=192.168.7.130 ;;
+            glemmen150) DST_POD=10.42.0.0/24; DST_SRV=192.168.6.150; DST_V7=192.168.7.150 ;;
+            glemmen160) DST_POD=10.42.3.0/24; DST_SRV=192.168.6.160; DST_V7=192.168.7.160 ;;
+            glemmen170) DST_POD=10.42.6.0/24; DST_SRV=192.168.6.170; DST_V7=192.168.7.170 ;;
+            glemmen180) DST_POD=10.42.5.0/24; DST_SRV=192.168.6.180; DST_V7=192.168.7.180 ;;
+            *) continue ;;
+          esac
+
+          # Only use the VLAN 7 nexthop if the peer is actually reachable on
+          # that VLAN. This makes the agent safe on unconverted nodes and on
+          # switch ports that are not tagged for VLAN 7 yet.
+          dual=0
+          if [ -n "${VLAN7_IFACE}" ] && ping -c1 -W1 "${DST_V7}" >/dev/null 2>&1; then
+            dual=1
+          fi
+
+          if [ "${dual}" = 1 ]; then
+            pattern="nexthop via ${DST_SRV} dev ${SERVER_IFACE}.*nexthop via ${DST_V7} dev ${VLAN7_IFACE}"
+            if ! route_is "${DST_POD}" "${pattern}"; then
+              # onlink is needed when both nexthops share the same physical
+              # parent (glemmen80's 10G interface and its VLAN 7 child).
+              ip route replace "${DST_POD}" \
+                nexthop via "${DST_SRV}" dev "${SERVER_IFACE}" weight 1 \
+                nexthop via "${DST_V7}" dev "${VLAN7_IFACE}" onlink weight 1
+              echo "dual ${DST_POD} via ${DST_SRV}/${DST_V7}"
+            fi
+          else
+            # Collapse a stale dual route back to the primary path, or create
+            # the primary route if it is missing. A single route prints
+            # "via", a multipath route prints "nexthop via".
+            if [ -n "${VLAN7_IFACE}" ] && \
+               route_is "${DST_POD}" "nexthop via .* dev ${VLAN7_IFACE}"; then
+              ip route replace "${DST_POD}" \
+                nexthop via "${DST_SRV}" dev "${SERVER_IFACE}" weight 1
+              echo "single ${DST_POD} via ${DST_SRV} (vlan7 path down)"
+            elif ! route_is "${DST_POD}" "via ${DST_SRV} dev ${SERVER_IFACE}" || \
+                 route_is "${DST_POD}" "nexthop"; then
+              ip route replace "${DST_POD}" \
+                nexthop via "${DST_SRV}" dev "${SERVER_IFACE}" weight 1
+              echo "single ${DST_POD} via ${DST_SRV}"
+            fi
+          fi
+        done
+      fi
+
+      # L4 hashing keeps a single TCP flow on one link while spreading
+      # parallel flows; use_neigh keeps the kernel from selecting an
+      # unresolved nexthop.
+      sysctl -w net.ipv4.fib_multipath_hash_policy=1 >/dev/null 2>&1 || true
+      sysctl -w net.ipv4.fib_multipath_use_neigh=1 >/dev/null 2>&1 || true
+      sleep 5
+    done
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: ecmp-route-agent
+  namespace: ecmp-system
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: ecmp-route-agent
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: ecmp-route-agent
+    spec:
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
+      # Run on every node: converted nodes get dual paths, unconverted nodes
+      # (including glemmen60 when it returns) get a single server-VLAN path.
+      tolerations:
+        - operator: Exists
+      containers:
+        - name: agent
+          image: nicolaka/netshoot:latest
+          imagePullPolicy: IfNotPresent
+          command: ["/bin/sh", "/scripts/agent.sh"]
+          env:
+            - name: NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+          securityContext:
+            privileged: true
+            runAsUser: 0
+          volumeMounts:
+            - name: script
+              mountPath: /scripts
+              readOnly: true
+          resources:
+            requests:
+              cpu: 5m
+              memory: 16Mi
+            limits:
+              memory: 64Mi
+      volumes:
+        - name: script
+          configMap:
+            name: ecmp-route-agent-script
+            defaultMode: 0755

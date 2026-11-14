@@ -1,0 +1,10 @@
+# Calico CNI. The Tigera operator installs the CRDs and the Calico
+# components; the Installation below pins the existing per-node pod CIDRs
+# (so the Flannel -> Calico switch did not renumber pods) and uses IPIP
+# CrossSubnet without a BGP mesh. Pod-CIDR routes are owned by the
+# ecmp-route-agent, not Felix.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - tigera-operator.yaml
+  - installation.yaml

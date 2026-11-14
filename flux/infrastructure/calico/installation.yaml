@@ -1,0 +1,156 @@
+apiVersion: operator.tigera.io/v1
+kind: Installation
+metadata:
+  name: default
+spec:
+  calicoLibHostPath: /var/lib/calico
+  calicoNetwork:
+    bgp: Enabled
+    hostPorts: Enabled
+    ipPools:
+    - allowedUses:
+      - Workload
+      - Tunnel
+      assignmentMode: Automatic
+      blockSize: 24
+      cidr: 10.42.0.0/24
+      disableBGPExport: false
+      disableNewAllocations: false
+      encapsulation: IPIPCrossSubnet
+      name: 10.42.0.0-24
+      natOutgoing: Enabled
+      nodeSelector: kubernetes.io/hostname == 'glemmen150'
+    - allowedUses:
+      - Workload
+      - Tunnel
+      assignmentMode: Automatic
+      blockSize: 24
+      cidr: 10.42.1.0/24
+      disableBGPExport: false
+      disableNewAllocations: false
+      encapsulation: IPIPCrossSubnet
+      name: 10.42.1.0-24
+      natOutgoing: Enabled
+      nodeSelector: kubernetes.io/hostname == 'glemmen130'
+    - allowedUses:
+      - Workload
+      - Tunnel
+      assignmentMode: Automatic
+      blockSize: 24
+      cidr: 10.42.2.0/24
+      disableBGPExport: false
+      disableNewAllocations: false
+      encapsulation: IPIPCrossSubnet
+      name: 10.42.2.0-24
+      natOutgoing: Enabled
+      nodeSelector: kubernetes.io/hostname == 'glemmen60'
+    - allowedUses:
+      - Workload
+      - Tunnel
+      assignmentMode: Automatic
+      blockSize: 24
+      cidr: 10.42.3.0/24
+      disableBGPExport: false
+      disableNewAllocations: false
+      encapsulation: IPIPCrossSubnet
+      name: 10.42.3.0-24
+      natOutgoing: Enabled
+      nodeSelector: kubernetes.io/hostname == 'glemmen160'
+    - allowedUses:
+      - Workload
+      - Tunnel
+      assignmentMode: Automatic
+      blockSize: 24
+      cidr: 10.42.4.0/24
+      disableBGPExport: false
+      disableNewAllocations: false
+      encapsulation: IPIPCrossSubnet
+      name: 10.42.4.0-24
+      natOutgoing: Enabled
+      nodeSelector: kubernetes.io/hostname == 'glemmen80'
+    - allowedUses:
+      - Workload
+      - Tunnel
+      assignmentMode: Automatic
+      blockSize: 24
+      cidr: 10.42.5.0/24
+      disableBGPExport: false
+      disableNewAllocations: false
+      encapsulation: IPIPCrossSubnet
+      name: 10.42.5.0-24
+      natOutgoing: Enabled
+      nodeSelector: kubernetes.io/hostname == 'glemmen180'
+    - allowedUses:
+      - Workload
+      - Tunnel
+      assignmentMode: Automatic
+      blockSize: 24
+      cidr: 10.42.6.0/24
+      disableBGPExport: false
+      disableNewAllocations: false
+      encapsulation: IPIPCrossSubnet
+      name: 10.42.6.0-24
+      natOutgoing: Enabled
+      nodeSelector: kubernetes.io/hostname == 'glemmen170'
+    linuxDataplane: Iptables
+    linuxPolicySetupTimeoutSeconds: 0
+    multiInterfaceMode: None
+    nodeAddressAutodetectionV4:
+      canReach: 192.168.6.1
+    windowsDataplane: Disabled
+  calicoRunHostPath: /var/run/calico
+  cni:
+    binDir: /opt/cni/bin
+    confDir: /etc/cni/net.d
+    installMode: All
+    ipam:
+      type: Calico
+    specVersion: Auto
+    type: Calico
+  controlPlaneReplicas: 2
+  flexVolumePath: None
+  kubeletVolumePluginPath: None
+  logging:
+    cni:
+      logFileMaxAgeDays: 30
+      logFileMaxCount: 10
+      logFileMaxSize: 100Mi
+      logSeverity: Info
+  nodeUpdateStrategy:
+    rollingUpdate:
+      maxUnavailable: 1
+    type: RollingUpdate
+  registry: quay.io
+  serviceCIDRs:
+  - 10.43.0.0/16
+  variant: Calico
+---
+apiVersion: projectcalico.org/v3
+kind: FelixConfiguration
+metadata:
+  name: default
+spec:
+  bpfConnectTimeLoadBalancing: TCP
+  bpfEnabled: false
+  bpfHostNetworkedNATWithoutCTLB: Enabled
+  floatingIPs: Disabled
+  healthPort: 9099
+  logSeverityScreen: Info
+  nftablesFlowTableOffload: Disabled
+  nftablesMode: Disabled
+  # The ecmp-route-agent owns pod-CIDR routes so it can install multipath
+  # routes; Felix would otherwise rewrite them to a single path.
+  programClusterRoutes: Disabled
+  reportingInterval: 0s
+  vxlanPort: 4789
+  vxlanVNI: 4096
+---
+apiVersion: projectcalico.org/v3
+kind: BGPConfiguration
+metadata:
+  name: default
+spec:
+  logSeverityScreen: Info
+  nodeToNodeMeshEnabled: false
+  programClusterRoutes: Disabled
+  serviceLoadBalancerAggregation: Enabled

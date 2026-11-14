@@ -4,8 +4,10 @@
 #
 # The test volume is a balance between measurement accuracy and background
 # traffic: 32 MiB takes roughly 0.3s on a 1 Gbit/s link and 0.03s on a 10
-# Gbit/s link. Tests are phase-shifted across nodes (see probe.py), so all
-# nodes do not run the full mesh at the same instant.
+# Gbit/s link. Each transfer is split across TRANSFER_FLOWS parallel HTTP
+# connections so multipath/ECMP links are exercised; the total traffic stays
+# at 32 MiB per direction. Tests are phase-shifted across nodes (see probe.py),
+# so all nodes do not run the full mesh at the same instant.
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
@@ -70,6 +72,8 @@ spec:
               value: "1"
             - name: TRANSFER_BYTES
               value: "33554432"
+            - name: TRANSFER_FLOWS
+              value: "8"
             - name: TRANSFER_TIMEOUT_SECONDS
               value: "15"
             - name: PYTHONDONTWRITEBYTECODE

@@ -128,31 +128,31 @@ goto fallback
 
 # glemmen130 (control-plane)
 :talos_glemmen130
-kernel http://192.168.6.99:8080/vmlinuz initrd=initramfs.xz talos.platform=metal console=tty0 slab_nomerge pti=on consoleblank=0 printk.devkmsg=on selinux=1 module.sig_enforce=1 proc_mem.force_override=never bond=bond0:eno8303,eno8403:mode=balance-alb,miimon=100 ip=192.168.6.130::192.168.6.1:255.255.255.0:glemmen130:bond0:off:192.168.6.1:1.1.1.1: || goto fallback
+kernel http://192.168.6.99:8080/vmlinuz initrd=initramfs.xz talos.platform=metal console=tty0 slab_nomerge pti=on consoleblank=0 printk.devkmsg=on selinux=1 module.sig_enforce=1 proc_mem.force_override=never ip=192.168.6.130::192.168.6.1:255.255.255.0:glemmen130:eno8303:off:192.168.6.1:1.1.1.1: || goto fallback
 initrd http://192.168.6.99:8080/initramfs.xz || goto fallback
 boot || goto fallback
 
 # glemmen150 (control-plane)
 :talos_glemmen150
-kernel http://192.168.6.99:8080/vmlinuz initrd=initramfs.xz talos.platform=metal console=tty0 slab_nomerge pti=on consoleblank=0 printk.devkmsg=on selinux=1 module.sig_enforce=1 proc_mem.force_override=never bond=bond0:eno8303,eno8403:mode=balance-alb,miimon=100 ip=192.168.6.150::192.168.6.1:255.255.255.0:glemmen150:bond0:off:192.168.6.1:1.1.1.1: || goto fallback
+kernel http://192.168.6.99:8080/vmlinuz initrd=initramfs.xz talos.platform=metal console=tty0 slab_nomerge pti=on consoleblank=0 printk.devkmsg=on selinux=1 module.sig_enforce=1 proc_mem.force_override=never ip=192.168.6.150::192.168.6.1:255.255.255.0:glemmen150:eno8303:off:192.168.6.1:1.1.1.1: || goto fallback
 initrd http://192.168.6.99:8080/initramfs.xz || goto fallback
 boot || goto fallback
 
 # glemmen160 (control-plane)
 :talos_glemmen160
-kernel http://192.168.6.99:8080/vmlinuz initrd=initramfs.xz talos.platform=metal console=tty0 slab_nomerge pti=on consoleblank=0 printk.devkmsg=on selinux=1 module.sig_enforce=1 proc_mem.force_override=never bond=bond0:eno8303,eno8403:mode=balance-alb,miimon=100 ip=192.168.6.160::192.168.6.1:255.255.255.0:glemmen160:bond0:off:192.168.6.1:1.1.1.1: || goto fallback
+kernel http://192.168.6.99:8080/vmlinuz initrd=initramfs.xz talos.platform=metal console=tty0 slab_nomerge pti=on consoleblank=0 printk.devkmsg=on selinux=1 module.sig_enforce=1 proc_mem.force_override=never ip=192.168.6.160::192.168.6.1:255.255.255.0:glemmen160:eno8303:off:192.168.6.1:1.1.1.1: || goto fallback
 initrd http://192.168.6.99:8080/initramfs.xz || goto fallback
 boot || goto fallback
 
 # glemmen170 (control-plane)
 :talos_glemmen170
-kernel http://192.168.6.99:8080/vmlinuz initrd=initramfs.xz talos.platform=metal console=tty0 slab_nomerge pti=on consoleblank=0 printk.devkmsg=on selinux=1 module.sig_enforce=1 proc_mem.force_override=never bond=bond0:eno8303,eno8403:mode=balance-alb,miimon=100 ip=192.168.6.170::192.168.6.1:255.255.255.0:glemmen170:bond0:off:192.168.6.1:1.1.1.1: || goto fallback
+kernel http://192.168.6.99:8080/vmlinuz initrd=initramfs.xz talos.platform=metal console=tty0 slab_nomerge pti=on consoleblank=0 printk.devkmsg=on selinux=1 module.sig_enforce=1 proc_mem.force_override=never ip=192.168.6.170::192.168.6.1:255.255.255.0:glemmen170:eno8303:off:192.168.6.1:1.1.1.1: || goto fallback
 initrd http://192.168.6.99:8080/initramfs.xz || goto fallback
 boot || goto fallback
 
 # glemmen180 (control-plane)
 :talos_glemmen180
-kernel http://192.168.6.99:8080/vmlinuz initrd=initramfs.xz talos.platform=metal console=tty0 slab_nomerge pti=on consoleblank=0 printk.devkmsg=on selinux=1 module.sig_enforce=1 proc_mem.force_override=never bond=bond0:eno8303,eno8403:mode=balance-alb,miimon=100 ip=192.168.6.180::192.168.6.1:255.255.255.0:glemmen180:bond0:off:192.168.6.1:1.1.1.1: || goto fallback
+kernel http://192.168.6.99:8080/vmlinuz initrd=initramfs.xz talos.platform=metal console=tty0 slab_nomerge pti=on consoleblank=0 printk.devkmsg=on selinux=1 module.sig_enforce=1 proc_mem.force_override=never ip=192.168.6.180::192.168.6.1:255.255.255.0:glemmen180:eno8303:off:192.168.6.1:1.1.1.1: || goto fallback
 initrd http://192.168.6.99:8080/initramfs.xz || goto fallback
 boot || goto fallback
 

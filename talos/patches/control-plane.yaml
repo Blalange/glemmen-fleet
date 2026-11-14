@@ -49,3 +49,12 @@ apiVersion: v1alpha1
 kind: KubeNodeConfig
 labels:
     node-role.kubernetes.io/control-plane: ""
+
+---
+# Calico is the CNI. Delete the Talos-generated Flannel document so Talos no
+# longer installs/updates the kube-flannel DaemonSet. The Calico operator,
+# Installation, IPPools, FelixConfiguration and the ECMP route agent are
+# managed from flux/infrastructure/calico/.
+apiVersion: v1alpha1
+kind: KubeFlannelCNIConfig
+$patch: delete
