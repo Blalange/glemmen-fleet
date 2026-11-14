@@ -387,7 +387,7 @@ spec:
                 - name: WEED_FILER
                   value: seaweedfs-filer.seaweedfs:8888
                 - name: MAX_VOLUMES
-                  value: "100"
+                  value: "10"
                 - name: FSCK_CUTOFF
                   value: 5h
                 - name: EC_FULL_PERCENT
