@@ -504,7 +504,9 @@ alert groups are disabled in
 intentionally kept.
 
 Alertmanager sends email through Gmail using the existing Authentik mail
-account (`noreply@blalange.org` → `hexahigh0@gmail.com`). The SMTP password is
+account (`noreply@blalange.org` → `hexahigh0@gmail.com`). Only `critical`
+alerts are emailed; warnings and info are routed to the `null` receiver and
+remain visible in the Alertmanager UI. The SMTP password is
 not in Git; create the `alertmanager-smtp` Secret in `monitoring` from the same
 `AUTHENTIK_EMAIL__PASSWORD` value used by Authentik:
 
