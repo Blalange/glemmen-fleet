@@ -230,8 +230,9 @@ A run does the following:
 The scan uses `-cutoffTimeAgo=5h` so chunks whose filer metadata has not been
 committed yet are not mistaken for orphans. Deletion deliberately does not use
 `-forcePurging`: SeaweedFS only purges orphans that all online replicas agree
-on. The job holds the SeaweedFS admin lock while each `weed shell` phase runs,
-so other admin maintenance waits. If `volume.list` reports duplicate volume IDs
+on. The job takes the SeaweedFS admin lock once at startup, keeps it for the
+whole run, and releases it after the last step, so other admin maintenance
+waits for the entire cleanup. If `volume.list` reports duplicate volume IDs
 in more than one collection, the run aborts before decoding or deleting because
 volume-ID operations would be ambiguous.
 

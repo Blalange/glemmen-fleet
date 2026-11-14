@@ -9,7 +9,10 @@
 # A run scans every volume with volume.fsck, keeps the MAX_VOLUMES (100)
 # volumes with the most orphaned bytes, and runs deletion and vacuum only on
 # those. Selected EC volumes are decoded before deletion; after vacuum they are
-# re-encoded only when they are still at least EC_FULL_PERCENT (95%) full.
+# re-encoded only when they are still at least EC_FULL_PERCENT (95%) full. The
+# whole run shares one weed shell session and holds the cluster-wide admin lock
+# from before the scan until the last step, so other admin maintenance cannot
+# interleave between phases (and the lock is released on failure too).
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -23,6 +26,9 @@ data:
     # SeaweedFS orphan cleanup. The read-only scan covers all volumes; the
     # destructive phases cover only the selected top volumes.
     set -eu
+    # A dead shell must surface as a failed write instead of killing the
+    # script with SIGPIPE before the exit trap can clean up.
+    trap '' PIPE
 
     MASTER="${WEED_MASTER:?WEED_MASTER is required}"
     FILER="${WEED_FILER:?WEED_FILER is required}"
@@ -34,6 +40,12 @@ data:
 
     WORK="/tmp/orphan-cleanup"
     TMP="$WORK/tmp"
+    SHELL_IN="$WORK/shell.in"
+    SHELL_OUT="$WORK/shell.out"
+    SHELL_ERR="$WORK/shell.err"
+    SHELL_PID=""
+    SHELL_STARTED=0
+    SHELL_LOCKED=0
 
     rm -rf "$WORK"
     mkdir -p "$TMP"
@@ -56,9 +68,98 @@ data:
       fi
     }
 
-    # Run the commands in CMDFILE in one weed shell session, wrapped in the
-    # cluster-wide admin lock. The unlock is written even when a command fails,
-    # so a failed command does not leave the lease behind.
+    # Wait until the "help sleep" marker appears in the shell output at or
+    # after byte offset $1. The shell executes stdin commands sequentially and
+    # writes unbuffered to stdout, so the marker means the previous command has
+    # returned and its output is complete.
+    wait_for_sync() {
+      wfs_start="$1"
+      while :; do
+        if tail -c +$((wfs_start + 1)) "$SHELL_OUT" 2>/dev/null \
+            | grep -qF 'use "sleep -h" for more details'; then
+          return 0
+        fi
+        if ! kill -0 "$SHELL_PID" 2>/dev/null; then
+          log "weed shell exited unexpectedly"
+          sed 's/^/  /' "$SHELL_ERR" >&2 || true
+          return 1
+        fi
+        sleep 1
+      done
+    }
+
+    # Start one long-lived shell session and take the cluster-wide admin lock
+    # once. Every later phase runs as a command in this same session, so the
+    # lock stays held until stop_shell releases it.
+    start_shell() {
+      mkfifo "$SHELL_IN"
+      weed_shell <"$SHELL_IN" >"$SHELL_OUT" 2>"$SHELL_ERR" &
+      SHELL_PID=$!
+      SHELL_STARTED=1
+      exec 3>"$SHELL_IN"
+      rm -f "$SHELL_IN"
+
+      lock_start=$(wc -c < "$SHELL_OUT" | tr -d ' ')
+      printf 'lock\nhelp sleep\n' >&3
+      if ! wait_for_sync "$lock_start"; then
+        log "weed shell stopped before acquiring the lock"
+        return 1
+      fi
+      if grep -q '^error: ' "$SHELL_ERR"; then
+        log "lock command failed:"
+        sed 's/^/  /' "$SHELL_ERR" >&2 || true
+        return 1
+      fi
+      SHELL_LOCKED=1
+      log "Acquired the cluster-wide admin lock"
+    }
+
+    # Release the lock once, close the session and reap the process. The
+    # unlock is followed by a marker so the release RPC has completed before
+    # the script exits. A shell that never became responsive (for example
+    # while blocked waiting for another holder) is terminated instead of
+    # waited on, so the trap cannot hang.
+    stop_shell() {
+      [ "$SHELL_STARTED" -eq 1 ] || return 0
+
+      responsive=0
+      if [ "$SHELL_LOCKED" -eq 1 ]; then
+        unlock_start=$(wc -c < "$SHELL_OUT" | tr -d ' ')
+        printf 'unlock\nhelp sleep\n' >&3 2>/dev/null || true
+        SHELL_LOCKED=0
+        if wait_for_sync "$unlock_start"; then
+          log "Released the cluster-wide admin lock"
+          responsive=1
+        else
+          log "Could not confirm the cluster-wide admin lock release"
+        fi
+      fi
+
+      printf 'exit\n' >&3 2>/dev/null || true
+      exec 3>&-
+      if [ "$responsive" -eq 1 ]; then
+        wait "$SHELL_PID" 2>/dev/null || true
+      else
+        kill "$SHELL_PID" 2>/dev/null || true
+        wait "$SHELL_PID" 2>/dev/null || true
+      fi
+      SHELL_STARTED=0
+    }
+
+    on_exit() {
+      rc=$?
+      trap - EXIT INT TERM HUP
+      stop_shell
+      exit "$rc"
+    }
+    trap on_exit EXIT
+    trap 'exit 130' INT
+    trap 'exit 143' TERM
+    trap 'exit 129' HUP
+
+    # Queue the commands in CMDFILE on the long-lived shell and collect only
+    # their output. A marker follows every batch so local parsing starts after
+    # the command has finished; the lock is not touched here.
     run_locked() {
       rl_out="$1"
       rl_cmds="$2"
@@ -66,13 +167,31 @@ data:
         log "missing command file $rl_cmds"
         return 1
       fi
-      if ! { printf 'lock\n'; cat "$rl_cmds"; printf 'unlock\n'; } \
-          | weed_shell >"$rl_out" 2>"$rl_out.err"; then
+
+      rl_out_start=$(wc -c < "$SHELL_OUT" | tr -d ' ')
+      rl_err_start=$(wc -c < "$SHELL_ERR" | tr -d ' ')
+      { cat "$rl_cmds"; printf 'help sleep\n'; } >&3
+
+      if ! wait_for_sync "$rl_out_start"; then
+        log "weed shell stopped while running ${rl_cmds##*/}"
+        return 1
+      fi
+
+      # Drop the marker's two "help sleep" lines from the captured output.
+      tail -c +$((rl_out_start + 1)) "$SHELL_OUT" \
+        | sed -e '/^  sleep[[:space:]]*# sleep for N seconds/d' \
+              -e '/^use "sleep -h" for more details[[:space:]]*$/d' > "$rl_out"
+      tail -c +$((rl_err_start + 1)) "$SHELL_ERR" > "$rl_out.err"
+
+      if grep -q '^error: ' "$rl_out.err"; then
         log "weed shell failed for ${rl_cmds##*/}; stderr:"
         sed 's/^/  /' "$rl_out.err" >&2 || true
         return 1
       fi
     }
+
+    log "Starting weed shell and acquiring the cluster-wide admin lock"
+    start_shell
 
     log "Scanning all volumes for orphaned data (read-only)"
     cat > "$WORK/fsck-scan.cmds" <<EOF
@@ -330,6 +449,8 @@ data:
     else
       log "No decoded EC volumes remain for re-encode"
     fi
+
+    stop_shell
 
     if [ "$failed" -ne 0 ]; then
       log "Cleanup finished with errors"
