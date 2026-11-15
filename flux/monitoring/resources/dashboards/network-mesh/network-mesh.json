@@ -396,25 +396,12 @@
             "uid": "thanos"
           },
           "editorMode": "code",
-          "expr": "label_join(label_replace(avg_over_time(mesh_ping_rtt_ms[$__range]), \"agg\", \"avg\", \"source\", \".*\"), \"row\", \" \", \"source\", \"agg\")",
+          "expr": "(label_join(label_replace(avg_over_time(mesh_ping_rtt_ms[$__range]), \"agg\", \"avg\", \"source\", \".*\"), \"row\", \" \", \"source\", \"agg\")) or (label_join(label_replace(max_over_time(mesh_ping_rtt_ms[$__range]), \"agg\", \"max\", \"source\", \".*\"), \"row\", \" \", \"source\", \"agg\"))",
           "format": "table",
           "instant": true,
           "legendFormat": "__auto",
           "range": false,
           "refId": "A"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "thanos"
-          },
-          "editorMode": "code",
-          "expr": "label_join(label_replace(max_over_time(mesh_ping_rtt_ms[$__range]), \"agg\", \"max\", \"source\", \".*\"), \"row\", \" \", \"source\", \"agg\")",
-          "format": "table",
-          "instant": true,
-          "legendFormat": "__auto",
-          "range": false,
-          "refId": "B"
         }
       ],
       "title": "Ping RTT - avg / max (ms)",
@@ -436,18 +423,6 @@
             "renameByName": {
               "row\\destination": "Source \\ Destination"
             }
-          }
-        },
-        {
-          "id": "sortBy",
-          "options": {
-            "fields": {},
-            "sort": [
-              {
-                "field": "Source \\ Destination",
-                "desc": false
-              }
-            ]
           }
         }
       ],
@@ -555,25 +530,12 @@
             "uid": "thanos"
           },
           "editorMode": "code",
-          "expr": "label_join(label_replace(avg_over_time(mesh_ping_loss_percent[$__range]), \"agg\", \"avg\", \"source\", \".*\"), \"row\", \" \", \"source\", \"agg\")",
+          "expr": "(label_join(label_replace(avg_over_time(mesh_ping_loss_percent[$__range]), \"agg\", \"avg\", \"source\", \".*\"), \"row\", \" \", \"source\", \"agg\")) or (label_join(label_replace(max_over_time(mesh_ping_loss_percent[$__range]), \"agg\", \"max\", \"source\", \".*\"), \"row\", \" \", \"source\", \"agg\"))",
           "format": "table",
           "instant": true,
           "legendFormat": "__auto",
           "range": false,
           "refId": "A"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "thanos"
-          },
-          "editorMode": "code",
-          "expr": "label_join(label_replace(max_over_time(mesh_ping_loss_percent[$__range]), \"agg\", \"max\", \"source\", \".*\"), \"row\", \" \", \"source\", \"agg\")",
-          "format": "table",
-          "instant": true,
-          "legendFormat": "__auto",
-          "range": false,
-          "refId": "B"
         }
       ],
       "title": "Packet loss - avg / max (%)",
@@ -595,18 +557,6 @@
             "renameByName": {
               "row\\destination": "Source \\ Destination"
             }
-          }
-        },
-        {
-          "id": "sortBy",
-          "options": {
-            "fields": {},
-            "sort": [
-              {
-                "field": "Source \\ Destination",
-                "desc": false
-              }
-            ]
           }
         }
       ],
@@ -714,25 +664,12 @@
             "uid": "thanos"
           },
           "editorMode": "code",
-          "expr": "label_join(label_replace(avg_over_time(mesh_transfer_mbps{direction=\"upload\"}[$__range]), \"agg\", \"avg\", \"source\", \".*\"), \"row\", \" \", \"source\", \"agg\")",
+          "expr": "(label_join(label_replace(avg_over_time(mesh_transfer_mbps{direction=\"upload\"}[$__range]), \"agg\", \"avg\", \"source\", \".*\"), \"row\", \" \", \"source\", \"agg\")) or (label_join(label_replace(max_over_time(mesh_transfer_mbps{direction=\"upload\"}[$__range]), \"agg\", \"max\", \"source\", \".*\"), \"row\", \" \", \"source\", \"agg\"))",
           "format": "table",
           "instant": true,
           "legendFormat": "__auto",
           "range": false,
           "refId": "A"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "thanos"
-          },
-          "editorMode": "code",
-          "expr": "label_join(label_replace(max_over_time(mesh_transfer_mbps{direction=\"upload\"}[$__range]), \"agg\", \"max\", \"source\", \".*\"), \"row\", \" \", \"source\", \"agg\")",
-          "format": "table",
-          "instant": true,
-          "legendFormat": "__auto",
-          "range": false,
-          "refId": "B"
         }
       ],
       "title": "Upload throughput - avg / max (Mbit/s)",
@@ -754,18 +691,6 @@
             "renameByName": {
               "row\\destination": "Source \\ Destination"
             }
-          }
-        },
-        {
-          "id": "sortBy",
-          "options": {
-            "fields": {},
-            "sort": [
-              {
-                "field": "Source \\ Destination",
-                "desc": false
-              }
-            ]
           }
         }
       ],
@@ -873,25 +798,12 @@
             "uid": "thanos"
           },
           "editorMode": "code",
-          "expr": "label_join(label_replace(avg_over_time(mesh_transfer_mbps{direction=\"download\"}[$__range]), \"agg\", \"avg\", \"source\", \".*\"), \"row\", \" \", \"source\", \"agg\")",
+          "expr": "(label_join(label_replace(avg_over_time(mesh_transfer_mbps{direction=\"download\"}[$__range]), \"agg\", \"avg\", \"source\", \".*\"), \"row\", \" \", \"source\", \"agg\")) or (label_join(label_replace(max_over_time(mesh_transfer_mbps{direction=\"download\"}[$__range]), \"agg\", \"max\", \"source\", \".*\"), \"row\", \" \", \"source\", \"agg\"))",
           "format": "table",
           "instant": true,
           "legendFormat": "__auto",
           "range": false,
           "refId": "A"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "thanos"
-          },
-          "editorMode": "code",
-          "expr": "label_join(label_replace(max_over_time(mesh_transfer_mbps{direction=\"download\"}[$__range]), \"agg\", \"max\", \"source\", \".*\"), \"row\", \" \", \"source\", \"agg\")",
-          "format": "table",
-          "instant": true,
-          "legendFormat": "__auto",
-          "range": false,
-          "refId": "B"
         }
       ],
       "title": "Download throughput - avg / max (Mbit/s)",
@@ -913,18 +825,6 @@
             "renameByName": {
               "row\\destination": "Source \\ Destination"
             }
-          }
-        },
-        {
-          "id": "sortBy",
-          "options": {
-            "fields": {},
-            "sort": [
-              {
-                "field": "Source \\ Destination",
-                "desc": false
-              }
-            ]
           }
         }
       ],
