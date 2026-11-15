@@ -1,18 +1,20 @@
 #!/usr/bin/env python3
-"""Node-to-node network probe for the glemmen cluster.
+"""Pod-network mesh probe for the glemmen cluster.
 
-Runs as a DaemonSet with host networking, so exactly one instance runs on each
+Runs as a DaemonSet with pod networking, so exactly one instance runs on each
 node. Every instance periodically:
 
-  * pings every other node with ICMP echo requests,
-  * uploads a block of zeroes to every other node over HTTP,
-  * downloads a block of zeroes from every other node over HTTP,
+  * pings every other probe pod with ICMP echo requests,
+  * runs a 2-second iperf3 TCP test with 16 parallel streams to every other
+    probe pod in both directions,
 
-and exposes the results as Prometheus metrics on /metrics. Peers are discovered
-from the Kubernetes API (or from STATIC_PEERS when running outside the
-cluster).
+and exposes the results as Prometheus metrics on /metrics. Peer probe pods are
+discovered from the Kubernetes API (or from STATIC_PEERS when running outside
+the cluster). Running on the pod network makes the tests traverse the Calico
+pod-CIDR routes, including the ECMP multipath links.
 
-The HTTP server also implements the two transfer endpoints used by the tests:
+The HTTP server also implements endpoints for metrics, health and manual
+transfer checks:
 
   GET  /download?bytes=N  returns N zero bytes
   POST /upload            reads and discards the request body
@@ -20,12 +22,11 @@ The HTTP server also implements the two transfer endpoints used by the tests:
   GET  /healthz           liveness/readiness endpoint
   GET  /info              probe configuration as JSON
 
-Only the Python standard library is used, so the container image can be
-python:3.13-slim with the script mounted from a ConfigMap.
+Only the Python standard library is used, plus the iperf3 binary for the
+throughput tests. The probe runs in the nicolaka/netshoot image, which provides
+Python 3 and iperf3 and is already used by the ECMP route agent.
 """
 
-import concurrent.futures
-import http.client
 import json
 import math
 import os
@@ -34,6 +35,7 @@ import signal
 import socket
 import ssl
 import struct
+import subprocess
 import sys
 import threading
 import time
@@ -41,13 +43,16 @@ import urllib.parse
 import urllib.request
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
-VERSION = "1.1.0"
+VERSION = "1.3.0"
 
 SA_DIR = "/var/run/secrets/kubernetes.io/serviceaccount"
 SA_TOKEN = os.path.join(SA_DIR, "token")
 SA_CA = os.path.join(SA_DIR, "ca.crt")
 
 ZERO_BLOCK = b"\0" * (256 * 1024)
+ZERO_FILE = "/tmp/network-mesh-zero"
+ZERO_FILE_SIZE = 4 * 1024 * 1024
+ZERO_FILE_LOCK = threading.Lock()
 DEFAULT_PORT = 9101
 
 
@@ -73,6 +78,7 @@ def env_float(name, default):
 
 NODE_NAME = os.environ.get("NODE_NAME") or socket.gethostname()
 NODE_IP = os.environ.get("NODE_IP", "")
+POD_NAMESPACE = os.environ.get("POD_NAMESPACE", "monitoring")
 PORT = env_int("PORT", DEFAULT_PORT)
 INTERVAL = max(30.0, env_float("INTERVAL_SECONDS", 300.0))
 PING_COUNT = max(1, env_int("PING_COUNT", 4))
@@ -80,7 +86,11 @@ PING_INTERVAL = max(0.05, env_float("PING_INTERVAL_MS", 200.0) / 1000.0)
 PING_TIMEOUT = max(0.1, env_float("PING_TIMEOUT_SECONDS", 1.0))
 TRANSFER_BYTES = max(1024, env_int("TRANSFER_BYTES", 32 * 1024 * 1024))
 TRANSFER_TIMEOUT = max(1.0, env_float("TRANSFER_TIMEOUT_SECONDS", 15.0))
-TRANSFER_FLOWS = max(1, min(64, env_int("TRANSFER_FLOWS", 8)))
+TRANSFER_FLOWS = max(1, min(64, env_int("TRANSFER_FLOWS", 16)))
+IPERF_PORT = env_int("IPERF_PORT", 5201)
+IPERF_SECONDS = max(1, env_int("IPERF_SECONDS", 2))
+IPERF_OMIT = max(
+    0, min(IPERF_SECONDS - 1, env_int("IPERF_OMIT_SECONDS", 1)))
 MAX_TRANSFER_BYTES = 1024 * 1024 * 1024
 STATIC_PEERS_RAW = os.environ.get("STATIC_PEERS", "")
 
@@ -259,138 +269,89 @@ def ping(host, count=PING_COUNT, interval=PING_INTERVAL,
 # Throughput tests
 
 
-class ZeroStream(object):
-    """Iterable body that produces exactly `size` zero bytes."""
-
-    def __init__(self, size):
-        self.size = size
-
-    def __iter__(self):
-        remaining = self.size
-        while remaining > 0:
-            chunk = ZERO_BLOCK if remaining >= len(ZERO_BLOCK) \
-                else ZERO_BLOCK[:remaining]
-            remaining -= len(chunk)
-            yield chunk
-
-    def __len__(self):
-        return self.size
+def ensure_zero_file():
+    """Create the file used by the sendfile-based download path."""
+    with ZERO_FILE_LOCK:
+        if not os.path.exists(ZERO_FILE):
+            with open(ZERO_FILE, "wb") as handle:
+                handle.write(
+                    ZERO_BLOCK * (ZERO_FILE_SIZE // len(ZERO_BLOCK)))
+    return ZERO_FILE
 
 
-def _transfer_one(host, port, direction, size, timeout):
-    """Run one HTTP upload or download flow."""
+def transfer(host, direction, timeout=TRANSFER_TIMEOUT):
+    """Run an iperf3 TCP test and return receiver-side throughput."""
     result = {
         "direction": direction,
-        "bytes": size,
+        "bytes": 0,
         "success": False,
         "error": None,
+        "flows": TRANSFER_FLOWS,
     }
-    conn = http.client.HTTPConnection(host, port, timeout=timeout)
-    started = time.perf_counter()
-    try:
-        if direction == "download":
-            path = "/download?bytes={}".format(size)
-            conn.request("GET", path, headers={"Connection": "close"})
-            response = conn.getresponse()
-            if response.status != 200:
-                raise RuntimeError("HTTP {}".format(response.status))
-            received = 0
-            while True:
-                chunk = response.read(1024 * 1024)
-                if not chunk:
-                    break
-                received += len(chunk)
-            result["bytes"] = received
-            result["success"] = received == size
-            if not result["success"]:
-                result["error"] = "received {} of {} bytes".format(
-                    received, size)
-        else:
-            headers = {
-                "Content-Length": str(size),
-                "Content-Type": "application/octet-stream",
-                "Connection": "close",
-            }
-            conn.request("POST", "/upload", body=ZeroStream(size),
-                         headers=headers)
-            response = conn.getresponse()
-            body = response.read()
-            if response.status != 200:
-                raise RuntimeError("HTTP {}: {}".format(
-                    response.status, body[:200].decode(errors="replace")))
-            result["success"] = True
-    except (OSError, http.client.HTTPException, RuntimeError) as exc:
-        result["error"] = str(exc)
-    finally:
-        conn.close()
-
-    elapsed = time.perf_counter() - started
-    result["seconds"] = elapsed
-    if result["success"]:
-        result["mbps"] = (result["bytes"] * 8.0) / (elapsed * 1_000_000.0)
-    return result
-
-
-def transfer(host, port, direction, size=TRANSFER_BYTES,
-             timeout=TRANSFER_TIMEOUT):
-    """Run parallel HTTP flows and return aggregate throughput."""
-    flows = max(1, min(TRANSFER_FLOWS, size)) if size > 0 else 1
-    base, extra = divmod(size, flows)
-    chunks = [base + (1 if index < extra else 0) for index in range(flows)]
+    command = [
+        "iperf3", "-c", host, "-p", str(IPERF_PORT),
+        "-P", str(TRANSFER_FLOWS), "-t", str(IPERF_SECONDS),
+        "-J", "--connect-timeout", "3000",
+    ]
+    if IPERF_OMIT:
+        command += ["-O", str(IPERF_OMIT)]
+    if direction == "download":
+        command.append("-R")
 
     started = time.perf_counter()
-    results = []
     try:
-        with concurrent.futures.ThreadPoolExecutor(
-                max_workers=flows) as pool:
-            futures = [
-                pool.submit(_transfer_one, host, port, direction, chunk,
-                            timeout)
-                for chunk in chunks
-            ]
-            for future in futures:
-                results.append(future.result())
+        completed = subprocess.run(
+            command, capture_output=True, text=True,
+            timeout=max(timeout, IPERF_SECONDS + 10))
+        elapsed = time.perf_counter() - started
+        if completed.returncode != 0:
+            raise RuntimeError(
+                "iperf3 exited {}: {}".format(
+                    completed.returncode,
+                    (completed.stderr or completed.stdout).strip()[:200]))
+        payload = json.loads(completed.stdout)
+        stats = payload["end"]["sum_received"]
+        result["bytes"] = int(stats.get("bytes", 0))
+        result["seconds"] = float(stats.get("seconds", elapsed))
+        result["mbps"] = float(
+            stats.get("bits_per_second", 0.0)) / 1_000_000.0
+        result["success"] = result["bytes"] > 0 and result["mbps"] > 0
+        if not result["success"]:
+            result["error"] = "iperf3 returned no receiver statistics"
     except Exception as exc:
-        results.append({"bytes": 0, "success": False, "error": str(exc)})
-
-    elapsed = time.perf_counter() - started
-    total_bytes = sum(result.get("bytes", 0) for result in results)
-    errors = [result.get("error") for result in results
-              if result.get("error")]
-    success = (
-        len(results) == len(chunks)
-        and all(result.get("success") for result in results)
-        and total_bytes == size
-    )
-    result = {
-        "direction": direction,
-        "bytes": total_bytes,
-        "success": success,
-        "error": errors[0] if errors
-        else (None if success else "incomplete transfer"),
-        "seconds": elapsed,
-        "flows": flows,
-    }
-    if success:
-        result["mbps"] = (total_bytes * 8.0) / (elapsed * 1_000_000.0)
+        # A single unreachable peer must not stop the probe loop.
+        result["error"] = str(exc)
+        result["seconds"] = time.perf_counter() - started
     return result
 
+
+def start_iperf_server():
+    """Start the peer-facing iperf3 server in the background."""
+    command = ["iperf3", "-s", "-D", "-p", str(IPERF_PORT)]
+    try:
+        subprocess.run(
+            command, check=True, timeout=10,
+            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        log("iperf3 server listening on port {}".format(IPERF_PORT))
+    except (OSError, subprocess.SubprocessError) as exc:
+        log("failed to start iperf3 server: {}".format(exc))
 
 # ---------------------------------------------------------------------------
 # Peer discovery
 
 
-def kubernetes_nodes():
+def kubernetes_probe_pods():
     with open(SA_TOKEN, "r") as handle:
         token = handle.read().strip()
-    # KUBERNETES_SERVICE_HOST/PORT are injected by the kubelet for hostNetwork
-    # pods too. The in-cluster DNS name is a fallback for unusual setups.
+    # KUBERNETES_SERVICE_HOST/PORT are injected into every pod. The in-cluster
+    # DNS name is a fallback for unusual setups.
     host = os.environ.get("KUBERNETES_SERVICE_HOST", "kubernetes.default.svc")
     port = os.environ.get("KUBERNETES_SERVICE_PORT", "443")
 
     selector = urllib.parse.urlencode(
-        {"labelSelector": "kubernetes.io/os=linux"})
-    url = "https://{}:{}/api/v1/nodes?{}".format(host, port, selector)
+        {"labelSelector": "app.kubernetes.io/name=network-mesh-probe"})
+    url = "https://{}:{}/api/v1/namespaces/{}/pods?{}".format(
+        host, port, urllib.parse.quote(POD_NAMESPACE, safe=""), selector)
     request = urllib.request.Request(
         url,
         headers={
@@ -402,27 +363,36 @@ def kubernetes_nodes():
     with urllib.request.urlopen(request, timeout=10, context=context) as resp:
         payload = json.load(resp)
 
-    peers = []
+    candidates = []
     for item in payload.get("items", []):
         metadata = item.get("metadata") or {}
+        spec = item.get("spec") or {}
         status = item.get("status") or {}
-        name = metadata.get("name")
-        if not name:
-            continue
-        addresses = [
-            address.get("address")
-            for address in status.get("addresses") or []
-            if address.get("type") == "InternalIP" and address.get("address")
-        ]
-        ipv4 = [address for address in addresses if ":" not in address]
-        address = ipv4[0] if ipv4 else (addresses[0] if addresses else None)
-        if not address:
+        name = spec.get("nodeName")
+        address = status.get("podIP")
+        if not name or not address or status.get("phase") != "Running":
             continue
         ready = any(
             condition.get("type") == "Ready"
             and condition.get("status") == "True"
             for condition in status.get("conditions") or []
         )
+        candidates.append((
+            ready,
+            metadata.get("creationTimestamp", ""),
+            name,
+            address,
+        ))
+
+    # A rolling update can briefly leave two probe pods on one node. Prefer a
+    # Ready pod, then the newest one, and keep one peer per node.
+    candidates.sort(key=lambda item: (item[0], item[1]), reverse=True)
+    peers = []
+    seen = set()
+    for ready, _, name, address in candidates:
+        if name in seen:
+            continue
+        seen.add(name)
         peers.append({
             "name": name,
             "host": address,
@@ -435,7 +405,7 @@ def kubernetes_nodes():
 def discover_peers():
     if STATIC_PEERS:
         return [dict(peer) for peer in STATIC_PEERS]
-    return kubernetes_nodes()
+    return kubernetes_probe_pods()
 
 
 # ---------------------------------------------------------------------------
@@ -450,8 +420,8 @@ METRIC_HELP = {
         "Unix time at which the last test cycle finished.",
     "mesh_probe_cycle_duration_seconds":
         "Duration of the last test cycle in seconds.",
-    "mesh_peer_ready": "Whether the peer node reports Ready in Kubernetes.",
-    "mesh_peer_info": "Peer node address information.",
+    "mesh_peer_ready": "Whether the peer probe pod reports Ready in Kubernetes.",
+    "mesh_peer_info": "Peer probe pod address information.",
     "mesh_ping_sent_packets": "ICMP echo requests sent to the peer.",
     "mesh_ping_received_packets": "ICMP echo replies received from the peer.",
     "mesh_ping_loss_percent": "ICMP packet loss towards the peer in percent.",
@@ -461,11 +431,12 @@ METRIC_HELP = {
     "mesh_ping_rtt_max_ms": "Maximum ICMP round-trip time in milliseconds.",
     "mesh_ping_rtt_mdev_ms":
         "Mean deviation of the ICMP round-trip times in milliseconds.",
-    "mesh_transfer_success": "1 when the HTTP transfer completed.",
-    "mesh_transfer_mbps": "Measured HTTP transfer throughput in Mbit/s.",
-    "mesh_transfer_bytes": "Bytes transferred in the last HTTP test.",
-    "mesh_transfer_seconds": "Duration of the last HTTP transfer in seconds.",
-    "mesh_transfer_flows": "Parallel HTTP flows used for the last transfer.",
+    "mesh_transfer_success": "1 when the iperf3 test completed.",
+    "mesh_transfer_mbps": "Measured iperf3 TCP throughput in Mbit/s.",
+    "mesh_transfer_bytes": "Bytes received in the measured iperf3 interval.",
+    "mesh_transfer_seconds":
+        "Duration of the measured iperf3 interval in seconds.",
+    "mesh_transfer_flows": "Parallel iperf3 streams used for the last transfer.",
     "mesh_last_test_timestamp_seconds":
         "Unix time at which the last test of this type finished.",
 }
@@ -700,12 +671,24 @@ class Handler(BaseHTTPRequestHandler):
             self.end_headers()
             remaining = size
             try:
-                while remaining > 0:
-                    chunk = ZERO_BLOCK if remaining >= len(ZERO_BLOCK) \
-                        else ZERO_BLOCK[:remaining]
-                    self.wfile.write(chunk)
-                    remaining -= len(chunk)
-            except (BrokenPipeError, ConnectionResetError):
+                self.wfile.flush()
+                if hasattr(self.connection, "sendfile"):
+                    zero_file = ensure_zero_file()
+                    with open(zero_file, "rb") as source:
+                        while remaining > 0:
+                            count = min(remaining, ZERO_FILE_SIZE)
+                            sent = self.connection.sendfile(
+                                source, 0, count)
+                            if not sent:
+                                break
+                            remaining -= sent
+                else:
+                    while remaining > 0:
+                        chunk = ZERO_BLOCK if remaining >= len(ZERO_BLOCK) \
+                            else ZERO_BLOCK[:remaining]
+                        self.wfile.write(chunk)
+                        remaining -= len(chunk)
+            except (BrokenPipeError, ConnectionResetError, OSError):
                 pass
             self.close_connection = True
         else:
@@ -789,7 +772,7 @@ class Scheduler(object):
             for direction in ("upload", "download"):
                 if self.stop.is_set():
                     break
-                test = transfer(peer["host"], peer["port"], direction)
+                test = transfer(peer["host"], direction)
                 self.state.set_transfer(destination, direction, test)
                 if test["success"]:
                     transfers_ok += 1
@@ -840,13 +823,14 @@ class Scheduler(object):
 
 def main():
     log("starting mesh-probe {} on {} (port {}, interval {:.0f}s, "
-        "{} bytes/transfer, {} flows)".format(
-            VERSION, NODE_NAME, PORT, INTERVAL, TRANSFER_BYTES,
+        "iperf3 {}s x {} flows)".format(
+            VERSION, NODE_NAME, PORT, INTERVAL, IPERF_SECONDS,
             TRANSFER_FLOWS))
     if not STATIC_PEERS and not os.path.exists(SA_TOKEN):
         log("warning: {} is missing; waiting for Kubernetes API".format(
             SA_TOKEN))
 
+    start_iperf_server()
     state = ProbeState(NODE_NAME)
     Handler.state = state
     server = ThreadingHTTPServer(("", PORT), Handler)

@@ -1,7 +1,7 @@
-# Scrapes the node-to-node network probe DaemonSet. The pods use hostNetwork,
-# so their pod IP is the node's InternalIP; the metrics endpoint listens on
-# 9101 on every node. The 'node' relabeling matches node-exporter and makes
-# per-probe metrics (up, mesh_probe_info, ...) easy to group by host.
+# Scrapes the network-mesh probe DaemonSet. The probe pods run on the pod
+# network, so Prometheus scrapes each pod's IP on port 9101. The 'node'
+# relabeling matches node-exporter and makes per-probe metrics (up,
+# mesh_probe_info, ...) easy to group by host.
 apiVersion: monitoring.coreos.com/v1
 kind: PodMonitor
 metadata:

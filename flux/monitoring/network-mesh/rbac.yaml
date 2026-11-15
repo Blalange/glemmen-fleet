@@ -1,6 +1,6 @@
-# The probe needs to list cluster nodes to discover its peers. It only reads
-# the node objects (name, InternalIP and Ready condition); it does not watch
-# them, so get/list is enough.
+# The probe lists its peer probe pods in the monitoring namespace to discover
+# their pod IPs. It only reads the pod objects (nodeName, podIP and Ready
+# condition); it does not watch them, so get/list is enough.
 apiVersion: v1
 kind: ServiceAccount
 metadata:
@@ -17,7 +17,7 @@ metadata:
     app.kubernetes.io/name: network-mesh-probe
 rules:
   - apiGroups: [""]
-    resources: ["nodes"]
+    resources: ["pods"]
     verbs: ["get", "list"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1

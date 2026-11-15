@@ -1,10 +1,10 @@
-# Node-to-node network tests (ICMP latency/loss and HTTP upload/download).
+# Pod-network mesh tests (ICMP latency/loss and HTTP upload/download).
 #
-# The probe runs as a host-network DaemonSet so each node tests the network
-# path from itself to every other node. The script is kept in the ConfigMap and
-# mounted into a stock Python image; no custom image build is required. The
-# generated ConfigMap name carries a hash, so changing probe.py rolls the
-# DaemonSet.
+# The probe runs as a pod-network DaemonSet so its traffic traverses the
+# Calico pod-CIDR routes and the ECMP multipath links between nodes. The script
+# is kept in the ConfigMap and mounted into the netshoot image, which provides
+# Python 3 and iperf3; no custom image build is required. The generated
+# ConfigMap name carries a hash, so changing probe.py rolls the DaemonSet.
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 namespace: monitoring

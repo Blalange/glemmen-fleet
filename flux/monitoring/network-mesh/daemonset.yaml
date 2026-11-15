@@ -1,13 +1,13 @@
-# One probe per node. hostNetwork is deliberate: the probe must source its
-# pings and transfers from the node's own network stack, and its HTTP server
-# must be reachable on the node's InternalIP.
+# One probe per node. The probe runs on the pod network (not hostNetwork) so
+# its pings and iperf3 tests traverse the Calico pod-CIDR routes and exercise
+# the ECMP multipath links between nodes. It discovers the peer probe pods via
+# the Kubernetes API and uses their pod IPs.
 #
-# The test volume is a balance between measurement accuracy and background
-# traffic: 32 MiB takes roughly 0.3s on a 1 Gbit/s link and 0.03s on a 10
-# Gbit/s link. Each transfer is split across TRANSFER_FLOWS parallel HTTP
-# connections so multipath/ECMP links are exercised; the total traffic stays
-# at 32 MiB per direction. Tests are phase-shifted across nodes (see probe.py),
-# so all nodes do not run the full mesh at the same instant.
+# Each throughput test is a 2-second iperf3 TCP run with 16 parallel streams in
+# each direction. iperf3 is used instead of the Python HTTP transfer because
+# the Python write path was CPU-bound around 1 Gbit/s and could not show the
+# 2 Gbit/s ECMP aggregate. Tests are phase-shifted across nodes so only one
+# pair runs at a time.
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
@@ -31,8 +31,8 @@ spec:
         app.kubernetes.io/component: probe
     spec:
       serviceAccountName: network-mesh-probe
-      hostNetwork: true
-      dnsPolicy: ClusterFirstWithHostNet
+      hostNetwork: false
+      dnsPolicy: ClusterFirst
       enableServiceLinks: false
       nodeSelector:
         kubernetes.io/os: linux
@@ -48,7 +48,7 @@ spec:
           type: RuntimeDefault
       containers:
         - name: probe
-          image: docker.io/library/python:3.13-slim
+          image: docker.io/nicolaka/netshoot:latest
           imagePullPolicy: IfNotPresent
           command: ["python3", "-u", "/app/probe.py"]
           env:
@@ -59,7 +59,11 @@ spec:
             - name: NODE_IP
               valueFrom:
                 fieldRef:
-                  fieldPath: status.hostIP
+                  fieldPath: status.podIP
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
             - name: PORT
               value: "9101"
             - name: INTERVAL_SECONDS
@@ -73,14 +77,23 @@ spec:
             - name: TRANSFER_BYTES
               value: "33554432"
             - name: TRANSFER_FLOWS
-              value: "8"
+              value: "16"
             - name: TRANSFER_TIMEOUT_SECONDS
               value: "15"
+            - name: IPERF_PORT
+              value: "5201"
+            - name: IPERF_SECONDS
+              value: "2"
+            - name: IPERF_OMIT_SECONDS
+              value: "1"
             - name: PYTHONDONTWRITEBYTECODE
               value: "1"
           ports:
             - name: http
               containerPort: 9101
+              protocol: TCP
+            - name: iperf
+              containerPort: 5201
               protocol: TCP
           readinessProbe:
             httpGet:

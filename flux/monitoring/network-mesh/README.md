@@ -1,17 +1,16 @@
 # Network mesh probe
 
-A cluster-wide node-to-node network test. One `network-mesh-probe` pod runs on
-every Linux node with `hostNetwork`, so each test is sourced from that node's
-own network stack and targets the other nodes' `InternalIP` addresses on port
-`9101`.
+A cluster-wide pod-network mesh test. One `network-mesh-probe` pod runs on
+every Linux node on the pod network, so each test traverses the Calico
+pod-CIDR routes and the ECMP multipath links. Peers are the other probe pods'
+IPs on port `9101`; the throughput tests use iperf3 on port `5201`.
 
 Every five minutes each probe:
 
-- sends 4 ICMP echo requests to every peer (200 ms apart, 1 s timeout),
-- uploads 32 MiB total over 8 parallel HTTP connections to every peer's
-  `/upload` endpoint,
-- downloads 32 MiB total over 8 parallel HTTP connections from every peer's
-  `/download` endpoint.
+- sends 4 ICMP echo requests to every peer probe pod (200 ms apart, 1 s
+  timeout),
+- runs a 2-second iperf3 TCP test with 16 parallel streams in each direction
+  and records the receiver-side throughput.
 
 The results are exposed on `/metrics` and scraped by the `network-mesh-probe`
 PodMonitor. The **Network Mesh** Grafana dashboard (`glemmen-network-mesh`)
@@ -19,31 +18,37 @@ renders four source/destination matrices: ping RTT, packet loss, upload
 throughput and download throughput. Each matrix has an `avg` and a `max` row
 per source, aggregated over the dashboard time range.
 
-## Why host networking and HTTP transfers?
+## Why pod networking and iperf3?
 
-`hostNetwork` is required for the measurements to reflect the node's network
-path rather than a pod overlay. Using HTTP for the throughput tests keeps the
-probe self-contained: the same process is both the test client and the test
-server, so no extra iperf3 image, port or orchestration is needed. The
-`/upload` handler reads and discards the body; `/download` streams zeroes
-without buffering the whole transfer. Each transfer is split across
-`TRANSFER_FLOWS` parallel HTTP connections so multipath/ECMP links are
-exercised; the total payload stays at 32 MiB per direction.
+The probe deliberately runs on the pod network: the tests then traverse the
+same Calico pod-CIDR routes as application pods, including the ECMP multipath
+links between the server VLAN and VLAN 7. Running with `hostNetwork` would
+measure only the directly connected server-VLAN link and would never exceed
+1 Gbit/s on a 1xx node.
 
-The 32 MiB total payload is split across 8 parallel connections; the aggregate
-takes roughly 0.3 s on a 1 Gbit/s link and 0.03 s on a 10 Gbit/s link. Tests
-are phase-shifted across nodes so the whole mesh is not saturated at once. For
-`N` nodes a full cycle sends `N * (N - 1) * 2 * 32 MiB`; with the eight current
-nodes that is about 3.5 GiB every five minutes, or roughly 0.1 Gbit/s of
-aggregate average background traffic.
+The throughput tests use iperf3 with 16 parallel TCP streams. The earlier
+Python HTTP transfer was CPU-bound in its write path at roughly 1 Gbit/s and
+could not show the 2 Gbit/s ECMP aggregate. iperf3 runs in C and measures the
+receiver-side rate; `-R` reverses the direction so each probe records both
+upload and download. The probe image is `nicolaka/netshoot`, which already
+provides Python 3 and iperf3 and is used by the ECMP route agent.
+
+Each test lasts 2 seconds per direction. Tests are phase-shifted across nodes so
+only one pair runs at a time; a full cycle moves roughly
+`N * (N - 1) * 2 * rate * seconds`. At 1.8 Gbit/s and two seconds per direction,
+the six current nodes move about 27 GB every five minutes, or roughly
+0.72 Gbit/s of aggregate average background traffic. Increase
+`INTERVAL_SECONDS` if that is too much for the storage/media traffic. The HTTP
+`/download` and `/upload` endpoints remain available for manual checks;
+`TRANSFER_BYTES` only controls those endpoints.
 
 ## Layout
 
 | File | Purpose |
 | --- | --- |
-| `daemonset.yaml` | One host-network probe per node, env configuration, probes |
-| `probe.py` | ICMP + HTTP test loop and Prometheus/HTTP server (stdlib only) |
-| `rbac.yaml` | ServiceAccount and read-only node list permission |
+| `daemonset.yaml` | One pod-network probe per node, env configuration, probes |
+| `probe.py` | ICMP + iperf3 test loop and Prometheus/HTTP server (stdlib + iperf3) |
+| `rbac.yaml` | ServiceAccount and read-only pod list permission |
 | `kustomization.yaml` | ConfigMap generator for `probe.py` |
 
 The deployed resources are in `flux/monitoring/network-mesh/`. They are applied
@@ -64,21 +69,27 @@ The DaemonSet passes these environment variables:
 | `PING_COUNT` | `4` | ICMP echo requests per peer |
 | `PING_INTERVAL_MS` | `200` | Delay between ICMP requests |
 | `PING_TIMEOUT_SECONDS` | `1` | Per-request reply timeout |
-| `TRANSFER_BYTES` | `33554432` | Total bytes per HTTP upload/download test |
-| `TRANSFER_FLOWS` | `8` | Parallel HTTP connections per transfer |
-| `TRANSFER_TIMEOUT_SECONDS` | `15` | HTTP connect/read timeout |
-| `PORT` | `9101` | Metrics and transfer server port |
+| `TRANSFER_BYTES` | `33554432` | Bytes per manual HTTP `/download`/`/upload` test |
+| `TRANSFER_FLOWS` | `16` | Parallel iperf3 streams (and HTTP flows) |
+| `TRANSFER_TIMEOUT_SECONDS` | `15` | iperf3 subprocess timeout |
+| `IPERF_PORT` | `5201` | Peer iperf3 server port |
+| `IPERF_SECONDS` | `2` | Duration of each iperf3 test |
+| `IPERF_OMIT_SECONDS` | `1` | Initial seconds omitted from iperf3 statistics |
+| `PORT` | `9101` | Metrics, health and manual-transfer HTTP port |
 
-`STATIC_PEERS` can replace Kubernetes node discovery, which is useful for
+`STATIC_PEERS` can replace Kubernetes pod discovery, which is useful for
 running the probe outside the cluster:
 
 ```sh
 STATIC_PEERS='node-b=192.0.2.20,node-c=192.0.2.30' \
-NODE_NAME=node-a PORT=9101 python3 flux/monitoring/network-mesh/probe.py
+NODE_NAME=node-a PORT=9101 IPERF_PORT=5201 \
+python3 flux/monitoring/network-mesh/probe.py
 ```
 
-Peer entries are `name=host[:port]`; the port defaults to `PORT`. The probe
-excludes its own `NODE_NAME` from the target list.
+Peer entries are `name=host[:port]`; the port defaults to `PORT` and is the
+HTTP/info port. The throughput test always uses `IPERF_PORT`, so each peer must
+run an iperf3 server there. The probe excludes its own `NODE_NAME` from the
+target list.
 
 ## Metrics
 
@@ -97,10 +108,10 @@ keeps the probe's value where both exist).
 | `mesh_ping_sent_packets` | source, destination | Echo requests sent |
 | `mesh_ping_received_packets` | source, destination | Echo replies received |
 | `mesh_ping_success` | source, destination | 1 when no packet was lost |
-| `mesh_transfer_mbps` | source, destination, direction | Aggregate measured throughput |
-| `mesh_transfer_bytes` | source, destination, direction | Total bytes transferred |
-| `mesh_transfer_seconds` | source, destination, direction | Transfer duration |
-| `mesh_transfer_flows` | source, destination, direction | Parallel HTTP flows used |
+| `mesh_transfer_mbps` | source, destination, direction | iperf3 receiver-side throughput |
+| `mesh_transfer_bytes` | source, destination, direction | Bytes received in the measured interval |
+| `mesh_transfer_seconds` | source, destination, direction | Measured interval duration |
+| `mesh_transfer_flows` | source, destination, direction | Parallel iperf3 streams |
 | `mesh_transfer_success` | source, destination, direction | 1 when the test completed |
 | `mesh_last_test_timestamp_seconds` | source, destination, test | Last test completion time |
 | `mesh_probe_info` | node, version | Static probe info |
@@ -121,9 +132,10 @@ source). Failed transfers keep `mesh_transfer_success=0` and omit
 kubectl -n monitoring get pods -l app.kubernetes.io/name=network-mesh-probe -o wide
 kubectl -n monitoring logs -l app.kubernetes.io/name=network-mesh-probe --tail=50
 
-# metrics from one node
-curl -s http://192.168.6.130:9101/metrics | grep mesh_
-curl -s http://192.168.6.130:9101/info
+# metrics from one probe pod (pod IP from the get pods output)
+POD_IP=$(kubectl -n monitoring get pod -l app.kubernetes.io/name=network-mesh-probe -o jsonpath='{.items[0].status.podIP}')
+curl -s "http://${POD_IP}:9101/metrics" | grep mesh_
+curl -s "http://${POD_IP}:9101/info"
 
 # Prometheus targets and a quick query
 kubectl -n monitoring port-forward svc/kube-prometheus-stack-prometheus 9090:9090
@@ -132,16 +144,17 @@ curl -s 'http://127.0.0.1:9090/api/v1/query?query=mesh_ping_rtt_ms'
 
 Common causes of failing tests:
 
-- **Ping fails, HTTP works**: raw ICMP is blocked by the network or the
+- **Ping fails, throughput works**: raw ICMP is blocked by the network or the
   container could not get `NET_RAW`. Check the probe log and the
   `mesh_ping_*` series.
-- **HTTP fails, ping works**: the peer's probe pod is not running, or port
-  9101 is blocked between nodes.
+- **Throughput fails, ping works**: the peer's iperf3 server is not running,
+  or port 5201 is blocked between nodes. Check the probe log for
+  `iperf3 server listening` / `failed to start iperf3 server`.
 - **All metrics missing**: the PodMonitor is not selected. Check
   `kubectl -n monitoring get podmonitor network-mesh-probe -o yaml` and the
   Prometheus targets page.
 - **Table cell is `-`**: the source has not completed a test against that
-  destination yet, or the peer was removed from the node list.
+  destination yet, or the peer probe pod is not running.
 
 The probe is intentionally not a privileged pod. It gets only `NET_RAW`,
 drops all other capabilities, runs with a read-only root filesystem and
