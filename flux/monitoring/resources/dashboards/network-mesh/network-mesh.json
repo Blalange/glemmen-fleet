@@ -581,7 +581,7 @@
             "filterable": false,
             "inspect": false
           },
-          "decimals": 0,
+          "decimals": 3,
           "mappings": [],
           "noValue": "-",
           "thresholds": {
@@ -715,7 +715,7 @@
             "filterable": false,
             "inspect": false
           },
-          "decimals": 0,
+          "decimals": 3,
           "mappings": [],
           "noValue": "-",
           "thresholds": {
