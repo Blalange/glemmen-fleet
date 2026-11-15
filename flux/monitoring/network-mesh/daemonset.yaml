@@ -3,6 +3,9 @@
 # the ECMP multipath links between nodes. It discovers the peer probe pods via
 # the Kubernetes API and uses their pod IPs.
 #
+# The node/VLAN underlay is MTU 9000, Calico pods use 8980 bytes, and the route
+# agent raises the NIC rings, so the iperf3 test uses the jumbo/ECMP path.
+#
 # Each throughput test is a 2-second iperf3 TCP run with 16 parallel streams in
 # each direction. iperf3 is used instead of the Python HTTP transfer because
 # the Python write path was CPU-bound around 1 Gbit/s and could not show the

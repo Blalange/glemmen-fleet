@@ -9,6 +9,7 @@ apiVersion: v1alpha1
 kind: LinkConfig
 name: eno8303
 up: true
+mtu: 9000
 addresses:
   - address: 192.168.6.180/24
 routes:
@@ -23,15 +24,17 @@ apiVersion: v1alpha1
 kind: LinkConfig
 name: eno8403
 up: true
+mtu: 9000
 ---
 # Second ECMP path. VLAN 7 ("Servere ECMP" in UniFi) is already tagged on the
 # server ports; the untagged Servere VLAN stays available for firmware PXE on
-# eno8403 as well.
+# eno8403 as well. MTU 9000.
 apiVersion: v1alpha1
 kind: VLANConfig
 name: eno8403.7
 parent: eno8403
 vlanID: 7
+mtu: 9000
 addresses:
   - address: 192.168.7.180/24
 ---
@@ -42,6 +45,7 @@ kind: VLANConfig
 name: bond0.1
 parent: eno8303
 vlanID: 1
+mtu: 1500
 ---
 apiVersion: v1alpha1
 kind: Layer2VIPConfig

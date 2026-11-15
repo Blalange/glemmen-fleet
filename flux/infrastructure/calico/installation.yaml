@@ -5,6 +5,10 @@ metadata:
 spec:
   calicoLibHostPath: /var/lib/calico
   calicoNetwork:
+    # Jumbo frames: the node and VLAN underlay is MTU 9000; leave 20 bytes
+    # for the IPIP tunnel header. New pods get 8980-byte veth interfaces;
+    # existing pods keep their previous MTU until they are recreated.
+    mtu: 8980
     bgp: Enabled
     hostPorts: Enabled
     ipPools:

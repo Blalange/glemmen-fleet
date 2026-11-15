@@ -72,7 +72,10 @@ The 1xx switch ports carry the Default network as tagged VLAN 1 and the ECMP
 network as tagged VLAN 7, in addition to the untagged server VLAN. Talos creates
 `bond0.1` (a legacy name; on the converted nodes it is a VLAN subinterface of
 `eno8303`) for VLAN 1 and gets an address from UniFi with `ignoreRoutes: true`,
-so it does not install a competing default route. ProxyDHCP only needs an
+so it does not install a competing default route. The server VLAN and VLAN 7
+run at MTU 9000; `bond0.1` stays at 1500 for the Default network/PXE. PXE
+clients negotiate a 1500-byte TCP MSS, so the larger server MTU does not affect
+firmware PXE or the asset server. ProxyDHCP only needs an
 address on the subnet; it does not use that address as a gateway for the PXE
 clients.
 

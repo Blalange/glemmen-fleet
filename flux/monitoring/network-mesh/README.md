@@ -3,7 +3,10 @@
 A cluster-wide pod-network mesh test. One `network-mesh-probe` pod runs on
 every Linux node on the pod network, so each test traverses the Calico
 pod-CIDR routes and the ECMP multipath links. Peers are the other probe pods'
-IPs on port `9101`; the throughput tests use iperf3 on port `5201`.
+IPs on port `9101`; the throughput tests use iperf3 on port `5201`. The node
+and VLAN underlay uses MTU 9000, Calico pods use 8980 bytes, and the route
+agent raises the NIC rings, so the probe measures the same jumbo/ECMP path as
+application pods.
 
 Every five minutes each probe:
 
@@ -28,7 +31,9 @@ measure only the directly connected server-VLAN link and would never exceed
 
 The throughput tests use iperf3 with 16 parallel TCP streams. The earlier
 Python HTTP transfer was CPU-bound in its write path at roughly 1 Gbit/s and
-could not show the 2 Gbit/s ECMP aggregate. iperf3 runs in C and measures the
+could not show the 2 Gbit/s ECMP aggregate. Jumbo frames raise the practical
+TCP ceiling from about 1.88 to 1.96 Gbit/s; live 16-flow results are about
+1.9 Gbit/s upload and 1.75–1.83 Gbit/s download. iperf3 runs in C and measures the
 receiver-side rate; `-R` reverses the direction so each probe records both
 upload and download. The probe image is `nicolaka/netshoot`, which already
 provides Python 3 and iperf3 and is used by the ECMP route agent.

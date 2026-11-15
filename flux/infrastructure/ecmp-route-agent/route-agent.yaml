@@ -17,6 +17,10 @@
 #
 # The agent runs on every node, including unconverted nodes and glemmen60, so
 # disabling Felix does not leave any node without cluster routes.
+#
+# It also raises the NIC rings at startup: 2047 RX on the 1xx tg3 interfaces
+# and 4096 RX / 8192 TX on glemmen80's ixgbe 10G interface. Ring changes can
+# briefly reset a link, so they happen once per detected interface.
 apiVersion: v1
 kind: Namespace
 metadata:
@@ -72,6 +76,31 @@ data:
 
     DESTINATIONS="glemmen60 glemmen80 glemmen130 glemmen150 glemmen160 glemmen170 glemmen180"
 
+    # The 1xx BCM5720 (tg3) and 80's 10G (ixgbe) support much deeper rings
+    # than the defaults. Set them once per detected interface; changing ring
+    # parameters can briefly reset the link, so this belongs at agent startup.
+    LAST_RING_IFACE=""
+    set_rings() {
+      iface="$1"
+      [ -z "${iface}" ] && return
+      [ "${iface}" = "${LAST_RING_IFACE}" ] && return
+      LAST_RING_IFACE="${iface}"
+      driver=$(ethtool -i "${iface}" 2>/dev/null \
+        | sed -n 's/^driver: //p')
+      case "${driver}" in
+        tg3)
+          ethtool -G "${iface}" rx 2047 >/dev/null 2>&1 || true
+          ;;
+        ixgbe)
+          ethtool -G "${iface}" rx 4096 tx 8192 >/dev/null 2>&1 || true
+          ;;
+        *)
+          ethtool -G "${iface}" rx 1024 >/dev/null 2>&1 || true
+          ;;
+      esac
+      echo "ring sizes set on ${iface} (${driver:-unknown})"
+    }
+
     while true; do
       NEW_SERVER=$(iface_for_prefix '^192\.168\.6\.')
       [ -z "${NEW_SERVER}" ] && \
@@ -85,6 +114,9 @@ data:
            [ "${NEW_VLAN7}" != "${VLAN7_IFACE}" ]; then
           SERVER_IFACE="${NEW_SERVER}"
           VLAN7_IFACE="${NEW_VLAN7}"
+          VLAN7_PARENT="${VLAN7_IFACE%.*}"
+          set_rings "${SERVER_IFACE}"
+          [ -n "${VLAN7_PARENT}" ] && set_rings "${VLAN7_PARENT}"
           echo "ECMP agent on ${NODE_NAME}: server=${SERVER_IFACE} vlan7=${VLAN7_IFACE:-none}"
         fi
       fi
