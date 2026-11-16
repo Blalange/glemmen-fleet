@@ -8,6 +8,9 @@ devices:
     role: server
     device_type: dell-poweredge-r250
     service_tag: HL51JZ3
+    contacts:
+      - contact: Robin
+        role: technical-contact
     redfish_ip: 192.168.4.240 # HL51JZ3
     oob_ip: 192.168.4.240
     unifi_mac: 6c:3c:8c:75:3e:84
@@ -60,6 +63,9 @@ devices:
     role: server
     device_type: dell-poweredge-r250
     service_tag: 7L51JZ3
+    contacts:
+      - contact: Robin
+        role: technical-contact
     redfish_ip: 192.168.4.220 # 7L51JZ3
     oob_ip: 192.168.4.220
     unifi_mac: 6c:3c:8c:75:3c:3c
@@ -86,6 +92,9 @@ devices:
     role: server
     device_type: dell-poweredge-r250
     service_tag: BL51JZ3
+    contacts:
+      - contact: Robin
+        role: technical-contact
     redfish_ip: 192.168.4.210 # BL51JZ3
     oob_ip: 192.168.4.210
     unifi_mac: 6c:3c:8c:75:3c:f4
