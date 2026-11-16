@@ -18,10 +18,26 @@ data:
     #!/bin/sh
     set -eu
 
-    qbit_url="${QBITTORRENT_URL:?QBITTORRENT_URL is required}"
+    # Use the Service's injected ClusterIP/port instead of the DNS name. The
+    # Service variables are set by kubelet for same-namespace pods, so this
+    # job keeps working even when CoreDNS or a fresh pod's DNS path is unhappy.
+    # QBITTORRENT_URL is still accepted as an override for manual runs.
+    if [ -n "${QBITTORRENT_URL:-}" ]; then
+      qbit_url="${QBITTORRENT_URL}"
+    else
+      qbit_host="${QBITTORRENT_SERVICE_HOST:?QBITTORRENT_SERVICE_HOST is required}"
+      qbit_port="${QBITTORRENT_SERVICE_PORT:-8080}"
+      qbit_url="http://${qbit_host}:${qbit_port}"
+    fi
 
+    echo "Using qBittorrent at ${qbit_url}"
+
+    # --retry-all-errors also retries DNS/connection failures, not just HTTP
+    # 5xx responses. set -e plus --fail-with-body makes a failed API call exit
+    # nonzero instead of silently succeeding.
     qbit_curl() {
-      curl -sS --fail-with-body --retry 3 --retry-connrefused --retry-delay 2 \
+      curl -sS --fail-with-body --retry 3 --retry-all-errors \
+        --retry-connrefused --retry-delay 2 \
         --connect-timeout 5 --max-time 20 \
         -H "Referer: ${qbit_url}/" "$@"
     }
@@ -83,9 +99,9 @@ spec:
               image: docker.io/curlimages/curl:8.23.0
               imagePullPolicy: IfNotPresent
               command: ["/bin/sh", "/scripts/resume-errored.sh"]
-              env:
-                - name: QBITTORRENT_URL
-                  value: http://qbittorrent.media.svc.cluster.local:8080
+              # Do not set QBITTORRENT_URL here: the script derives it from
+              # QBITTORRENT_SERVICE_HOST/PORT, which kubelet injects for the
+              # same-namespace Service, so the first hop never needs DNS.
               securityContext:
                 runAsUser: 100
                 runAsGroup: 101

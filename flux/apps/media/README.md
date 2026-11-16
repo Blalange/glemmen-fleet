@@ -268,6 +268,13 @@ hashes and resumes them with `/api/v2/torrents/start`. It reaches the
 ClusterIP Service from a pod IP in `10.42.0.0/16`, which is in qBittorrent's
 Web UI authentication bypass subnet, so it needs no credentials.
 
+The script builds the URL from `QBITTORRENT_SERVICE_HOST` and
+`QBITTORRENT_SERVICE_PORT`, which kubelet injects for the same-namespace
+Service, so the first hop does not depend on CoreDNS. `QBITTORRENT_URL` is
+still accepted as an override for manual runs. Curl uses `--retry-all-errors`
+so transient DNS/connection failures are retried instead of being masked, and
+`set -e` plus `--fail-with-body` make a failed API call exit nonzero.
+
 qBittorrent 5.x renamed the old `/api/v2/torrents/resume` endpoint to
 `/api/v2/torrents/start`; the old endpoint returns `404 Endpoint does not
 exist` on 5.3.0. The CronJob is pinned to the 5.x image, so it uses `start`.
