@@ -197,7 +197,9 @@ probe_group() {
   : > "$out"
   [ -z "$hosts" ] && return 0
   if [ -n "$HAVE_FPING" ]; then
-    fping -I "$iface" -c2 -p200 -t1000 $hosts > "$out" 2>/dev/null || true
+    # fping prints the per-packet lines on stdout and the summary
+    # ("xmt/rcv/%loss") on stderr; keep both or every peer looks dead.
+    fping -I "$iface" -c2 -p200 -t1000 $hosts > "$out" 2>&1 || true
   else
     for host in $hosts; do
       if ping -I "$iface" -c2 -W1 -q "$host" >/dev/null 2>&1; then
@@ -212,7 +214,10 @@ probe_group() {
 host_alive() {
   out=$1
   host=$2
-  line=$(grep -F "$host : xmt/rcv/%loss" "$out" 2>/dev/null | tail -1)
+  # fping aligns the summary column with extra spaces for short addresses
+  # (for example "192.168.6.80  : xmt/rcv/%loss"), so match on the first
+  # field rather than a literal "$host : " string.
+  line=$(awk -v host="$host" '$1 == host && /xmt\/rcv\/%loss/ { line=$0 } END { print line }' "$out" 2>/dev/null)
   received=$(echo "$line" | sed -n 's/.*= [0-9]*\/\([0-9]*\)\/.*/\1/p')
   [ -n "$received" ] && [ "$received" -gt 0 ]
 }
