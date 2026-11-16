@@ -7,15 +7,9 @@
 # Worker nodes must not receive this document ("etcd config is only allowed on
 # control plane machines"), so it is applied with --config-patch-control-plane.
 #
-# kube-proxy must use the same dataplane as Calico. Calico runs with
-# linuxDataplane: Iptables and nftablesMode: Disabled; Talos defaults
-# kube-proxy to nftables, which is the opposite pairing and breaks pod-to-
-# Service traffic on newly joined nodes. The document is control-plane-only
-# (Talos rejects it on workers) and drives the cluster kube-proxy DaemonSet.
-apiVersion: v1alpha1
-kind: KubeProxyConfig
-image: registry.k8s.io/kube-proxy:v1.37.2
-mode: iptables
+# kube-proxy is left on Talos' nftables default. Switching it to iptables was
+# tested and broke ClusterIP traffic on this Calico/iptables backend, so the
+# dataplane mismatch remains an open item until a tested migration is chosen.
 cluster:
     etcd:
         advertisedSubnets:
