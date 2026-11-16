@@ -26,38 +26,39 @@ apiVersion: v1alpha1
 kind: LinkConfig
 name: eno1
 up: true
+mtu: 9000
 addresses:
-    - address: 192.168.6.60/24
+  - address: 192.168.6.60/24
 routes:
-    - gateway: 192.168.6.1
+  - gateway: 192.168.6.1
 ---
 # Install to the 600 GB PERC virtual disk.
 apiVersion: v1alpha1
 kind: UnattendedInstallConfig
 reboot: true
 provisioning:
-    diskSelector:
-        match: 'disk.wwid == "naa.6b8ca3a0f77e3f003260c7f61614887d"'
-    wipe: true
+  diskSelector:
+    match: 'disk.wwid == "naa.6b8ca3a0f77e3f003260c7f61614887d"'
+  wipe: true
 ---
 apiVersion: v1alpha1
 kind: UserVolumeConfig
 name: hdd1
 provisioning:
-    diskSelector:
-        match: 'disk.wwid == "naa.6b8ca3a0f77e3f003260ca1816169169"'
-    minSize: 100GiB
-    grow: true
+  diskSelector:
+    match: 'disk.wwid == "naa.6b8ca3a0f77e3f003260ca1816169169"'
+  minSize: 100GiB
+  grow: true
 filesystem:
-    type: btrfs
+  type: btrfs
 ---
 apiVersion: v1alpha1
 kind: KubeNodeConfig
 labels:
-    node.longhorn.io/create-default-disk: config
+  node.longhorn.io/create-default-disk: config
 annotations:
-    # Longhorn only reads this when it creates the default disks. Changing the
-    # reservation on an existing disk also requires patching the Longhorn Node
-    # CR (nodes.longhorn.io/glemmen60). Talos owns this annotation: update the
-    # machine config as well, or it will revert a kubectl-only patch.
-    node.longhorn.io/default-disks-config: '[{"name":"system","path":"/var/mnt/longhorn-system","allowScheduling":true,"storageReserved":170000000000},{"name":"hdd1","path":"/var/mnt/hdd1","allowScheduling":true,"storageReserved":6000000000000}]'
+  # Longhorn only reads this when it creates the default disks. Changing the
+  # reservation on an existing disk also requires patching the Longhorn Node
+  # CR (nodes.longhorn.io/glemmen60). Talos owns this annotation: update the
+  # machine config as well, or it will revert a kubectl-only patch.
+  node.longhorn.io/default-disks-config: '[{"name":"system","path":"/var/mnt/longhorn-system","allowScheduling":true,"storageReserved":170000000000},{"name":"hdd1","path":"/var/mnt/hdd1","allowScheduling":true,"storageReserved":6000000000000}]'
