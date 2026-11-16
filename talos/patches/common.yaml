@@ -47,15 +47,6 @@ nameservers:
     - address: 192.168.6.1
     - address: 1.1.1.1
 ---
-# kube-proxy must use the same dataplane as Calico.  Calico runs with
-# linuxDataplane: Iptables and nftablesMode: Disabled; Talos defaults
-# kube-proxy to nftables, which is the opposite pairing and makes NodePort
-# behave inconsistently.  Pin iptables explicitly so a Talos upgrade cannot
-# silently change the proxy backend.
-apiVersion: v1alpha1
-kind: KubeProxyConfig
-mode: iptables
----
 # btrfs kernel module (btrfs user volumes for Longhorn).
 apiVersion: v1alpha1
 kind: KernelModuleConfig
