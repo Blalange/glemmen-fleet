@@ -1,0 +1,20 @@
+# Removes NetBird's native nftables accept rules from Calico's iptables
+# `ip filter` table. See flux/infrastructure/netbird-guard/README.md.
+#
+# No dependsOn: the guard must still be deployed while Calico is unhealthy
+# (that is exactly when it is needed). wait is false because a down node makes
+# the DaemonSet permanently not ready and must not fail the health check.
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: netbird-guard
+  namespace: flux-system
+spec:
+  interval: 1h
+  retryInterval: 2m
+  path: ./flux/infrastructure/netbird-guard
+  prune: true
+  wait: false
+  sourceRef:
+    kind: GitRepository
+    name: flux-system

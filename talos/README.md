@@ -373,6 +373,35 @@ Patches are applied live (network/VIP changes are immediate, kubelet changes
 need a reboot). `talosctl` can be used directly with
 `TALOSCONFIG=talos/generated/talosconfig`.
 
+### NetBird and Calico
+
+NetBird runs as a Talos system extension. On a NetBird start/restart its
+nftables firewall manager writes native accept rules for the `wt0` interface
+into Calico's iptables `ip filter` table, because the Talos host has no
+`iptables` binary. The iptables 1.8.10 in calico-node cannot parse native nft
+rules, so Felix panics and stops programming new workload endpoints; new pods
+then fail DNS/UDP with packets hitting Calico's `Unknown interface` DROP.
+
+The `netbird-guard` Flux Kustomization
+(`flux/clusters/glemmen/netbird-guard.yaml`) removes those specific native
+rules every five seconds. It is independent of the `infrastructure`
+Kustomization so it can still run while Calico is unhealthy. The guard keeps
+NetBird's own ACL table intact; the removed rules are redundant because there
+are no Calico `HostEndpoint` resources.
+
+Calico's `FelixConfiguration` also sets `xdpEnabled: false`: Calico's XDP
+prefilter cannot detach the XDP program that NetBird's eBPF WireGuard proxy
+attaches to `lo`, which made Felix retry the removal forever and delayed
+endpoint programming. XDP is not used with `bpfEnabled: false`.
+
+After `./scripts/talos/manage.py netbird`, confirm the guard pods are running
+and calico-node stays ready on every node:
+
+```sh
+kubectl -n netbird-guard get pods -o wide
+kubectl -n calico-system get pods -l k8s-app=calico-node
+```
+
 ## Notes for the remaining nodes
 
 * **glemmen80** is a **worker** node. Its disk slots were shuffled: it boots from

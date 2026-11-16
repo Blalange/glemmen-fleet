@@ -162,6 +162,12 @@ spec:
   reportingInterval: 0s
   vxlanPort: 4789
   vxlanVNI: 4096
+  # Calico's XDP prefilter has no HostEndpoint resources to protect here, and
+  # it cannot detach the XDP program that NetBird's eBPF WireGuard proxy
+  # attaches to lo. Felix then retries the removal forever ("failed to wipe
+  # the XDP state"), which delays workload-endpoint programming. XDP is not
+  # used with bpfEnabled: false, so disable it instead of fighting NetBird.
+  xdpEnabled: false
 ---
 apiVersion: projectcalico.org/v3
 kind: BGPConfiguration

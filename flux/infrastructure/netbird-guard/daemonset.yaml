@@ -1,0 +1,102 @@
+# Keep NetBird's native nftables rules out of Calico's iptables table.
+#
+# NetBird 0.78.x (the Talos `netbird` system extension) opens its WireGuard
+# interface in the host firewall by inserting accept rules into the kernel's
+# `ip filter` table. When no `iptables` binary is available it emits them as
+# native nftables rules instead:
+#
+#   iifname "wt0" accept
+#   oifname "wt0" ct state established,related accept
+#
+# Talos does not ship an iptables binary, so NetBird always takes that path.
+# Calico owns the same `ip filter` table through iptables-nft, and the
+# iptables 1.8.10 bundled in calico-node refuses to parse a table containing
+# native nft rules ("Table `filter' is incompatible, use 'nft' tool"). Felix
+# then panics and stops programming new workload veths, which leaves new pods
+# without working DNS/UDP until Felix happens to resync.
+#
+# NetBird writes the rules when its firewall manager initialises (i.e. on
+# NetBird start/restart), not continuously. At boot NetBird starts before
+# Calico, the table does not exist yet, and nothing is written; a later
+# NetBird restart (config change, crash loop) triggers the bug. This guard
+# removes the incompatible rules every 5 seconds so a restart cannot wedge
+# Calico.
+#
+# The rules are redundant on these nodes: Calico does not filter host traffic
+# here (there are no HostEndpoint resources) and NetBird's own ACLs live in its
+# separate `netbird` nftables table. The guard only matches native rules for
+# the `wt0` interface and leaves all iptables-generated Calico rules alone.
+#
+# The calico-node image is used because it is already present on every node and
+# contains nft, grep, sed and a POSIX shell.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: netbird-guard
+  labels:
+    pod-security.kubernetes.io/enforce: privileged
+    pod-security.kubernetes.io/audit: privileged
+    pod-security.kubernetes.io/warn: privileged
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: netbird-filter-guard
+  namespace: netbird-guard
+  labels:
+    app.kubernetes.io/name: netbird-filter-guard
+    app.kubernetes.io/component: guard
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: netbird-filter-guard
+  updateStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: netbird-filter-guard
+        app.kubernetes.io/component: guard
+    spec:
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
+      enableServiceLinks: false
+      priorityClassName: system-node-critical
+      tolerations:
+        - operator: Exists
+      terminationGracePeriodSeconds: 10
+      containers:
+        - name: guard
+          image: quay.io/calico/node:v3.33.0
+          imagePullPolicy: IfNotPresent
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              set -u
+              while true; do
+                for family in ip ip6; do
+                  for chain in INPUT OUTPUT FORWARD; do
+                    handles=$(/usr/sbin/nft -a list chain "$family" filter "$chain" 2>/dev/null \
+                      | /bin/grep -E '(iifname|oifname) "wt0"' \
+                      | /bin/grep -v 'xt match' \
+                      | /bin/sed -n 's/.*handle \([0-9][0-9]*\).*/\1/p')
+                    for handle in $handles; do
+                      if /usr/sbin/nft delete rule "$family" filter "$chain" handle "$handle" 2>/dev/null; then
+                        echo "removed native NetBird rule $family/filter/$chain handle $handle"
+                      fi
+                    done
+                  done
+                done
+                sleep 5
+              done
+          securityContext:
+            privileged: true
+          resources:
+            requests:
+              cpu: 5m
+              memory: 16Mi
+            limits:
+              cpu: 50m
+              memory: 64Mi
