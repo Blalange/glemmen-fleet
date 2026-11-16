@@ -84,8 +84,11 @@ spec:
               value: info
             - name: FIREWALL
               value: "on"
+            # 8080 is the qBittorrent Web UI. 9999 must also be open or
+            # gluetun's firewall drops the kubelet probes to its health server,
+            # the startup probe kills the tunnel, and the pod never starts.
             - name: FIREWALL_INPUT_PORTS
-              value: "8080"
+              value: "8080,9999"
             - name: FIREWALL_OUTBOUND_SUBNETS
               value: 10.42.0.0/16,10.43.0.0/16,192.168.6.0/24
             - name: HEALTH_SERVER_ADDRESS
@@ -135,8 +138,11 @@ spec:
             requests:
               cpu: 50m
               memory: 64Mi
+            # 256Mi is not enough while gluetun downloads its blocklists: it
+            # gets OOM-killed (exit 137), which leaves the ip rules behind and
+            # trips the "adding IPv4/IPv6 rule ... file exists" restart loop.
             limits:
-              memory: 256Mi
+              memory: 512Mi
       containers:
         - name: qbittorrent
           # Do not bump to a libtorrent 2.1.x build yet: qBittorrent 5.3.0 with

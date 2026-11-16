@@ -317,6 +317,15 @@ kubectl -n media logs -f job/resume-now
 - gluetun restarting: check its log for `/dev/net/tun`, endpoint DNS or
   WireGuard handshake errors. The `media` namespace is privileged, so
   `privileged: true` is a valid fallback.
+- gluetun's startup probe fails with `context deadline exceeded` and the
+  container is killed about every five minutes: its firewall defaults to
+  `INPUT DROP`, and `FIREWALL_INPUT_PORTS` must include **both** `8080` (Web UI)
+  and `9999` (health server) or kubelet cannot reach the probes.
+- gluetun loops on `adding IPv4/IPv6 rule ... file exists`: a previous container
+  in the shared pod network namespace left the `table 51820` rules behind. Keep
+  `strategy: Recreate` and the `postStart` hook that deletes the IPv4 and IPv6
+  rules. Gluetun's own OOM kill (a 256Mi limit is too small during blocklist
+  download) also leaves the rules behind, so keep the 512Mi limit.
 - qBittorrent shows the Authentik page but then its own login: add
   `10.42.0.0/16` to the Web UI subnet whitelist.
 - qBittorrent says `The configured network interface is invalid`: use `tun0`,
