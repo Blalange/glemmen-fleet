@@ -11,7 +11,7 @@ metadata:
 spec:
   addresses:
     - 192.168.6.96-192.168.6.97
-    - 192.168.6.99
+    - 192.168.6.99-192.168.6.99
   autoAssign: false
 ---
 # Only the server-VLAN NICs on the ECMP-capable nodes may announce the VIP.

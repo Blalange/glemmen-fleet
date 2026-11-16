@@ -52,11 +52,10 @@ tlsStore:
       - secretName: glem-men-wildcard-tls
 
 service:
-  # Stage 1: keep Cluster until the DaemonSet is running on every ecmp-node.
-  # Stage 2 flips this to Local; doing it in one step can blackhole the VIP
-  # while the new pod on the current VIP owner is still starting.
+  # Every ECMP-capable node runs a Traefik pod, so Local is safe and preserves
+  # the real client source address instead of SNATing it to a node IP.
   spec:
-    externalTrafficPolicy: Cluster
+    externalTrafficPolicy: Local
   annotations:
     # The IP the UniFi router forwards 80/443 (and future ports) to.
     metallb.io/loadBalancerIPs: 192.168.6.99
