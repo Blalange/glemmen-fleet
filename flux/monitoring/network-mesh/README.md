@@ -8,12 +8,13 @@ and VLAN underlay uses MTU 9000, Calico pods use 8980 bytes, and the route
 agent raises the NIC rings, so the probe measures the same jumbo/ECMP path as
 application pods.
 
-Every five minutes each probe:
+Each probe has two independent schedules:
 
-- sends 4 ICMP echo requests to every peer probe pod (200 ms apart, 1 s
-  timeout),
-- runs a 2-second iperf3 TCP test with 16 parallel streams in each direction
-  and records the receiver-side throughput.
+- every **60 seconds** it sends 10 ICMP echo requests to every peer probe pod
+  (200 ms apart, 1 s timeout); this is the health signal,
+- every **30 minutes** it runs a 3-second iperf3 TCP test (2 measured seconds
+  after a 1-second warm-up) with 16 parallel streams in each direction and
+  records the receiver-side throughput.
 
 The results are exposed on `/metrics` and scraped by the `network-mesh-probe`
 PodMonitor. The **Network Mesh** Grafana dashboard (`glemmen-network-mesh`)
@@ -38,14 +39,16 @@ receiver-side rate; `-R` reverses the direction so each probe records both
 upload and download. The probe image is `nicolaka/netshoot`, which already
 provides Python 3 and iperf3 and is used by the ECMP route agent.
 
-Each test lasts 2 seconds per direction. Tests are phase-shifted across nodes so
-only one pair runs at a time; a full cycle moves roughly
-`N * (N - 1) * 2 * rate * seconds`. At 1.8 Gbit/s and two seconds per direction,
-the six current nodes move about 27 GB every five minutes, or roughly
-0.72 Gbit/s of aggregate average background traffic. Increase
-`INTERVAL_SECONDS` if that is too much for the storage/media traffic. The HTTP
-`/download` and `/upload` endpoints remain available for manual checks;
-`TRANSFER_BYTES` only controls those endpoints.
+Each throughput test lasts 2 measured seconds per direction. Tests are
+phase-shifted across nodes so only one node runs a throughput cycle at a time;
+a full cycle moves roughly `N * (N - 1) * 2 * rate * seconds`. At eight nodes
+and 1.8 Gbit/s, that is about 40 GB every 30 minutes, or roughly 0.18 Gbit/s of
+aggregate average background traffic. The probe exposes `mesh_test_active`
+while a throughput cycle is running so switch-drop alerts can be suppressed
+during the intentional bursts. Increase `TRANSFER_INTERVAL_SECONDS` if the
+storage/media traffic needs more headroom. The HTTP `/download` and `/upload`
+endpoints remain available for manual checks; `TRANSFER_BYTES` only controls
+those endpoints.
 
 ## Layout
 
@@ -70,16 +73,19 @@ The DaemonSet passes these environment variables:
 
 | Variable | Default | Meaning |
 | --- | --- | --- |
-| `INTERVAL_SECONDS` | `300` | Time between test cycles (minimum 30) |
-| `PING_COUNT` | `4` | ICMP echo requests per peer |
+| `PING_INTERVAL_SECONDS` | `60` | Time between ping cycles |
+| `TRANSFER_INTERVAL_SECONDS` | `1800` | Time between throughput cycles |
+| `PING_COUNT` | `10` | ICMP echo requests per peer |
 | `PING_INTERVAL_MS` | `200` | Delay between ICMP requests |
 | `PING_TIMEOUT_SECONDS` | `1` | Per-request reply timeout |
+| `EXPECTED_NODES` | current 8 nodes | Peers that must appear in the mesh; missing nodes emit `mesh_peer_unreachable=1` |
+| `NODE_CAPACITIES` | per-node map | Expected NIC capacity in Mbit/s for utilization panels |
 | `TRANSFER_BYTES` | `33554432` | Bytes per manual HTTP `/download`/`/upload` test |
 | `TRANSFER_FLOWS` | `16` | Parallel iperf3 streams (and HTTP flows) |
-| `TRANSFER_TIMEOUT_SECONDS` | `15` | iperf3 subprocess timeout |
+| `TRANSFER_TIMEOUT_SECONDS` | `20` | iperf3 subprocess timeout |
 | `IPERF_PORT` | `5201` | Peer iperf3 server port |
-| `IPERF_SECONDS` | `2` | Duration of each iperf3 test |
-| `IPERF_OMIT_SECONDS` | `1` | Initial seconds omitted from iperf3 statistics |
+| `IPERF_SECONDS` | `3` | Total iperf3 run duration |
+| `IPERF_OMIT_SECONDS` | `1` | Initial warm-up second excluded from the interval statistics |
 | `PORT` | `9101` | Metrics, health and manual-transfer HTTP port |
 
 `STATIC_PEERS` can replace Kubernetes pod discovery, which is useful for
@@ -112,12 +118,22 @@ keeps the probe's value where both exist).
 | `mesh_ping_loss_percent` | source, destination | Packet loss (0-100) |
 | `mesh_ping_sent_packets` | source, destination | Echo requests sent |
 | `mesh_ping_received_packets` | source, destination | Echo replies received |
-| `mesh_ping_success` | source, destination | 1 when no packet was lost |
+| `mesh_ping_success` | source, destination | 1 when at least one reply was received (reachability) |
+| `mesh_peer_unreachable` | source, peer | 1 when an expected peer is missing or not Ready |
 | `mesh_transfer_mbps` | source, destination, direction | iperf3 receiver-side throughput |
+| `mesh_transfer_utilization_percent` | source, destination, direction | Throughput relative to the slower endpoint's capacity |
+| `mesh_transfer_error` | source, destination, direction, reason | Last iperf3 failure reason |
+| `mesh_transfer_last_success_timestamp_seconds` | source, destination, direction | Last successful test time |
 | `mesh_transfer_bytes` | source, destination, direction | Bytes received in the measured interval |
 | `mesh_transfer_seconds` | source, destination, direction | Measured interval duration |
 | `mesh_transfer_flows` | source, destination, direction | Parallel iperf3 streams |
 | `mesh_transfer_success` | source, destination, direction | 1 when the test completed |
+| `mesh_iperf_server_up` | node | 1 when the local iperf3 server is listening |
+| `mesh_test_active` | node | 1 during a throughput cycle (alert inhibition) |
+| `mesh_probe_pod_mtu` | node | MTU of the probe pod interface |
+| `mesh_node_capacity_mbps` | node | Expected NIC capacity |
+| `mesh_probe_last_ping_timestamp_seconds` | node | Last completed ping cycle |
+| `mesh_probe_last_transfer_timestamp_seconds` | node | Last completed throughput cycle |
 | `mesh_last_test_timestamp_seconds` | source, destination, test | Last test completion time |
 | `mesh_probe_info` | node, version | Static probe info |
 | `mesh_probe_start_time_seconds` | node | Probe process start time |

@@ -1,0 +1,289 @@
+# Network-specific alerts.  Most of these were previously invisible: the mesh
+# probe had no rules, Calico/MetalLB were not scraped, and switch/NIC errors
+# were collected but never alerted on.
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: network-alerts
+  namespace: monitoring
+  labels:
+    release: kube-prometheus-stack
+spec:
+  groups:
+    - name: network.mesh
+      rules:
+        - alert: MeshPacketLoss
+          expr: max_over_time(mesh_ping_loss_percent[10m]) >= 5
+          for: 10m
+          labels:
+            severity: warning
+            team: network
+          annotations:
+            summary: 'Pod mesh packet loss between {{ $labels.source }} and {{ $labels.destination }}'
+            description: 'At least {{ $value | printf "%.1f" }}% ICMP loss was observed in the last 10 minutes.'
+            runbook_url: 'https://github.com/Blalange/glemmen-fleet/blob/main/README.md#networking'
+        - alert: MeshHighRTT
+          expr: max_over_time(mesh_ping_rtt_ms[10m]) > 50
+          for: 10m
+          labels:
+            severity: warning
+            team: network
+          annotations:
+            summary: 'Pod mesh RTT high between {{ $labels.source }} and {{ $labels.destination }}'
+            description: 'Average RTT reached {{ $value | printf "%.1f" }} ms in the last 10 minutes.'
+            runbook_url: 'https://github.com/Blalange/glemmen-fleet/blob/main/README.md#networking'
+        - alert: MeshPeerUnreachable
+          expr: max(mesh_peer_unreachable) == 1
+          for: 10m
+          labels:
+            severity: critical
+            team: network
+          annotations:
+            summary: 'Mesh peer {{ $labels.peer }} is unreachable from {{ $labels.source }}'
+            description: 'An expected probe peer is missing or not Ready.'
+            runbook_url: 'https://github.com/Blalange/glemmen-fleet/blob/main/README.md#networking'
+        - alert: MeshProbeMissing
+          expr: count(mesh_probe_info) < 8
+          for: 15m
+          labels:
+            severity: critical
+            team: network
+          annotations:
+            summary: 'Only {{ $value }} network-mesh probes are running'
+            description: 'Expected one probe per current node (8). A node outage or DaemonSet scheduling failure is invisible in the per-pair tables.'
+            runbook_url: 'https://github.com/Blalange/glemmen-fleet/blob/main/README.md#networking'
+        - alert: MeshPingStale
+          expr: max(time() - mesh_probe_last_ping_timestamp_seconds) > 180
+          for: 10m
+          labels:
+            severity: warning
+            team: network
+          annotations:
+            summary: 'Network mesh ping cycle is stale'
+            description: 'The least recently completed ping cycle is more than 3 minutes old; pings are scheduled every 60 seconds.'
+            runbook_url: 'https://github.com/Blalange/glemmen-fleet/blob/main/README.md#networking'
+        - alert: MeshTransferStale
+          expr: max(time() - mesh_probe_last_transfer_timestamp_seconds) > 2700
+          for: 15m
+          labels:
+            severity: warning
+            team: network
+          annotations:
+            summary: 'Network mesh throughput cycle is stale'
+            description: 'The least recently completed throughput cycle is more than 45 minutes old; tests are scheduled every 30 minutes.'
+            runbook_url: 'https://github.com/Blalange/glemmen-fleet/blob/main/README.md#networking'
+        - alert: MeshTransferFailing
+          expr: sum(min_over_time(mesh_transfer_success[15m]) == 0) > 0
+          for: 5m
+          labels:
+            severity: warning
+            team: network
+          annotations:
+            summary: 'Network mesh throughput test failed'
+            description: 'At least one directed transfer failed in the last 15 minutes. Check mesh_transfer_error for the reason.'
+            runbook_url: 'https://github.com/Blalange/glemmen-fleet/blob/main/README.md#networking'
+        - alert: MeshIperfServerDown
+          expr: min(mesh_iperf_server_up) == 0
+          for: 10m
+          labels:
+            severity: warning
+            team: network
+          annotations:
+            summary: 'iperf3 server is not listening on a probe'
+            description: 'The probe is Ready but its iperf3 server is unavailable, so throughput tests to that node will fail.'
+            runbook_url: 'https://github.com/Blalange/glemmen-fleet/blob/main/README.md#networking'
+    - name: network.ecmp
+      rules:
+        - alert: ECMPPathsMissing
+          expr: ecmp_paths < ecmp_expected_paths
+          for: 10m
+          labels:
+            severity: warning
+            team: network
+          annotations:
+            summary: 'ECMP path count below expected for {{ $labels.peer }} on {{ $labels.node }}'
+            description: 'The route agent installed {{ $value }} paths; expected {{ $labels.peer }} to have its full multipath set.'
+            runbook_url: 'https://github.com/Blalange/glemmen-fleet/blob/main/README.md#networking'
+        - alert: ECMPPeerDown
+          expr: ecmp_peer_up == 0
+          for: 10m
+          labels:
+            severity: critical
+            team: network
+          annotations:
+            summary: 'No route to {{ $labels.peer }} pod CIDR on {{ $labels.node }}'
+            description: 'The route agent blackholed the peer after sustained probe failures.'
+            runbook_url: 'https://github.com/Blalange/glemmen-fleet/blob/main/README.md#networking'
+        - alert: ECMPRouteFlapping
+          expr: sum by (node, peer) (increase(ecmp_route_flaps_total[15m])) > 3
+          for: 5m
+          labels:
+            severity: warning
+            team: network
+          annotations:
+            summary: 'ECMP route is flapping for {{ $labels.peer }} on {{ $labels.node }}'
+            description: 'More than 3 route mode changes were recorded in 15 minutes; this rehashes live flows.'
+            runbook_url: 'https://github.com/Blalange/glemmen-fleet/blob/main/README.md#networking'
+        - alert: ECMPAgentMissing
+          expr: absent(ecmp_agent_up) == 1
+          for: 10m
+          labels:
+            severity: critical
+            team: network
+          annotations:
+            summary: 'No ECMP route-agent metrics'
+            description: 'The agent is not exporting ecmp_agent_up, so pod-CIDR routes may be unmanaged.'
+            runbook_url: 'https://github.com/Blalange/glemmen-fleet/blob/main/README.md#networking'
+        - alert: ECMPAgentStale
+          expr: max(time() - ecmp_agent_last_run_timestamp_seconds) > 120
+          for: 5m
+          labels:
+            severity: warning
+            team: network
+          annotations:
+            summary: 'ECMP route agent loop is stale'
+            description: 'The agent has not completed a loop in more than 2 minutes.'
+            runbook_url: 'https://github.com/Blalange/glemmen-fleet/blob/main/README.md#networking'
+    - name: network.metallb
+      rules:
+        - alert: MetalLBMetricsDown
+          expr: (up{job=~".*metallb.*"} == 0) or (absent(up{job=~".*metallb.*"}) == 1)
+          for: 10m
+          labels:
+            severity: warning
+            team: network
+          annotations:
+            summary: 'MetalLB metrics target is down or missing'
+            description: 'The MetalLB ServiceMonitors are not producing a healthy scrape target.'
+            runbook_url: 'https://github.com/Blalange/glemmen-fleet/blob/main/README.md#networking'
+        - alert: MetalLBNoAnnouncements
+          expr: sum(metallb_speaker_announced) == 0
+          for: 10m
+          labels:
+            severity: warning
+            team: network
+          annotations:
+            summary: 'MetalLB is not announcing any service'
+            description: 'No speaker reports an announced LoadBalancer address. Check speaker logs and the L2 advertisements.'
+            runbook_url: 'https://github.com/Blalange/glemmen-fleet/blob/main/README.md#networking'
+    - name: network.calico
+      rules:
+        - alert: CalicoMetricsDown
+          expr: (up{job=~".*calico.*"} == 0) or (absent(up{job=~".*calico.*"}) == 1)
+          for: 10m
+          labels:
+            severity: warning
+            team: network
+          annotations:
+            summary: 'Calico metrics target is down or missing'
+            description: 'Felix, Typha or kube-controllers metrics are not being scraped.'
+            runbook_url: 'https://github.com/Blalange/glemmen-fleet/blob/main/README.md#networking'
+        - alert: CalicoIptablesErrors
+          expr: increase(felix_iptables_restore_errors[10m]) > 0
+          for: 5m
+          labels:
+            severity: critical
+            team: network
+          annotations:
+            summary: 'Calico Felix iptables restore errors on {{ $labels.instance }}'
+            description: 'Felix is failing to program the dataplane; workload connectivity or policy may be stale.'
+            runbook_url: 'https://github.com/Blalange/glemmen-fleet/blob/main/README.md#networking'
+    - name: network.node
+      rules:
+        - alert: NodeNICReceiveErrors
+          expr: sum by (instance, device) (increase(node_network_receive_errs_total{device!~"wt0|cali.*|veth.*|lo"}[10m])) > 50
+          for: 10m
+          labels:
+            severity: warning
+            team: network
+          annotations:
+            summary: 'NIC receive errors on {{ $labels.instance }} {{ $labels.device }}'
+            description: 'More than 50 receive errors in 10 minutes. Check cabling, MTU and the switch port counters.'
+            runbook_url: 'https://github.com/Blalange/glemmen-fleet/blob/main/README.md#networking'
+        - alert: NodeNICDrops
+          expr: |
+            (sum by (instance, device) (increase(node_network_receive_drop_total{device!~"wt0|cali.*|veth.*|lo"}[10m])) > 100)
+            or
+            (sum by (instance, device) (increase(node_network_transmit_drop_total{device!~"wt0|cali.*|veth.*|lo"}[10m])) > 100)
+          for: 10m
+          labels:
+            severity: warning
+            team: network
+          annotations:
+            summary: 'NIC drops on {{ $labels.instance }} {{ $labels.device }}'
+            description: 'More than 100 receive or transmit drops in 10 minutes.'
+            runbook_url: 'https://github.com/Blalange/glemmen-fleet/blob/main/README.md#networking'
+        - alert: NodeNICFlapping
+          expr: sum by (instance, device) (increase(node_network_carrier_changes_total{device!~"wt0|cali.*|veth.*|lo"}[10m])) > 2
+          for: 5m
+          labels:
+            severity: warning
+            team: network
+          annotations:
+            summary: 'NIC carrier flapping on {{ $labels.instance }} {{ $labels.device }}'
+            description: 'The link changed carrier state more than twice in 10 minutes.'
+            runbook_url: 'https://github.com/Blalange/glemmen-fleet/blob/main/README.md#networking'
+        - alert: NodeMTUMismatch
+          expr: node_network_mtu_bytes{device=~"eno8303|eno8403|eno8403\\.7|enp4s0f0|enp4s0f0\\.7|eno1|enp6s0"} != 9000
+          for: 15m
+          labels:
+            severity: warning
+            team: network
+          annotations:
+            summary: 'Unexpected MTU on {{ $labels.instance }} {{ $labels.device }}'
+            description: 'The server VLAN and VLAN 7 interfaces must be MTU 9000; bond0.1 remains 1500.'
+            runbook_url: 'https://github.com/Blalange/glemmen-fleet/blob/main/README.md#networking'
+        - alert: NodeConntrackHigh
+          expr: node_nf_conntrack_entries / node_nf_conntrack_entries_limit > 0.8
+          for: 10m
+          labels:
+            severity: warning
+            team: network
+          annotations:
+            summary: 'Conntrack table is over 80% on {{ $labels.instance }}'
+            description: 'New connections may be dropped when the table fills.'
+            runbook_url: 'https://github.com/Blalange/glemmen-fleet/blob/main/README.md#networking'
+        - alert: SwitchPortDrops
+          expr: |
+            sum by (name, port_name) (increase(unpoller_device_port_transmit_dropped_total[10m])) > 1000
+            unless on() (max(mesh_test_active) == 1)
+          for: 15m
+          labels:
+            severity: warning
+            team: network
+          annotations:
+            summary: 'Switch port {{ $labels.name }} {{ $labels.port_name }} is dropping packets'
+            description: 'More than 1000 transmit drops in 10 minutes outside a mesh throughput test.'
+            runbook_url: 'https://github.com/Blalange/glemmen-fleet/blob/main/README.md#networking'
+    - name: network.blackbox
+      rules:
+        - alert: BlackboxProbeFailed
+          expr: probe_success == 0
+          for: 5m
+          labels:
+            severity: critical
+            team: network
+          annotations:
+            summary: 'Blackbox probe {{ $labels.job }} is failing'
+            description: 'The API VIP, ingress VIP, DNS or TCP check has failed for 5 minutes.'
+            runbook_url: 'https://github.com/Blalange/glemmen-fleet/blob/main/README.md#networking'
+        - alert: CertificateExpiringSoon
+          expr: probe_ssl_earliest_cert_expiry - time() < 14 * 24 * 3600
+          for: 1h
+          labels:
+            severity: warning
+            team: network
+          annotations:
+            summary: 'TLS certificate served by {{ $labels.instance }} expires soon'
+            description: 'The certificate has less than 14 days left. This catches stale manually copied secrets that cert-manager does not renew.'
+            runbook_url: 'https://github.com/Blalange/glemmen-fleet/blob/main/README.md#networking'
+        - alert: DNSProbeSlow
+          expr: probe_dns_lookup_time_seconds > 1
+          for: 10m
+          labels:
+            severity: warning
+            team: network
+          annotations:
+            summary: 'DNS lookup through CoreDNS is slow'
+            description: 'The blackbox DNS probe took more than 1 second.'
+            runbook_url: 'https://github.com/Blalange/glemmen-fleet/blob/main/README.md#networking'

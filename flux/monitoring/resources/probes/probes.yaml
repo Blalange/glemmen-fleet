@@ -1,0 +1,82 @@
+# Synthetic checks for the two addresses the cluster cannot afford to lose:
+# the Talos API VIP and the MetalLB ingress VIP. The DNS probe uses the CoreDNS
+# ClusterIP directly because the blackbox exporter runs with hostNetwork.
+apiVersion: monitoring.coreos.com/v1
+kind: Probe
+metadata:
+  name: kubernetes-api
+  namespace: monitoring
+  labels:
+    release: kube-prometheus-stack
+    team: network
+spec:
+  interval: 30s
+  scrapeTimeout: 10s
+  module: https_insecure
+  prober:
+    url: http://blackbox-exporter.monitoring.svc.cluster.local:9115
+  target: https://192.168.6.98:6443/livez
+---
+apiVersion: monitoring.coreos.com/v1
+kind: Probe
+metadata:
+  name: ingress-vip-https
+  namespace: monitoring
+  labels:
+    release: kube-prometheus-stack
+    team: network
+spec:
+  interval: 30s
+  scrapeTimeout: 10s
+  module: http_ingress
+  prober:
+    url: http://blackbox-exporter.monitoring.svc.cluster.local:9115
+  target: https://192.168.6.99/
+---
+apiVersion: monitoring.coreos.com/v1
+kind: Probe
+metadata:
+  name: ingress-vip-tcp
+  namespace: monitoring
+  labels:
+    release: kube-prometheus-stack
+    team: network
+spec:
+  interval: 30s
+  scrapeTimeout: 10s
+  module: tcp_connect
+  prober:
+    url: http://blackbox-exporter.monitoring.svc.cluster.local:9115
+  target: 192.168.6.99:443
+---
+apiVersion: monitoring.coreos.com/v1
+kind: Probe
+metadata:
+  name: kubernetes-dns
+  namespace: monitoring
+  labels:
+    release: kube-prometheus-stack
+    team: network
+spec:
+  interval: 30s
+  scrapeTimeout: 10s
+  module: dns
+  prober:
+    url: http://blackbox-exporter.monitoring.svc.cluster.local:9115
+  target: 10.43.0.10:53
+---
+apiVersion: monitoring.coreos.com/v1
+kind: Probe
+metadata:
+  name: kubernetes-api-icmp
+  namespace: monitoring
+  labels:
+    release: kube-prometheus-stack
+    team: network
+spec:
+  interval: 30s
+  scrapeTimeout: 10s
+  module: icmp
+  prober:
+    url: http://blackbox-exporter.monitoring.svc.cluster.local:9115
+  target: 192.168.6.98

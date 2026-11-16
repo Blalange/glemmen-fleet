@@ -363,14 +363,17 @@ alertmanager:
       group_wait: 30s
       group_interval: 5m
       repeat_interval: 12h
-      # Only critical alerts are emailed. Warnings, info, Watchdog and
-      # InfoInhibitor still show up in the Alertmanager UI but are routed to
-      # the null receiver, so they do not trigger a notification.
+      # Critical alerts are always emailed. Network and storage warnings are
+      # also emailed because they previously went to the null receiver; other
+      # warnings, info, Watchdog and InfoInhibitor stay in the Alertmanager UI.
       receiver: 'null'
       routes:
         - receiver: email
           matchers:
             - severity = critical
+        - receiver: email
+          matchers:
+            - team =~ network|storage
     receivers:
       - name: email
         email_configs:
@@ -453,6 +456,32 @@ nodeExporter:
 # so PromQL can query per node (the default instance label is just the pod IP).
 # The subchart is configured under its own name, not under nodeExporter.
 prometheus-node-exporter:
+  # ethtool/conntrack metrics plus the ECMP agent's textfile metrics.  The
+  # node-exporter image runs as root with NET_ADMIN because the ethtool
+  # collector needs netlink access; it is a host-network DaemonSet either way.
+  extraArgs:
+    - --collector.filesystem.mount-points-exclude=^/(dev|proc|sys|run/containerd/.+|var/lib/docker/.+|var/lib/kubelet/.+)($|/)
+    - --collector.filesystem.fs-types-exclude=^(autofs|binfmt_misc|bpf|cgroup2?|configfs|debugfs|devpts|devtmpfs|fusectl|hugetlbfs|iso9660|mqueue|nsfs|overlay|proc|procfs|pstore|rpc_pipefs|securityfs|selinuxfs|squashfs|sysfs|tracefs|erofs)$
+    - --collector.ethtool
+    - --collector.conntrack
+    - --collector.netstat
+    - --collector.textfile.directory=/var/lib/node-exporter/textfile
+  extraHostVolumeMounts:
+    - name: textfile
+      hostPath: /var/lib/node-exporter/textfile
+      type: DirectoryOrCreate
+      mountPath: /var/lib/node-exporter/textfile
+      readOnly: true
+  securityContext:
+    runAsUser: 0
+    runAsNonRoot: false
+    fsGroup: 0
+  containerSecurityContext:
+    allowPrivilegeEscalation: false
+    readOnlyRootFilesystem: true
+    capabilities:
+      drop: ["ALL"]
+      add: ["NET_ADMIN"]
   prometheus:
     monitor:
       relabelings:

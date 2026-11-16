@@ -1,0 +1,52 @@
+# One blackbox exporter is enough; it runs on the host network so the VIP and
+# DNS probes use the same path as a node, not the pod network's service NAT.
+fullnameOverride: blackbox-exporter
+replicas: 1
+hostNetwork: true
+dnsPolicy: ClusterFirstWithHostNet
+securityContext:
+  runAsUser: 0
+  runAsNonRoot: false
+  readOnlyRootFilesystem: true
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop: ["ALL"]
+    add: ["NET_RAW"]
+config:
+  modules:
+    https_insecure:
+      prober: http
+      timeout: 5s
+      http:
+        valid_status_codes: [200, 401, 403]
+        preferred_ip_protocol: ip4
+        tls_config:
+          insecure_skip_verify: true
+    http_ingress:
+      prober: http
+      timeout: 5s
+      http:
+        valid_status_codes: [200, 301, 302, 404]
+        preferred_ip_protocol: ip4
+        headers:
+          Host: grafana.glem.men
+        tls_config:
+          insecure_skip_verify: true
+    tcp_connect:
+      prober: tcp
+      timeout: 5s
+      tcp:
+        preferred_ip_protocol: ip4
+    dns:
+      prober: dns
+      timeout: 5s
+      dns:
+        query_name: kubernetes.default.svc.cluster.local
+        query_type: A
+        valid_rcodes: [NOERROR]
+        preferred_ip_protocol: ip4
+    icmp:
+      prober: icmp
+      timeout: 5s
+      icmp:
+        preferred_ip_protocol: ip4

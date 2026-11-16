@@ -6,11 +6,10 @@
 # The node/VLAN underlay is MTU 9000, Calico pods use 8980 bytes, and the route
 # agent raises the NIC rings, so the iperf3 test uses the jumbo/ECMP path.
 #
-# Each throughput test is a 2-second iperf3 TCP run with 16 parallel streams in
-# each direction. iperf3 is used instead of the Python HTTP transfer because
-# the Python write path was CPU-bound around 1 Gbit/s and could not show the
-# 2 Gbit/s ECMP aggregate. Tests are phase-shifted across nodes so only one
-# pair runs at a time.
+# Pings run every minute and are the health signal.  Throughput tests run
+# every 30 minutes with 16 parallel iperf3 streams in each direction; they are
+# phase-shifted so only one node runs a throughput cycle at a time.  This keeps
+# the 1 Gbit/s access ports from being saturated by the monitoring itself.
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
@@ -51,7 +50,9 @@ spec:
           type: RuntimeDefault
       containers:
         - name: probe
-          image: docker.io/nicolaka/netshoot:latest
+          # Pinned digest: the probe runs privileged-ish ICMP/iperf tests and
+          # must not change tooling silently on a node rejoin.
+          image: docker.io/nicolaka/netshoot@sha256:b09d9b21381f47a79b3cbcb30da25266dc17186ea00ae65e99fdc51396f48e70
           imagePullPolicy: IfNotPresent
           command: ["python3", "-u", "/app/probe.py"]
           env:
@@ -63,16 +64,22 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: status.podIP
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
             - name: POD_NAMESPACE
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.namespace
             - name: PORT
               value: "9101"
-            - name: INTERVAL_SECONDS
-              value: "300"
+            - name: PING_INTERVAL_SECONDS
+              value: "60"
+            - name: TRANSFER_INTERVAL_SECONDS
+              value: "1800"
             - name: PING_COUNT
-              value: "4"
+              value: "10"
             - name: PING_INTERVAL_MS
               value: "200"
             - name: PING_TIMEOUT_SECONDS
@@ -82,13 +89,17 @@ spec:
             - name: TRANSFER_FLOWS
               value: "16"
             - name: TRANSFER_TIMEOUT_SECONDS
-              value: "15"
+              value: "20"
             - name: IPERF_PORT
               value: "5201"
             - name: IPERF_SECONDS
-              value: "2"
+              value: "3"
             - name: IPERF_OMIT_SECONDS
               value: "1"
+            - name: EXPECTED_NODES
+              value: "glemmen60,glemmen80,glemmen130,glemmen150,glemmen160,glemmen170,glemmen180,glemmen250"
+            - name: NODE_CAPACITIES
+              value: "glemmen60:1000,glemmen80:10000,glemmen130:2000,glemmen150:2000,glemmen160:2000,glemmen170:2000,glemmen180:2000,glemmen250:1000"
             - name: PYTHONDONTWRITEBYTECODE
               value: "1"
           ports:
