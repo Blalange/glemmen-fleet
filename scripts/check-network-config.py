@@ -92,11 +92,11 @@ def check_pools_and_agent() -> None:
             continue
         for pool in document.get("spec", {}).get("calicoNetwork", {}).get(
                 "ipPools", []):
-            if pool.get("cidr") == "10.42.7.0/24" and \
+            if pool.get("cidr") == "10.42.16.0/24" and \
                     "glemmen50" in pool.get("nodeSelector", ""):
                 glemmen50_pool = True
     if not glemmen50_pool:
-        fail("Calico has no 10.42.7.0/24 pool for glemmen50")
+        fail("Calico has no 10.42.16.0/24 pool for glemmen50")
 
     agent = (ROOT / "flux" / "infrastructure" / "ecmp-route-agent" /
              "agent.sh").read_text()

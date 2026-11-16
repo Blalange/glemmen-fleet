@@ -45,18 +45,18 @@ spec:
       name: 10.42.2.0-24
       natOutgoing: Enabled
       nodeSelector: kubernetes.io/hostname == 'glemmen60'
-    # glemmen50 is currently offline. The block is reserved so it can rejoin
-    # without a manual IPAM change; verify node.spec.podCIDR on first join and
-    # adjust this CIDR if Kubernetes allocates a different /24.
+    # glemmen50 came back with Kubernetes podCIDR 10.42.16.0/24 (the node
+    # pod CIDR is immutable), so the pool must match that block rather than a
+    # pre-reserved one.
     - allowedUses:
       - Workload
       - Tunnel
       assignmentMode: Automatic
       blockSize: 24
-      cidr: 10.42.7.0/24
+      cidr: 10.42.16.0/24
       disableNewAllocations: false
       encapsulation: IPIPCrossSubnet
-      name: 10.42.7.0-24
+      name: 10.42.16.0-24
       natOutgoing: Enabled
       nodeSelector: kubernetes.io/hostname == 'glemmen50'
     - allowedUses:

@@ -84,8 +84,9 @@ iface_for_prefix_any() {
 }
 
 set_peer() {
+  DST="$1"
   case "$1" in
-    glemmen50)  DST_POD=10.42.7.0/24;  DST_SRV=192.168.6.50;  DST_V7="" ;;
+    glemmen50)  DST_POD=10.42.16.0/24; DST_SRV=192.168.6.50;  DST_V7="" ;;
     glemmen60)  DST_POD=10.42.2.0/24;  DST_SRV=192.168.6.60;  DST_V7="" ;;
     glemmen80)  DST_POD=10.42.4.0/24;  DST_SRV=192.168.6.80;  DST_V7=192.168.7.80 ;;
     glemmen130) DST_POD=10.42.1.0/24;  DST_SRV=192.168.6.130; DST_V7=192.168.7.130 ;;
@@ -100,7 +101,7 @@ set_peer() {
 }
 
 case "${NODE_NAME}" in
-  glemmen50)  LOCAL_POD=10.42.7.0/24 ;;
+  glemmen50)  LOCAL_POD=10.42.16.0/24 ;;
   glemmen60)  LOCAL_POD=10.42.2.0/24 ;;
   glemmen80)  LOCAL_POD=10.42.4.0/24 ;;
   glemmen130) LOCAL_POD=10.42.1.0/24 ;;
