@@ -35,6 +35,11 @@ spec:
     # L2 only: do not install the idle frr-k8s BGP backend.
     frrk8s:
       enabled: false
+    controller:
+      # glemmen50 cannot currently reach the API service from its pod network;
+      # keep the controller on an ECMP-capable node.
+      nodeSelector:
+        glem.men/ecmp-node: "true"
     speaker:
       affinity:
         nodeAffinity:

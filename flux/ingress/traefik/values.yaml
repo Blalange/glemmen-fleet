@@ -52,10 +52,13 @@ tlsStore:
       - secretName: glem-men-wildcard-tls
 
 service:
-  # Every ECMP-capable node runs a Traefik pod, so Local is safe and preserves
-  # the real client source address instead of SNATing it to a node IP.
+  # Cluster, not Local: MetalLB 0.16.2 refuses to keep a shared .99 allocation
+  # when one of the sharing Services uses externalTrafficPolicy: Local, and
+  # withdrawing .99 takes all ingress down. Preserving the client source address
+  # needs a different approach (a dedicated VIP or PROXY protocol) before Local
+  # can be enabled here.
   spec:
-    externalTrafficPolicy: Local
+    externalTrafficPolicy: Cluster
   annotations:
     # The IP the UniFi router forwards 80/443 (and future ports) to.
     metallb.io/loadBalancerIPs: 192.168.6.99
