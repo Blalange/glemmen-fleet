@@ -27,7 +27,7 @@
         "type": "prometheus",
         "uid": "thanos"
       },
-      "description": "Number of probe pods currently scraped. Expect 8: one per current Linux node.",
+      "description": "Number of probe pods currently scraped. Expect 9: one per current Linux node.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -43,11 +43,11 @@
               },
               {
                 "color": "yellow",
-                "value": 7
+                "value": 8
               },
               {
                 "color": "green",
-                "value": 8
+                "value": 9
               }
             ]
           },
@@ -115,11 +115,11 @@
               },
               {
                 "color": "yellow",
-                "value": 6
+                "value": 7
               },
               {
                 "color": "green",
-                "value": 7
+                "value": 8
               }
             ]
           },

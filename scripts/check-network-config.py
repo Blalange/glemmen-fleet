@@ -22,7 +22,7 @@ import yaml
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_KUBECTL = ROOT / "scripts" / "bin" / "kubectl"
 DEFAULT_KUBECONFIG = ROOT / "talos" / "generated" / "kubeconfig"
-OFFLINE_NODES = {"glemmen50"}
+OFFLINE_NODES: set[str] = set()
 
 failures: list[str] = []
 warnings: list[str] = []
