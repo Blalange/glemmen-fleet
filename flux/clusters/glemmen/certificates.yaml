@@ -11,7 +11,11 @@ spec:
   retryInterval: 2m
   path: ./flux/infrastructure/cert-manager/resources
   prune: true
-  targetNamespace: cert-manager
+  # Traefik runs in kube-system and reads the wildcard secrets from its own
+  # namespace, so cert-manager must create them there. Applying these
+  # Certificates to cert-manager left Traefik serving manually copied,
+  # never-renewed secrets (the glem.men copy expired 2026-12-13).
+  targetNamespace: kube-system
   dependsOn:
     - name: infrastructure
   sourceRef:

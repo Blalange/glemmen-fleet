@@ -4,21 +4,25 @@
 # loaded into the default TLS store and selected per SNI, with the blatrix one
 # as fallback certificate (same behaviour as the old cluster).
 #
-# The Service is a LoadBalancer served by MetalLB. During the migration it
-# advertises 192.168.6.97; at cutover change this single value to
-# 192.168.6.99 (the IP the UniFi router forwards 80/443 to).
-# Run two ingress pods on different nodes so one node failure does not take
-# all ingress traffic down. MetalLB moves the VIP to a surviving speaker node.
+# The Service is a LoadBalancer served by MetalLB at 192.168.6.99 (the IP the
+# UniFi router forwards 80/443 to).
+#
+# Run Traefik as a DaemonSet on every ECMP-capable node (all 1xx nodes plus
+# glemmen80). MetalLB may move the VIP to any of those nodes, and
+# externalTrafficPolicy: Local requires a Traefik pod on the node that owns the
+# VIP. A Deployment with a few replicas would blackhole traffic whenever the
+# VIP landed on a node without one.
 deployment:
-  replicas: 2
+  kind: DaemonSet
+  replicas: 1
 affinity:
-  podAntiAffinity:
+  nodeAffinity:
     requiredDuringSchedulingIgnoredDuringExecution:
-      - labelSelector:
-          matchLabels:
-            app.kubernetes.io/name: traefik
-            app.kubernetes.io/instance: traefik-kube-system
-        topologyKey: kubernetes.io/hostname
+      nodeSelectorTerms:
+        - matchExpressions:
+            - key: glem.men/ecmp-node
+              operator: In
+              values: ["true"]
 podDisruptionBudget:
   enabled: true
   minAvailable: 1
@@ -48,9 +52,13 @@ tlsStore:
       - secretName: glem-men-wildcard-tls
 
 service:
+  # Stage 1: keep Cluster until the DaemonSet is running on every ecmp-node.
+  # Stage 2 flips this to Local; doing it in one step can blackhole the VIP
+  # while the new pod on the current VIP owner is still starting.
+  spec:
+    externalTrafficPolicy: Cluster
   annotations:
-    # The IP the UniFi router forwards 80/443 (and future ports) to. The old
-    # cluster's keepalived no longer exists, so this cluster owns .99.
+    # The IP the UniFi router forwards 80/443 (and future ports) to.
     metallb.io/loadBalancerIPs: 192.168.6.99
     # Allow the NetBird relay's UDP 3478 Service to share this VIP.
     metallb.io/allow-shared-ip: glemmen-vip

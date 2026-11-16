@@ -61,9 +61,11 @@ params:
   net.ipv4.fib_multipath_use_neigh: "1"
   net.ipv4.conf.all.rp_filter: "0"
   net.ipv4.conf.default.rp_filter: "0"
-  net.ipv4.conf.eno8303/rp_filter: "0"
-  net.ipv4.conf.eno8403/rp_filter: "0"
-  net.ipv4.conf.eno8403.7/rp_filter: "0"
+  # Only answer ARP on the interface that owns the address.  The server VLAN
+  # is untagged on both eno8303 and the eno8403 parent (which is otherwise only
+  # the VLAN 7 parent), so arp_ignore=0 makes the API VIP answer from two MACs.
+  net.ipv4.conf.all.arp_ignore: "1"
+  net.ipv4.conf.all.arp_announce: "2"
   net.ipv4.conf.all.accept_redirects: "0"
   net.ipv4.conf.all.send_redirects: "0"
 ---

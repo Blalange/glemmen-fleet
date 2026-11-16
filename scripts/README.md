@@ -85,8 +85,8 @@ rollback. Re-add the Longhorn volume labels (notably
 ./scripts/talos/manage.py <command>          # other day-2 operations
 ```
 
-`gen-config.py`, `gen-iso.py`, `gen-pxe.py` and `setup-images.py` need PyYAML
-(`python3 -m pip install pyyaml`).
+`gen-config.py`, `gen-iso.py`, `gen-pxe.py`, `setup-images.py` and
+`check-network-config.py` need PyYAML (`python3 -m pip install pyyaml`).
 
 ## Flux
 
@@ -97,6 +97,21 @@ export GITHUB_TOKEN=github_pat_...
 ```
 
 Both use `talos/generated/kubeconfig` by default; override with `KUBECONFIG`.
+
+## Networking
+
+```sh
+./scripts/check-network-config.py            # validate pools, MTU, MetalLB, BGP, route map
+./scripts/rollout-pod-mtu.py                 # dry-run: list controllers with pod-network pods
+./scripts/rollout-pod-mtu.py --apply         # recreate them so Calico assigns 8980-byte veths
+./scripts/rollout-pod-mtu.py --verify        # inspect host-side veth MTUs via the route agent
+```
+
+`check-network-config.py` reads the live cluster plus the repository and exits
+non-zero if a node lacks a matching Calico pool, the route-agent map, MTU 9000,
+a safe MetalLB pool/L2 advertisement, or if BGP/kube-proxy drift from the
+intended configuration. `rollout-pod-mtu.py` is dry-run by default and skips
+hostNetwork pods; use it after changing the Calico MTU, then run `--verify`.
 
 ## NetBox
 

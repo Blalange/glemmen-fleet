@@ -1,22 +1,51 @@
-# Address pool and L2 advertisement for the internal network.
+# Address pool and L2 advertisements for the internal network.
 #
-# 192.168.6.99 is the address the UniFi router forwards port 80/443 to (as well
-# as any future forwarded ports). During the migration Traefik uses
-# 192.168.6.97 and this cluster switches it to .99 once the old keepalived is
-# stopped (see flux/README.md, cutover).
+# 192.168.6.99 is the address the UniFi router forwards port 80/443 to.
+# 192.168.6.98 is reserved for the Talos Layer2 API VIP and must never be in
+# this pool. autoAssign is off, so every service must request an address with
+# the metallb.io/loadBalancerIPs annotation.
 apiVersion: metallb.io/v1beta1
 kind: IPAddressPool
 metadata:
   name: internal
 spec:
   addresses:
-    - 192.168.6.96-192.168.6.99
+    - 192.168.6.96-192.168.6.97
+    - 192.168.6.99
   autoAssign: false
+---
+# Only the server-VLAN NICs on the ECMP-capable nodes may announce the VIP.
+# This keeps .99 off VLAN 7, the legacy VLAN 1 PXE interface and the second
+# 1xx NIC, while still allowing any 1xx node or glemmen80 to own it.
+apiVersion: metallb.io/v1beta1
+kind: L2Advertisement
+metadata:
+  name: internal-1xx
+spec:
+  ipAddressPools:
+    - internal
+  nodeSelectors:
+    - matchExpressions:
+        - key: glem.men/ecmp-node
+          operator: In
+          values: ["true"]
+        - key: kubernetes.io/hostname
+          operator: NotIn
+          values: ["glemmen80"]
+  interfaces:
+    - eno8303
 ---
 apiVersion: metallb.io/v1beta1
 kind: L2Advertisement
 metadata:
-  name: internal
+  name: internal-g80
 spec:
   ipAddressPools:
     - internal
+  nodeSelectors:
+    - matchExpressions:
+        - key: kubernetes.io/hostname
+          operator: In
+          values: ["glemmen80"]
+  interfaces:
+    - enp4s0f0

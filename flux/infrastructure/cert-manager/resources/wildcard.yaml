@@ -1,6 +1,8 @@
-# Wildcard certificates. They live in kube-system so Traefik (which runs there
-# in K3s) can load the resulting secrets into its default TLS store and serve
-# them per SNI for every Ingress.
+# Wildcard certificates. The `certificates` Flux Kustomization applies these
+# to kube-system, where Traefik runs, so it can load the resulting secrets into
+# its default TLS store and serve them per SNI for every Ingress. Do not move
+# them back to the cert-manager namespace: Traefik would keep serving stale
+# copies that cert-manager never renews.
 ---
 # *.glem.blatrix.eu
 apiVersion: cert-manager.io/v1

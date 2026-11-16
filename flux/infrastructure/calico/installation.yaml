@@ -9,7 +9,7 @@ spec:
     # for the IPIP tunnel header. New pods get 8980-byte veth interfaces;
     # existing pods keep their previous MTU until they are recreated.
     mtu: 8980
-    bgp: Enabled
+    bgp: Disabled
     hostPorts: Enabled
     ipPools:
     - allowedUses:
@@ -18,7 +18,6 @@ spec:
       assignmentMode: Automatic
       blockSize: 24
       cidr: 10.42.0.0/24
-      disableBGPExport: false
       disableNewAllocations: false
       encapsulation: IPIPCrossSubnet
       name: 10.42.0.0-24
@@ -30,7 +29,6 @@ spec:
       assignmentMode: Automatic
       blockSize: 24
       cidr: 10.42.1.0/24
-      disableBGPExport: false
       disableNewAllocations: false
       encapsulation: IPIPCrossSubnet
       name: 10.42.1.0-24
@@ -42,19 +40,31 @@ spec:
       assignmentMode: Automatic
       blockSize: 24
       cidr: 10.42.2.0/24
-      disableBGPExport: false
       disableNewAllocations: false
       encapsulation: IPIPCrossSubnet
       name: 10.42.2.0-24
       natOutgoing: Enabled
       nodeSelector: kubernetes.io/hostname == 'glemmen60'
+    # glemmen50 is currently offline. The block is reserved so it can rejoin
+    # without a manual IPAM change; verify node.spec.podCIDR on first join and
+    # adjust this CIDR if Kubernetes allocates a different /24.
+    - allowedUses:
+      - Workload
+      - Tunnel
+      assignmentMode: Automatic
+      blockSize: 24
+      cidr: 10.42.7.0/24
+      disableNewAllocations: false
+      encapsulation: IPIPCrossSubnet
+      name: 10.42.7.0-24
+      natOutgoing: Enabled
+      nodeSelector: kubernetes.io/hostname == 'glemmen50'
     - allowedUses:
       - Workload
       - Tunnel
       assignmentMode: Automatic
       blockSize: 24
       cidr: 10.42.3.0/24
-      disableBGPExport: false
       disableNewAllocations: false
       encapsulation: IPIPCrossSubnet
       name: 10.42.3.0-24
@@ -66,7 +76,6 @@ spec:
       assignmentMode: Automatic
       blockSize: 24
       cidr: 10.42.4.0/24
-      disableBGPExport: false
       disableNewAllocations: false
       encapsulation: IPIPCrossSubnet
       name: 10.42.4.0-24
@@ -78,7 +87,6 @@ spec:
       assignmentMode: Automatic
       blockSize: 24
       cidr: 10.42.5.0/24
-      disableBGPExport: false
       disableNewAllocations: false
       encapsulation: IPIPCrossSubnet
       name: 10.42.5.0-24
@@ -90,7 +98,6 @@ spec:
       assignmentMode: Automatic
       blockSize: 24
       cidr: 10.42.6.0/24
-      disableBGPExport: false
       disableNewAllocations: false
       encapsulation: IPIPCrossSubnet
       name: 10.42.6.0-24
@@ -104,7 +111,6 @@ spec:
       assignmentMode: Automatic
       blockSize: 24
       cidr: 10.42.14.0/24
-      disableBGPExport: false
       disableNewAllocations: false
       encapsulation: IPIPCrossSubnet
       name: 10.42.14.0-24
@@ -126,6 +132,9 @@ spec:
     specVersion: Auto
     type: Calico
   controlPlaneReplicas: 2
+  # Expose Felix and Typha Prometheus metrics for the monitoring stack.
+  nodeMetricsPort: 9091
+  typhaMetricsPort: 9093
   flexVolumePath: None
   kubeletVolumePluginPath: None
   logging:
@@ -174,7 +183,9 @@ kind: BGPConfiguration
 metadata:
   name: default
 spec:
+  # BGP is disabled in the Installation above.  Keep the mesh off and route
+  # programming disabled so re-enabling BGP later cannot take ownership of the
+  # pod-CIDR routes from the ecmp-route-agent.
   logSeverityScreen: Info
   nodeToNodeMeshEnabled: false
   programClusterRoutes: Disabled
-  serviceLoadBalancerAggregation: Enabled

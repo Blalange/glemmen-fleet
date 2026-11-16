@@ -14,6 +14,9 @@ apiVersion: v1alpha1
 kind: LinkConfig
 name: enp11s0f0
 up: true
+# The server VLAN is jumbo-frame end to end.  Without this the node comes up
+# at 1500 while Calico allocates 8980-byte pod veths and large packets fail.
+mtu: 9000
 addresses:
     - address: 192.168.6.50/24
 routes:

@@ -1,11 +1,14 @@
 # MetalLB in L2 mode: advertises LoadBalancer service IPs from the pool with
 # gratuitous ARP, replacing the old keepalived VRRP setup.
 #
-# Pool: 192.168.6.96-192.168.6.99. autoAssign is off, so every service that
-# wants an external IP must ask for one explicitly (annotation
-# metallb.io/loadBalancerIPs). This keeps 192.168.6.99 free until the cutover
-# from the old cluster (keepalived still holds it) and makes future assignments
-# (e.g. a Minecraft server on its own IP/port) explicit.
+# Pool: 192.168.6.96-192.168.6.97 plus 192.168.6.99. 192.168.6.98 is the
+# Talos API VIP and is deliberately excluded. autoAssign is off, so every
+# service that wants an external IP must ask for one explicitly (annotation
+# metallb.io/loadBalancerIPs).
+#
+# Only the ECMP-capable server NICs (1xx eno8303 / glemmen80 enp4s0f0) may
+# announce the VIP. The speakers are restricted to the same nodes; MetalLB's
+# FRR/BGP backend is disabled because this cluster only uses L2.
 apiVersion: source.toolkit.fluxcd.io/v1
 kind: HelmRepository
 metadata:
@@ -28,3 +31,29 @@ spec:
       sourceRef:
         kind: HelmRepository
         name: metallb
+  values:
+    # L2 only: do not install the idle frr-k8s BGP backend.
+    frrk8s:
+      enabled: false
+    speaker:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: glem.men/ecmp-node
+                    operator: In
+                    values: ["true"]
+    prometheus:
+      serviceMonitor:
+        enabled: true
+      namespace: monitoring
+      serviceAccount: kube-prometheus-stack-prometheus
+      prometheusRule:
+        enabled: true
+        additionalLabels:
+          release: kube-prometheus-stack
+        # BGP is disabled, so the chart's BGP-session alert would have no
+        # series and only add noise.
+        bgpSessionDown:
+          enabled: false

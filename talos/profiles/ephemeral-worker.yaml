@@ -8,6 +8,13 @@
 #
 # The generated file still contains the cluster secrets, so do not copy it off
 # the management workstation.
+#
+# Networking: a machine-independent profile cannot know the NIC name, so this
+# profile deliberately has no LinkConfig.  The operator must add a per-machine
+# LinkConfig for the cabled interface with `mtu: 9000` in addition to the
+# address/gateway, otherwise the node joins at MTU 1500 while Calico allocates
+# 8980-byte pod veths.  `scripts/check-network-config.py` verifies this after
+# the node joins.
 
 # Do not hard-code a hostname. `auto: stable` gives each machine a unique,
 # stable hostname derived from its machine identity (and restores the document
