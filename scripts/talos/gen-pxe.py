@@ -69,7 +69,8 @@ def load_selectors() -> dict[str, dict]:
         if not isinstance(macs, list) or any(
             not isinstance(mac, str) for mac in macs
         ):
-            common.die(f"{SELECTORS_FILE}: {name}.macs must be a list of strings")
+            common.die(
+                f"{SELECTORS_FILE}: {name}.macs must be a list of strings")
         if not serial and not uuid and not macs:
             common.die(f"{SELECTORS_FILE}: {name} has no selectors")
 
@@ -130,7 +131,8 @@ def render() -> str:
 
     known = {name for name, _, _ in nodes}
     for extra in sorted(set(selectors) - known):
-        common.warn(f"{SELECTORS_FILE}: ignoring {extra} (no talos/nodes config)")
+        common.warn(
+            f"{SELECTORS_FILE}: ignoring {extra} (no talos/nodes config)")
 
     lines: list[str] = [
         "#!ipxe",
@@ -190,7 +192,7 @@ def render() -> str:
             "item --key n netboot Netboot (netboot.xyz)",
             "item --key t talos_generic Talos Linux (maintenance mode, DHCP)",
             "item --gap -- ------------------------------------------------",
-            "choose --default netboot --timeout 30000 target && goto ${target}",
+            "choose --default talos_generic --timeout 30000 target && goto ${target}",
             "goto shell",
             "",
             ":netboot",

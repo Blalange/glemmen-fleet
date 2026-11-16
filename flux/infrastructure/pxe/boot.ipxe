@@ -180,7 +180,7 @@ item --gap -- ------------------------------------------------
 item --key n netboot Netboot (netboot.xyz)
 item --key t talos_generic Talos Linux (maintenance mode, DHCP)
 item --gap -- ------------------------------------------------
-choose --default netboot --timeout 30000 target && goto ${target}
+choose --default talos_generic --timeout 30000 target && goto ${target}
 goto shell
 
 :netboot
