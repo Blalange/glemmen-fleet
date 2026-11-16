@@ -41,6 +41,11 @@ nodes:
     macs:
       - 6c:3c:8c:75:3c:44
       - 6c:3c:8c:75:3c:45
+  glemmen250:
+    serial: "22403308"
+    uuid: 22c4c568-0885-676a-8bfe-fc34979effc4
+    macs:
+      - fc:34:97:9e:ff:c4
   glemmen50:
     serial: KD65TTR
     uuid: 601b5291-fbf9-3108-b1e5-f33cca2a2fe5

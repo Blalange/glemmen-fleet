@@ -10,6 +10,13 @@
 #                     The bnx2 driver is in the kernel but the firmware blobs are
 #                     NOT part of the stock Talos image - without them the
 #                     Broadcom NIC (e.g. glemmen60's BCM5716) never comes up.
+#   nvidia-open-gpu-kernel-modules-production
+#                   - NVIDIA open GPU kernel modules for glemmen250's Turing
+#                     GPUs. The "production" variant is built against the
+#                     production driver branch that matches the Talos release.
+#   nvidia-container-toolkit-production
+#                   - NVIDIA userspace driver libraries and container toolkit
+#                     for the same driver branch (no host driver container).
 #
 # scripts/talos/gen-iso.py turns this file into a schematic ID and prints the
 # ISO/installer URLs.
@@ -21,3 +28,5 @@ customization:
       - siderolabs/btrfs
       - siderolabs/netbird
       - siderolabs/bnx2-bnx2x
+      - siderolabs/nvidia-open-gpu-kernel-modules-production
+      - siderolabs/nvidia-container-toolkit-production

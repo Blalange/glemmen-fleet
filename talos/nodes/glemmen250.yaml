@@ -1,0 +1,53 @@
+# glemmen250 - the only GPU machine in the cluster (2 x GeForce GTX 1660 SUPER).
+#
+# The NVIDIA kernel modules come from the
+# nvidia-open-gpu-kernel-modules-production system extension in
+# talos/schematic.yaml. Talos does not auto-load extension modules, so the four
+# modules the driver and CUDA need are listed explicitly below.
+apiVersion: v1alpha1
+kind: HostnameConfig
+hostname: glemmen250
+---
+apiVersion: v1alpha1
+kind: LinkConfig
+name: enp6s0
+up: true
+mtu: 9000
+addresses:
+  - address: 192.168.6.250/24
+routes:
+  - gateway: 192.168.6.1
+---
+apiVersion: v1alpha1
+kind: KernelModuleConfig
+name: nvidia
+---
+apiVersion: v1alpha1
+kind: KernelModuleConfig
+name: nvidia_uvm
+---
+apiVersion: v1alpha1
+kind: KernelModuleConfig
+name: nvidia_drm
+---
+apiVersion: v1alpha1
+kind: KernelModuleConfig
+name: nvidia_modeset
+---
+apiVersion: v1alpha1
+kind: UnattendedInstallConfig
+reboot: true
+provisioning:
+  diskSelector:
+    match: 'disk.wwid == "eui.0026b7683e051ff5"'
+  wipe: true
+---
+apiVersion: v1alpha1
+kind: KubeNodeConfig
+labels:
+  node.longhorn.io/create-default-disk: config
+  # Stable selector for GPU workloads; the GPU operator manages the
+  # nvidia.com/* labels itself.
+  glem.men/gpu: "true"
+annotations:
+  node.longhorn.io/default-disks-config: '[{"name":"system","path":"/var/mnt/longhorn-system","allowScheduling":true,"storageReserved":64000000000,"tags":["nvme", "fast"]}]'

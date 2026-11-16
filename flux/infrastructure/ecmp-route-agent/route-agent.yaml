@@ -1,4 +1,5 @@
-# ECMP route agent for the dual-link 1xx nodes and glemmen80.
+# ECMP route agent for the dual-link 1xx nodes, glemmen80 and the single-link
+# glemmen250.
 #
 # Felix route programming is disabled (FelixConfiguration
 # programClusterRoutes: Disabled); this agent is the single owner of pod-CIDR
@@ -67,6 +68,7 @@ data:
       glemmen160) LOCAL_POD=10.42.3.0/24 ;;
       glemmen170) LOCAL_POD=10.42.6.0/24 ;;
       glemmen180) LOCAL_POD=10.42.5.0/24 ;;
+      glemmen250) LOCAL_POD=10.42.14.0/24 ;;
       *) LOCAL_POD="" ;;
     esac
 
@@ -74,7 +76,7 @@ data:
       ip route show "$1" 2>/dev/null | tr '\n' ' ' | grep -q "$2"
     }
 
-    DESTINATIONS="glemmen60 glemmen80 glemmen130 glemmen150 glemmen160 glemmen170 glemmen180"
+    DESTINATIONS="glemmen60 glemmen80 glemmen130 glemmen150 glemmen160 glemmen170 glemmen180 glemmen250"
 
     # The 1xx BCM5720 (tg3) and 80's 10G (ixgbe) support much deeper rings
     # than the defaults. Set them once per detected interface; changing ring
@@ -140,6 +142,7 @@ data:
             glemmen160) DST_POD=10.42.3.0/24; DST_SRV=192.168.6.160; DST_V7=192.168.7.160 ;;
             glemmen170) DST_POD=10.42.6.0/24; DST_SRV=192.168.6.170; DST_V7=192.168.7.170 ;;
             glemmen180) DST_POD=10.42.5.0/24; DST_SRV=192.168.6.180; DST_V7=192.168.7.180 ;;
+            glemmen250) DST_POD=10.42.14.0/24; DST_SRV=192.168.6.250; DST_V7=192.168.7.250 ;;
             *) continue ;;
           esac
 

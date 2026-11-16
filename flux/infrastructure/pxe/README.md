@@ -202,6 +202,9 @@ available to the firmware network stack. On Dell R630 also verify:
   (untagged server VLAN plus tagged VLAN 1 and VLAN 7), so the firmware PXE
   phase can pass traffic on `eno8303`. Do not add those two ports to a UniFi
   LAG.
+- glemmen250 also PXE-boots on every boot: its Kingston NVMe is not exposed as
+  a firmware boot device. The firmware PXE phase uses `enp6s0` on the untagged
+  server VLAN.
 - The asset server always serves the current Talos version. Verify that a
   network-booted newer kernel still hands off correctly to an older installed
   Talos version before relying on it across upgrades.

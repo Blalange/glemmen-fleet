@@ -96,6 +96,20 @@ spec:
       name: 10.42.6.0-24
       natOutgoing: Enabled
       nodeSelector: kubernetes.io/hostname == 'glemmen170'
+    # glemmen250 got this block from the Kubernetes pod CIDR allocator when it
+    # joined; the pool must exist for Calico to program the node.
+    - allowedUses:
+      - Workload
+      - Tunnel
+      assignmentMode: Automatic
+      blockSize: 24
+      cidr: 10.42.14.0/24
+      disableBGPExport: false
+      disableNewAllocations: false
+      encapsulation: IPIPCrossSubnet
+      name: 10.42.14.0-24
+      natOutgoing: Enabled
+      nodeSelector: kubernetes.io/hostname == 'glemmen250'
     linuxDataplane: Iptables
     linuxPolicySetupTimeoutSeconds: 0
     multiInterfaceMode: None

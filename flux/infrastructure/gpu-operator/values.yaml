@@ -1,0 +1,25 @@
+# NVIDIA GPU Operator values for Talos.
+#
+# Talos provides the NVIDIA kernel modules and userspace libraries through the
+# nvidia-open-gpu-kernel-modules-production and
+# nvidia-container-toolkit-production extensions (talos/schematic.yaml), so the
+# driver container is disabled. The operator still installs the container
+# toolkit under the writable /var and registers it with containerd through
+# CDI/NRI, matching the Sidero Labs NVIDIA extension instructions. CUDA
+# workloads do not need a runtimeClassName.
+nfd:
+  enabled: false
+
+driver:
+  enabled: false
+
+toolkit:
+  enabled: true
+  installDir: /var/lib/nvidia
+
+cdi:
+  enabled: true
+  nriPluginEnabled: true
+
+hostPaths:
+  driverInstallDir: /usr/local

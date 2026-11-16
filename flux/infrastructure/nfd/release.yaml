@@ -20,6 +20,12 @@ spec:
       sourceRef:
         kind: HelmRepository
         name: nfd
+  values:
+    master:
+      # The GPU operator labels nodes with nvidia.com/gpu.present; NFD only
+      # publishes labels from this namespace when it is explicitly allowed.
+      extraLabelNs:
+        - nvidia.com
   # The worker is a DaemonSet and glemmen50 is intentionally offline, so the
   # release would otherwise wait for a permanently-missing worker replica.
   install:

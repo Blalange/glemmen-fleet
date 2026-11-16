@@ -87,6 +87,17 @@ iseq ${mac} 6C:3C:8C:75:3C:45 && goto talos_glemmen180 ||
 iseq ${mac:hexhyp} 6c-3c-8c-75-3c-45 && goto talos_glemmen180 ||
 iseq ${mac:hexhyp} 6C-3C-8C-75-3C-45 && goto talos_glemmen180 ||
 
+# glemmen250 (worker)
+iseq ${serial} 22403308 && goto talos_glemmen250 ||
+iseq ${uuid} 22c4c568-0885-676a-8bfe-fc34979effc4 && goto talos_glemmen250 ||
+iseq ${uuid} 22C4C568-0885-676A-8BFE-FC34979EFFC4 && goto talos_glemmen250 ||
+iseq ${uuid} 22c4c5680885676a8bfefc34979effc4 && goto talos_glemmen250 ||
+iseq ${uuid} 22C4C5680885676A8BFEFC34979EFFC4 && goto talos_glemmen250 ||
+iseq ${mac} fc:34:97:9e:ff:c4 && goto talos_glemmen250 ||
+iseq ${mac} FC:34:97:9E:FF:C4 && goto talos_glemmen250 ||
+iseq ${mac:hexhyp} fc-34-97-9e-ff-c4 && goto talos_glemmen250 ||
+iseq ${mac:hexhyp} FC-34-97-9E-FF-C4 && goto talos_glemmen250 ||
+
 # glemmen50 (worker)
 iseq ${serial} KD65TTR && goto talos_glemmen50 ||
 iseq ${serial} kd65ttr && goto talos_glemmen50 ||
@@ -153,6 +164,12 @@ boot || goto fallback
 # glemmen180 (control-plane)
 :talos_glemmen180
 kernel http://192.168.6.99:8080/vmlinuz initrd=initramfs.xz talos.platform=metal console=tty0 slab_nomerge pti=on consoleblank=0 printk.devkmsg=on selinux=1 module.sig_enforce=1 proc_mem.force_override=never ip=192.168.6.180::192.168.6.1:255.255.255.0:glemmen180:eno8303:off:192.168.6.1:1.1.1.1: || goto fallback
+initrd http://192.168.6.99:8080/initramfs.xz || goto fallback
+boot || goto fallback
+
+# glemmen250 (worker)
+:talos_glemmen250
+kernel http://192.168.6.99:8080/vmlinuz initrd=initramfs.xz talos.platform=metal console=tty0 slab_nomerge pti=on consoleblank=0 printk.devkmsg=on selinux=1 module.sig_enforce=1 proc_mem.force_override=never ip=192.168.6.250::192.168.6.1:255.255.255.0:glemmen250:enp6s0:off:192.168.6.1:1.1.1.1: || goto fallback
 initrd http://192.168.6.99:8080/initramfs.xz || goto fallback
 boot || goto fallback
 

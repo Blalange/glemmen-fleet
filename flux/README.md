@@ -27,7 +27,7 @@ flux/
 │   ├── pxe.yaml                -> flux/infrastructure/pxe (proxyDHCP/TFTP + Talos boot assets)
 │   ├── monitoring-dashboards.yaml / monitoring-alerts.yaml
 │   └── apps.yaml               -> flux/apps (application Kustomizations)
-├── infrastructure/             namespaces, Longhorn, cert-manager, external-dns, MetalLB, metrics-server, descheduler, YugabyteDB, SeaweedFS operator, NFD, PXE chainloader
+├── infrastructure/             namespaces, Longhorn, cert-manager, external-dns, MetalLB, metrics-server, descheduler, YugabyteDB, SeaweedFS operator, NFD, GPU operator, PXE chainloader
 ├── ingress/                    Traefik HelmRelease + values
 ├── monitoring/                 kube-prometheus-stack, Thanos, smartctl-exporter, idrac-exporter, network-mesh, unpoller
 ├── logging/                    Loki (single replica) and the Alloy log collector
@@ -88,6 +88,31 @@ proxyDHCP. Machine identities live in `talos/pxe.yaml`; regenerate
 `boot.ipxe` with `./scripts/talos/gen-pxe.py` after changing a node's network
 configuration or selectors. See `infrastructure/pxe/README.md` for the full
 runbook.
+
+## NVIDIA GPU Operator
+
+`infrastructure/gpu-operator/` deploys the NVIDIA GPU Operator from the NGC
+Helm repository (`v26.7.2`). Talos supplies the kernel driver and userspace
+libraries as system extensions, so the chart runs with `driver.enabled=false`
+and `nfd.enabled=false`; it reuses the cluster's NFD release (which allows the
+`nvidia.com` label namespace) and installs the container toolkit under
+`/var/lib/nvidia`. CDI/NRI injection is enabled, so workloads request GPUs with
+a `nvidia.com/gpu` limit and do not set a `runtimeClassName`.
+
+The only GPU node is `glemmen250` (`glem.men/gpu=true`). Its Talos machine
+config loads the `nvidia*` modules, and the extensions are built into the
+schematic. Check the stack with:
+
+```sh
+kubectl get clusterpolicy
+kubectl get pods -n gpu-operator
+kubectl get node glemmen250 -o jsonpath='{.status.allocatable.nvidia\.com/gpu}'
+```
+
+The operator's DCGM exporter ServiceMonitor is picked up by the cluster
+Prometheus. Driver versions are tied to the Talos release; when upgrading
+Talos, rebuild the schematic and roll the installer image (see
+`talos/README.md`).
 
 ## Longhorn backups (Google Drive via rclone)
 
@@ -608,7 +633,7 @@ role passwords are in `yugabyte-auth` (`yugabyte` namespace) and `grafana-db`
 
 ## Dependencies (was Fleet `dependsOn`)
 
-- `infrastructure` (namespaces, Longhorn, cert-manager chart, external-dns, MetalLB, metrics-server, descheduler, SeaweedFS operator, NFD)
+- `infrastructure` (namespaces, Longhorn, cert-manager chart, external-dns, MetalLB, metrics-server, descheduler, SeaweedFS operator, NFD, GPU operator)
 - `infrastructure` -> `longhorn-backup` (rclone S3 gateway for Google Drive backups)
 - `infrastructure` -> `seaweedfs` (SeaweedFS cluster, admin/workers, bucket, S3 credentials and CSI driver)
 - `infrastructure` -> `longhorn-resources` (recurring backup/trim jobs)

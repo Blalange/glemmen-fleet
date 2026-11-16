@@ -2,14 +2,15 @@
 
 Talos Linux v1.14.5 configuration for the glemmen cluster (Kubernetes 1.37.2).
 The `glemmen1xx` machines run control plane + etcd + worker roles; `glemmen80`,
-`glemmen60` and `glemmen50` are workers.
+`glemmen60`, `glemmen250` and `glemmen50` are workers. `glemmen250` is the GPU
+node (2 × GeForce GTX 1660 SUPER).
 
 ## Files
 
 | Path                               | Purpose                                                                                                     |
 | ---------------------------------- | ----------------------------------------------------------------------------------------------------------- |
 | `settings.env`                     | Versions, endpoint/VIP, node table — used by the scripts, Tuppr and `check-updates.py`                      |
-| `schematic.yaml`                   | Image Factory extensions: iscsi-tools, util-linux-tools, btrfs, netbird                                     |
+| `schematic.yaml`                   | Image Factory extensions: iscsi-tools, util-linux-tools, btrfs, netbird, bnx2 firmware, NVIDIA driver/toolkit |
 | `patches/common.yaml`              | Common machine config patch (subnets, DNS, kubelet node IP, btrfs, Longhorn system disk)                    |
 | `patches/netbird.yaml.tpl`         | Netbird extension config template (`NB_SETUP_KEY` filled in by `scripts/talos/gen-config.py`)               |
 | `nodes/glemmen*.yaml`              | Per-node: hostname, bond/addresses, Longhorn disks, VIP, Longhorn node annotation                           |
@@ -104,6 +105,7 @@ so no GRUB editing is needed:
 | `talos/generated/iso/setup-glemmen160.iso` | glemmen160 |
 | `talos/generated/iso/setup-glemmen170.iso` | glemmen170 |
 | `talos/generated/iso/setup-glemmen180.iso` | glemmen180 |
+| `talos/generated/iso/setup-glemmen250.iso` | glemmen250 |
 | `talos/generated/iso/setup-glemmen60.iso`  | glemmen60  |
 | `talos/generated/iso/setup-glemmen80.iso`  | glemmen80  |
 
@@ -118,6 +120,12 @@ boot entries: the default one and a
 > firmware, so a Broadcom NetXtreme NIC (e.g. glemmen60's R515 LOM) gets no
 > interface at all — neither in maintenance mode nor after install. Any new
 > machine with such a NIC must boot an ISO built from this schematic.
+>
+> **NVIDIA GPUs**: the schematic includes the open kernel modules and the
+> container toolkit for glemmen250's GTX 1660 SUPER cards. `nodes/glemmen250.yaml`
+> loads the four `nvidia*` kernel modules. The GPU operator in
+> `flux/infrastructure/gpu-operator/` consumes them; see the main README for the
+> GPU stack.
 
 If you boot the generic ISO instead, press `e` in GRUB and append the arguments
 manually (example for glemmen130):
@@ -126,10 +134,12 @@ manually (example for glemmen130):
 ip=192.168.6.130::192.168.6.1:255.255.255.0:glemmen130:eno8303:off:192.168.6.1:1.1.1.1:
 ```
 
-(For glemmen80 use `enp4s0f0` without `bond=`. glemmen60 uses `eno1` - a
-single onboard LOM on a plain access switch port - and its pre-built setup ISO
-boots without arguments, using DHCP on the Servere VLAN instead; apply the
-config with `./scripts/talos/manage.py apply glemmen60 <dhcp-address>`.)
+(For glemmen80 use `enp4s0f0` without `bond=`. glemmen250 uses `enp6s0` with
+`192.168.6.250`; its NVMe also cannot boot directly, so it normally comes up
+through PXE. glemmen60 uses `eno1` - a single onboard LOM on a plain access
+switch port - and its pre-built setup ISO boots without arguments, using DHCP
+on the Servere VLAN instead; apply the config with
+`./scripts/talos/manage.py apply glemmen60 <dhcp-address>`.)
 The machine configuration sets all of this permanently; these arguments only
 make the node reachable before the config is applied.
 
@@ -271,7 +281,9 @@ directly.
 
 System extensions are part of the installer image, so changing
 `schematic.yaml` cannot be applied with `apply-config`; the node must reboot
-into the new image.
+into the new image. The NVIDIA kernel modules and container toolkit are built
+for a specific Talos release and driver branch, so they must be rebuilt and
+rolled out together when `TALOS_VERSION` changes.
 
 1. Edit `talos/schematic.yaml`.
 2. Create the new schematic and installer image:

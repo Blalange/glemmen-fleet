@@ -15,9 +15,9 @@ All ingress services using one of these domains are automatically available on t
 
 ## Infrastructure
 
-The cluster consists of eight physical Talos Linux nodes: `glemmen50`, `glemmen60`, `glemmen80` and `glemmen130`–`glemmen180`. They run Talos Linux `v1.14.5` with Kubernetes `v1.37.2`.
+The cluster consists of nine physical Talos Linux nodes: `glemmen50`, `glemmen60`, `glemmen80`, `glemmen250` and `glemmen130`–`glemmen180`. They run Talos Linux `v1.14.5` with Kubernetes `v1.37.2`.
 
-`glemmen130`, `glemmen150`, `glemmen160`, `glemmen170` and `glemmen180` are control-plane nodes running etcd. `glemmen50`, `glemmen60` and `glemmen80` are workers.
+`glemmen130`, `glemmen150`, `glemmen160`, `glemmen170` and `glemmen180` are control-plane nodes running etcd. `glemmen50`, `glemmen60`, `glemmen80` and `glemmen250` are workers.
 
 ### Hardware
 
@@ -36,6 +36,13 @@ The 1xx nodes are Dell PowerEdge R250 servers:
 - 192 GB DDR4 RAM
 - 2 × 1 TB HDD in RAID1 (system disk) + 1 TB HDD
 
+`glemmen250` is a desktop machine used as the GPU worker:
+
+- Intel Core i9-11900K at 3.50 GHz
+- 12 GB DDR4 RAM
+- 250 GB Kingston SA2000M8250G NVMe (system disk)
+- 2 × NVIDIA GeForce GTX 1660 SUPER (Turing TU116, 6 GB each)
+
 `glemmen60` is a Dell PowerEdge R515:
 
 - 2 × AMD Opteron 4386
@@ -52,9 +59,28 @@ The Dell iDRACs are scraped over Redfish by `idrac-exporter`
 (`flux/monitoring/idrac-exporter/`). The `BMC` and `BMC overview` dashboards in
 Grafana show per-server health, power, temperature, fans and disks.
 
+### GPUs
+
+`glemmen250` is the only GPU node. Talos provides the NVIDIA open kernel modules
+and userspace libraries through the
+`nvidia-open-gpu-kernel-modules-production` and
+`nvidia-container-toolkit-production` system extensions in
+`talos/schematic.yaml`. The node config loads `nvidia`, `nvidia_uvm`,
+`nvidia_drm` and `nvidia_modeset` and gives the node the stable label
+`glem.men/gpu=true`.
+
+The NVIDIA GPU Operator (`flux/infrastructure/gpu-operator/`) runs with its
+driver container disabled, reuses the cluster's Node Feature Discovery, and
+installs the container toolkit under `/var/lib/nvidia`. It exposes both GPUs as
+`nvidia.com/gpu` through CDI/NRI, so CUDA pods do not need a
+`runtimeClassName`; request a GPU with a `nvidia.com/gpu` limit. The operator's
+DCGM exporter is scraped by Prometheus. The driver and toolkit extension
+versions are tied to the Talos release: rebuild the schematic and roll the
+installer image whenever `TALOS_VERSION` changes.
+
 ### Networking
 
-The 1xx nodes have two 1 Gbit/s NICs. The cluster uses Calico (IPIP CrossSubnet, no BGP mesh). Felix route programming is disabled; the `ecmp-route-agent` owns the pod-CIDR routes on every node. All 1xx nodes use independent links: `eno8303` carries the server VLAN (`192.168.6.0/24`) plus the legacy `bond0.1` VLAN 1 interface used by PXE, and `eno8403.7` carries the ECMP VLAN (`192.168.7.0/24`). `glemmen80` uses its 10G `enp4s0f0` plus tagged `enp4s0f0.7`. The switch ports carry the server VLAN untagged and VLAN 1 and VLAN 7 tagged. The server and ECMP VLANs use MTU 9000 (jumbo frames); Calico pods use 8980 bytes (20 bytes reserved for IPIP), while the legacy `bond0.1` PXE/Default-VLAN interface stays at 1500. The `ecmp-route-agent` also raises the 1xx `tg3` RX rings to 2047 and `glemmen80`'s `ixgbe` rings to 4096 RX / 8192 TX. The agent installs two-nexthop multipath pod-CIDR routes and automatically falls back to the single server-VLAN path when the peer's VLAN 7 address is unreachable. Verified 16-flow pod-to-pod throughput after the jumbo/ring change is about 1.9 Gbit/s upload and 1.75–1.83 Gbit/s download between the reachable nodes; single-flow stays around 0.9 Gbit/s. `glemmen60` has a 1 Gbit/s link and is currently offline pending a BIOS/PSU/DIMM fix. `glemmen170` is currently offline and needs a power-cycle/console recovery, but its configuration is already converted. All nodes have static addresses in `192.168.6.0/24`.
+The 1xx nodes have two 1 Gbit/s NICs. The cluster uses Calico (IPIP CrossSubnet, no BGP mesh). Felix route programming is disabled; the `ecmp-route-agent` owns the pod-CIDR routes on every node. All 1xx nodes use independent links: `eno8303` carries the server VLAN (`192.168.6.0/24`) plus the legacy `bond0.1` VLAN 1 interface used by PXE, and `eno8403.7` carries the ECMP VLAN (`192.168.7.0/24`). `glemmen80` uses its 10G `enp4s0f0` plus tagged `enp4s0f0.7`. `glemmen250` has a single 1 Gbit/s `enp6s0` link at `192.168.6.250`, so it uses the single-path server-VLAN route. The switch ports carry the server VLAN untagged and VLAN 1 and VLAN 7 tagged. The server and ECMP VLANs use MTU 9000 (jumbo frames); Calico pods use 8980 bytes (20 bytes reserved for IPIP), while the legacy `bond0.1` PXE/Default-VLAN interface stays at 1500. The `ecmp-route-agent` also raises the 1xx `tg3` RX rings to 2047 and `glemmen80`'s `ixgbe` rings to 4096 RX / 8192 TX. The agent installs two-nexthop multipath pod-CIDR routes and automatically falls back to the single server-VLAN path when the peer's VLAN 7 address is unreachable. Verified 16-flow pod-to-pod throughput after the jumbo/ring change is about 1.9 Gbit/s upload and 1.75–1.83 Gbit/s download between the reachable nodes; single-flow stays around 0.9 Gbit/s. `glemmen60` has a single 1 Gbit/s link. `glemmen50` is currently offline. All nodes have static addresses in `192.168.6.0/24`.
 
 - **Kubernetes API**: `192.168.6.98` (Talos Layer2 VIP, advertised by the control-plane nodes).
 - **Ingress**: `192.168.6.99` (MetalLB L2 pool `.96`–`.99`). The UniFi router forwards ports 80 and 443 to this address. Traefik runs in `kube-system` and terminates TLS with cert-manager wildcard certificates. Services that need additional ports on the same IP can use MetalLB with `metallb.io/loadBalancerIPs: 192.168.6.99`.
@@ -73,6 +99,7 @@ Longhorn (`v1.12`) provides all PVCs. The data disks are btrfs volumes mounted b
 | 130 | sda | sdb (`/var/mnt/longhorn`) + sdc (`/var/mnt/hdd1`) + system disk |
 | 150/160/170 | sda | sdb (`/var/mnt/longhorn`) + system disk |
 | 180 | sda | system disk |
+| 250 | 250 GB NVMe | system disk |
 | 50 | 598 GB virtual disk | system disk |
 | 80 | RAID1 sda+sdb | sdc (`/var/mnt/hdd1`) + system disk |
 | 60 | sda | sdb (`/var/mnt/hdd1`) + system disk |
