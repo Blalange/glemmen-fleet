@@ -1,9 +1,12 @@
-# Shared media library and download directory, backed by the SeaweedFS CSI
-# driver.
+# Shared media library and download directory.
 #
-# The StorageClass is created by the SeaweedCSIDriver CR in
-# flux/infrastructure/seaweedfs/csi.yaml. It maps files to uid/gid 1000, which
-# is the identity used by Jellyfin, the LinuxServer *arr apps and qBittorrent.
+# `media-data` is the old SeaweedFS CSI volume. It is kept only until the copy
+# to `media-data-ceph` has been verified and SeaweedFS is removed.
+#
+# `media-data-ceph` uses the CephFS fast tier, which supports ReadWriteMany and
+# maps the volume root to the fsGroup (1000) used by Jellyfin, the LinuxServer
+# *arr apps and qBittorrent. It is sized just above the current ~2.0 TiB library
+# so it fits on the fast CMR OSDs until the bulk tier exists.
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
@@ -15,3 +18,15 @@ spec:
   resources:
     requests:
       storage: 2800Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: media-data-ceph
+spec:
+  accessModes:
+    - ReadWriteMany
+  storageClassName: fast-fs
+  resources:
+    requests:
+      storage: 2300Gi

@@ -1,0 +1,31 @@
+# Ceph dashboards from the upstream Ceph mixin:
+# https://github.com/ceph/ceph/tree/main/monitoring/ceph-mixin/dashboards_out
+#
+# The dashboards use the raw ceph_* metrics exported by the mgr Prometheus
+# module, so they do not need the mixin recording rules. The download script
+# rewrites their datasource references to the provisioned Thanos data source.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: monitoring
+configMapGenerator:
+  - name: grafana-dashboard-ceph-cluster
+    files:
+      - ceph-cluster.json
+  - name: grafana-dashboard-ceph-filesystem
+    files:
+      - cephfsdashboard.json
+  - name: grafana-dashboard-ceph-osds
+    files:
+      - osds-overview.json
+  - name: grafana-dashboard-ceph-pools
+    files:
+      - pool-overview.json
+  - name: grafana-dashboard-ceph-rgw
+    files:
+      - radosgw-overview.json
+commonAnnotations:
+  grafana_folder: Ceph
+generatorOptions:
+  disableNameSuffixHash: true
+  labels:
+    grafana_dashboard: "1"

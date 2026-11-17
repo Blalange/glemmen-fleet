@@ -10,8 +10,8 @@
 #   - glemmen160/170/180 CMR disks: still carry Longhorn replicas.
 #   - nvme-rbd/nvme-fs: require a raw partition carved from the 1xx system
 #     NVMe, which requires a reinstall.
-#   - bulk-rbd/bulk-fs and RGW: glemmen80 has not received the 24x12TB disks
-#     or the external SAS HBA yet.
+#   - bulk-rbd/bulk-fs and the bulk RGW pools: glemmen80 has not received the
+#     24x12TB disks or the external SAS HBA yet. The fast RGW below is live.
 #
 # Do not add devices that are still mounted by Longhorn. Rook uses explicit
 # device paths and never `useAllDevices`.
@@ -206,7 +206,61 @@ cephFileSystems:
     storageClass:
       enabled: false
 
-# No RGW until glemmen80 has the 24x12TB disks. Thanos continues to use
-# SeaweedFS for now.
-cephObjectStores: []
+# RGW on the fast CMR tier. The `fast` store gets its own replicated metadata
+# and data pools on `deviceClass: cmr`; it is not an EC pool yet. Thanos and
+# Loki are migrated here first, and can move to the bulk EC pools later without
+# changing their bucket names.
+cephObjectStores:
+  - name: fast
+    spec:
+      metadataPool:
+        failureDomain: host
+        replicated:
+          size: 2
+          requireSafeReplicaSize: true
+        deviceClass: cmr
+        parameters:
+          min_size: "1"
+      dataPool:
+        failureDomain: host
+        replicated:
+          size: 2
+          requireSafeReplicaSize: true
+        deviceClass: cmr
+        parameters:
+          min_size: "1"
+      preservePoolsOnDelete: true
+      gateway:
+        port: 80
+        instances: 2
+        priorityClassName: system-cluster-critical
+        resources:
+          requests:
+            cpu: 200m
+            memory: 512Mi
+          limits:
+            memory: 1Gi
+    storageClass:
+      enabled: true
+      name: ceph-bucket
+      reclaimPolicy: Retain
+      volumeBindingMode: Immediate
+      parameters:
+        region: us-east-1
+    ingress:
+      enabled: false
+
+# The credentials are generated into
+# rook-ceph-object-user-fast-{thanos,loki}. The buckets themselves are created
+# once with radosgw-admin and are not managed by these users.
+cephObjectStoreUsers:
+  - name: thanos
+    spec:
+      store: fast
+      displayName: Thanos
+  - name: loki
+    spec:
+      store: fast
+      displayName: Loki
+
 cephECBlockPools: []

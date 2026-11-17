@@ -28,6 +28,31 @@ from pathlib import Path
 
 DASHBOARDS = [
     {
+        "file": "ceph-cluster.json",
+        "dir": "ceph",
+        "url": "https://raw.githubusercontent.com/ceph/ceph/main/monitoring/ceph-mixin/dashboards_out/ceph-cluster.json",
+    },
+    {
+        "file": "cephfsdashboard.json",
+        "dir": "ceph",
+        "url": "https://raw.githubusercontent.com/ceph/ceph/main/monitoring/ceph-mixin/dashboards_out/cephfsdashboard.json",
+    },
+    {
+        "file": "osds-overview.json",
+        "dir": "ceph",
+        "url": "https://raw.githubusercontent.com/ceph/ceph/main/monitoring/ceph-mixin/dashboards_out/osds-overview.json",
+    },
+    {
+        "file": "pool-overview.json",
+        "dir": "ceph",
+        "url": "https://raw.githubusercontent.com/ceph/ceph/main/monitoring/ceph-mixin/dashboards_out/pool-overview.json",
+    },
+    {
+        "file": "radosgw-overview.json",
+        "dir": "ceph",
+        "url": "https://raw.githubusercontent.com/ceph/ceph/main/monitoring/ceph-mixin/dashboards_out/radosgw-overview.json",
+    },
+    {
         "file": "node-exporter-full.json",
         "dir": "node-exporter",
         "url": "https://raw.githubusercontent.com/rfmoz/grafana-dashboards/master/prometheus/node-exporter-full.json",

@@ -84,9 +84,14 @@ Longhorn.
 
 ### Ceph RGW
 
-The object gateway replaces the SeaweedFS S3 endpoint. It is deferred together
-with the bulk disks because the RGW data pool is intended to be EC 8+2 on
-glemmen80. Thanos continues to upload to SeaweedFS.
+The fast RGW (`rook-ceph-rgw-fast`) is live on the CMR tier. Its metadata and
+data pools are replicated RF2 on `deviceClass: cmr`, with `preservePoolsOnDelete`
+set. Thanos and Loki use the `thanos` and `loki` buckets through this endpoint;
+their durable data was copied from the SeaweedFS S3 gateway before it was
+removed.
+
+The RGW is intended to move to the bulk EC 8+2 pools on glemmen80 later. The
+bucket names and clients do not need to change for that move.
 
 ## Longhorn disks still being drained
 
