@@ -1,0 +1,35 @@
+# Rook Ceph, kept separate from the infrastructure group so a long Ceph
+# bootstrap or a missing CSI secret cannot hold the rest of the cluster
+# hostage. Phase 1 provides fast-rbd and fast-fs only; see
+# flux/infrastructure/rook-ceph/README.md for the deferred tiers.
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: rook-ceph
+  namespace: flux-system
+spec:
+  interval: 1h
+  retryInterval: 2m
+  timeout: 30m
+  path: ./flux/infrastructure/rook-ceph
+  prune: true
+  wait: true
+  targetNamespace: rook-ceph
+  dependsOn:
+    - name: infrastructure
+  healthChecks:
+    - apiVersion: helm.toolkit.fluxcd.io/v2
+      kind: HelmRelease
+      name: rook-ceph
+      namespace: rook-ceph
+    - apiVersion: helm.toolkit.fluxcd.io/v2
+      kind: HelmRelease
+      name: ceph-csi-drivers
+      namespace: rook-ceph
+    - apiVersion: helm.toolkit.fluxcd.io/v2
+      kind: HelmRelease
+      name: rook-ceph-cluster
+      namespace: rook-ceph
+  sourceRef:
+    kind: GitRepository
+    name: flux-system

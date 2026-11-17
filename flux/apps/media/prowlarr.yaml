@@ -89,7 +89,7 @@ spec:
       volumes:
         - name: config
           persistentVolumeClaim:
-            claimName: prowlarr-config
+            claimName: prowlarr-config-ceph
 ---
 apiVersion: v1
 kind: Service

@@ -12,14 +12,14 @@
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: webtunnel-data
+  name: webtunnel-data-ceph
   labels:
     app.kubernetes.io/name: webtunnel-bridge
     app.kubernetes.io/instance: volunteer
 spec:
   accessModes:
     - ReadWriteOnce
-  storageClassName: volunteer
+  storageClassName: fast-rbd
   resources:
     requests:
       storage: 1Gi
@@ -154,7 +154,7 @@ spec:
       volumes:
         - name: data
           persistentVolumeClaim:
-            claimName: webtunnel-data
+            claimName: webtunnel-data-ceph
         - name: etc-tor
           emptyDir: {}
         - name: logs

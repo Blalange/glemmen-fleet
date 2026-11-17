@@ -1,0 +1,30 @@
+# Rook Ceph operator. The operator chart also installs the Ceph-CSI operator
+# CRDs; the separate ceph-csi-drivers chart installs the actual drivers.
+crds:
+  enabled: true
+
+logLevel: INFO
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    memory: 512Mi
+
+csi:
+  installCsiOperator: true
+  # cephcsi v3.18.x is a Rocky Linux 10 build and needs x86-64-v3. The
+  # glemmen50 (Xeon E5645) and glemmen60 (Opteron 4386) CPUs are x86-64-v2,
+  # so pin the last Rocky Linux 9 build until the -rocky9 images are released.
+  # See rook/rook#18607.
+  cephcsi:
+    # Pin the last Rocky Linux 9 build by digest. Rook resets the image-set
+    # ConfigMap if the plugin string starts with "quay.io/cephcsi/cephcsi:v3.17",
+    # so reference the same tag by digest to avoid the stale-image check.
+    repository: quay.io/cephcsi/cephcsi@sha256
+    tag: 0b62db8afc9b174619186c87084a8952157daa719415c598603be22b63cc1293
+  serviceMonitor:
+    enabled: true
+    labels:
+      release: kube-prometheus-stack

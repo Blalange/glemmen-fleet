@@ -21,9 +21,10 @@
 #   TCP 9001   Tor relay ORPort
 # WebTunnel uses the existing 443 forward; Snowflake needs no inbound ports.
 #
-# Longhorn creates three replicas for each small PVC. The stateful services
-# (Syncthing relay, WebTunnel bridge, Tor relay) run one pod each because they
-# own a single long-term identity; Snowflake is stateless and runs three.
+# The small identity volumes now use the Ceph `fast-rbd` class (RF2). The
+# stateful services (Syncthing relay, WebTunnel bridge, Tor relay) run one pod
+# each because they own a single long-term identity; Snowflake is stateless and
+# runs three.
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 namespace: volunteer

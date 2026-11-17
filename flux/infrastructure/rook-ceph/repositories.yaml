@@ -1,0 +1,20 @@
+# Upstream Helm repositories. The Rook operator chart installs the
+# ceph-csi-operator CRDs; the separate ceph-csi-drivers chart configures the
+# RBD and CephFS drivers.
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: HelmRepository
+metadata:
+  name: rook-release
+  namespace: rook-ceph
+spec:
+  interval: 1h
+  url: https://charts.rook.io/release
+---
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: HelmRepository
+metadata:
+  name: ceph-csi-operator
+  namespace: rook-ceph
+spec:
+  interval: 1h
+  url: https://ceph.github.io/ceph-csi-operator

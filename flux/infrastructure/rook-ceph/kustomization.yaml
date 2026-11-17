@@ -1,0 +1,31 @@
+# Rook Ceph, Phase 1.
+#
+# Only the `fast` CMR tier is available today (glemmen130/150). The remaining
+# CMR disks are still Longhorn-backed or, on glemmen60, shared with SeaweedFS.
+# `nvme-rbd`/`nvme-fs` wait for the 1xx NVMe raw-partition reinstall, and
+# `bulk-rbd`/`bulk-fs` plus Ceph RGW wait for the 24x12TB disks and HBA in
+# glemmen80. See README.md for the migration status.
+#
+# The HelmReleases are applied after the `infrastructure` Kustomization so the
+# privileged namespace and the Prometheus Operator CRDs already exist.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: rook-ceph
+resources:
+  - repositories.yaml
+  - release-operator.yaml
+  - release-csi.yaml
+  - release-cluster.yaml
+  - resources/
+configMapGenerator:
+  - name: rook-ceph-operator-values
+    files:
+      - values-operator.yaml
+  - name: rook-ceph-csi-values
+    files:
+      - values-csi.yaml
+  - name: rook-ceph-cluster-values
+    files:
+      - values-cluster.yaml
+generatorOptions:
+  disableNameSuffixHash: true

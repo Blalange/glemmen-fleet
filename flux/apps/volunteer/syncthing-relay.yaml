@@ -7,14 +7,14 @@
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: syncthing-relay-keys
+  name: syncthing-relay-keys-ceph
   labels:
     app.kubernetes.io/name: syncthing-relay
     app.kubernetes.io/instance: volunteer
 spec:
   accessModes:
     - ReadWriteOnce
-  storageClassName: volunteer
+  storageClassName: fast-rbd
   resources:
     requests:
       storage: 1Gi
@@ -108,7 +108,7 @@ spec:
       volumes:
         - name: keys
           persistentVolumeClaim:
-            claimName: syncthing-relay-keys
+            claimName: syncthing-relay-keys-ceph
 ---
 apiVersion: v1
 kind: Service

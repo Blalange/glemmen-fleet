@@ -41,14 +41,14 @@ spec:
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: energisjappa-postgres
+  name: energisjappa-postgres-ceph
   labels:
     app.kubernetes.io/name: energisjappa-postgres
     app.kubernetes.io/instance: energisjappa
 spec:
   accessModes:
     - ReadWriteOnce
-  storageClassName: energisjappa
+  storageClassName: fast-rbd
   resources:
     requests:
       storage: 5Gi
@@ -122,4 +122,4 @@ spec:
       volumes:
         - name: data
           persistentVolumeClaim:
-            claimName: energisjappa-postgres
+            claimName: energisjappa-postgres-ceph

@@ -91,7 +91,7 @@ spec:
       volumes:
         - name: config
           persistentVolumeClaim:
-            claimName: radarr-config
+            claimName: radarr-config-ceph
         - name: media
           persistentVolumeClaim:
             claimName: media-data

@@ -28,17 +28,14 @@ spec:
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: netbox-postgres
+  name: netbox-postgres-ceph
   labels:
     app.kubernetes.io/name: netbox-postgres
     app.kubernetes.io/instance: netbox
 spec:
   accessModes:
     - ReadWriteOnce
-  storageClassName: netbox
-  # Rebind the PVC that was pruned during the database switch to its retained
-  # Longhorn volume, so the existing NetBox data survives.
-  volumeName: pvc-9de04e74-5087-4ced-aba7-918409fbbaf1
+  storageClassName: fast-rbd
   resources:
     requests:
       storage: 8Gi
@@ -112,4 +109,4 @@ spec:
       volumes:
         - name: data
           persistentVolumeClaim:
-            claimName: netbox-postgres
+            claimName: netbox-postgres-ceph

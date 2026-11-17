@@ -61,7 +61,7 @@ prometheus:
     storageSpec:
       volumeClaimTemplate:
         spec:
-          storageClassName: monitoring
+          storageClassName: fast-rbd
           accessModes: ["ReadWriteOnce"]
           resources:
             requests:
@@ -433,7 +433,7 @@ alertmanager:
     storage:
       volumeClaimTemplate:
         spec:
-          storageClassName: monitoring
+          storageClassName: fast-rbd
           accessModes: ["ReadWriteOnce"]
           resources:
             requests:

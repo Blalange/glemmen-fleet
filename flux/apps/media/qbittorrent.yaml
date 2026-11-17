@@ -192,7 +192,7 @@ spec:
       volumes:
         - name: config
           persistentVolumeClaim:
-            claimName: qbittorrent-config
+            claimName: qbittorrent-config-ceph
         - name: media
           persistentVolumeClaim:
             claimName: media-data

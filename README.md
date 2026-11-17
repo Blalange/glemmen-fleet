@@ -92,7 +92,16 @@ The 1xx nodes have two 1 Gbit/s NICs. The cluster uses Calico with IPIP CrossSub
 
 ### Storage
 
-Longhorn (`v1.12`) provides all PVCs. The data disks are btrfs volumes mounted by Talos:
+> **Ceph migration in progress.** Rook Ceph now provides the `fast-rbd` and
+> `fast-fs` classes on the CMR disks of `glemmen130`/`glemmen150`. Longhorn
+> still serves the existing PVCs and SeaweedFS remains the S3/CephFS
+> replacement target. `nvme-rbd`/`nvme-fs`, `bulk-rbd`/`bulk-fs` and Ceph RGW
+> are deliberately deferred: the 1xx NVMe OSDs require a Talos reinstall, and
+> `glemmen80` has not received its 24 × 12 TB disks or external SAS HBA yet.
+> The Ceph dashboard is at <https://ceph.glem.men>. See
+> `flux/infrastructure/rook-ceph/README.md`.
+
+Longhorn (`v1.12`) provides all existing PVCs. The data disks are btrfs volumes mounted by Talos:
 
 | Node | System disk | Longhorn data disks |
 |------|-------------|---------------------|

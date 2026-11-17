@@ -1,6 +1,10 @@
-# glemmen150 - 2 disks:
-#   sda ST2000NM012B-2TD - system disk (wiped by the installer)
-#   sdb ST2000DM008-2FR1 WFL4KACK - Longhorn data disk (old /mnt/hdd1)
+# glemmen150 - CMR and SMR data disks plus the NVMe system disk:
+#   sda ST2000NM012B-2TD - CMR data disk, reserved for Ceph (Longhorn evicted)
+#   sdb ST2000DM008-2FR1 WFL4KACK - SMR data disk, currently unused
+#
+# The Longhorn data volumes on this node were evicted in preparation for the
+# Rook Ceph migration. Do not recreate UserVolumeConfigs for sda/sdb: Ceph
+# consumes the raw block devices.
 apiVersion: v1alpha1
 kind: HostnameConfig
 hostname: glemmen150
@@ -78,32 +82,7 @@ provisioning:
   wipe: true
 ---
 apiVersion: v1alpha1
-kind: UserVolumeConfig
-name: cmr1
-provisioning:
-  diskSelector:
-    match: 'disk.wwid == "naa.5000c500f266c378"'
-  minSize: 10GiB
-  grow: true
-filesystem:
-  type: btrfs
----
-apiVersion: v1alpha1
-kind: UserVolumeConfig
-name: smr1
-provisioning:
-  diskSelector:
-    match: 'disk.wwid == "naa.5000c500d45ad4e3"'
-  minSize: 10GiB
-  grow: true
-filesystem:
-  type: btrfs
----
-apiVersion: v1alpha1
 kind: KubeNodeConfig
 labels:
-  node.longhorn.io/create-default-disk: config
   glem.men/ecmp-pilot: "true"
   glem.men/ecmp-node: "true"
-annotations:
-  node.longhorn.io/default-disks-config: '[{"name":"system","path":"/var/mnt/longhorn-system","allowScheduling":true,"storageReserved":64000000000,"tags":["nvme", "fast"]},{"name":"cmr1","path":"/var/mnt/cmr1","allowScheduling":true,"storageReserved":0,"tags":["cmr"]},{"name":"smr1","path":"/var/mnt/smr1","allowScheduling":false,"storageReserved":0,"tags":["smr"]}]'

@@ -18,11 +18,11 @@ spec:
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: webodm-media
+  name: webodm-media-ceph
 spec:
   accessModes:
     - ReadWriteOnce
-  storageClassName: webodm
+  storageClassName: fast-rbd
   resources:
     requests:
       storage: 100Gi
@@ -133,4 +133,4 @@ spec:
       volumes:
         - name: media
           persistentVolumeClaim:
-            claimName: webodm-media
+            claimName: webodm-media-ceph

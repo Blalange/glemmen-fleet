@@ -191,7 +191,7 @@ updateStrategy:
 # release cannot delete it. The share-manager is created by Longhorn.
 persistence:
   enabled: true
-  existingClaim: netbox-media
+  existingClaim: netbox-media-ceph
   accessMode: ReadWriteMany
   size: 2Gi
 

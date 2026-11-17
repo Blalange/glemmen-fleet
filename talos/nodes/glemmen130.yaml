@@ -1,7 +1,11 @@
-# glemmen130 - 3 disks:
-#   sda ST2000NM012B-2TD WRE0MBLR - system disk (was half of the old btrfs root, wiped by the installer)
-#   sdb ST2000NM012B-2TD WRE0MWFF - Longhorn data disk (was the other half of the old btrfs root)
-#   sdc ST1000DM010-2EP1 ZN1VG6WD - Longhorn data disk (old /mnt/hdd1)
+# glemmen130 - 3 data disks plus the NVMe system disk:
+#   sda ST2000NM012B-2TD WRE0MBLR - CMR data disk, reserved for Ceph (Longhorn evicted)
+#   sdb ST2000NM012B-2TD WRE0MWFF - CMR data disk, reserved for Ceph (Longhorn evicted)
+#   sdc ST1000DM010-2EP1 ZN1VG6WD - SMR data disk, currently unused
+#
+# The Longhorn data volumes on this node were evicted in preparation for the
+# Rook Ceph migration. Do not recreate UserVolumeConfigs for sda/sdb/sdc: Ceph
+# consumes the raw block devices.
 apiVersion: v1alpha1
 kind: HostnameConfig
 hostname: glemmen130
@@ -78,42 +82,6 @@ provisioning:
   wipe: true
 ---
 apiVersion: v1alpha1
-kind: UserVolumeConfig
-name: cmr1
-provisioning:
-  diskSelector:
-    match: 'disk.wwid == "naa.5000c500f266aba4"'
-  minSize: 10GiB
-  grow: true
-filesystem:
-  type: btrfs
----
-apiVersion: v1alpha1
-kind: UserVolumeConfig
-name: cmr2
-provisioning:
-  diskSelector:
-    match: 'disk.wwid == "naa.5000c500f266c686"'
-  minSize: 10GiB
-  grow: true
-filesystem:
-  type: btrfs
----
-apiVersion: v1alpha1
-kind: UserVolumeConfig
-name: smr1
-provisioning:
-  diskSelector:
-    match: 'disk.wwid == "naa.5000c500e41fe0a5"'
-  minSize: 10GiB
-  grow: true
-filesystem:
-  type: btrfs
----
-apiVersion: v1alpha1
 kind: KubeNodeConfig
 labels:
-  node.longhorn.io/create-default-disk: config
   glem.men/ecmp-node: "true"
-annotations:
-  node.longhorn.io/default-disks-config: '[{"name":"system","path":"/var/mnt/longhorn-system","allowScheduling":true,"storageReserved":64000000000,"tags":["nvme", "fast"]},{"name":"cmr1","path":"/var/mnt/cmr1","allowScheduling":true,"storageReserved":0,"tags":["cmr"]},{"name":"cmr2","path":"/var/mnt/cmr2","allowScheduling":true,"storageReserved":0,"tags":["cmr"]},{"name":"smr1","path":"/var/mnt/smr1","allowScheduling":false,"storageReserved":0,"tags":["smr"]}]'

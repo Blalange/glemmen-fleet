@@ -71,7 +71,7 @@ singleBinary:
   persistence:
     enabled: true
     size: 20Gi
-    storageClass: monitoring
+    storageClass: fast-rbd
   resources:
     requests:
       cpu: 250m

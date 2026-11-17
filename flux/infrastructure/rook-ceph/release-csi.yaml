@@ -1,0 +1,23 @@
+# Ceph-CSI drivers. Rook v1.20+ requires this chart separately from the
+# operator; the recommended values are in values-csi.yaml.
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: ceph-csi-drivers
+  namespace: rook-ceph
+spec:
+  interval: 1h
+  timeout: 15m
+  dependsOn:
+    - name: rook-ceph
+  chart:
+    spec:
+      chart: ceph-csi-drivers
+      version: 1.1.0
+      sourceRef:
+        kind: HelmRepository
+        name: ceph-csi-operator
+  valuesFrom:
+    - kind: ConfigMap
+      name: rook-ceph-csi-values
+      valuesKey: values-csi.yaml

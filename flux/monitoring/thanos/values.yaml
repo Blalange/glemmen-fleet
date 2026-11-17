@@ -17,7 +17,7 @@ global:
     secretKey: objstore.yml
 
   # Compactor and Store Gateway keep small cache/scratch volumes on Longhorn.
-  storageClass: monitoring
+  storageClass: fast-rbd
 
   # Scrape the Thanos components and let the Prometheus instances pick up the
   # chart's Thanos alert rules.

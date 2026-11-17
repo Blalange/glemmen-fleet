@@ -7,14 +7,14 @@
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: tor-relay-data
+  name: tor-relay-data-ceph
   labels:
     app.kubernetes.io/name: tor-relay
     app.kubernetes.io/instance: volunteer
 spec:
   accessModes:
     - ReadWriteOnce
-  storageClassName: volunteer
+  storageClassName: fast-rbd
   resources:
     requests:
       storage: 1Gi
@@ -125,7 +125,7 @@ spec:
       volumes:
         - name: data
           persistentVolumeClaim:
-            claimName: tor-relay-data
+            claimName: tor-relay-data-ceph
         - name: config
           configMap:
             name: tor-relay-config

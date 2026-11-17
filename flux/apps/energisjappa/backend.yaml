@@ -138,7 +138,7 @@ spec:
       volumes:
         - name: data
           persistentVolumeClaim:
-            claimName: energisjappa-data
+            claimName: energisjappa-data-ceph
 ---
 apiVersion: v1
 kind: Service
@@ -160,14 +160,14 @@ spec:
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: energisjappa-data
+  name: energisjappa-data-ceph
   labels:
     app.kubernetes.io/name: energisjappa-backend
     app.kubernetes.io/instance: energisjappa
 spec:
   accessModes:
     - ReadWriteOnce
-  storageClassName: energisjappa
+  storageClassName: fast-rbd
   resources:
     requests:
       # Product images. The volume was grown for the security recordings that

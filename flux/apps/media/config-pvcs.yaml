@@ -4,10 +4,10 @@
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: jellyfin-config
+  name: jellyfin-config-ceph
 spec:
   accessModes: [ReadWriteOnce]
-  storageClassName: media-config
+  storageClassName: fast-rbd
   resources:
     requests:
       storage: 20Gi
@@ -15,10 +15,10 @@ spec:
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: sonarr-config
+  name: sonarr-config-ceph
 spec:
   accessModes: [ReadWriteOnce]
-  storageClassName: media-config
+  storageClassName: fast-rbd
   resources:
     requests:
       storage: 2Gi
@@ -26,10 +26,10 @@ spec:
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: radarr-config
+  name: radarr-config-ceph
 spec:
   accessModes: [ReadWriteOnce]
-  storageClassName: media-config
+  storageClassName: fast-rbd
   resources:
     requests:
       storage: 2Gi
@@ -37,10 +37,10 @@ spec:
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: prowlarr-config
+  name: prowlarr-config-ceph
 spec:
   accessModes: [ReadWriteOnce]
-  storageClassName: media-config
+  storageClassName: fast-rbd
   resources:
     requests:
       storage: 2Gi
@@ -48,10 +48,10 @@ spec:
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: seerr-config
+  name: seerr-config-ceph
 spec:
   accessModes: [ReadWriteOnce]
-  storageClassName: media-config
+  storageClassName: fast-rbd
   resources:
     requests:
       storage: 2Gi
@@ -59,10 +59,10 @@ spec:
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: profilarr-config
+  name: profilarr-config-ceph
 spec:
   accessModes: [ReadWriteOnce]
-  storageClassName: media-config
+  storageClassName: fast-rbd
   resources:
     requests:
       storage: 5Gi
@@ -70,10 +70,10 @@ spec:
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: qbittorrent-config
+  name: qbittorrent-config-ceph
 spec:
   accessModes: [ReadWriteOnce]
-  storageClassName: media-config
+  storageClassName: fast-rbd
   resources:
     requests:
       storage: 2Gi

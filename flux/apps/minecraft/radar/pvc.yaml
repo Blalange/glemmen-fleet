@@ -4,7 +4,7 @@
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: minecraft-radar-data
+  name: minecraft-radar-data-ceph
   labels:
     app.kubernetes.io/name: minecraft-radar
     app.kubernetes.io/instance: minecraft
@@ -12,7 +12,7 @@ metadata:
 spec:
   accessModes:
     - ReadWriteOnce
-  storageClassName: minecraft-radar
+  storageClassName: fast-rbd
   resources:
     requests:
       storage: 20Gi

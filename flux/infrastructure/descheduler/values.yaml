@@ -85,6 +85,7 @@ deschedulerPolicy:
                 - kube-system
                 - flux-system
                 - longhorn-system
+                - rook-ceph
                 - yugabyte
                 - cert-manager
                 - seaweedfs

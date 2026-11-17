@@ -94,7 +94,7 @@ spec:
       volumes:
         - name: config
           persistentVolumeClaim:
-            claimName: jellyfin-config
+            claimName: jellyfin-config-ceph
         - name: cache
           emptyDir:
             sizeLimit: 20Gi

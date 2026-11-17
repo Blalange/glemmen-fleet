@@ -91,7 +91,7 @@ spec:
       volumes:
         - name: config
           persistentVolumeClaim:
-            claimName: sonarr-config
+            claimName: sonarr-config-ceph
         - name: media
           persistentVolumeClaim:
             claimName: media-data

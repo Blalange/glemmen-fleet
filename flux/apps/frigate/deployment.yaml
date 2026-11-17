@@ -112,10 +112,10 @@ spec:
             name: frigate-config
         - name: config
           persistentVolumeClaim:
-            claimName: frigate-config
+            claimName: frigate-config-ceph
         - name: media
           persistentVolumeClaim:
-            claimName: frigate-media
+            claimName: frigate-media-ceph
         # Frigate decodes and scales frames through shared memory.
         - name: shm
           emptyDir:

@@ -1,0 +1,212 @@
+# Rook Ceph cluster, Phase 1.
+#
+# Current OSDs (CMR, deviceClass=cmr):
+#   glemmen130: /dev/disk/by-id/wwn-0x5000c500f266aba4
+#               /dev/disk/by-id/wwn-0x5000c500f266c686
+#   glemmen150: /dev/disk/by-id/wwn-0x5000c500f266c378
+#
+# Deferred deliberately:
+#   - glemmen60 8 TB disk: still carries SeaweedFS hostPath + Longhorn data.
+#   - glemmen160/170/180 CMR disks: still carry Longhorn replicas.
+#   - nvme-rbd/nvme-fs: require a raw partition carved from the 1xx system
+#     NVMe, which requires a reinstall.
+#   - bulk-rbd/bulk-fs and RGW: glemmen80 has not received the 24x12TB disks
+#     or the external SAS HBA yet.
+#
+# Do not add devices that are still mounted by Longhorn. Rook uses explicit
+# device paths and never `useAllDevices`.
+toolbox:
+  enabled: true
+
+operatorNamespace: rook-ceph
+clusterName: rook-ceph
+
+cephImage:
+  repository: quay.io/ceph/ceph
+  tag: v20.2.4
+
+monitoring:
+  enabled: true
+  createPrometheusRules: true
+  rulesNamespaceOverride: monitoring
+  prometheusRule:
+    labels:
+      release: kube-prometheus-stack
+
+cephClusterSpec:
+  dataDirHostPath: /var/lib/rook
+
+  security:
+    cephx:
+      csi:
+        keyType: aes
+
+  mon:
+    count: 3
+    allowMultiplePerNode: false
+
+  mgr:
+    count: 2
+    allowMultiplePerNode: false
+    modules:
+      - name: rook
+        enabled: false
+
+  dashboard:
+    enabled: true
+    ssl: true
+
+  network:
+    provider: host
+    connections:
+      # Talos 6.18 supports msgr2; explicitly require it as Rook 1.21 does.
+      requireMsgr2: true
+      encryption:
+        enabled: false
+      compression:
+        enabled: false
+
+  cephConfig:
+    global:
+      # Do not let Ceph advertise the Netbird or ECMP addresses.
+      public_network: 192.168.6.0/24
+      cluster_network: 192.168.6.0/24
+      # RF2 is the cluster-wide default. The only pool that does not set a
+      # size explicitly is Ceph's internal .mgr pool; without this it asks for
+      # three replicas and stays undersized on the two current CMR hosts.
+      osd_pool_default_size: "2"
+      osd_pool_default_min_size: "1"
+    osd:
+      # Keep three OSDs on a 32 GB control-plane node reasonable. The OSD
+      # daemon's own memory target is deliberately below the pod limit.
+      osd_memory_target: "2147483648"
+
+  storage:
+    useAllNodes: false
+    useAllDevices: false
+    nodes:
+      - name: glemmen130
+        devices:
+          - name: /dev/disk/by-id/wwn-0x5000c500f266aba4
+            config:
+              deviceClass: cmr
+          - name: /dev/disk/by-id/wwn-0x5000c500f266c686
+            config:
+              deviceClass: cmr
+      - name: glemmen150
+        devices:
+          - name: /dev/disk/by-id/wwn-0x5000c500f266c378
+            config:
+              deviceClass: cmr
+
+  resources:
+    mon:
+      requests:
+        cpu: 500m
+        memory: 1Gi
+      limits:
+        memory: 2Gi
+    mgr:
+      requests:
+        cpu: 200m
+        memory: 512Mi
+      limits:
+        memory: 1Gi
+    osd:
+      requests:
+        cpu: 200m
+        memory: 1Gi
+      limits:
+        memory: 2Gi
+    prepareosd:
+      requests:
+        cpu: 500m
+        memory: 1Gi
+    mds:
+      requests:
+        cpu: 500m
+        memory: 1Gi
+      limits:
+        memory: 2Gi
+    rgw:
+      requests:
+        cpu: 200m
+        memory: 512Mi
+      limits:
+        memory: 1Gi
+
+  placement:
+    all:
+      nodeAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+          nodeSelectorTerms:
+            - matchExpressions:
+                - key: glem.men/ephemeral
+                  operator: DoesNotExist
+
+  disruptionManagement:
+    managePodBudgets: true
+    osdMaintenanceTimeout: 30
+
+  cleanupPolicy:
+    # Never allow an accidental Helm uninstall to destroy the OSDs.
+    confirmation: ""
+
+# Fast CMR block tier. The matching StorageClass lives in
+# resources/storageclasses.yaml and uses the same pool name.
+cephBlockPools:
+  - name: fast-rbd
+    spec:
+      failureDomain: host
+      replicated:
+        size: 2
+        requireSafeReplicaSize: true
+      deviceClass: cmr
+      parameters:
+        # RF2 with min_size 1 keeps writes available while a single OSD/host is
+        # down. It is an availability trade-off, not additional redundancy.
+        min_size: "1"
+    storageClass:
+      enabled: false
+
+# One CephFilesystem with the fast data pool for now. The nvme and bulk data
+# pools are added when those OSDs exist, and fast-fs/bulk-fs/nvme-fs will
+# select the corresponding pool.
+cephFileSystems:
+  - name: cephfs
+    spec:
+      metadataPool:
+        failureDomain: host
+        replicated:
+          size: 2
+          requireSafeReplicaSize: true
+        deviceClass: cmr
+        parameters:
+          min_size: "1"
+      dataPools:
+        - name: fast
+          failureDomain: host
+          replicated:
+            size: 2
+            requireSafeReplicaSize: true
+          deviceClass: cmr
+          parameters:
+            min_size: "1"
+      preserveFilesystemOnDelete: true
+      metadataServer:
+        activeCount: 1
+        activeStandby: true
+        priorityClassName: system-cluster-critical
+        resources:
+          requests:
+            cpu: 500m
+            memory: 1Gi
+          limits:
+            memory: 2Gi
+    storageClass:
+      enabled: false
+
+# No RGW until glemmen80 has the 24x12TB disks. Thanos continues to use
+# SeaweedFS for now.
+cephObjectStores: []
+cephECBlockPools: []

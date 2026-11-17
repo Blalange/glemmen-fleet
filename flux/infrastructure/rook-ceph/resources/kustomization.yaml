@@ -1,0 +1,8 @@
+# Cluster-scoped StorageClasses. They reference the pools and CSI secrets
+# created by the Rook Ceph cluster. The nvme-rbd/nvme-fs and bulk-rbd/bulk-fs
+# classes are intentionally absent until their OSDs exist.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - storageclasses.yaml
+  - dashboard.yaml

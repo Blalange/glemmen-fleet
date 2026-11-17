@@ -5,14 +5,14 @@
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: netbox-media
+  name: netbox-media-ceph
   labels:
     app.kubernetes.io/name: netbox-media
     app.kubernetes.io/instance: netbox
 spec:
   accessModes:
     - ReadWriteMany
-  storageClassName: netbox-media
+  storageClassName: fast-fs
   resources:
     requests:
       storage: 2Gi

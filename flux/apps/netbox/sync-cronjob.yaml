@@ -129,6 +129,6 @@ spec:
                 name: netbox-device-type-images
             - name: media
               persistentVolumeClaim:
-                claimName: netbox-media
+                claimName: netbox-media-ceph
             - name: tmp
               emptyDir: {}
