@@ -1,7 +1,7 @@
 # Grafana Loki (SimpleScalable) for cluster log storage.
 #
-# Loki writes chunks and the TSDB index to the `loki` bucket in SeaweedFS
-# (../../infrastructure/seaweedfs). The S3 key pair is not in Git; create the
+# Loki writes chunks and the TSDB index to the `loki` bucket in Ceph RGW
+# (../../infrastructure/rook-ceph). The S3 key pair is not in Git; create the
 # `loki-s3` Secret in monitoring before reconciling this release; see
 # ../../README.md.
 apiVersion: source.toolkit.fluxcd.io/v1

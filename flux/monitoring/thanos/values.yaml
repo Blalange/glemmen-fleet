@@ -1,8 +1,8 @@
 # Thanos Query, Store Gateway and Compactor.
 #
 # Prometheus runs the sidecar (see ../kube-prometheus-stack/values.yaml) and
-# uploads TSDB blocks to the `thanos` bucket in SeaweedFS
-# (../../infrastructure/seaweedfs). These components read those blocks,
+# uploads TSDB blocks to the `thanos` bucket in Ceph RGW
+# (../../infrastructure/rook-ceph). These components read those blocks,
 # compact/downsample them and serve one query endpoint for Grafana.
 #
 # The object store credentials are not in Git. Create the
@@ -84,7 +84,7 @@ storegateway:
   persistence:
     size: 10Gi
   # Only serve blocks older than the local Prometheus retention window. This
-  # avoids duplicated reads from the SeaweedFS object store for recent data.
+  # avoids duplicated reads from the RGW object store for recent data.
   # Move to -7d once the 30s scrape interval has grown local retention past
   # 7 days.
   extraArgs:

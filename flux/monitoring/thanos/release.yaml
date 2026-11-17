@@ -1,6 +1,6 @@
 # Thanos Query/Store Gateway/Compactor for long-term Prometheus metrics.
 # Prometheus itself runs the sidecar (see ../kube-prometheus-stack/values.yaml)
-# and uploads blocks to the `thanos` bucket on the rclone S3 bridge.
+# and uploads blocks to the `thanos` bucket in Ceph RGW.
 apiVersion: source.toolkit.fluxcd.io/v1
 kind: HelmRepository
 metadata:

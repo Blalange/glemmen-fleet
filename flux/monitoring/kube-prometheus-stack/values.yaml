@@ -68,7 +68,7 @@ prometheus:
               storage: 20Gi
 
     # Ship completed TSDB blocks to the Thanos object store (the `thanos`
-    # bucket in SeaweedFS, see ../../infrastructure/seaweedfs) and expose the
+    # bucket in Ceph RGW, see ../../infrastructure/rook-ceph) and expose the
     # local Prometheus through the Thanos Store API.
     thanos:
       image: quay.io/thanos/thanos:v0.42.4

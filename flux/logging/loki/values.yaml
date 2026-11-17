@@ -1,5 +1,5 @@
 # Loki runs as a single binary (Monolithic) with one replica. Chunks and the
-# TSDB index live in the `loki` bucket in SeaweedFS; the local volume keeps
+# TSDB index live in the `loki` bucket in Ceph RGW; the local volume keeps
 # the WAL and query caches.
 deploymentMode: Monolithic
 
@@ -29,7 +29,7 @@ loki:
       chunks: loki
       ruler: loki
     s3:
-      endpoint: seaweedfs-s3.seaweedfs.svc.cluster.local:8333
+      endpoint: rook-ceph-rgw-fast.rook-ceph.svc.cluster.local:80
       region: us-east-1
       s3ForcePathStyle: true
       insecure: true
