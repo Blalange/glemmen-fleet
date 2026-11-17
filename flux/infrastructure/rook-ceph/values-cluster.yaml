@@ -166,6 +166,11 @@ cephBlockPools:
         # RF2 with min_size 1 keeps writes available while a single OSD/host is
         # down. It is an availability trade-off, not additional redundancy.
         min_size: "1"
+        # One PG per pool is the Ceph default for a tiny cluster, but it
+        # serializes all writes through a single OSD. Spread the fast pool
+        # across the three OSDs.
+        pg_num: "32"
+        pgp_num: "32"
     storageClass:
       enabled: false
 
@@ -183,6 +188,8 @@ cephFileSystems:
         deviceClass: cmr
         parameters:
           min_size: "1"
+          pg_num: "32"
+          pgp_num: "32"
       dataPools:
         - name: fast
           failureDomain: host
@@ -192,6 +199,8 @@ cephFileSystems:
           deviceClass: cmr
           parameters:
             min_size: "1"
+            pg_num: "32"
+            pgp_num: "32"
       preserveFilesystemOnDelete: true
       metadataServer:
         activeCount: 1
@@ -221,6 +230,8 @@ cephObjectStores:
         deviceClass: cmr
         parameters:
           min_size: "1"
+          pg_num: "32"
+          pgp_num: "32"
       dataPool:
         failureDomain: host
         replicated:
@@ -229,6 +240,8 @@ cephObjectStores:
         deviceClass: cmr
         parameters:
           min_size: "1"
+          pg_num: "32"
+          pgp_num: "32"
       preservePoolsOnDelete: true
       gateway:
         port: 80

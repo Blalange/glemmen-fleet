@@ -6,3 +6,4 @@ kind: Kustomization
 resources:
   - storageclasses.yaml
   - dashboard.yaml
+  - monitoring-rbac.yaml
