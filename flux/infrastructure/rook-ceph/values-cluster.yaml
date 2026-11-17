@@ -4,10 +4,12 @@
 #   glemmen130: /dev/disk/by-id/wwn-0x5000c500f266aba4
 #               /dev/disk/by-id/wwn-0x5000c500f266c686
 #   glemmen150: /dev/disk/by-id/wwn-0x5000c500f266c378
+#   glemmen170: /dev/disk/by-id/wwn-0x5000c500f266e157 (evicted from Longhorn)
 #
 # Deferred deliberately:
-#   - glemmen60 8 TB disk: still carries SeaweedFS hostPath + Longhorn data.
-#   - glemmen160/170/180 CMR disks: still carry Longhorn replicas.
+#   - glemmen60 8 TB disk: still carries Longhorn data; the SeaweedFS hostPath
+#     has been removed.
+#   - glemmen160/180 CMR/SMR disks: still carry Longhorn replicas.
 #   - nvme-rbd/nvme-fs: require a raw partition carved from the 1xx system
 #     NVMe, which requires a reinstall.
 #   - bulk-rbd/bulk-fs and the bulk RGW pools: glemmen80 has not received the
@@ -96,6 +98,11 @@ cephClusterSpec:
       - name: glemmen150
         devices:
           - name: /dev/disk/by-id/wwn-0x5000c500f266c378
+            config:
+              deviceClass: cmr
+      - name: glemmen170
+        devices:
+          - name: /dev/disk/by-id/wwn-0x5000c500f266e157
             config:
               deviceClass: cmr
 
