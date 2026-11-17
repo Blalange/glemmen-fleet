@@ -3,6 +3,7 @@ kind: Kustomization
 namespace: monitoring
 resources:
   - calico.yaml
+  - ceph-mgr.yaml
   - cert-manager.yaml
   - flux.yaml
   - kepler.yaml

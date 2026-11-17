@@ -1,0 +1,31 @@
+# Ceph manager metrics. Rook creates a ServiceMonitor for the ceph-exporter
+# daemon, but not for the mgr's Prometheus module, which is where the cluster
+# health, pool, filesystem and OSD state metrics come from. The mgr Service is
+# active-only and exposes them on http-metrics/9283.
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: rook-ceph-mgr
+  namespace: monitoring
+  labels:
+    release: kube-prometheus-stack
+spec:
+  namespaceSelector:
+    matchNames:
+      - rook-ceph
+  selector:
+    matchLabels:
+      app: rook-ceph-mgr
+      rook_cluster: rook-ceph
+  endpoints:
+    - port: http-metrics
+      path: /metrics
+      interval: 30s
+      scrapeTimeout: 10s
+      honorLabels: true
+      relabelings:
+        # The Ceph mixin dashboards group by a `cluster` label that the mgr
+        # module does not add itself.
+        - action: replace
+          targetLabel: cluster
+          replacement: rook-ceph
