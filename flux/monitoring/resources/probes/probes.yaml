@@ -15,7 +15,10 @@ spec:
   module: https_insecure
   prober:
     url: http://blackbox-exporter.monitoring.svc.cluster.local:9115
-  target: https://192.168.6.98:6443/livez
+  targets:
+    staticConfig:
+      static:
+        - https://192.168.6.98:6443/livez
 ---
 apiVersion: monitoring.coreos.com/v1
 kind: Probe
@@ -31,7 +34,10 @@ spec:
   module: http_ingress
   prober:
     url: http://blackbox-exporter.monitoring.svc.cluster.local:9115
-  target: https://192.168.6.99/
+  targets:
+    staticConfig:
+      static:
+        - https://192.168.6.99/
 ---
 apiVersion: monitoring.coreos.com/v1
 kind: Probe
@@ -47,7 +53,10 @@ spec:
   module: tcp_connect
   prober:
     url: http://blackbox-exporter.monitoring.svc.cluster.local:9115
-  target: 192.168.6.99:443
+  targets:
+    staticConfig:
+      static:
+        - 192.168.6.99:443
 ---
 apiVersion: monitoring.coreos.com/v1
 kind: Probe
@@ -63,7 +72,10 @@ spec:
   module: dns
   prober:
     url: http://blackbox-exporter.monitoring.svc.cluster.local:9115
-  target: 10.43.0.10:53
+  targets:
+    staticConfig:
+      static:
+        - 10.43.0.10:53
 ---
 apiVersion: monitoring.coreos.com/v1
 kind: Probe
@@ -79,4 +91,7 @@ spec:
   module: icmp
   prober:
     url: http://blackbox-exporter.monitoring.svc.cluster.local:9115
-  target: 192.168.6.98
+  targets:
+    staticConfig:
+      static:
+        - 192.168.6.98
