@@ -156,8 +156,9 @@ KUBECONFIG=talos/generated/kubeconfig kubectl get nodes
 
 Ceph consumes raw block devices; the former Talos user volumes are gone.
 The CMR OSDs are the whole disks on glemmen130/150/160/170/180. The NVMe OSDs
-are the `r-nvme-osd` partitions created by `RawVolumeConfig` on glemmen250,
-glemmen180 and glemmen160; `EPHEMERAL` is capped at 100 GiB to leave room.
+are the `r-nvme-osd` partitions created by `RawVolumeConfig` on every
+control-plane node and glemmen250; `EPHEMERAL` is capped at 100 GiB to leave
+room.
 
 The former data disks (`hdd1`/`hdd2` on glemmen60/glemmen80 and `smr1` on
 glemmen160/glemmen170) are unmounted and available for reuse. Do not recreate

@@ -1,5 +1,5 @@
 # glemmen170 - 3 disks:
-#   nvme0n1 Samsung 256 GB - system disk (eui.002538b481baa2e1; wiped by the installer)
+#   nvme0n1 Samsung 256 GB - system disk + raw Ceph OSD (eui.002538b481baa2e1)
 #   sda ST2000NM012B-2TD - CMR disk, handed to Ceph as an OSD
 #   sdb ST2000DM008-2FR1 WFL4K91A - SMR data disk, unmounted and available
 apiVersion: v1alpha1

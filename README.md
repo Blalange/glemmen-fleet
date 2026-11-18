@@ -94,8 +94,9 @@ The 1xx nodes have two 1 Gbit/s NICs. The cluster uses Calico with IPIP CrossSub
 
 > **Ceph storage is live.** Rook Ceph provides `fast-rbd`/`fast-fs` on the
 > CMR disks of glemmen130/150/160/170/180 and `nvme-rbd`/`nvme-fs` on the raw
-> NVMe partitions of glemmen250/180/160, plus the `fast` RGW object store. The
-> media library, Thanos blocks, Loki logs and YugabyteDB data live on Ceph;
+> NVMe partitions of glemmen130/150/160/170/180/250, plus the `fast` RGW
+> object store. The media library, Thanos blocks, Loki logs and YugabyteDB data
+> live on Ceph;
 > SeaweedFS has been removed. `bulk-rbd`/`bulk-fs` and the bulk RGW pools are
 > deferred until `glemmen80` receives its 24 × 12 TB disks and external SAS
 > HBA. The Ceph dashboard is at <https://ceph.glem.men>. See
@@ -106,10 +107,10 @@ unmounted:
 
 | Node | System disk | Data storage |
 |------|-------------|--------------|
-| 130 | NVMe | sda+sdb: CMR Ceph OSDs (`cmr`); sdc: SMR, unused |
-| 150 | NVMe | sda: CMR Ceph OSD; sdb: SMR, unused |
+| 130 | NVMe | sda+sdb: CMR Ceph OSDs (`cmr`); NVMe: raw Ceph OSD (`nvme`); sdc: SMR, unused |
+| 150 | NVMe | sda: CMR Ceph OSD; NVMe: raw Ceph OSD (`nvme`); sdb: SMR, unused |
 | 160 | nvme0n1 | sda: CMR Ceph OSD; NVMe: raw Ceph OSD (`nvme`); sdb: SMR, unused |
-| 170 | nvme0n1 | sda: CMR Ceph OSD; sdb: SMR, unused; NVMe OSD not added yet |
+| 170 | nvme0n1 | sda: CMR Ceph OSD; NVMe: raw Ceph OSD (`nvme`); sdb: SMR, unused |
 | 180 | nvme0n1 | sda: CMR Ceph OSD; NVMe: raw Ceph OSD (`nvme`) |
 | 250 | 250 GB NVMe | 100 GiB EPHEMERAL + 140 GiB raw Ceph OSD (`nvme`) |
 | 50 | 598 GB virtual disk | system disk only |

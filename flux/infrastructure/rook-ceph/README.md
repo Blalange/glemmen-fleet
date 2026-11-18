@@ -26,9 +26,9 @@ cluster.
   caches and Loki's local WAL/cache were recreated empty on `fast-rbd`; their
   durable data lives in the `thanos` and `loki` buckets in the fast RGW.
 - YugabyteDB runs on `nvme-rbd`.
-- Nine OSDs are up and in: two CMR on glemmen130; one CMR each on
+- Twelve OSDs are up and in: two CMR on glemmen130; one CMR each on
   glemmen150/160/170/180; and one raw NVMe partition each on
-  glemmen250/180/160.
+  glemmen130/150/160/170/180/250.
 - The cluster is rebalancing after the last OSD additions. `ceph -s` shows
   `active+remapped`/`backfilling` PGs until recovery finishes.
 
@@ -38,7 +38,7 @@ cluster.
 |---|---|---|---|
 | `fast-rbd` | RBD | CMR disks on glemmen130/150/160/170/180 | RF2, `failureDomain: host`, `min_size: 1` |
 | `fast-fs` | CephFS | same CMR disks, data pool `cephfs-fast` | RF2, `failureDomain: host` |
-| `nvme-rbd` | RBD | raw NVMe partitions on glemmen250/180/160 | RF2, `failureDomain: host`, `min_size: 1` |
+| `nvme-rbd` | RBD | raw NVMe partitions on glemmen130/150/160/170/180/250 | RF2, `failureDomain: host`, `min_size: 1` |
 | `nvme-fs` | CephFS | same NVMe OSDs, data pool `cephfs-nvme` | RF2, `failureDomain: host` |
 | `ceph-bucket` | RGW/OBC | fast RGW buckets | RF2 on the CMR OSDs |
 
@@ -48,15 +48,13 @@ cluster.
 - The toolbox is enabled:
   `kubectl -n rook-ceph exec -it deploy/rook-ceph-tools -- ceph status`.
 
-## Adding NVMe OSDs to the remaining 1xx nodes
+## NVMe layout
 
-glemmen250, glemmen180 and glemmen160 keep a 100 GiB `EPHEMERAL` partition and
-expose the remaining ~140 GiB as the `r-nvme-osd` raw partition. glemmen130,
-glemmen150 and glemmen170 still use the whole NVMe disk for Talos.
-
-Add them one node at a time with the same `VolumeConfig`/`RawVolumeConfig`
-pattern and a reinstall. Do not reinstall a node while Ceph is still
-backfilling.
+Every control-plane node and glemmen250 keeps a 100 GiB `EPHEMERAL` partition
+and exposes the remaining space as the `r-nvme-osd` raw partition (capped at
+140 GiB). The partition is created by Talos `VolumeConfig`/`RawVolumeConfig`;
+the matching `/dev/disk/by-partlabel/r-nvme-osd` device is added explicitly to
+the CephCluster.
 
 ## `bulk-rbd` and `bulk-fs`
 
@@ -115,9 +113,7 @@ kubectl get storageclass fast-rbd fast-fs nvme-rbd nvme-fs ceph-bucket
 ## Next steps
 
 1. Wait for the rebalance to reach `active+clean`.
-2. Reinstall glemmen130, glemmen150 and glemmen170 one at a time and add their
-   NVMe OSDs to the `nvme` class.
-3. Add the glemmen80 24 × 12 TB disks, the `bulk` EC pools and `bulk-rbd` /
+2. Add the glemmen80 24 × 12 TB disks, the `bulk` EC pools and `bulk-rbd` /
    `bulk-fs` classes; move the media library and RGW to the bulk tier.
-4. Decide whether the unmounted CMR/SMR disks are reused for Ceph or retired,
+3. Decide whether the unmounted CMR/SMR disks are reused for Ceph or retired,
    and wipe them before reuse.

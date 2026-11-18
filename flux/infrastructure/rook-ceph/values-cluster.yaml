@@ -19,8 +19,6 @@
 # Deferred deliberately:
 #   - glemmen60 8 TB disk, the glemmen80 1 TB disks, and the SMR disks on
 #     glemmen130/150/160/170 are unmounted and not yet used by Ceph.
-#   - nvme-rbd/nvme-fs: the remaining 1xx nodes need the same 100 GiB
-#     EPHEMERAL cap and reinstall before they can join the nvme class.
 #   - bulk-rbd/bulk-fs and the bulk RGW pools: glemmen80 has not received the
 #     24x12TB disks or the external SAS HBA yet. The fast RGW below is live.
 #
@@ -220,8 +218,8 @@ cephBlockPools:
     storageClass:
       enabled: false
 
-# NVMe block tier. The first three NVMe OSDs are the raw partitions on
-# glemmen250, glemmen180 and glemmen160.
+# NVMe block tier. The NVMe OSDs are the raw partitions on the control-plane
+# nodes and glemmen250.
   - name: nvme-rbd
     spec:
       failureDomain: host

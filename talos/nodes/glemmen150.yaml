@@ -1,4 +1,5 @@
-# glemmen150 - CMR and SMR data disks plus the NVMe system disk:
+# glemmen150 - CMR and SMR data disks plus the NVMe system/OSD disk:
+#   nvme0n1 WD 500 GB - system disk + raw Ceph OSD (`r-nvme-osd`)
 #   sda ST2000NM012B-2TD - CMR data disk, Ceph OSD
 #   sdb ST2000DM008-2FR1 WFL4KACK - SMR data disk, currently unused
 #

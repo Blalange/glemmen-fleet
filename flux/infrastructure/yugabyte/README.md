@@ -41,7 +41,7 @@ to `yb-tservers.yugabyte.svc.cluster.local:5433`.
 ## Storage
 
 The YB volumes use the Ceph NVMe block class (`nvme-rbd`) on the raw NVMe OSDs
-in glemmen250, glemmen180 and glemmen160. YB still provides RF3 across the
+in the control-plane nodes and glemmen250. YB still provides RF3 across the
 three masters and three tservers; Ceph adds RF2 at the block layer.
 
 - **Master volumes:** 10 GiB on `nvme-rbd`.
