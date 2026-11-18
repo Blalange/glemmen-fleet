@@ -16,8 +16,6 @@ compatibility reasons.
 | `values.yaml` | Three YB-Masters, three YB-TServers, RF3, storage and probe settings |
 | `init-job.yaml` | One-shot `yugabyte-init-v7` Job that creates the Grafana role/database and sets the superuser password |
 | `pdb.yaml` | `policy/v1` PodDisruptionBudgets for masters and tservers |
-| `storageclass-fast.yaml` | `yugabyte-fast-master` (two Longhorn replicas) and `yugabyte-fast-tserver` (one Longhorn replica) |
-| `storageclass.yaml` | Legacy `yugabyte` class used by the retired hand-written cluster's PVCs |
 
 The chart runs YB-Master and YB-TServer as separate StatefulSets, with three
 pods each. `oldNamingStyle` is on, so the stable services are `yb-masters` and
@@ -38,34 +36,24 @@ to `yb-tservers.yugabyte.svc.cluster.local:5433`.
   fallback), matching the rest of the performance-sensitive workloads.
 - Pod readiness requires the tserver UI HTTP endpoint; liveness is disabled.
   The chart's default liveness probe syncs the data directory, which can time
-  out on Longhorn and restart a healthy database.
+  out on the backing volume and restart a healthy database.
 
 ## Storage
 
-The YB volumes use Longhorn disks tagged `fast` (the CMR system disks and
-`glemmen130`'s CMR data disk). The large SMR/HDD data disks are deliberately
-excluded.
+The YB volumes use the Ceph NVMe block class (`nvme-rbd`) on the raw NVMe OSDs
+in glemmen250, glemmen180 and glemmen160. YB still provides RF3 across the
+three masters and three tservers; Ceph adds RF2 at the block layer.
 
-- **Master volumes:** `yugabyte-fast-master`, two Longhorn replicas. The
-  volumes are small and low-write; keeping a second replica makes replacing a
-  master easier.
-- **Tserver volumes:** `yugabyte-fast-tserver`, one Longhorn replica. YB RF3 is
-  the data durability layer; a second Longhorn replica would only add
-  synchronous write latency. The trade-off is that if the node holding a
-  tserver's only Longhorn replica is lost, the pod's PVC cannot attach
-  elsewhere. The cluster stays available on the other two tservers; delete the
-  affected `datadir0-yb-tserver-*` PVC/PV and let the StatefulSet create a new
-  volume, then let YB remote-bootstrap the tserver from its peers. Do this only
-  while the other two tservers are healthy.
+- **Master volumes:** 10 GiB on `nvme-rbd`.
+- **Tserver volumes:** 30 GiB on `nvme-rbd`.
 
-`yugabyte-fast` is the class used by the PVCs from the first chart install;
-those PVCs are already bound and cannot change class in place. New volumes use
-the master/tserver classes above.
+The original Longhorn-backed `yugabyte-fast` volumes were copied with
+`pv-migrate`, the `datadir0-*` PVC names were rebound to the migrated Ceph
+RBD PVs, and the Longhorn volumes were deleted after verification.
 
 ## Secrets
 
-Nothing secret is stored in Git. Create the three keys before the init Job
-runs:
+Nothing secret is stored in Git. Create the two keys before the init Job runs:
 
 ```sh
 SUPERUSER_PW="$(openssl rand -hex 24)"
@@ -172,12 +160,11 @@ not supported yet`.
 Each tserver has a 4GiB memory limit (85% is the YB hard limit), and the chart
 uses the tserver's JVM/PG shared-memory defaults. Grafana's schema is small, so
 RF3 fits comfortably. The tserver metrics snapshotter is
-set to every five minutes to reduce internal write load on the Longhorn-backed
+set to every five minutes to reduce internal write load on the Ceph NVMe
 disks.
 
 ## Retired hand-written cluster
 
-The previous `yugabyted` StatefulSet, its Service and ConfigMap are gone. Its
-PVCs are named `data-yugabyte-0/1/2` and remain bound to the legacy `yugabyte`
-StorageClass for rollback. After the chart-managed cluster has been verified,
-they can be deleted, together with their retained PVs and Longhorn volumes.
+The previous `yugabyted` StatefulSet, its Service, ConfigMap, PVCs and
+Longhorn volumes are gone. The chart-managed cluster is now the only
+YugabyteDB deployment.

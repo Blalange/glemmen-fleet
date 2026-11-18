@@ -35,8 +35,9 @@ available at once.
   the fast RGW.
 - The unused `*-old` Prometheus/Alertmanager Longhorn PVCs and PVs were removed
   after the new `fast-rbd` claims were verified.
-- YugabyteDB remains on Longhorn. SeaweedFS and its Longhorn volumes were
-  removed after the media and object-store migrations were verified.
+- YugabyteDB was migrated from Longhorn to `nvme-rbd`; the old Longhorn
+  volumes were removed after verification. SeaweedFS and its Longhorn volumes
+  were removed earlier.
 - glemmen60 `hdd1` and the CMR disks on glemmen160/170/180 still carry Longhorn
   replicas and are not Ceph OSDs yet. The SeaweedFS hostPath on glemmen60 is
   gone.
@@ -131,8 +132,8 @@ kubectl get storageclass fast-rbd fast-fs ceph-bucket
 
 ## Next migration steps
 
-1. Keep the last Longhorn volumes (YugabyteDB and any remaining application
-   PVCs) available until their Ceph replacements are verified.
+1. Longhorn has no application volumes left; remove the Longhorn components
+   when convenient.
 2. Free the remaining CMR disks as Longhorn replicas move off them; add them to
    the CephCluster as `deviceClass: cmr`.
 3. Add the glemmen80 24 × 12 TB disks, the `bulk` EC pools and `bulk-rbd` /
