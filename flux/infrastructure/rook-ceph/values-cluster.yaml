@@ -11,6 +11,7 @@
 # Current OSDs (deviceClass=nvme), raw partitions:
 #   glemmen250: /dev/disk/by-partlabel/r-nvme-osd
 #   glemmen180: /dev/disk/by-partlabel/r-nvme-osd
+#   glemmen170: /dev/disk/by-partlabel/r-nvme-osd
 #   glemmen160: /dev/disk/by-partlabel/r-nvme-osd
 #
 # Deferred deliberately:
@@ -111,6 +112,9 @@ cephClusterSpec:
           - name: /dev/disk/by-id/wwn-0x5000c500f266e157
             config:
               deviceClass: cmr
+          - name: /dev/disk/by-partlabel/r-nvme-osd
+            config:
+              deviceClass: nvme
       - name: glemmen160
         devices:
           - name: /dev/disk/by-id/wwn-0x5000c500f266c046
