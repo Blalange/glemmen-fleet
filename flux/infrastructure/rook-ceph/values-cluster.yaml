@@ -13,6 +13,7 @@
 #   glemmen180: /dev/disk/by-partlabel/r-nvme-osd
 #   glemmen170: /dev/disk/by-partlabel/r-nvme-osd
 #   glemmen150: /dev/disk/by-partlabel/r-nvme-osd
+#   glemmen130: /dev/disk/by-partlabel/r-nvme-osd
 #   glemmen160: /dev/disk/by-partlabel/r-nvme-osd
 #
 # Deferred deliberately:
@@ -103,6 +104,9 @@ cephClusterSpec:
           - name: /dev/disk/by-id/wwn-0x5000c500f266c686
             config:
               deviceClass: cmr
+          - name: /dev/disk/by-partlabel/r-nvme-osd
+            config:
+              deviceClass: nvme
       - name: glemmen150
         devices:
           - name: /dev/disk/by-id/wwn-0x5000c500f266c378
