@@ -14,11 +14,11 @@ storage:
   master:
     count: 1
     size: 10Gi
-    storageClass: yugabyte-fast-master
+    storageClass: nvme-rbd
   tserver:
     count: 1
     size: 30Gi
-    storageClass: yugabyte-fast-tserver
+    storageClass: nvme-rbd
 
 replicas:
   master: 3
