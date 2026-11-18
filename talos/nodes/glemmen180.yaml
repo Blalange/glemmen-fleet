@@ -1,6 +1,7 @@
-# glemmen180 - 1 physical disk only (the old node never had a working second 2TB disk):
-#   sda ST2000NM012B-2TD WRE0MBFX - system disk (wiped by the installer)
-# Longhorn uses the system disk only (directory volume below).
+# glemmen180 - NVMe system disk plus one CMR data disk:
+#   nvme0n1 Kingston 250 GB - system disk (wiped by the installer)
+#   sda ST2000NM012B-2TD WRE0MBFX - CMR disk, handed to Ceph as an OSD
+# Longhorn uses the NVMe system disk only (directory volume below).
 apiVersion: v1alpha1
 kind: HostnameConfig
 hostname: glemmen180
@@ -77,21 +78,10 @@ provisioning:
   wipe: true
 ---
 apiVersion: v1alpha1
-kind: UserVolumeConfig
-name: cmr1
-provisioning:
-  diskSelector:
-    match: 'disk.wwid == "naa.5000c500f266bb89"'
-  minSize: 10GiB
-  grow: true
-filesystem:
-  type: btrfs
----
-apiVersion: v1alpha1
 kind: KubeNodeConfig
 labels:
   node.longhorn.io/create-default-disk: config
   glem.men/ecmp-pilot: "true"
   glem.men/ecmp-node: "true"
 annotations:
-  node.longhorn.io/default-disks-config: '[{"name":"system","path":"/var/mnt/longhorn-system","allowScheduling":true,"storageReserved":64000000000,"tags":["nvme", "fast"]},{"name":"cmr1","path":"/var/mnt/cmr1","allowScheduling":true,"storageReserved":0,"tags":["cmr"]}]'
+  node.longhorn.io/default-disks-config: '[{"name":"system","path":"/var/mnt/longhorn-system","allowScheduling":true,"storageReserved":64000000000,"tags":["nvme", "fast"]}]'

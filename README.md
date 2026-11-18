@@ -107,9 +107,9 @@ Longhorn (`v1.12`) still serves the remaining un-migrated PVCs; the application 
 |------|-------------|--------------|
 | 130 | sda | two CMR disks: Ceph OSDs (`deviceClass: cmr`) |
 | 150 | sda | one CMR disk: Ceph OSD |
-| 160 | sda | sdb: Longhorn (`/var/mnt/longhorn`) |
+| 160 | nvme0n1 | sda: Ceph OSD (`cmr`); sdb: Longhorn (`/var/mnt/smr1`, SMR) |
 | 170 | nvme0n1 | sda: Ceph OSD (`cmr`); sdb: Longhorn (`/var/mnt/smr1`, SMR) |
-| 180 | sda | system disk |
+| 180 | nvme0n1 | sda: Ceph OSD (`cmr`) |
 | 250 | 250 GB NVMe | system disk |
 | 50 | 598 GB virtual disk | system disk |
 | 80 | RAID1 sda+sdb | sdc: Longhorn (`/var/mnt/hdd1`) |
