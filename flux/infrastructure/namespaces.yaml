@@ -3,7 +3,6 @@
 # Talos enables Kubernetes Pod Security Admission with a `baseline` default, so
 # namespaces that run privileged or host-namespace pods must opt out explicitly.
 # Privileged:
-#   - longhorn-system: Longhorn's privileged daemonsets/installer
 #   - rook-ceph:       Rook/Ceph OSD, MON, MGR and CSI pods are privileged
 #   - metallb-system:  the speaker needs NET_ADMIN/NET_RAW and friends
 #   - monitoring:      node-exporter (hostNetwork/hostPID), smartctl-exporter, network-mesh-probe

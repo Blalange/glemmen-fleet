@@ -1,6 +1,6 @@
 # Tor guard/middle relay (non-exit). It contributes bandwidth to the Tor
 # network without carrying exit traffic. UniFi forwards TCP 9001 to the shared
-# MetalLB VIP; the long-term relay keys live on a small Longhorn volume.
+# MetalLB VIP; the long-term relay keys live on a small Ceph RBD volume.
 #
 # The container runs as the image's tor user (101:102), not root. An init
 # container makes the freshly provisioned volume private to that user.
@@ -51,7 +51,7 @@ spec:
           type: RuntimeDefault
       initContainers:
         # Tor refuses a DataDirectory owned by another user or readable by
-        # the group/world. Longhorn mounts a fresh root-owned volume.
+        # the group/world. Ceph mounts a fresh root-owned volume.
         - name: fix-data-permissions
           image: docker.io/library/busybox:1.38.0
           command:

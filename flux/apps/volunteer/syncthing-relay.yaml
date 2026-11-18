@@ -2,7 +2,7 @@
 # fallback; traffic is end-to-end encrypted, the relay only forwards it.
 #
 # UniFi forwards TCP 22067 (data) and 22070 (status) to the shared MetalLB VIP.
-# The relay keypair lives on a small Longhorn volume so the relay keeps the
+# The relay keypair lives on a small Ceph RBD volume so the relay keeps the
 # same identity across restarts.
 apiVersion: v1
 kind: PersistentVolumeClaim

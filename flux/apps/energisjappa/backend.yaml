@@ -29,7 +29,7 @@ spec:
         app.kubernetes.io/instance: energisjappa
     spec:
       # The distroless image runs as nonroot (65532); the fsGroup makes the
-      # Longhorn volume writable for uploaded product images.
+      # Ceph RBD volume writable for uploaded product images.
       securityContext:
         runAsUser: 65532
         runAsGroup: 65532

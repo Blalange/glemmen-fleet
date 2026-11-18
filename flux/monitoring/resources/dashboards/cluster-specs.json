@@ -47,7 +47,7 @@
       }
     ]
   },
-  "description": "Hardware and capacity overview for the cluster: machine count, CPU cores, memory, raw physical disk capacity, usable capacity after RAID, and Longhorn capacity. The table breaks the same figures down per machine.",
+  "description": "Hardware and capacity overview for the cluster: machine count, CPU cores, memory, raw physical disk capacity, usable capacity after RAID,. The table breaks the same figures down per machine.",
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 1,
@@ -403,73 +403,6 @@
       "type": "stat"
     },
     {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "thanos"
-      },
-      "description": "Combined capacity of all disks managed by Longhorn, from longhorn-manager. Storage reservations are not subtracted.",
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "fixed",
-            "fixedColor": "light-blue"
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "light-blue",
-                "value": null
-              }
-            ]
-          },
-          "unit": "decbytes"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 5,
-        "w": 4,
-        "x": 20,
-        "y": 1
-      },
-      "id": 6,
-      "options": {
-        "colorMode": "value",
-        "graphMode": "none",
-        "justifyMode": "auto",
-        "orientation": "auto",
-        "percentChangeColorMode": "standard",
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "",
-          "values": false
-        },
-        "showPercentChange": false,
-        "textMode": "auto",
-        "wideLayout": true
-      },
-      "pluginVersion": "12.3.3",
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "thanos"
-          },
-          "expr": "sum(longhorn_disk_capacity_bytes)",
-          "instant": true,
-          "range": false,
-          "refId": "A",
-          "format": "time_series"
-        }
-      ],
-      "title": "Longhorn capacity",
-      "type": "stat"
-    },
-    {
       "collapsed": false,
       "gridPos": {
         "h": 1,
@@ -487,7 +420,7 @@
         "type": "prometheus",
         "uid": "thanos"
       },
-      "description": "Per-node CPU, memory, OS-visible disk capacity, raw physical disk capacity and Longhorn capacity.",
+      "description": "Per-node CPU, memory, OS-visible disk capacity, raw physical disk capacity.",
       "fieldConfig": {
         "defaults": {
           "mappings": [],
@@ -601,30 +534,6 @@
                 "value": "right"
               }
             ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "Longhorn capacity"
-            },
-            "properties": [
-              {
-                "id": "custom.width",
-                "value": 160
-              },
-              {
-                "id": "unit",
-                "value": "decbytes"
-              },
-              {
-                "id": "decimals",
-                "value": 1
-              },
-              {
-                "id": "custom.align",
-                "value": "right"
-              }
-            ]
           }
         ]
       },
@@ -686,17 +595,6 @@
           "range": false,
           "refId": "D",
           "format": "table"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "thanos"
-          },
-          "expr": "sum by (node) (longhorn_disk_capacity_bytes)",
-          "instant": true,
-          "range": false,
-          "refId": "E",
-          "format": "table"
         }
       ],
       "title": "Machines",
@@ -718,16 +616,14 @@
               "Value #A": 1,
               "Value #B": 2,
               "Value #C": 3,
-              "Value #D": 4,
-              "Value #E": 5
+              "Value #D": 4
             },
             "renameByName": {
               "node": "Node",
               "Value #A": "Cores",
               "Value #B": "Memory",
               "Value #C": "Disk after RAID",
-              "Value #D": "Raw disk",
-              "Value #E": "Longhorn capacity"
+              "Value #D": "Raw disk"
             }
           }
         },

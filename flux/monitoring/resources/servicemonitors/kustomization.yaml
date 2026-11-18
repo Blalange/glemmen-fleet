@@ -7,7 +7,6 @@ resources:
   - cert-manager.yaml
   - flux.yaml
   - kepler.yaml
-  - longhorn.yaml
   - network-mesh.yaml
   - tuppr.yaml
   - yugabyte.yaml

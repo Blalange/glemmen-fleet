@@ -1,6 +1,6 @@
 # Homepage (https://gethomepage.dev) - dashboard for the Glemmen cluster,
-# served at https://glem.men. Kubernetes, Longhorn and Prometheus stats are
-# read in-cluster; Grafana stats come from the Grafana API.
+# served at https://glem.men. Kubernetes, Ceph and Prometheus stats are read
+# in-cluster; Grafana stats come from the Grafana API.
 #
 # Homepage reads credentials from two pre-created Secrets in this namespace:
 #
@@ -176,11 +176,6 @@ config:
     # Blur the service cards so the background shows through them like frosted
     # glass. The header is 'clean' and stays transparent.
     cardBlur: md
-    # Longhorn has no public ingress, so the widget talks to the in-cluster
-    # frontend service directly.
-    providers:
-      longhorn:
-        url: http://longhorn-frontend.longhorn-system.svc.cluster.local
     layout:
       - Tjenester og lenker:
           style: row
@@ -214,12 +209,6 @@ config:
           cpu: true
           memory: true
           showLabel: true
-    - longhorn:
-        expanded: true
-        total: true
-        labels: false
-        nodes: false
-
   services:
     # Apps, monitoring and links share one section now. Apps come first, then
     # the monitoring stack and external tools. The group is laid out as a
@@ -273,22 +262,10 @@ config:
             icon: grafana.png
             href: https://grafana.glem.men/explore
             description: Logger for podder, Talos-verter og Kubernetes audit
-        - Longhorn:
-            icon: longhorn.png
-            href: https://grafana.glem.men/d/ozk-lh-mon/longhorn-monitoring-backups
-            description: Lagring, volumer og backups
-            widget:
-              type: prometheusmetric
-              url: http://kube-prometheus-stack-prometheus.monitoring.svc.cluster.local:9090
-              metrics:
-                - label: Kapasitet
-                  query: sum(longhorn_disk_capacity_bytes)
-                  format:
-                    type: bytes
-                - label: Brukt
-                  query: sum(longhorn_disk_usage_bytes)
-                  format:
-                    type: bytes
+        - Ceph:
+            icon: grafana.png
+            href: https://ceph.glem.men
+            description: Ceph-lagring, OSD-er og pools
         - UniFi:
             icon: unifi.png
             href: https://unifi.glem.men

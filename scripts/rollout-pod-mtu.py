@@ -30,7 +30,6 @@ DEFAULT_KUBECONFIG = ROOT / "talos" / "generated" / "kubeconfig"
 # Storage/control-plane components last: a controller restart can trigger
 # volume rebuilds or a brief API/ingress interruption.
 PRIORITY = {
-    "longhorn-system": 80,
     "kube-system": 90,
     "calico-system": 95,
     "metallb-system": 96,

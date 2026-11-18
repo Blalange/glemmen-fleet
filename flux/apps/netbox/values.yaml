@@ -185,10 +185,10 @@ replicaCount: 1
 updateStrategy:
   type: Recreate
 
-# Longhorn RWX volume for uploaded media (device images, attachments). The web
+# CephFS RWX volume for uploaded media (device images, attachments). The web
 # and worker pods can run on different nodes and share the same volume. The
 # PVC is created in media-pvc.yaml rather than by Helm, so removing the chart
-# release cannot delete it. The share-manager is created by Longhorn.
+# release cannot delete it.
 persistence:
   enabled: true
   existingClaim: netbox-media-ceph

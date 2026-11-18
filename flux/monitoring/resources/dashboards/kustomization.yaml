@@ -38,9 +38,6 @@ configMapGenerator:
   - name: grafana-dashboard-kepler
     files:
       - kepler.json
-  - name: grafana-dashboard-longhorn
-    files:
-      - longhorn.json
   - name: grafana-dashboard-smartctl-exporter
     files:
       - smartctl-exporter.json
