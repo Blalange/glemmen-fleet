@@ -114,6 +114,9 @@ cephClusterSpec:
           - name: /dev/disk/by-id/wwn-0x5000c500f266c046
             config:
               deviceClass: cmr
+          - name: /dev/disk/by-partlabel/r-nvme-osd
+            config:
+              deviceClass: nvme
       - name: glemmen180
         devices:
           - name: /dev/disk/by-id/wwn-0x5000c500f266bb89
