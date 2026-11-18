@@ -7,13 +7,15 @@
 #   glemmen170: /dev/disk/by-id/wwn-0x5000c500f266e157 (evicted from Longhorn)
 #   glemmen160: /dev/disk/by-id/wwn-0x5000c500f266c046 (evicted from Longhorn)
 #   glemmen180: /dev/disk/by-id/wwn-0x5000c500f266bb89 (evicted from Longhorn)
+#   glemmen250: /dev/disk/by-partlabel/r-nvme-osd (raw NVMe partition, class nvme)
 #
 # Deferred deliberately:
 #   - glemmen60 8 TB disk: still carries Longhorn data; the SeaweedFS hostPath
 #     has been removed.
 #   - glemmen160 SMR disk: still a Longhorn disk; not used by Ceph.
-#   - nvme-rbd/nvme-fs: require a raw partition carved from the 1xx system
-#     NVMe, which requires a reinstall.
+#   - nvme-rbd/nvme-fs: the first raw NVMe partition is on glemmen250; the
+#     other selected nodes need the same EPHEMERAL cap and reinstall before
+#     the nvme pools have enough OSDs for RF2.
 #   - bulk-rbd/bulk-fs and the bulk RGW pools: glemmen80 has not received the
 #     24x12TB disks or the external SAS HBA yet. The fast RGW below is live.
 #
@@ -117,6 +119,11 @@ cephClusterSpec:
           - name: /dev/disk/by-id/wwn-0x5000c500f266bb89
             config:
               deviceClass: cmr
+      - name: glemmen250
+        devices:
+          - name: /dev/disk/by-partlabel/r-nvme-osd
+            config:
+              deviceClass: nvme
 
   resources:
     mon:

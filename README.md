@@ -110,7 +110,7 @@ Longhorn (`v1.12`) still serves the remaining un-migrated PVCs; the application 
 | 160 | nvme0n1 | sda: Ceph OSD (`cmr`); sdb: Longhorn (`/var/mnt/smr1`, SMR) |
 | 170 | nvme0n1 | sda: Ceph OSD (`cmr`); sdb: Longhorn (`/var/mnt/smr1`, SMR) |
 | 180 | nvme0n1 | sda: Ceph OSD (`cmr`) |
-| 250 | 250 GB NVMe | system disk |
+| 250 | 250 GB NVMe | 100 GiB EPHEMERAL + 140 GiB Ceph OSD (`nvme`) |
 | 50 | 598 GB virtual disk | system disk |
 | 80 | RAID1 sda+sdb | sdc: Longhorn (`/var/mnt/hdd1`) |
 | 60 | sda | sdb: Longhorn (`/var/mnt/hdd1`, with the former SeaweedFS reservation) |
