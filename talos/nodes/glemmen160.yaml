@@ -77,6 +77,23 @@ provisioning:
     match: 'disk.wwid == "eui.002538b48103783e"'
   wipe: true
 ---
+# Keep the OS/containerd partition small so the rest of the NVMe disk can be
+# used as a raw Ceph OSD.
+apiVersion: v1alpha1
+kind: VolumeConfig
+name: EPHEMERAL
+provisioning:
+  maxSize: 100GiB
+---
+apiVersion: v1alpha1
+kind: RawVolumeConfig
+name: nvme-osd
+provisioning:
+  diskSelector:
+    match: 'disk.wwid == "eui.002538b48103783e"'
+  minSize: 100GiB
+  maxSize: 140GiB
+---
 apiVersion: v1alpha1
 kind: UserVolumeConfig
 name: smr1
