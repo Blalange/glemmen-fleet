@@ -215,7 +215,7 @@ spec:
             severity: warning
           annotations:
             summary: 'Prometheus Thanos sidecar is failing to upload blocks'
-            description: 'Block upload failures were observed in the last hour. Check the Thanos sidecar and the SeaweedFS S3 backup target.'
+            description: 'Block upload failures were observed in the last hour. Check the Thanos sidecar and the Ceph RGW S3 target.'
         - alert: ThanosShipperDirSyncFailures
           expr: increase(thanos_shipper_dir_sync_failures_total[1h]) > 0
           for: 30m

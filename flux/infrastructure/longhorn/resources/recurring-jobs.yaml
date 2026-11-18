@@ -2,9 +2,9 @@
 # in Git makes a fresh cluster reproduce the same backup/trim schedule.
 #
 # Volumes are opted into the `default` group by Longhorn unless they carry a
-# recurring-job selector. The SeaweedFS data PVCs are moved to the `daily-trim`
-# group only (see flux/infrastructure/seaweedfs/seaweed.yaml), so they are
-# trimmed but not backed up.
+# recurring-job selector. Data volumes that are treated as re-downloadable can
+# be placed in the `daily-trim` group only, so they are trimmed but not backed
+# up.
 apiVersion: longhorn.io/v1beta2
 kind: RecurringJob
 metadata:

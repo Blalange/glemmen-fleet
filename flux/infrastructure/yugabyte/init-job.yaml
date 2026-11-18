@@ -7,7 +7,8 @@
 #
 # The media apps were briefly provisioned here, but the Servarr apps cannot
 # parse YugabyteDB's server_version string (15.12-YB-...). They now use SQLite,
-# so v5 removes the media roles. Bump the Job name whenever the SQL or the
+# so v5 removed the media roles. SeaweedFS was removed in v7, so the filer
+# role/database is no longer created. Bump the Job name whenever the SQL or the
 # pod template (including the image) changes: Jobs are immutable and Flux
 # cannot patch a completed PodTemplate.
 apiVersion: v1
@@ -32,7 +33,6 @@ data:
     YSQL_PORT="${YSQL_PORT:-5433}"
     SUPERUSER_PASSWORD="${SUPERUSER_PASSWORD:?SUPERUSER_PASSWORD is required}"
     GRAFANA_PASSWORD="${GRAFANA_PASSWORD:?GRAFANA_PASSWORD is required}"
-    SEAWEEDFS_PASSWORD="${SEAWEEDFS_PASSWORD:?SEAWEEDFS_PASSWORD is required}"
 
     ysql() {
       local password="$1"
@@ -97,14 +97,13 @@ data:
     }
 
     create_role_and_database grafana "${GRAFANA_PASSWORD}" grafana
-    create_role_and_database seaweedfs "${SEAWEEDFS_PASSWORD}" seaweedfs
 
     echo "YugabyteDB roles and databases are ready"
 ---
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: yugabyte-init-v6
+  name: yugabyte-init-v7
   namespace: yugabyte
 spec:
   backoffLimit: 10
@@ -136,11 +135,6 @@ spec:
                 secretKeyRef:
                   name: yugabyte-auth
                   key: grafana-password
-            - name: SEAWEEDFS_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: yugabyte-auth
-                  key: seaweedfs-password
           volumeMounts:
             - name: init-script
               mountPath: /scripts

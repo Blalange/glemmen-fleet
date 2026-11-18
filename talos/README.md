@@ -160,9 +160,9 @@ Longhorn gets its disks from the Talos user volumes (see `nodes/*.yaml`):
   registered as the Longhorn disk `system` with a fixed reservation.
 * `longhorn` — btrfs volume on the 2 TB data disk (`/var/mnt/longhorn`).
 * `hdd1` — btrfs volume on the extra 1 TB / 7.3 TB disk where present
-  (`/var/mnt/hdd1`, glemmen130/glemmen80/glemmen60). On glemmen60 the
-  filesystem is shared: 6 TB is reserved for the hostPath-backed SeaweedFS
-  volume server and the remainder is available to Longhorn.
+  (`/var/mnt/hdd1`, glemmen130/glemmen80/glemmen60). On glemmen60 the former
+  hostPath-backed SeaweedFS server has been removed; the 6 TB Longhorn
+  reservation remains until the disk is repurposed for Ceph.
 
 The Longhorn disk configuration is applied *from the Talos node annotations*
 (`node.longhorn.io/default-disks-config`) together with the label

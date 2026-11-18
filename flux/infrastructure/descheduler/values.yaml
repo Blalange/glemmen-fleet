@@ -88,7 +88,6 @@ deschedulerPolicy:
                 - rook-ceph
                 - yugabyte
                 - cert-manager
-                - seaweedfs
                 - system-upgrade
             evictionLimits:
               node: 1

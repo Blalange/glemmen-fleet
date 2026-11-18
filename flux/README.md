@@ -22,12 +22,11 @@ flux/
 │   ├── monitoring.yaml         -> flux/monitoring (KPS, Thanos, smartctl, iDRAC, unpoller)
 │   ├── logging.yaml            -> flux/logging (Loki + Alloy log collection)
 │   ├── network-mesh.yaml       -> flux/monitoring/network-mesh (host-network probe, wait: false)
-│   ├── seaweedfs.yaml          -> flux/infrastructure/seaweedfs (S3 object store + CSI)
 │   ├── longhorn-resources.yaml -> flux/infrastructure/longhorn/resources (recurring jobs)
 │   ├── pxe.yaml                -> flux/infrastructure/pxe (proxyDHCP/TFTP + Talos boot assets)
 │   ├── monitoring-dashboards.yaml / monitoring-alerts.yaml
 │   └── apps.yaml               -> flux/apps (application Kustomizations)
-├── infrastructure/             namespaces, Longhorn, cert-manager, external-dns, MetalLB, metrics-server, descheduler, YugabyteDB, SeaweedFS operator, NFD, GPU operator, PXE chainloader
+├── infrastructure/             namespaces, Longhorn, cert-manager, external-dns, MetalLB, metrics-server, descheduler, YugabyteDB, Rook Ceph, NFD, GPU operator, PXE chainloader
 ├── ingress/                    Traefik HelmRelease + values
 ├── monitoring/                 kube-prometheus-stack, Thanos, smartctl-exporter, idrac-exporter, network-mesh, unpoller
 ├── logging/                    Loki (single replica) and the Alloy log collector
@@ -176,67 +175,34 @@ read/write latency, per-volume status tables and workqueue depth/latency/retry
 statistics. Because it is now customized,
 `scripts/update-grafana-dashboards.py` does not refresh it from upstream.
 
-## SeaweedFS object storage
+## Ceph object storage (RGW)
 
-Long-term metrics live in a SeaweedFS cluster in the `seaweedfs` namespace. It
-is managed by the SeaweedFS operator (Helm release `seaweedfs-operator`) and
-exposed as S3 at `seaweedfs-s3.seaweedfs.svc.cluster.local:8333`. The operator
-also installs CRDs for buckets, S3 identities, credentials and policies, so
-future applications can request their own bucket and key pair next to their
-workload.
+Long-term metrics and Loki logs live in the Ceph RGW object store managed by
+Rook in `infrastructure/rook-ceph/`. RGW is exposed in-cluster at
+`rook-ceph-rgw-fast.rook-ceph.svc.cluster.local:80` (Service
+`rook-ceph-rgw-fast` in `rook-ceph`). The `fast` CephObjectStore uses RF2
+metadata/data pools on the CMR OSDs; its pools are preserved on delete.
 
-The SeaweedFS resource, its master PVC and the `thanos` bucket/IAM objects are
-in `infrastructure/seaweedfs/`. The extra hostPath-backed volume server on
-`glemmen60` is a separate HelmRelease using the official SeaweedFS chart in
-the same directory. The `seaweedfs` Flux Kustomization depends on
-`infrastructure` so the operator's CRDs exist before its custom resources are
-applied.
+The `thanos` and `loki` buckets were created once with the RGW credentials and
+are owned by the `CephObjectStoreUser` users of the same names. Rook generates
+the key pairs in `rook-ceph-object-user-fast-thanos` and
+`rook-ceph-object-user-fast-loki` (keys `AccessKey`/`SecretKey`). The buckets
+are not recreated by Flux; they persist as long as the RGW pools do.
 
-The filer stores its metadata in the existing YugabyteDB cluster using the
-`postgres2` store, so filer replicas can be restarted or scaled without losing
-metadata. The `seaweedfs` role and database are created by the
-`yugabyte-init-v1` Job in the `yugabyte` namespace. Its password is the
-`seaweedfs-password` key in the `yugabyte-auth` Secret (created by hand, not in
-Git; see `infrastructure/yugabyte/README.md`).
-
-The filer's `seaweedfs-filer-config` Secret must carry the same password and the
-new YSQL service name:
+The clients read hand-created Secrets in `monitoring`, not Git:
 
 ```sh
-PW="$(kubectl -n yugabyte get secret yugabyte-auth \
-  -o jsonpath='{.data.seaweedfs-password}' | base64 -d)"
-
-kubectl -n seaweedfs create secret generic seaweedfs-filer-config \
-  --from-literal=filer.toml="$(cat <<EOF
-[postgres2]
-enabled = true
-createTable = true
-hostname = "yb-tservers.yugabyte.svc.cluster.local"
-port = 5433
-username = "seaweedfs"
-password = "${PW}"
-database = "seaweedfs"
-sslmode = "disable"
-EOF
-)" --dry-run=client -o yaml | kubectl apply -f -
-```
-
-The operator generates the `thanos` key pair in the `thanos-s3-credentials`
-Secret in the `seaweedfs` namespace. Copy it into the hand-created
-`thanos-objstore-config` Secret in `monitoring` (the secret is not in Git):
-
-```sh
-ACCESS_KEY="$(kubectl -n seaweedfs get secret thanos-s3-credentials \
-  -o jsonpath='{.data.accessKey}' | base64 -d)"
-SECRET_KEY="$(kubectl -n seaweedfs get secret thanos-s3-credentials \
-  -o jsonpath='{.data.secretKey}' | base64 -d)"
+ACCESS_KEY="$(kubectl -n rook-ceph get secret rook-ceph-object-user-fast-thanos \
+  -o jsonpath='{.data.AccessKey}' | base64 -d)"
+SECRET_KEY="$(kubectl -n rook-ceph get secret rook-ceph-object-user-fast-thanos \
+  -o jsonpath='{.data.SecretKey}' | base64 -d)"
 
 kubectl -n monitoring create secret generic thanos-objstore-config \
   --from-literal=objstore.yml="$(cat <<EOF
 type: S3
 config:
   bucket: thanos
-  endpoint: seaweedfs-s3.seaweedfs.svc.cluster.local:8333
+  endpoint: rook-ceph-rgw-fast.rook-ceph.svc.cluster.local:80
   region: us-east-1
   access_key: ${ACCESS_KEY}
   secret_key: ${SECRET_KEY}
@@ -246,87 +212,39 @@ EOF
 )" --dry-run=client -o yaml | kubectl apply -f -
 ```
 
-Existing blocks in the old Google Drive `thanos` bucket are not visible through
-SeaweedFS until they are copied. Before switching the secret, copy them with a
-one-off rclone job that mounts `rclone-backup-config` (for `gdrive:`) and the
-SeaweedFS credentials, for example:
+For Loki, use the `rook-ceph-object-user-fast-loki` Secret and create
+`loki-s3` with `LOKI_S3_ACCESS_KEY`/`LOKI_S3_SECRET_KEY` (the chart expands
+those env vars into its S3 config):
 
 ```sh
-rclone copy gdrive:thanos \
-  ":s3,provider=Other,endpoint=http://seaweedfs-s3.seaweedfs.svc.cluster.local:8333,access_key_id=${ACCESS_KEY},secret_access_key=${SECRET_KEY},region=us-east-1,force_path_style=true:thanos" \
-  --transfers 4 --checkers 4 --checksum --progress
-```
+ACCESS_KEY="$(kubectl -n rook-ceph get secret rook-ceph-object-user-fast-loki \
+  -o jsonpath='{.data.AccessKey}' | base64 -d)"
+SECRET_KEY="$(kubectl -n rook-ceph get secret rook-ceph-object-user-fast-loki \
+  -o jsonpath='{.data.SecretKey}' | base64 -d)"
 
-Keep the old Drive bucket until the Grafana Thanos data source has been
-verified against SeaweedFS. After changing the secret, restart the Prometheus
-statefulset (so its Thanos sidecar re-reads the config) and the Thanos
-Store/Compactor pods.
-
-### Admin panel and workers
-
-The `Seaweed` resource runs one admin server and two workers. The admin UI is
-served at <https://seaweedfs.glem.men> through Traefik and the `*.glem.men`
-wildcard certificate. It shows the master/volume topology, the filer browser,
-volume health and the maintenance jobs. The workers execute the jobs the admin
-dispatches (volume balance, vacuum, replication repair and similar); they are
-stateless, so the admin can re-dispatch an interrupted job after a worker
-restart.
-
-SeaweedFS refuses admin gRPC calls from remote pods when no
-`jwt.filer_signing.key` is configured, which makes the workers fail with
-`admin gRPC calls require jwt.filer_signing.key or a local client`. The
-cluster therefore sets `securityConfig.jwtSigning.filerWrite: true`; the
-operator generates the key into the `seaweedfs-security-config` Secret and
-mounts it into the admin and worker pods. The same key also makes the filer
-require signed HTTP writes and IAM gRPC calls. The S3 gateway and the operator
-sign their own requests, and the CSI/media path uses the filer's gRPC API.
-
-`weed admin` only binds to loopback without a password, so the operator needs a
-`seaweedfs-admin` Secret before the panel becomes reachable. Create it by hand
-(the password is not in Git) before reconciling the `seaweedfs` Kustomization;
-otherwise the admin pod waits for the Secret:
-
-```sh
-kubectl -n seaweedfs create secret generic seaweedfs-admin \
-  --from-literal=adminUser=admin \
-  --from-literal=adminPassword='<strong password>' \
+kubectl -n monitoring create secret generic loki-s3 \
+  --from-literal=LOKI_S3_ACCESS_KEY="${ACCESS_KEY}" \
+  --from-literal=LOKI_S3_SECRET_KEY="${SECRET_KEY}" \
   --dry-run=client -o yaml | kubectl apply -f -
 ```
 
-The optional read-only account uses the `readOnlyUser` and `readOnlyPassword`
-keys in the same Secret. Rotate the password by updating the Secret and
-restarting the admin pod; the workers reconnect automatically:
-
-```sh
-kubectl -n seaweedfs rollout restart statefulset/seaweedfs-admin
-```
-
-The admin server persists maintenance-task state, its configuration and the
-session-signing keys on the 2Gi `seaweedfs-admin-data` PVC through `-dataDir`.
-The operator CRD has no `admin.persistence` field, so the `Seaweed` resource
-mounts the claim via the generic `volumes`/`volumeMounts` fields. The claim has
-no recurring-job selector and therefore stays in the Longhorn `default` group,
-which the daily backup includes. Without the PVC, `weed admin` wrote this state
-to the container's ephemeral working directory and lost it on every restart.
-
-The admin and worker metrics use the same `metricsPort: 9327` as the other
-components, so the operator creates ServiceMonitors for them as well. The
-SeaweedFS Grafana dashboard does not have dedicated admin/worker panels yet.
-
-Orphaned volume cleanup is a separate, manual-only suspended CronJob; see
-[`infrastructure/seaweedfs/README.md`](infrastructure/seaweedfs/README.md#orphaned-volume-cleanup)
-for the runbook.
+The existing Thanos and Loki data was copied from the retired SeaweedFS S3
+gateway with rclone before the clients were switched. The RGW data pool is
+replicated on the fast tier for now; it can move to the bulk EC pools when
+glemmen80 has its disks. The bucket names and client configuration stay the
+same.
 
 ## Media stack
 
 `apps/media` runs Jellyfin, Sonarr, Radarr, Prowlarr, Seerr, FlareSolverr and qBittorrent in
-the privileged `media` namespace. The apps share one SeaweedFS CSI
-`ReadWriteMany` volume at `/data` (`downloads/`, `media/movies/`,
-`media/tv/`). The SeaweedFS cluster has four operator-managed volume servers
-with four 200Gi Longhorn disks each (3.2TiB raw), plus a fifth hostPath-backed
-server on `glemmen60` with 6TB of raw slots; the media PVC is 2500Gi. See
-[`apps/media/README.md`](../apps/media/README.md) for the secrets,
-SeaweedFS PVC expansion, Authentik provider setup and first-run steps.
+the privileged `media` namespace. The apps share one CephFS `ReadWriteMany`
+volume at `/data` (`media-data-ceph`, `fast-fs`, 2300Gi) with `downloads/`,
+`media/movies/` and `media/tv/`. The migration copied the qBittorrent downloads
+and the existing Hærry Pot movie; the rest of the library is re-imported/moved
+from `/data/downloads` by Radarr and Sonarr. Move the claim to `bulk-fs` when
+glemmen80 has its disks. See [`apps/media/README.md`](../apps/media/README.md)
+for the secrets, CephFS migration, Authentik provider setup and first-run
+steps.
 
 - **Databases:** all media apps use SQLite on their Longhorn config volumes.
   YSQL was evaluated for Sonarr/Radarr/Prowlarr, but their
@@ -340,12 +258,11 @@ SeaweedFS PVC expansion, Authentik provider setup and first-run steps.
   `jellyfin` OAuth2 provider. The other apps are proxied by an in-cluster
   Authentik outpost connected to `https://auth.blalange.org`; Sonarr, Radarr,
   Prowlarr and qBittorrent run with application authentication `External`.
-- **Backups:** the SeaweedFS data PVCs are moved to the `daily-trim` recurring
-  job only, so Longhorn's `daily-backup` job does not back up the media
-  library (or the Thanos bucket that shares those volume servers). The
-  hostPath-backed volume server on `glemmen60` is not Longhorn-managed and is
-  not backed up either. The 2Gi SeaweedFS master PVC and the media app config
-  volumes remain backed up.
+- **Backups:** the media library lives on CephFS and is treated as
+  re-downloadable; it has no off-cluster backup. Ceph RF2 protects against a
+  single OSD or host failure. The media app config volumes are on Ceph
+  `fast-rbd`, so Longhorn's `daily-backup` job no longer includes the media
+  stack.
 
 ## Thanos and long-term metrics
 
@@ -355,7 +272,7 @@ Prometheus runs two replicas for high availability. Each replica is capped at
 the 20GB usage budget. The operator gives the replicas different
 `prometheus_replica` external labels, and Thanos Query deduplicates on that
 label (the chart default), so Grafana does not see duplicate series. The Thanos
-sidecar uploads completed blocks to the `thanos` bucket in SeaweedFS; the
+sidecar uploads completed blocks to the `thanos` bucket in Ceph RGW; the
 `thanos` HelmRelease runs Query, Store Gateway and Compactor against the same
 bucket. Grafana uses Thanos as its only Prometheus-compatible data source,
 because it serves both live Prometheus data and the long-term blocks; the
@@ -374,26 +291,25 @@ built-in Kubernetes-mixin and node-exporter-mixin dashboards get the same
 annotation from the HelmRelease post-renderer. Dashboards without the
 annotation stay at the root (General) level.
 
-The SeaweedFS and YugabyteDB dashboards live in the sibling `seaweedfs/` and
-`yugabyte/` directories. SeaweedFS metrics are enabled by `metricsPort: 9327`
-on each component of the `Seaweed` resource; the operator then creates the
-ServiceMonitors and labels the listeners with the component names the
-dashboard expects. The operator's bundled Grafana 4.x dashboard is disabled
-because it is out of date. The YugabyteDB dashboard is a trimmed copy of the
-upstream one: YEDIS is disabled, and the ServiceMonitor drops every per-tablet
-series (`table_id`) to avoid ingesting roughly 300k active series. The
-remaining YB-Master and YB-TServer RPC metrics are relabeled to the
-`rpc_latency_*` names the dashboard uses.
+The Ceph and YugabyteDB dashboards live in the sibling `ceph/` and
+`yugabyte/` directories. Ceph metrics come from the mgr Prometheus module
+(scraped by `monitoring/resources/servicemonitors/ceph-mgr.yaml`) and the Rook
+ceph-exporter ServiceMonitor; the dashboards are the upstream Ceph mixin
+dashboards. The YugabyteDB dashboard is a trimmed copy of the upstream one:
+YEDIS is disabled, and the ServiceMonitor drops every per-tablet series
+(`table_id`) to avoid ingesting roughly 300k active series. The remaining
+YB-Master and YB-TServer RPC metrics are relabeled to the `rpc_latency_*`
+names the dashboard uses.
 
-Create the `thanos-objstore-config` Secret from the SeaweedFS credentials (see
-the SeaweedFS section above) before reconciling monitoring; otherwise the
-Prometheus sidecar cannot start.
+Create the `thanos-objstore-config` Secret from the Rook RGW user credentials
+(see the Ceph object storage section above) before reconciling monitoring;
+otherwise the Prometheus sidecar cannot start.
 
-Then reconcile SeaweedFS and monitoring:
+Then reconcile monitoring:
 
 ```sh
-./scripts/flux/manage.py reconcile seaweedfs monitoring
-kubectl -n seaweedfs get pods
+./scripts/flux/manage.py reconcile monitoring
+kubectl -n rook-ceph get pods -l app=rook-ceph-rgw
 kubectl -n monitoring get pods -l app.kubernetes.io/part-of=thanos
 ```
 
@@ -412,24 +328,24 @@ this after the sidecar has uploaded the local blocks that should be kept. See
 
 ## Loki and log collection
 
-Loki stores logs in the `loki` bucket in SeaweedFS and runs as a single
+Loki stores logs in the `loki` bucket in Ceph RGW and runs as a single
 binary (Monolithic) with one replica and one gateway
 (`logging/loki/values.yaml`). Chunks and the TSDB index live in object storage;
-the Loki pod keeps a 20Gi WAL/cache volume on the `monitoring` StorageClass.
+the Loki pod keeps a 20Gi WAL/cache volume on the `fast-rbd` StorageClass.
 Retention is 30 days, enforced by the compactor. The chart's
 component-specific dashboards (reads/writes/backend) are mostly empty in
 Monolithic mode; the "Loki / Logs" and "Loki / Operational" dashboards are the
 useful ones.
 
-The S3 key pair is generated by the SeaweedFS operator in
-`seaweedfs/loki-s3-credentials`. Copy it into the hand-created `loki-s3` Secret
-in `monitoring` before reconciling the logging Kustomization:
+The S3 key pair is generated by Rook in
+`rook-ceph-object-user-fast-loki`. Copy it into the hand-created `loki-s3`
+Secret in `monitoring` before reconciling the logging Kustomization:
 
 ```sh
-ACCESS_KEY="$(kubectl -n seaweedfs get secret loki-s3-credentials \
-  -o jsonpath='{.data.accessKey}' | base64 -d)"
-SECRET_KEY="$(kubectl -n seaweedfs get secret loki-s3-credentials \
-  -o jsonpath='{.data.secretKey}' | base64 -d)"
+ACCESS_KEY="$(kubectl -n rook-ceph get secret rook-ceph-object-user-fast-loki \
+  -o jsonpath='{.data.AccessKey}' | base64 -d)"
+SECRET_KEY="$(kubectl -n rook-ceph get secret rook-ceph-object-user-fast-loki \
+  -o jsonpath='{.data.SecretKey}' | base64 -d)"
 
 kubectl -n monitoring create secret generic loki-s3 \
   --from-literal=LOKI_S3_ACCESS_KEY="$ACCESS_KEY" \
@@ -448,10 +364,10 @@ files, so only new lines are ingested. The Loki chart's ServiceMonitor,
 recording rules and dashboards are enabled; the dashboards land in the "Loki"
 Grafana folder. Grafana has a Loki data source alongside Thanos.
 
-Reconcile the separate logging Kustomization after monitoring and SeaweedFS:
+Reconcile the separate logging Kustomization after monitoring:
 
 ```sh
-./scripts/flux/manage.py reconcile seaweedfs monitoring logging
+./scripts/flux/manage.py reconcile monitoring logging
 kubectl -n monitoring get pods -l app.kubernetes.io/name=loki
 kubectl -n monitoring get pods -l app.kubernetes.io/name=alloy
 ```
@@ -633,15 +549,15 @@ role passwords are in `yugabyte-auth` (`yugabyte` namespace) and `grafana-db`
 
 ## Dependencies (was Fleet `dependsOn`)
 
-- `infrastructure` (namespaces, Longhorn, cert-manager chart, external-dns, MetalLB, metrics-server, descheduler, SeaweedFS operator, NFD, GPU operator)
+- `infrastructure` (namespaces, Longhorn, cert-manager chart, external-dns, MetalLB, metrics-server, descheduler, YugabyteDB, NFD, GPU operator)
+- `infrastructure` -> `rook-ceph` (Rook Ceph cluster, fast pools, RGW and storage classes)
 - `infrastructure` -> `longhorn-backup` (rclone S3 gateway for Google Drive backups)
-- `infrastructure` -> `seaweedfs` (SeaweedFS cluster, admin/workers, bucket, S3 credentials and CSI driver)
 - `infrastructure` -> `longhorn-resources` (recurring backup/trim jobs)
 - `infrastructure` + `metallb-pool` -> `pxe` (proxyDHCP/TFTP chainloader + Talos boot assets)
-- `infrastructure` + `seaweedfs` -> `media` (Jellyfin, *arr, Seerr, qBittorrent)
+- `infrastructure` + `rook-ceph` -> `media` (Jellyfin, *arr, Seerr, qBittorrent)
 - `cert-manager-issuers` -> `cert-manager-certificates` -> `ingress` (Traefik)
-- `infrastructure` -> `monitoring-pvc`; `infrastructure` + `seaweedfs` -> `monitoring` (kube-prometheus-stack -> Thanos) -> `monitoring-dashboards` / `monitoring-alerts`
-- `monitoring` + `seaweedfs` -> `logging` (Loki -> Alloy)
+- `infrastructure` + `rook-ceph` -> `monitoring` (kube-prometheus-stack -> Thanos) -> `monitoring-dashboards` / `monitoring-alerts`
+- `monitoring` -> `logging` (Loki -> Alloy)
 - `apps` waits for `infrastructure`, `monitoring` and `ingress`; the individual
   applications additionally wait for what they need (`homepage` for example
   waits for `homepage-assets`, `kube-prometheus-stack` and `infrastructure`;
@@ -671,15 +587,15 @@ is managed by external-dns.
   `homepage-grafana`, `frigate-secrets`, `energisjappa-secrets`, `colibri-secrets`,
   `warrior-http-auth`,
   `volunteer-secrets` and the TLS certificates in `kube-system`; created for
-  the rclone bridge: `rclone-backup-config`; generated by the SeaweedFS
-  operator: `thanos-s3-credentials` and `loki-s3-credentials` in `seaweedfs`;
-  created by hand for the SeaweedFS admin panel: `seaweedfs-admin` in
-  `seaweedfs`; created by hand for Thanos: `thanos-objstore-config` in
-  `monitoring`; created by hand for Loki: `loki-s3` in `monitoring`; created
+  the rclone bridge: `rclone-backup-config`; generated by Rook for RGW:
+  `rook-ceph-object-user-fast-thanos` and
+  `rook-ceph-object-user-fast-loki` in `rook-ceph`; created by hand for Thanos:
+  `thanos-objstore-config` in `monitoring`; created by hand for Loki:
+  `loki-s3` in `monitoring`; created
   for Grafana SSO: `grafana-authentik` in `monitoring`; created for NetBox:
   `netbox-secrets` in `netbox` (superuser, YSQL/Valkey passwords, Django secret
   and sync API token); created for the shared YugabyteDB: `yugabyte-auth` in
-  `yugabyte` (superuser, Grafana and SeaweedFS role passwords) and
+  `yugabyte` (superuser and Grafana role passwords) and
   `grafana-db` in `monitoring`; created for iDRAC metrics: `idrac-exporter` in
   `monitoring`; created for the media stack: `qbittorrent-wireguard`
   (Windscribe profile), `qbittorrent-webui` (qBittorrent admin),

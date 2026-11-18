@@ -20,9 +20,11 @@ available at once.
   Rocky Linux 10 build and crashes on the x86-64-v2 CPUs in glemmen50 and
   glemmen60 (rook/rook#18607).
 - Migrated to Ceph: volunteer keys, all media application config volumes, the
-  shared media library, Minecraft Radar, Frigate config/recordings, WebODM
-  database/media, Energisjappa data/PostgreSQL, NetBox PostgreSQL/media, all
-  monitoring volumes, and the Thanos/Loki S3 data (to the fast RGW).
+  qBittorrent downloads and the Hærry Pot movie, Minecraft Radar, Frigate
+  config/recordings, WebODM database/media, Energisjappa data/PostgreSQL,
+  NetBox PostgreSQL/media, all monitoring volumes, and the Thanos/Loki S3 data
+  (to the fast RGW). Radarr/Sonarr will re-import the media library from the
+  downloads.
 - NetBox media was copied to CephFS, a final delta pass was run, and NetBox was
   switched to `netbox-media-ceph`. The old `netbox-media` PVC is retained for
   rollback.
@@ -100,14 +102,15 @@ bucket names and clients do not need to change for that move.
 
 ## Longhorn disks still being drained
 
-Longhorn eviction has completed on the CMR/SMR disks on glemmen130 and
-glemmen150; those disks were wiped and handed to Ceph.
+Longhorn eviction has completed on the CMR/SMR disks on glemmen130,
+glemmen150 and the glemmen170 CMR disk; those disks were wiped and handed to
+Ceph.
 
 glemmen60 `hdd1` still carries Longhorn replicas and the 6 TB Longhorn
 reservation that was originally made for the SeaweedFS hostPath. The SeaweedFS
 data has been removed; the disk can be repurposed after Longhorn is drained.
-The CMR disks on glemmen160, glemmen170 and glemmen180 also still carry
-Longhorn replicas.
+The Longhorn disks on glemmen160, the glemmen170 SMR disk and glemmen180 still
+carry Longhorn replicas.
 
 ## Useful checks
 

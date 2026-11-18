@@ -11,7 +11,6 @@ resources:
   - loki/
   - network-mesh/
   - node-exporter/
-  - seaweedfs/
   - unifi/
   - yugabyte/
 configMapGenerator:

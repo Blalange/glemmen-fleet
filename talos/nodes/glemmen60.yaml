@@ -2,9 +2,10 @@
 #   sda 600 GB  - ServeRAID/PERC virtual disk, system disk (wiped by the
 #                 installer; matched by WWID - a size-based selector also
 #                 matches loop devices and the install media!)
-#   sdb 8.0 TB  - shared Longhorn data disk and SeaweedFS hostPath ->
-#                 /var/mnt/hdd1 (6 TB reserved for SeaweedFS, remainder
-#                 Longhorn)
+#   sdb 8.0 TB  - shared Longhorn data disk -> /var/mnt/hdd1. The former
+#                 hostPath SeaweedFS server is gone; its 6 TB reservation is
+#                 still in the Longhorn disk config until the disk is
+#                 repurposed for Ceph.
 #
 # Networking: single onboard Broadcom LOM (BCM5716, Dell/Quanta board) named
 # eno1 (altname enp3s0f0, confirmed from live media). The cable goes to USW Pro

@@ -9,6 +9,5 @@ resources:
   - kepler.yaml
   - longhorn.yaml
   - network-mesh.yaml
-  - seaweedfs-glemmen60-volume.yaml
   - tuppr.yaml
   - yugabyte.yaml

@@ -195,7 +195,7 @@ spec:
             claimName: qbittorrent-config-ceph
         - name: media
           persistentVolumeClaim:
-            claimName: media-data
+            claimName: media-data-ceph
         - name: wireguard
           secret:
             secretName: qbittorrent-wireguard

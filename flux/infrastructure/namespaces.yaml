@@ -11,7 +11,6 @@
 #   - colibri:         the hf-fuse sidecar needs a privileged FUSE mount
 #   - pxe:             the proxyDHCP/TFTP pod needs hostNetwork + NET_ADMIN
 #   - media:           gluetun needs NET_ADMIN and /dev/net/tun for WireGuard
-#   - seaweedfs:       the SeaweedFS CSI node/mount DaemonSets are privileged
 #   - gpu-operator:    the toolkit/device-plugin/DCGM exporter pods are privileged
 # All other namespaces (and anything added later) stay on the baseline default.
 apiVersion: v1
@@ -125,13 +124,6 @@ apiVersion: v1
 kind: Namespace
 metadata:
   name: yugabyte
----
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: seaweedfs
-  labels:
-    pod-security.kubernetes.io/enforce: privileged
 ---
 apiVersion: v1
 kind: Namespace

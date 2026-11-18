@@ -1,6 +1,6 @@
-# Jellyfin 12.4. The database and metadata stay in SQLite on the Longhorn config
+# Jellyfin 12.4. The database and metadata stay in SQLite on the Ceph RBD config
 # volume; Jellyfin has no supported PostgreSQL backend yet. Media comes from the
-# shared SeaweedFS CSI volume read-only.
+# shared CephFS volume read-only.
 #
 # SSO: install the SSO-Auth plugin from the K0lin manifest in the Jellyfin UI and
 # configure the existing Authentik `jellyfin` OAuth2 provider. Keep a local admin
@@ -100,7 +100,7 @@ spec:
             sizeLimit: 20Gi
         - name: media
           persistentVolumeClaim:
-            claimName: media-data
+            claimName: media-data-ceph
 ---
 apiVersion: v1
 kind: Service

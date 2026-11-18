@@ -94,7 +94,7 @@ spec:
             claimName: sonarr-config-ceph
         - name: media
           persistentVolumeClaim:
-            claimName: media-data
+            claimName: media-data-ceph
 ---
 apiVersion: v1
 kind: Service

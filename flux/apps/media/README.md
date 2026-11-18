@@ -1,7 +1,7 @@
 # Media stack
 
 Jellyfin, Sonarr, Radarr, Prowlarr, Profilarr, Seerr and qBittorrent run in the
-`media` namespace. They share one SeaweedFS-backed `ReadWriteMany` volume at
+`media` namespace. They share one CephFS-backed `ReadWriteMany` volume at
 `/data`:
 
 ```
@@ -11,9 +11,8 @@ Jellyfin, Sonarr, Radarr, Prowlarr, Profilarr, Seerr and qBittorrent run in the
 ```
 
 Sonarr/Radarr import from `/data/downloads` into `/data/media` on the same
-filesystem, so the normal move/rename path works without a hardlink. Hardlinks
-are not guaranteed on the FUSE mount; disable "Use Hardlinks instead of Copy"
-in the *arr media management settings if import errors mention hardlinks.
+filesystem, so the normal move/rename path works and hardlinks are supported by
+CephFS. The *arr apps can keep "Use Hardlinks instead of Copy" enabled.
 
 | App | URL | Auth |
 |---|---|---|
@@ -42,7 +41,7 @@ secret <name> -o jsonpath=...` when needed.
 
 ## Databases
 
-All media applications use SQLite on their Longhorn config volumes:
+All media applications use SQLite on their Ceph `fast-rbd` config volumes:
 
 - Sonarr/Radarr/Prowlarr: `<app>.db` under `/config`
 - Jellyfin: `/config/data/jellyfin.db`
@@ -198,66 +197,29 @@ and then log in to Seerr with their Jellyfin/local Seerr account. Switching to
 the `preview-new-oidc` image removes the second login but is not recommended for
 production.
 
-## SeaweedFS capacity and backups
+## CephFS capacity and backups
 
-EC metadata failures (stale `.vif` stubs causing `different encode run` or
-`size mismatch` errors) are diagnosed and repaired using the runbook in
-[`flux/infrastructure/seaweedfs/README.md`](../../infrastructure/seaweedfs/README.md).
+The media library is `media-data-ceph`, a 2300Gi `ReadWriteMany` claim on the
+`fast-fs` StorageClass. The CephFS data pool is `cephfs-fast` on the CMR OSDs
+in glemmen130/glemmen150, replicated twice with `failureDomain: host` and
+`min_size: 1`. The fast tier has about 2.5TiB usable and the library is about
+1.95TiB, so it fits with limited headroom.
 
-The media PVC is 2500Gi. It is stored in a SeaweedFS cluster with four
-operator-managed volume servers, each with four 200Gi Longhorn disks
-(`volumeServerDiskCount: 4`), for 3.2TiB of Longhorn-backed raw capacity. A
-fifth volume server on `glemmen60` writes directly to
-`/var/mnt/hdd1/seaweedfs` instead of Longhorn and adds 6TB (5.46TiB) of raw
-volume slots (5588 x 1GiB). The CSI StorageClass requests `replication: "001"`
-for new volumes, while the older media volumes are erasure-coded 10+4.
-Conservatively, the combined 8.66TiB of raw capacity supports about 4.33TiB of
-logical data if every volume were replicated 001; the 2500Gi (2.44TiB) media
-PVC fits with room for the Thanos bucket and metadata.
+The migration copied the qBittorrent downloads and the existing Hærry Pot
+movie with rsync, verified the file sizes and skipped unreadable source files.
+The media Deployments were then switched to `media-data-ceph`. The rest of the
+media library will be re-imported/moved from `/data/downloads` by Radarr and
+Sonarr after the cutover; the old SeaweedFS cluster and its Longhorn volumes
+were removed once the copy was verified. Media is re-downloadable and is not
+backed up off cluster; Ceph RF2 protects against a single OSD or host failure.
 
-The fifth server is a separate Flux HelmRelease using the official SeaweedFS
-chart (`flux/infrastructure/seaweedfs/volume-glemmen60.yaml`). It is not part
-of the operator's `seaweedfs-volume` StatefulSet, so the StatefulSet recreate
-procedure below does not touch it. The chart's `volume.id` is intentionally
-left unset: some SeaweedFS maintenance tasks dial the node ID directly, so the
-ID must be the pod DNS address with a port rather than a bare `glemmen60`.
-The Longhorn disk on `glemmen60` reserves 6TB (`storageReserved`), so Longhorn
-will not schedule replicas into the space promised to the SeaweedFS server.
+Some old SeaweedFS EC volumes had corrupt metadata and could not be read; the
+rsync job logs those files and skips them. Re-download them through qBittorrent
+if the corresponding media is still wanted.
 
-`volumeServerDiskCount` is a top-level Seaweed field, not a field under
-`volume`. Changing it, `volume.replicas` or `volume.requests.storage` changes
-the StatefulSet's `volumeClaimTemplates`, which Kubernetes forbids updating in
-place. The operator logs `VolumeClaimTemplatesMismatch` and a rollout can stall
-with `persistentvolumeclaim "mount1" not found`. Recreate the StatefulSet and
-the remaining old pods:
-
-```sh
-kubectl -n seaweedfs delete statefulset seaweedfs-volume --cascade=orphan
-# Let the operator recreate the StatefulSet with all claim templates, then
-# remove any pods still using the old template:
-kubectl -n seaweedfs delete pod -l app.kubernetes.io/component=volume
-kubectl -n seaweedfs rollout status statefulset/seaweedfs-volume --timeout=15m
-
-# Four-disk volume servers have mount0-* through mount3-* PVCs; expect 16:
-kubectl -n seaweedfs get pvc | grep -E 'mount[0-3]-seaweedfs-volume'
-```
-
-Existing PVCs are retained. New PVCs pick up the recurring-job labels from
-`volume.storageLabels` automatically; the original `mount0-*` PVCs were
-labeled by hand during the first rollout.
-
-Verify that each Longhorn volume loses `recurring-job-group.longhorn.io/default`
-and gains `recurring-job-group.longhorn.io/daily-trim`:
-
-```sh
-kubectl -n longhorn-system get volumes.longhorn.io -o custom-columns=NAME:.metadata.name,GROUPS:.metadata.labels
-```
-
-The `seaweedfs-master` PVC stays in the `default` backup group. Because the
-data volume servers are excluded from Longhorn backup, and the fifth server is
-not Longhorn-managed at all, the Thanos bucket on the same servers is not
-backed up either. This is intentional: the media library is treated as
-re-downloadable and the long-term metrics are not duplicated off cluster.
+When the 24 × 12TB disks and SAS HBA are installed in glemmen80, add the bulk
+CephFS pool and move this claim to `bulk-fs`. Do not grow the fast-tier claim
+past its free space in the meantime.
 
 ## Errored downloads
 
@@ -319,8 +281,9 @@ kubectl -n media logs -f job/resume-now
 
 ## Troubleshooting
 
-- `media-data` Pending: check `kubectl -n seaweedfs get seaweedcsidriver` and
-  the CSI controller/node pods. The media Kustomization waits for the driver.
+- `media-data-ceph` Pending: check `kubectl -n rook-ceph get cephcluster` and
+  the CephFS CSI controller/node pods. The media Kustomization waits for the
+  claim.
 - gluetun restarting: check its log for `/dev/net/tun`, endpoint DNS or
   WireGuard handshake errors. The `media` namespace is privileged, so
   `privileged: true` is a valid fallback.
@@ -348,5 +311,3 @@ kubectl -n media logs -f job/resume-now
   has `*__POSTGRES__*` env vars, remove them and recreate the Deployment
   (`kubectl -n media delete deploy <app>` then re-apply), because a normal
   `kubectl apply` can retain env entries owned by another manager.
-- Longhorn backup job still includes a SeaweedFS data volume: check the PVC and
-  Longhorn volume labels; the PVC must be the recurring-job source.

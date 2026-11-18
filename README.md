@@ -92,40 +92,42 @@ The 1xx nodes have two 1 Gbit/s NICs. The cluster uses Calico with IPIP CrossSub
 
 ### Storage
 
-> **Ceph migration in progress.** Rook Ceph now provides the `fast-rbd` and
-> `fast-fs` classes on the CMR disks of `glemmen130`/`glemmen150`. Longhorn
-> still serves the existing PVCs and SeaweedFS remains the S3/CephFS
-> replacement target. `nvme-rbd`/`nvme-fs`, `bulk-rbd`/`bulk-fs` and Ceph RGW
-> are deliberately deferred: the 1xx NVMe OSDs require a Talos reinstall, and
-> `glemmen80` has not received its 24 × 12 TB disks or external SAS HBA yet.
-> The Ceph dashboard is at <https://ceph.glem.men>. See
-> `flux/infrastructure/rook-ceph/README.md`.
+> **Ceph storage is live.** Rook Ceph provides the `fast-rbd` and `fast-fs`
+> classes on the CMR disks of `glemmen130`/`glemmen150`, plus the `fast` RGW
+> object store. The media library, Thanos blocks and Loki logs now live on
+> Ceph; SeaweedFS has been removed. `nvme-rbd`/`nvme-fs`,
+> `bulk-rbd`/`bulk-fs` and the bulk RGW pools are deferred: the 1xx NVMe OSDs
+> require a Talos reinstall, and `glemmen80` has not received its 24 × 12 TB
+> disks or external SAS HBA yet. The Ceph dashboard is at
+> <https://ceph.glem.men>. See `flux/infrastructure/rook-ceph/README.md`.
 
-Longhorn (`v1.12`) provides all existing PVCs. The data disks are btrfs volumes mounted by Talos:
+Longhorn (`v1.12`) still serves the remaining un-migrated PVCs; the application and monitoring volumes have moved to Ceph, and the last Longhorn volumes are being drained. The data disks are btrfs volumes mounted by Talos unless they are Ceph OSDs:
 
-| Node | System disk | Longhorn data disks |
-|------|-------------|---------------------|
-| 130 | sda | sdb (`/var/mnt/longhorn`) + sdc (`/var/mnt/hdd1`) + system disk |
-| 150/160/170 | sda | sdb (`/var/mnt/longhorn`) + system disk |
+| Node | System disk | Data storage |
+|------|-------------|--------------|
+| 130 | sda | two CMR disks: Ceph OSDs (`deviceClass: cmr`) |
+| 150 | sda | one CMR disk: Ceph OSD |
+| 160 | sda | sdb: Longhorn (`/var/mnt/longhorn`) |
+| 170 | nvme0n1 | sda: Ceph OSD (`cmr`); sdb: Longhorn (`/var/mnt/smr1`, SMR) |
 | 180 | sda | system disk |
 | 250 | 250 GB NVMe | system disk |
 | 50 | 598 GB virtual disk | system disk |
-| 80 | RAID1 sda+sdb | sdc (`/var/mnt/hdd1`) + system disk |
-| 60 | sda | sdb (`/var/mnt/hdd1`) + system disk |
+| 80 | RAID1 sda+sdb | sdc: Longhorn (`/var/mnt/hdd1`) |
+| 60 | sda | sdb: Longhorn (`/var/mnt/hdd1`, with the former SeaweedFS reservation) |
 
-Longhorn volume backups go to a Google Drive folder through an in-cluster rclone S3 bridge (`flux/infrastructure/longhorn/rclone/`). Longhorn uses the backup target `s3://longhorn-backup@us-east-1/`; `rclone.conf` and the S3 keys are stored in the `rclone-backup-config` Secret in `longhorn-system`.
+Longhorn volume backups go to a Google Drive folder through an in-cluster rclone S3 bridge (`flux/infrastructure/longhorn/rclone/`). Longhorn uses the backup target `s3://longhorn-backup@us-east-1/`; `rclone.conf` and the S3 keys are stored in the `rclone-backup-config` Secret in `longhorn-system`. This is only relevant while Longhorn is still present.
 
-Prometheus only retains the most recent metrics locally (15 GiB, see `retentionSize`). The Thanos side in `flux/monitoring/thanos/` uploads blocks to the `thanos` bucket in the SeaweedFS cluster under `flux/infrastructure/seaweedfs/`, compacts and downsamples them, and exposes the history through a dedicated Grafana data source.
+Prometheus only retains the most recent metrics locally (15 GiB, see `retentionSize`). The Thanos side in `flux/monitoring/thanos/` uploads blocks to the `thanos` bucket in the Ceph RGW object store (`rook-ceph`), compacts and downsamples them, and exposes the history through a dedicated Grafana data source.
 
-The media stack uses the same SeaweedFS cluster through its CSI driver: one 2.5 TiB `ReadWriteMany` volume is mounted at `/data` by Jellyfin, Sonarr, Radarr and qBittorrent. The SeaweedFS cluster runs four operator-managed volume servers, each with four 200 GiB Longhorn disks (3.2 TiB raw), plus a fifth volume server on `glemmen60` that writes directly to `/var/mnt/hdd1/seaweedfs` with 6 TB of raw volume slots. The Longhorn-backed data PVCs are excluded from the Longhorn backup job because the media library is treated as re-downloadable; the hostPath volume is not Longhorn-managed and is not backed up either. See `flux/apps/media/README.md`.
+The media stack uses a 2.3 TiB CephFS `ReadWriteMany` volume, `media-data-ceph`, mounted at `/data` by Jellyfin, Sonarr, Radarr and qBittorrent. It lives on the `fast-fs` class (`cephfs-fast`, RF2 on the CMR OSDs). The migration copied the qBittorrent downloads and the existing Hærry Pot movie; the rest of the media library will be re-imported/moved from `/data/downloads` by Radarr and Sonarr after the cutover. See `flux/apps/media/README.md`.
 
-The SeaweedFS admin panel is at <https://seaweedfs.glem.men> and is backed by two workers that run the maintenance jobs it dispatches. Its login is stored in the hand-created `seaweedfs-admin` Secret in the `seaweedfs` namespace; see `flux/README.md`.
+Ceph RGW is exposed in-cluster at `rook-ceph-rgw-fast.rook-ceph.svc.cluster.local:80`. The `thanos` and `loki` buckets and their users are managed by Rook; the access keys are copied into the hand-created `thanos-objstore-config` and `loki-s3` Secrets in `monitoring`, not stored in Git.
 
 ### Databases
 
-NetBox uses its own PostgreSQL instance in the `netbox` namespace (see `flux/apps/netbox/`). Grafana and the SeaweedFS filer share a three-node YugabyteDB (YSQL) cluster in the `yugabyte` namespace (`flux/infrastructure/yugabyte/`) with replication factor 3. The cluster is managed by the official `yugabytedb/yugabyte` Helm chart (three YB-Master and three YB-TServer pods), not the earlier hand-written StatefulSet. Clients connect to `yb-tservers.yugabyte.svc.cluster.local:5433`; the database is not exposed outside the cluster. The media apps use SQLite on Longhorn volumes: the Servarr apps cannot parse YB's `server_version` string, Jellyfin has no supported PostgreSQL backend, and Seerr's TypeORM migrations do not complete reliably on YSQL.
+NetBox uses its own PostgreSQL instance in the `netbox` namespace (see `flux/apps/netbox/`). Grafana uses a three-node YugabyteDB (YSQL) cluster in the `yugabyte` namespace (`flux/infrastructure/yugabyte/`) with replication factor 3. The cluster is managed by the official `yugabytedb/yugabyte` Helm chart (three YB-Master and three YB-TServer pods), not the earlier hand-written StatefulSet. Clients connect to `yb-tservers.yugabyte.svc.cluster.local:5433`; the database is not exposed outside the cluster. The media apps use SQLite on Longhorn volumes: the Servarr apps cannot parse YB's `server_version` string, Jellyfin has no supported PostgreSQL backend, and Seerr's TypeORM migrations do not complete reliably on YSQL.
 
-Passwords are stored in Kubernetes Secrets, not in Git: `netbox-secrets` in `netbox` for NetBox, `yugabyte-auth` in `yugabyte` (superuser, `grafana` and `seaweedfs` role passwords) plus `grafana-db` in `monitoring` for Grafana. See `flux/infrastructure/yugabyte/README.md` for setup and administration.
+Passwords are stored in Kubernetes Secrets, not in Git: `netbox-secrets` in `netbox` for NetBox, `yugabyte-auth` in `yugabyte` (superuser and `grafana` role passwords) plus `grafana-db` in `monitoring` for Grafana. See `flux/infrastructure/yugabyte/README.md` for setup and administration.
 
 ## Repository layout
 

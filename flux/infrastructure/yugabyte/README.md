@@ -1,7 +1,7 @@
 # YugabyteDB
 
 Three-node [YugabyteDB](https://www.yugabyte.com/) (YSQL) cluster used by
-Grafana and the SeaweedFS filer. The media apps use SQLite; the Servarr apps
+Grafana. The media apps use SQLite; the Servarr apps
 cannot parse YB's `server_version` string (`15.12-YB-...`). NetBox continues
 to use its own PostgreSQL StatefulSet; the shared YugabyteDB instance was
 retired because NetBox's schema needs index and collation features that YSQL
@@ -14,15 +14,15 @@ compatibility reasons.
 |---|---|
 | `release.yaml` | `yugabytedb/yugabyte` HelmRepository and HelmRelease (chart `2026.1.3`, image `2026.1.3.0-b100`) |
 | `values.yaml` | Three YB-Masters, three YB-TServers, RF3, storage and probe settings |
-| `init-job.yaml` | One-shot `yugabyte-init-v6` Job that creates the application roles/databases and sets the superuser password |
+| `init-job.yaml` | One-shot `yugabyte-init-v7` Job that creates the Grafana role/database and sets the superuser password |
 | `pdb.yaml` | `policy/v1` PodDisruptionBudgets for masters and tservers |
 | `storageclass-fast.yaml` | `yugabyte-fast-master` (two Longhorn replicas) and `yugabyte-fast-tserver` (one Longhorn replica) |
 | `storageclass.yaml` | Legacy `yugabyte` class used by the retired hand-written cluster's PVCs |
 
 The chart runs YB-Master and YB-TServer as separate StatefulSets, with three
 pods each. `oldNamingStyle` is on, so the stable services are `yb-masters` and
-`yb-tservers`; the latter is the YSQL endpoint on port 5433. Grafana and SeaweedFS connect to
-`yb-tservers.yugabyte.svc.cluster.local:5433`.
+`yb-tservers`; the latter is the YSQL endpoint on port 5433. Grafana connects
+to `yb-tservers.yugabyte.svc.cluster.local:5433`.
 
 ## Topology and replication
 
@@ -70,12 +70,10 @@ runs:
 ```sh
 SUPERUSER_PW="$(openssl rand -hex 24)"
 GRAFANA_PW="$(openssl rand -hex 24)"
-SEAWEEDFS_PW="$(openssl rand -hex 24)"
 
 kubectl -n yugabyte create secret generic yugabyte-auth \
   --from-literal=superuser-password="$SUPERUSER_PW" \
   --from-literal=grafana-password="$GRAFANA_PW" \
-  --from-literal=seaweedfs-password="$SEAWEEDFS_PW" \
   --dry-run=client -o yaml | kubectl apply -f -
 
 kubectl -n monitoring create secret generic grafana-db \
@@ -83,13 +81,11 @@ kubectl -n monitoring create secret generic grafana-db \
   --dry-run=client -o yaml | kubectl apply -f -
 ```
 
-`grafana-password` must match the `grafana-db` Secret in `monitoring`.
-`seaweedfs-password` must match the password in the `seaweedfs-filer-config`
-Secret in `seaweedfs`; see `flux/README.md`. The `yugabyte-init-v6` Job sets the default `yugabyte` superuser password from
+`grafana-password` must match the `grafana-db` Secret in `monitoring`. The
+`yugabyte-init-v7` Job sets the default `yugabyte` superuser password from
 `yugabyte-auth` and creates:
 
 - `grafana` → `grafana`
-- `seaweedfs` → `seaweedfs`
 
 It is idempotent. If the SQL changes, bump the Job name (or delete and re-apply
 it) so it runs again; Jobs are immutable.
@@ -174,8 +170,8 @@ not supported yet`.
 ## Sizing
 
 Each tserver has a 4GiB memory limit (85% is the YB hard limit), and the chart
-uses the tserver's JVM/PG shared-memory defaults. Grafana's and SeaweedFS's
-schemas are small, so RF3 fits comfortably. The tserver metrics snapshotter is
+uses the tserver's JVM/PG shared-memory defaults. Grafana's schema is small, so
+RF3 fits comfortably. The tserver metrics snapshotter is
 set to every five minutes to reduce internal write load on the Longhorn-backed
 disks.
 

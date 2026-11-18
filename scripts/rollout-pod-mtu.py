@@ -35,7 +35,6 @@ PRIORITY = {
     "calico-system": 95,
     "metallb-system": 96,
     "monitoring": 50,
-    "seaweedfs": 60,
     "yugabyte": 70,
     "netbox": 30,
     "media": 20,

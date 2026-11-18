@@ -1,6 +1,6 @@
 # Application Kustomizations. Most point at flux/apps/; netbox-inventory
-# points at the repository-root inventory directory, and media also waits for
-# the SeaweedFS CSI driver.
+# points at the repository-root inventory directory, and media waits for the
+# shared CephFS PVC.
 # Helpers for suspending/resuming everything: scripts/flux/manage.py.
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
