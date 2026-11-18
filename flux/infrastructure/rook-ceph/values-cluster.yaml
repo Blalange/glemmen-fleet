@@ -13,9 +13,9 @@
 #   - glemmen60 8 TB disk: still carries Longhorn data; the SeaweedFS hostPath
 #     has been removed.
 #   - glemmen160 SMR disk: still a Longhorn disk; not used by Ceph.
-#   - nvme-rbd/nvme-fs: the first raw NVMe partition is on glemmen250; the
-#     other selected nodes need the same EPHEMERAL cap and reinstall before
-#     the nvme pools have enough OSDs for RF2.
+#   - nvme-rbd/nvme-fs: glemmen250, glemmen180 and glemmen160 now contribute
+#     raw NVMe partitions. The remaining 1xx nodes need the same EPHEMERAL cap
+#     and reinstall before they can join the nvme class.
 #   - bulk-rbd/bulk-fs and the bulk RGW pools: glemmen80 has not received the
 #     24x12TB disks or the external SAS HBA yet. The fast RGW below is live.
 #
@@ -206,9 +206,25 @@ cephBlockPools:
     storageClass:
       enabled: false
 
-# One CephFilesystem with the fast data pool for now. The nvme and bulk data
-# pools are added when those OSDs exist, and fast-fs/bulk-fs/nvme-fs will
-# select the corresponding pool.
+# NVMe block tier. The first three NVMe OSDs are the raw partitions on
+# glemmen250, glemmen180 and glemmen160.
+  - name: nvme-rbd
+    spec:
+      failureDomain: host
+      replicated:
+        size: 2
+        requireSafeReplicaSize: true
+      deviceClass: nvme
+      parameters:
+        min_size: "1"
+        pg_num: "32"
+        pgp_num: "32"
+    storageClass:
+      enabled: false
+
+# One CephFilesystem with the fast and NVMe data pools. `fast-fs` and
+# `nvme-fs` select the corresponding pool; the bulk pool is added when the
+# glemmen80 disks exist.
 cephFileSystems:
   - name: cephfs
     spec:
@@ -229,6 +245,16 @@ cephFileSystems:
             size: 2
             requireSafeReplicaSize: true
           deviceClass: cmr
+          parameters:
+            min_size: "1"
+            pg_num: "32"
+            pgp_num: "32"
+        - name: nvme
+          failureDomain: host
+          replicated:
+            size: 2
+            requireSafeReplicaSize: true
+          deviceClass: nvme
           parameters:
             min_size: "1"
             pg_num: "32"

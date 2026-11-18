@@ -92,9 +92,9 @@ The 1xx nodes have two 1 Gbit/s NICs. The cluster uses Calico with IPIP CrossSub
 
 ### Storage
 
-> **Ceph storage is live.** Rook Ceph provides the `fast-rbd` and `fast-fs`
-> classes on the CMR disks of `glemmen130`/`glemmen150`, plus the `fast` RGW
-> object store. The media library, Thanos blocks and Loki logs now live on
+> **Ceph storage is live.** Rook Ceph provides `fast-rbd`/`fast-fs` on the
+> CMR disks of glemmen130/150/160/170/180, `nvme-rbd`/`nvme-fs` on the raw
+> NVMe partitions of glemmen250/180/160, plus the `fast` RGW object store. The media library, Thanos blocks and Loki logs now live on
 > Ceph; SeaweedFS has been removed. `nvme-rbd`/`nvme-fs`,
 > `bulk-rbd`/`bulk-fs` and the bulk RGW pools are deferred: the 1xx NVMe OSDs
 > require a Talos reinstall, and `glemmen80` has not received its 24 × 12 TB

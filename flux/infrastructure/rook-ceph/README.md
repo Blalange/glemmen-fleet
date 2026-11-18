@@ -47,14 +47,17 @@ Available now:
 
 | StorageClass | Type | Backing | Protection |
 |---|---|---|---|
-| `fast-rbd` | RBD | CMR disks on glemmen130 and glemmen150 | RF2, `failureDomain: host`, `min_size: 1` |
+| `fast-rbd` | RBD | CMR disks on glemmen130/150/160/170/180 | RF2, `failureDomain: host`, `min_size: 1` |
 | `fast-fs` | CephFS | same CMR disks, data pool `cephfs-fast` | RF2, `failureDomain: host` |
-| `ceph-bucket` | RGW/OBC | fast RGW buckets | RF2 on the same CMR OSDs |
+| `nvme-rbd` | RBD | raw NVMe partitions on glemmen250/180/160 | RF2, `failureDomain: host` |
+| `nvme-fs` | CephFS | same NVMe OSDs, data pool `cephfs-nvme` | RF2, `failureDomain: host` |
+| `ceph-bucket` | RGW/OBC | fast RGW buckets | RF2 on the CMR OSDs |
 
 - CephFS metadata pool `cephfs-metadata` is on the same CMR OSDs.
-- Four OSDs: two on glemmen130, one on glemmen150 and one on glemmen170.
-  The glemmen170 CMR disk was evicted from Longhorn to give Ceph a third
-  failure-domain host.
+- Nine OSDs: two CMR on glemmen130; one CMR each on glemmen150, glemmen170,
+  glemmen160 and glemmen180; and one raw NVMe partition each on glemmen250,
+  glemmen180 and glemmen160. The CMR disks were evicted from Longhorn; the
+  NVMe partitions use `r-nvme-osd` after capping EPHEMERAL at 100 GiB.
 - Rook schedules three mons and two mgrs; OSDs are explicitly selected, never
   `useAllDevices`.
 - The dashboard is exposed at <https://ceph.glem.men>. The admin password is in
@@ -68,11 +71,12 @@ The following are intentionally **not** configured yet:
 
 ### `nvme-rbd` and `nvme-fs`
 
-The 1xx nodes have only their Talos system NVMe disk. Giving Ceph a raw NVMe
-OSD requires capping `EPHEMERAL` at ~100 GiB and adding a Talos
-`RawVolumeConfig`, which only takes effect on a reinstall. That phase also
-requires every Longhorn volume to be off the 1xx system disks first. Until then
-there is no `nvme-rbd` or `nvme-fs` class and no NVMe OSD.
+The `nvme-rbd` and `nvme-fs` classes are live on the raw NVMe partitions of
+glemmen250, glemmen180 and glemmen160. Each node keeps a 100 GiB `EPHEMERAL`
+partition and exposes the remaining ~140 GiB as `r-nvme-osd`. Adding the
+remaining 1xx nodes (glemmen130, glemmen150, glemmen170) uses the same
+`VolumeConfig`/`RawVolumeConfig` pattern and a reinstall, one node at a time.
+The Longhorn volumes must be off each system disk before its reinstall.
 
 ### `bulk-rbd` and `bulk-fs`
 
