@@ -124,7 +124,7 @@ def main(argv: list[str] | None = None) -> int:
     print("starting with flux/infrastructure.")
     print("Use ./scripts/flux/manage.py status to watch.")
     print()
-    print("TIP: before restoring the Longhorn volumes/secrets, freeze the workloads:")
+    print("TIP: before restoring volumes or secrets, freeze the workloads:")
     print("  ./scripts/flux/manage.py freeze        # suspend all Kustomizations")
     print("  ./scripts/flux/manage.py status")
     return 0

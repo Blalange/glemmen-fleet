@@ -67,12 +67,10 @@ The source and destination PVCs must not be mounted by other pods. Copying a
 subdirectory is possible with `--source-path` and `--dest-path`.
 
 Keep the old claim until the workload has started successfully on the new one.
-The `monitoring` StorageClass uses `reclaimPolicy: Retain`, so deleting the old
-PVC and PV does not delete the backing Longhorn volume; remove the leftover
-`Volume` resource in `longhorn-system` as well when it is no longer needed for
-rollback. Re-add the Longhorn volume labels (notably
-`recurring-job-group.longhorn.io/default=enabled`, `backup-target` and
-`backup-volume`) on the new volume so recurring backups keep running.
+The Ceph StorageClasses use `reclaimPolicy: Retain`, so deleting the old PVC and
+PV does not delete the backing RBD image or CephFS subvolume. Remove the
+leftover PV (and, if desired, the underlying image/subvolume) when it is no
+longer needed for rollback.
 
 ## Talos
 

@@ -209,8 +209,8 @@ The migration copied the qBittorrent downloads and the existing Hærry Pot
 movie with rsync, verified the file sizes and skipped unreadable source files.
 The media Deployments were then switched to `media-data-ceph`. The rest of the
 media library will be re-imported/moved from `/data/downloads` by Radarr and
-Sonarr after the cutover; the old SeaweedFS cluster and its Longhorn volumes
-were removed once the copy was verified. Media is re-downloadable and is not
+Sonarr after the cutover; the old SeaweedFS cluster and its volumes were
+removed once the copy was verified. Media is re-downloadable and is not
 backed up off cluster; Ceph RF2 protects against a single OSD or host failure.
 
 Some old SeaweedFS EC volumes had corrupt metadata and could not be read; the

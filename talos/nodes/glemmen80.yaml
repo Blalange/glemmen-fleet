@@ -1,7 +1,7 @@
 # glemmen80 - worker node, 3 disks (disk slots were shuffled; selecting by WWID):
 #   sda ST91000640NS  naa.5000c500647fdfa5 - system disk (Talos boot, wiped by the installer)
-#   sdb WDC WD10JFCX   naa.50014ee606491ff7 - Longhorn data disk -> /var/mnt/hdd1
-#   sdc WDC WD10JFCX   naa.50014ee65b9e625a - Longhorn data disk -> /var/mnt/hdd2
+#   sdb WDC WD10JFCX   naa.50014ee606491ff7 - data disk, unmounted and available
+#   sdc WDC WD10JFCX   naa.50014ee65b9e625a - data disk, unmounted and available
 #
 # NOTE: SecureBoot is enabled on this machine; disable it in the BIOS (or build a
 # SecureBoot-signed image) before installing Talos.
@@ -41,31 +41,6 @@ provisioning:
     wipe: true
 ---
 apiVersion: v1alpha1
-kind: UserVolumeConfig
-name: hdd1
-provisioning:
-    diskSelector:
-        match: 'disk.wwid == "naa.50014ee606491ff7"'
-    minSize: 10GiB
-    grow: true
-filesystem:
-    type: btrfs
----
-apiVersion: v1alpha1
-kind: UserVolumeConfig
-name: hdd2
-provisioning:
-    diskSelector:
-        match: 'disk.wwid == "naa.50014ee65b9e625a"'
-    minSize: 10GiB
-    grow: true
-filesystem:
-    type: btrfs
----
-apiVersion: v1alpha1
 kind: KubeNodeConfig
 labels:
-    node.longhorn.io/create-default-disk: config
     glem.men/ecmp-node: "true"
-annotations:
-    node.longhorn.io/default-disks-config: '[{"name":"system","path":"/var/mnt/longhorn-system","allowScheduling":true,"storageReserved":300000000000},{"name":"hdd1","path":"/var/mnt/hdd1","allowScheduling":false,"evictionRequested":true,"storageReserved":0},{"name":"hdd2","path":"/var/mnt/hdd2","allowScheduling":false,"evictionRequested":true,"storageReserved":0}]'

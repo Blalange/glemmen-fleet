@@ -11,9 +11,9 @@ node (2 × GeForce GTX 1660 SUPER).
 | ---------------------------------- | ----------------------------------------------------------------------------------------------------------- |
 | `settings.env`                     | Versions, endpoint/VIP, node table — used by the scripts, Tuppr and `check-updates.py`                      |
 | `schematic.yaml`                   | Image Factory extensions: iscsi-tools, util-linux-tools, btrfs, netbird, bnx2 firmware, NVIDIA driver/toolkit |
-| `patches/common.yaml`              | Common machine config patch (subnets, DNS, kubelet node IP, btrfs, Longhorn system disk)                    |
+| `patches/common.yaml`              | Common machine config patch (subnets, DNS, kubelet node IP, btrfs)                                          |
 | `patches/netbird.yaml.tpl`         | Netbird extension config template (`NB_SETUP_KEY` filled in by `scripts/talos/gen-config.py`)               |
-| `nodes/glemmen*.yaml`              | Per-node: hostname, bond/addresses, Longhorn disks, VIP, Longhorn node annotation                           |
+| `nodes/glemmen*.yaml`              | Per-node: hostname, bond/addresses, Ceph OSD/NVMe partitions, VIP                                           |
 | `profiles/*.yaml`                  | Reusable, non-host-specific worker profiles (e.g. `ephemeral-worker`)                                       |
 | `pxe.yaml`                         | SMBIOS serial/UUID/MAC identities used by the PXE chainloader                                               |
 | `../scripts/talos/gen-iso.py`      | Creates the schematic (base image) and prints/downloads the generic ISO + installer image                   |
@@ -154,30 +154,16 @@ KUBECONFIG=talos/generated/kubeconfig kubectl get nodes
 
 ## Storage layout
 
-Longhorn gets its disks from the Talos user volumes (see `nodes/*.yaml`):
+Ceph consumes raw block devices; the former Talos user volumes are gone.
+The CMR OSDs are the whole disks on glemmen130/150/160/170/180. The NVMe OSDs
+are the `r-nvme-osd` partitions created by `RawVolumeConfig` on glemmen250,
+glemmen180 and glemmen160; `EPHEMERAL` is capped at 100 GiB to leave room.
 
-* `longhorn-system` — directory volume on the system disk (`/var/mnt/longhorn-system`),
-  registered as the Longhorn disk `system` with a fixed reservation.
-* `longhorn` — btrfs volume on the 2 TB data disk (`/var/mnt/longhorn`).
-* `hdd1` — btrfs volume on the extra 1 TB / 7.3 TB disk where present
-  (`/var/mnt/hdd1`, glemmen130/glemmen80/glemmen60). On glemmen60 the former
-  hostPath-backed SeaweedFS server has been removed; the 6 TB Longhorn
-  reservation remains until the disk is repurposed for Ceph.
+The former data disks (`hdd1`/`hdd2` on glemmen60/glemmen80 and `smr1` on
+glemmen160/glemmen170) are unmounted and available for reuse. Do not recreate
+the old `UserVolumeConfig`/`KubeNodeConfig` entries.
 
-The Longhorn disk configuration is applied *from the Talos node annotations*
-(`node.longhorn.io/default-disks-config`) together with the label
-`node.longhorn.io/create-default-disk: config`; Longhorn's Helm values enable
-`createDefaultDiskLabeledNodes`. Longhorn only reads the annotation when it
-creates the default disks. Changing the reservation on an existing disk also
-requires patching the Longhorn Node CR (`nodes.longhorn.io/<node>`). The
-annotation is owned by Talos's `KubeNodeConfig`, so update the machine config
-(or apply the regenerated node config) as well; a `kubectl annotate`/`patch`
-on the Kubernetes Node alone is reverted on the next reconcile. If a disk does
-not show up in the Longhorn UI, check the node label/annotation and
-`talosctl -n <node> get mountstatus`.
-
-btrfs support needs the `siderolabs/btrfs` extension **and** the kernel module;
-both are in the schematic / common patch. Node upgrades preserve the volumes.
+btrfs support is retained for future user volumes; it is not needed by Ceph.
 
 ## Ephemeral worker nodes
 
@@ -199,25 +185,14 @@ What the profile does:
 
 * installs to the first non-rotational SSD it finds, ignoring USB/CD-ROM and
   disks smaller than 20 GiB;
-* pools all other whole, unpartitioned non-system disks into the `longhorn` LVM
-  volume group and exposes them as one btrfs Longhorn disk at
-  `/var/mnt/longhorn` (Longhorn's recommended way to aggregate data disks);
-  a data disk with an old partition table is left untouched until it is wiped;
-* encrypts `STATE`, `EPHEMERAL` and the Longhorn volume with LUKS2. The TPM key
-  is tried first (bound to PCR 11 so it also works without SecureBoot), with
-  `nodeID` as the fallback on machines without a usable TPM. On a machine
-  without a TPM, expect a failed TPM key sync in the volume logs before Talos
-  falls back;
+* leaves other whole, unpartitioned non-system disks untouched for manual use;
+* encrypts `STATE` and `EPHEMERAL` with LUKS2. The TPM key is tried first
+  (bound to PCR 11 so it also works without SecureBoot), with `nodeID` as the
+  fallback on machines without a usable TPM. On a machine without a TPM,
+  expect a failed TPM key sync in the volume logs before Talos falls back;
 * labels the node `glem.men/ephemeral=true` and taints it
   `glem.men/ephemeral=true:NoSchedule`, so ordinary workloads need an
-  explicit node selector and matching toleration;
-* tags the Longhorn node and disk `ephemeral`. `allowEmptyNodeSelectorVolume`
-  is `false` in `flux/infrastructure/longhorn/values.yaml`, so untagged
-  volumes do not schedule there. A Longhorn StorageClass opts in with
-  `nodeSelector: "ephemeral"` (and optionally `diskSelector: "ephemeral"`).
-
-Longhorn's manager/CSI tolerations for the ephemeral taint are also set in
-`flux/infrastructure/longhorn/values.yaml`.
+  explicit node selector and matching toleration.
 
 ## Checking for updates
 
@@ -341,7 +316,7 @@ rolled out together when `TALOS_VERSION` changes.
 ./scripts/talos/manage.py shutdown glemmen170    # graceful Talos shutdown (cordons/drains first)
 ./scripts/talos/manage.py links glemmen60        # interface names/MACs of a node
 ./scripts/talos/manage.py disks glemmen130       # disks for selectors
-./scripts/talos/manage.py mounts glemmen130      # user-volume mount status (Longhorn)
+./scripts/talos/manage.py mounts glemmen130      # user-volume mount status
 ./scripts/talos/manage.py logs glemmen130 etcd   # service logs (add -f to follow)
 ./scripts/talos/manage.py dmesg glemmen130       # kernel log
 ./scripts/talos/manage.py patch glemmen130 file.yaml
@@ -405,15 +380,15 @@ kubectl -n calico-system get pods -l k8s-app=calico-node
 ## Notes for the remaining nodes
 
 * **glemmen80** is a **worker** node. Its disk slots were shuffled: it boots from
-  the ST91000640NS disk (`naa.5000c500647fdfa5`) and uses the two WD 1 TB disks as
-  Longhorn data disks (`hdd1`/`hdd2`). **SecureBoot is enabled on this machine** —
+  the ST91000640NS disk (`naa.5000c500647fdfa5`); the two WD 1 TB disks are
+  unmounted after the storage migration. **SecureBoot is enabled on this machine** —
   disable it in the BIOS (or build a SecureBoot-signed image) before installing.
   The APC automatic transfer switch is handled by the Zyxel GS1920-24 switch on
   VLAN 4 (`192.168.4.0/24`), not by this node. Do not configure a VLAN/bridge
   for `eno1` on glemmen80; see `network/zyxel-gs1920-24/`.
-* **glemmen60** is a **worker** node (config ready, installed). The
-  7.3 TB disk (`hdd1` user volume) is used for Longhorn data; the old
-  migration NFS export was retired when the node was wiped and joined.
+* **glemmen60** is a **worker** node (config ready, installed). The 7.3 TB
+  disk is unmounted after the storage cleanup; the old migration
+  NFS export was retired when the node was wiped and joined.
 * Worker nodes join by applying their config; they do not run etcd.
   Control plane nodes are the 1xx machines only.
 * After wiping a node, remove its old peer in the Netbird dashboard first, so

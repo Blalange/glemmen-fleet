@@ -1,9 +1,9 @@
 # Talos Image Factory schematic for the glemmen cluster.
 #
 # Extensions:
-#   iscsi-tools     - iscsid/iscsiadm for Longhorn (required)
-#   util-linux-tools- blkid/fstrim etc. used by Longhorn (required)
-#   btrfs           - btrfs kernel module + mkfs.btrfs for the data volumes
+#   iscsi-tools     - iscsid/iscsiadm (legacy; retained in the image)
+#   util-linux-tools- blkid/fstrim and other disk utilities
+#   btrfs           - btrfs kernel module + mkfs.btrfs for user volumes
 #   netbird         - self-hosted Netbird client, keeps the nodes on the
 #                     blalange.intra mesh (management/SSH-less access via talosctl)
 #   bnx2-bnx2x      - firmware for Broadcom NetXtreme 1G/10G NICs (bnx2/bnx2x).

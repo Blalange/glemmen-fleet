@@ -1,26 +1,28 @@
-# Rook Ceph cluster, Phase 1.
+# Rook Ceph cluster.
 #
-# Current OSDs (CMR, deviceClass=cmr):
+# Current OSDs (deviceClass=cmr):
 #   glemmen130: /dev/disk/by-id/wwn-0x5000c500f266aba4
 #               /dev/disk/by-id/wwn-0x5000c500f266c686
 #   glemmen150: /dev/disk/by-id/wwn-0x5000c500f266c378
-#   glemmen170: /dev/disk/by-id/wwn-0x5000c500f266e157 (evicted from Longhorn)
-#   glemmen160: /dev/disk/by-id/wwn-0x5000c500f266c046 (evicted from Longhorn)
-#   glemmen180: /dev/disk/by-id/wwn-0x5000c500f266bb89 (evicted from Longhorn)
-#   glemmen250: /dev/disk/by-partlabel/r-nvme-osd (raw NVMe partition, class nvme)
+#   glemmen170: /dev/disk/by-id/wwn-0x5000c500f266e157
+#   glemmen160: /dev/disk/by-id/wwn-0x5000c500f266c046
+#   glemmen180: /dev/disk/by-id/wwn-0x5000c500f266bb89
+#
+# Current OSDs (deviceClass=nvme), raw partitions:
+#   glemmen250: /dev/disk/by-partlabel/r-nvme-osd
+#   glemmen180: /dev/disk/by-partlabel/r-nvme-osd
+#   glemmen160: /dev/disk/by-partlabel/r-nvme-osd
 #
 # Deferred deliberately:
-#   - glemmen60 8 TB disk: still carries Longhorn data; the SeaweedFS hostPath
-#     has been removed.
-#   - glemmen160 SMR disk: still a Longhorn disk; not used by Ceph.
-#   - nvme-rbd/nvme-fs: glemmen250, glemmen180 and glemmen160 now contribute
-#     raw NVMe partitions. The remaining 1xx nodes need the same EPHEMERAL cap
-#     and reinstall before they can join the nvme class.
+#   - glemmen60 8 TB disk, the glemmen80 1 TB disks, and the SMR disks on
+#     glemmen130/150/160/170 are unmounted and not yet used by Ceph.
+#   - nvme-rbd/nvme-fs: the remaining 1xx nodes need the same 100 GiB
+#     EPHEMERAL cap and reinstall before they can join the nvme class.
 #   - bulk-rbd/bulk-fs and the bulk RGW pools: glemmen80 has not received the
 #     24x12TB disks or the external SAS HBA yet. The fast RGW below is live.
 #
-# Do not add devices that are still mounted by Longhorn. Rook uses explicit
-# device paths and never `useAllDevices`.
+# Rook uses explicit device paths and never `useAllDevices`; only add devices
+# that are unmounted.
 toolbox:
   enabled: true
 

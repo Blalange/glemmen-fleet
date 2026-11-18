@@ -1,4 +1,4 @@
-# Energisjappa (backend/admin/postgres), Longhorn volumes.
+# Energisjappa (backend/admin/postgres), Ceph RBD volumes.
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:

@@ -15,9 +15,9 @@ metadata:
   namespace: yugabyte
 spec:
   interval: 1h
-  # The StatefulSet rollout is slow on Longhorn-backed HDDs. Do not make the
-  # Helm action wait for every YB pod; the StatefulSet controller continues
-  # the rollout and the readiness probes gate traffic.
+  # The StatefulSet rollout is slow while each pod initialises its database.
+  # Do not make the Helm action wait for every YB pod; the StatefulSet
+  # controller continues the rollout and the readiness probes gate traffic.
   timeout: 30m
   install:
     disableWait: true

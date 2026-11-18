@@ -4,9 +4,9 @@
 Downloads dashboard JSON files into the Grafana dashboards directory. The
 Kustomization's configMapGenerator turns them into ConfigMaps labelled
 grafana_dashboard: "1", so no YAML is generated here. Dashboards that are
-maintained by hand (cluster-specs, disk-health, the enhanced Longhorn
-dashboard, the Flux dashboards, and the trimmed YugabyteDB dashboard) are not
-listed in DASHBOARDS and are left untouched.
+maintained by hand (cluster-specs, disk-health, the Flux dashboards, and the
+trimmed YugabyteDB dashboard) are not listed in DASHBOARDS and are left
+untouched.
 
 Each entry in DASHBOARDS points at a raw dashboard JSON and names the output
 file (and optionally a subdirectory). When adding a dashboard here, also add
@@ -214,9 +214,9 @@ def convert_inputs_to_variables(payload):
     the provisioned Thanos datasource.
 
     Some exports also contain their own datasource variable whose default value
-    is still the import placeholder (for example the Longhorn dashboard's
-    ${datasource}). Clear that stale current value so Grafana does not keep a
-    reference to a datasource that does not exist in this cluster.
+    is still an import placeholder (for example ${datasource}). Clear that
+    stale current value so Grafana does not keep a reference to a datasource
+    that does not exist in this cluster.
 
     Returns True when the payload was modified.
     """
@@ -253,9 +253,9 @@ def convert_inputs_to_variables(payload):
     else:
         payload.pop("__inputs")
 
-    # Drop import variables that no panel actually references. The Longhorn
-    # export, for example, keeps its own 'datasource' variable and no longer
-    # needs the DS_PROMETHEUS placeholder once its stale current value is gone.
+    # Drop import variables that no panel actually references. An export can
+    # keep its own 'datasource' variable and no longer needs the
+    # DS_PROMETHEUS placeholder once its stale current value is gone.
     serialized = json.dumps(payload)
     for variable in added:
         if "${%s}" % variable["name"] not in serialized:

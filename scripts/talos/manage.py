@@ -24,7 +24,7 @@ Day-2 operations:
   dmesg <node>                     Show the kernel log
   links <node>                     List network links (names, MACs)
   disks <node>                     List disks (for disk selectors)
-  mounts <node>                    Show user-volume mount status (Longhorn)
+  mounts <node>                    Show user-volume mount status
   roles                            Label nodes: control planes get all roles,
                                    workers get the worker role only
   cordon <node...>                 Mark Kubernetes nodes unschedulable

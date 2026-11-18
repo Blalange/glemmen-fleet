@@ -1,7 +1,7 @@
 # glemmen160 - NVMe system disk plus CMR and SMR data disks:
 #   nvme0n1 Samsung 256 GB - system disk (wiped by the installer)
 #   sda ST2000NM012B-2TD - CMR disk, handed to Ceph as an OSD
-#   sdb ST2000DM008-2FR1 WFL4KAP2 - Longhorn SMR data disk (unused)
+#   sdb ST2000DM008-2FR1 WFL4KAP2 - SMR data disk, unmounted and available
 apiVersion: v1alpha1
 kind: HostnameConfig
 hostname: glemmen160
@@ -95,20 +95,6 @@ provisioning:
   maxSize: 140GiB
 ---
 apiVersion: v1alpha1
-kind: UserVolumeConfig
-name: smr1
-provisioning:
-  diskSelector:
-    match: 'disk.wwid == "naa.5000c500d45acb1c"'
-  minSize: 10GiB
-  grow: true
-filesystem:
-  type: btrfs
----
-apiVersion: v1alpha1
 kind: KubeNodeConfig
 labels:
-  node.longhorn.io/create-default-disk: config
   glem.men/ecmp-node: "true"
-annotations:
-  node.longhorn.io/default-disks-config: '[{"name":"system","path":"/var/mnt/longhorn-system","allowScheduling":true,"storageReserved":64000000000,"tags":["nvme", "fast"]},{"name":"smr1","path":"/var/mnt/smr1","allowScheduling":false,"storageReserved":0,"tags":["smr"]}]'

@@ -66,8 +66,8 @@ deschedulerPolicy:
             # them again.
             minPodAge: 30m
             podProtections:
-              # Do not move stateful workloads (Longhorn volumes, databases,
-              # Prometheus/Alertmanager/Thanos Store Gateway, etc.).
+              # Do not move stateful workloads (databases, Prometheus,
+              # Alertmanager and the Thanos Store Gateway, etc.).
               extraEnabled:
                 - "PodsWithPVC"
         - name: LowNodeUtilization

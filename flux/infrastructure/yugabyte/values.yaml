@@ -72,9 +72,9 @@ resource:
       cpu: "4"
       memory: 6Gi
 
-# The chart's default liveness probe syncs the data directory. On this
-# cluster's Longhorn-backed disks that can exceed the one-second timeout and
-# restart a healthy database. Readiness is the useful signal.
+# The chart's default liveness probe syncs the data directory. That can exceed
+# the one-second timeout and restart a healthy database. Readiness is the
+# useful signal.
 livenessProbe:
   enabled: false
 

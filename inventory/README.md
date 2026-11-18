@@ -223,5 +223,5 @@ the UniFi devices, the Zyxel switch and the UDM Pro supplies the graph:
 
 Bump the pinned toolkit tag in the commands, the VS Code settings and the
 CronJob image together. NetBox itself is upgraded by bumping
-`chart.spec.version` in `flux/apps/netbox/release.yaml`; take a Longhorn
-backup/snapshot of `netbox-postgres` first.
+`chart.spec.version` in `flux/apps/netbox/release.yaml`; take a PostgreSQL dump
+and a snapshot of the `netbox-postgres` PVC first.

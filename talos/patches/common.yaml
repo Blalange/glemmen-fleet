@@ -9,8 +9,7 @@
 # - `$patch: delete` removes a field/document from the generated defaults.
 # - KubeNodeConfig contents are used as-is by Talos. The control-plane role
 #   label is set in control-plane.yaml; the etcd/worker role labels are applied
-#   after bootstrap by `manage.py roles`. Longhorn's node.longhorn.io/*
-#   label+annotation are set per node below.
+#   after bootstrap by `manage.py roles`.
 
 # Static hostnames: delete the generated `auto: stable` (the actual hostname is
 # set per node in talos/nodes/<host>.yaml).
@@ -47,7 +46,7 @@ nameservers:
     - address: 192.168.6.1
     - address: 1.1.1.1
 ---
-# btrfs kernel module (btrfs user volumes for Longhorn).
+# btrfs kernel module, kept for future user volumes.
 apiVersion: v1alpha1
 kind: KernelModuleConfig
 name: btrfs
@@ -55,11 +54,3 @@ name: btrfs
 # NOTE: UnattendedInstallConfig is rendered by scripts/talos/gen-config.py
 # (generated/patches/install.yaml) because it embeds the schematic-specific
 # installer image. `provisioning` is replaced, not merged, by config patches.
----
-# Directory user volume on the system disk (EPHEMERAL). Longhorn uses it as its
-# "system" disk. Directory volumes are bind-mounted and propagated into the
-# kubelet container automatically, so Longhorn's hostPath can reach them.
-apiVersion: v1alpha1
-kind: UserVolumeConfig
-name: longhorn-system
-volumeType: directory

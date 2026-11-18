@@ -1,10 +1,8 @@
-# Rook Ceph, Phase 1.
+# Rook Ceph.
 #
-# Only the `fast` CMR tier is available today (glemmen130/150). The remaining
-# CMR disks are still Longhorn-backed; the glemmen60 SeaweedFS hostPath is gone.
-# `nvme-rbd`/`nvme-fs` wait for the 1xx NVMe raw-partition reinstall, and
-# `bulk-rbd`/`bulk-fs` plus the bulk RGW move wait for the 24x12TB disks and
-# HBA in glemmen80. See README.md for the migration status.
+# The `fast` CMR tier (glemmen130/150/160/170/180) and the `nvme` tier
+# (glemmen250/180/160) are live. `bulk-rbd`/`bulk-fs` plus the bulk RGW move
+# wait for the 24x12TB disks and HBA in glemmen80. See README.md for details.
 #
 # The HelmReleases are applied after the `infrastructure` Kustomization so the
 # privileged namespace and the Prometheus Operator CRDs already exist.

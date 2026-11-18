@@ -1,85 +1,64 @@
 # Rook Ceph
 
-Rook Ceph replaces Longhorn and SeaweedFS. The migration is being rolled out in
-phases because the hardware and the Longhorn/SeaweedFS data are not all
-available at once.
+Rook Ceph provides the cluster's block (RBD), shared filesystem (CephFS) and
+S3-compatible object storage (RGW). It is the only storage system in the
+cluster.
 
-## Live migration state
+## Current state
 
-- Flux Kustomizations are **suspended** (`./scripts/flux/manage.py freeze`)
-  while PVCs are copied and workloads are switched. Resume Flux only after the
-  manifest changes in this branch have been committed/pushed. The Rook
-  HelmReleases are still reconciled by Helm because freezing a Kustomization
-  does not stop helm-controller.
-- Ceph itself is healthy. The only `HEALTH_WARN` items are the expected
-  Tentacle warnings about `aes` CephX keys for the CSI clients; Rook uses
-  `aes` because the Talos kernel is older than 7.0.
+- Ceph is healthy. The only `HEALTH_WARN` items are the expected Tentacle
+  warnings about `aes` CephX keys for the CSI clients; Rook uses `aes` because
+  the Talos kernel is older than 7.0.
 - The Ceph dashboard is at <https://ceph.glem.men>. The admin password is in
   `rook-ceph/rook-ceph-dashboard-password`.
 - The CSI plugin image is pinned to cephcsi v3.17.1 by digest. v3.18.x is a
   Rocky Linux 10 build and crashes on the x86-64-v2 CPUs in glemmen50 and
   glemmen60 (rook/rook#18607).
-- Migrated to Ceph: volunteer keys, all media application config volumes, the
-  qBittorrent downloads and the Hærry Pot movie, Minecraft Radar, Frigate
-  config/recordings, WebODM database/media, Energisjappa data/PostgreSQL,
-  NetBox PostgreSQL/media, all monitoring volumes, and the Thanos/Loki S3 data
-  (to the fast RGW). Radarr/Sonarr will re-import the media library from the
-  downloads.
-- NetBox media was copied to CephFS, a final delta pass was run, and NetBox was
-  switched to `netbox-media-ceph`. The old `netbox-media` PVC is retained for
-  rollback.
+- All application and monitoring volumes are on Ceph: volunteer keys, media
+  application config volumes, the qBittorrent downloads and the Hærry Pot
+  movie, Minecraft Radar, Frigate config/recordings, WebODM database/media,
+  Energisjappa data/PostgreSQL, NetBox PostgreSQL/media, and all monitoring
+  volumes. Radarr/Sonarr re-import the media library from the downloads.
+- NetBox media was copied to CephFS and NetBox now uses `netbox-media-ceph` and
+  `netbox-postgres-ceph`; the old claims have been removed.
 - Prometheus and Alertmanager were copied with a single PV-rebind pass, so their
   TSDB and notification state were preserved. Thanos compactor/storegateway
   caches and Loki's local WAL/cache were recreated empty on `fast-rbd`; their
-  durable data was copied from SeaweedFS to the `thanos` and `loki` buckets in
-  the fast RGW.
-- The unused `*-old` Prometheus/Alertmanager Longhorn PVCs and PVs were removed
-  after the new `fast-rbd` claims were verified.
-- YugabyteDB was migrated from Longhorn to `nvme-rbd`; the old Longhorn
-  volumes were removed after verification. SeaweedFS and its Longhorn volumes
-  were removed earlier.
-- glemmen60 `hdd1` and the CMR disks on glemmen160/170/180 still carry Longhorn
-  replicas and are not Ceph OSDs yet. The SeaweedFS hostPath on glemmen60 is
-  gone.
+  durable data lives in the `thanos` and `loki` buckets in the fast RGW.
+- YugabyteDB runs on `nvme-rbd`.
+- Nine OSDs are up and in: two CMR on glemmen130; one CMR each on
+  glemmen150/160/170/180; and one raw NVMe partition each on
+  glemmen250/180/160.
+- The cluster is rebalancing after the last OSD additions. `ceph -s` shows
+  `active+remapped`/`backfilling` PGs until recovery finishes.
 
-## Current status (Phase 1)
-
-Available now:
+## Storage classes
 
 | StorageClass | Type | Backing | Protection |
 |---|---|---|---|
 | `fast-rbd` | RBD | CMR disks on glemmen130/150/160/170/180 | RF2, `failureDomain: host`, `min_size: 1` |
 | `fast-fs` | CephFS | same CMR disks, data pool `cephfs-fast` | RF2, `failureDomain: host` |
-| `nvme-rbd` | RBD | raw NVMe partitions on glemmen250/180/160 | RF2, `failureDomain: host` |
+| `nvme-rbd` | RBD | raw NVMe partitions on glemmen250/180/160 | RF2, `failureDomain: host`, `min_size: 1` |
 | `nvme-fs` | CephFS | same NVMe OSDs, data pool `cephfs-nvme` | RF2, `failureDomain: host` |
 | `ceph-bucket` | RGW/OBC | fast RGW buckets | RF2 on the CMR OSDs |
 
 - CephFS metadata pool `cephfs-metadata` is on the same CMR OSDs.
-- Nine OSDs: two CMR on glemmen130; one CMR each on glemmen150, glemmen170,
-  glemmen160 and glemmen180; and one raw NVMe partition each on glemmen250,
-  glemmen180 and glemmen160. The CMR disks were evicted from Longhorn; the
-  NVMe partitions use `r-nvme-osd` after capping EPHEMERAL at 100 GiB.
 - Rook schedules three mons and two mgrs; OSDs are explicitly selected, never
   `useAllDevices`.
-- The dashboard is exposed at <https://ceph.glem.men>. The admin password is in
-  the `rook-ceph-dashboard-password` Secret.
 - The toolbox is enabled:
   `kubectl -n rook-ceph exec -it deploy/rook-ceph-tools -- ceph status`.
 
-## Deferred
+## Adding NVMe OSDs to the remaining 1xx nodes
 
-The following are intentionally **not** configured yet:
+glemmen250, glemmen180 and glemmen160 keep a 100 GiB `EPHEMERAL` partition and
+expose the remaining ~140 GiB as the `r-nvme-osd` raw partition. glemmen130,
+glemmen150 and glemmen170 still use the whole NVMe disk for Talos.
 
-### `nvme-rbd` and `nvme-fs`
+Add them one node at a time with the same `VolumeConfig`/`RawVolumeConfig`
+pattern and a reinstall. Do not reinstall a node while Ceph is still
+backfilling.
 
-The `nvme-rbd` and `nvme-fs` classes are live on the raw NVMe partitions of
-glemmen250, glemmen180 and glemmen160. Each node keeps a 100 GiB `EPHEMERAL`
-partition and exposes the remaining ~140 GiB as `r-nvme-osd`. Adding the
-remaining 1xx nodes (glemmen130, glemmen150, glemmen170) uses the same
-`VolumeConfig`/`RawVolumeConfig` pattern and a reinstall, one node at a time.
-The Longhorn volumes must be off each system disk before its reinstall.
-
-### `bulk-rbd` and `bulk-fs`
+## `bulk-rbd` and `bulk-fs`
 
 glemmen80 has not received the 24 × 12 TB disks or the external SAS HBA yet.
 When they are installed:
@@ -94,28 +73,30 @@ When they are installed:
 Until then the media library stays on `fast-fs` and Frigate recordings stay on
 `fast-rbd`.
 
-### Ceph RGW
+## Ceph RGW
 
-The fast RGW (`rook-ceph-rgw-fast`) is live on the CMR tier. Its metadata and
-data pools are replicated RF2 on `deviceClass: cmr`, with `preservePoolsOnDelete`
-set. Thanos and Loki use the `thanos` and `loki` buckets through this endpoint;
-their durable data was copied from the SeaweedFS S3 gateway before it was
-removed.
+The fast RGW (`rook-ceph-rgw-fast`) runs on the CMR tier. Its metadata and data
+pools are replicated RF2 on `deviceClass: cmr`, with `preservePoolsOnDelete`
+set. Thanos and Loki use the `thanos` and `loki` buckets through this endpoint.
 
 The RGW is intended to move to the bulk EC 8+2 pools on glemmen80 later. The
 bucket names and clients do not need to change for that move.
 
-## Longhorn disks still being drained
+## Unused data disks
 
-Longhorn eviction has completed on the CMR/SMR disks on glemmen130,
-glemmen150 and the glemmen170 CMR disk; those disks were wiped and handed to
-Ceph.
+These disks are unmounted and not part of Ceph:
 
-glemmen60 `hdd1` still carries Longhorn replicas and the 6 TB Longhorn
-reservation that was originally made for the SeaweedFS hostPath. The SeaweedFS
-data has been removed; the disk can be repurposed after Longhorn is drained.
-The Longhorn disks on glemmen160, the glemmen170 SMR disk and glemmen180 still
-carry Longhorn replicas.
+| Node | Disks |
+|---|---|
+| glemmen60 | sdb 8 TB |
+| glemmen80 | sdb, sdc 1 TB |
+| glemmen130 | sdc 1 TB SMR |
+| glemmen150 | sdb 2 TB SMR |
+| glemmen160 | sdb 2 TB SMR |
+| glemmen170 | sdb 2 TB SMR |
+
+They still contain old data and have not been wiped. Wipe a disk before adding
+it to the CephCluster.
 
 ## Useful checks
 
@@ -125,18 +106,18 @@ kubectl -n rook-ceph get pods
 kubectl -n rook-ceph exec -it deploy/rook-ceph-tools -- ceph status
 kubectl -n rook-ceph exec -it deploy/rook-ceph-tools -- ceph osd tree
 kubectl -n rook-ceph exec -it deploy/rook-ceph-tools -- ceph df detail
+kubectl -n rook-ceph exec -it deploy/rook-ceph-tools -- ceph fs status
 kubectl -n rook-ceph get cephfilesystem cephfs
 kubectl -n rook-ceph get cephobjectstore fast cephobjectstoreuser
-kubectl get storageclass fast-rbd fast-fs ceph-bucket
+kubectl get storageclass fast-rbd fast-fs nvme-rbd nvme-fs ceph-bucket
 ```
 
-## Next migration steps
+## Next steps
 
-1. Longhorn has no application volumes left; remove the Longhorn components
-   when convenient.
-2. Free the remaining CMR disks as Longhorn replicas move off them; add them to
-   the CephCluster as `deviceClass: cmr`.
+1. Wait for the rebalance to reach `active+clean`.
+2. Reinstall glemmen130, glemmen150 and glemmen170 one at a time and add their
+   NVMe OSDs to the `nvme` class.
 3. Add the glemmen80 24 × 12 TB disks, the `bulk` EC pools and `bulk-rbd` /
    `bulk-fs` classes; move the media library and RGW to the bulk tier.
-4. Reinstall the 1xx nodes and add `nvme-rbd`/`nvme-fs`.
-5. Remove Longhorn completely.
+4. Decide whether the unmounted CMR/SMR disks are reused for Ceph or retired,
+   and wipe them before reuse.

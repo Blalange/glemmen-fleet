@@ -1,4 +1,4 @@
-# Infrastructure: namespaces, Longhorn, cert-manager, external-dns, MetalLB,
+# Infrastructure: namespaces, Rook Ceph, cert-manager, external-dns, MetalLB,
 # metrics-server, descheduler.
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization

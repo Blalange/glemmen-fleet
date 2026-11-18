@@ -1,10 +1,9 @@
 # glemmen150 - CMR and SMR data disks plus the NVMe system disk:
-#   sda ST2000NM012B-2TD - CMR data disk, reserved for Ceph (Longhorn evicted)
+#   sda ST2000NM012B-2TD - CMR data disk, Ceph OSD
 #   sdb ST2000DM008-2FR1 WFL4KACK - SMR data disk, currently unused
 #
-# The Longhorn data volumes on this node were evicted in preparation for the
-# Rook Ceph migration. Do not recreate UserVolumeConfigs for sda/sdb: Ceph
-# consumes the raw block devices.
+# Do not recreate UserVolumeConfigs for sda/sdb: Ceph consumes the raw block
+# devices.
 apiVersion: v1alpha1
 kind: HostnameConfig
 hostname: glemmen150

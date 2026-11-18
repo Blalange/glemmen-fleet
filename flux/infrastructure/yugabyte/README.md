@@ -47,9 +47,9 @@ three masters and three tservers; Ceph adds RF2 at the block layer.
 - **Master volumes:** 10 GiB on `nvme-rbd`.
 - **Tserver volumes:** 30 GiB on `nvme-rbd`.
 
-The original Longhorn-backed `yugabyte-fast` volumes were copied with
-`pv-migrate`, the `datadir0-*` PVC names were rebound to the migrated Ceph
-RBD PVs, and the Longhorn volumes were deleted after verification.
+The original `yugabyte-fast` volumes were copied with `pv-migrate`, the
+`datadir0-*` PVC names were rebound to the migrated Ceph RBD PVs, and the old
+volumes were deleted after verification.
 
 ## Secrets
 
@@ -166,5 +166,5 @@ disks.
 ## Retired hand-written cluster
 
 The previous `yugabyted` StatefulSet, its Service, ConfigMap, PVCs and
-Longhorn volumes are gone. The chart-managed cluster is now the only
+volumes are gone. The chart-managed cluster is now the only
 YugabyteDB deployment.

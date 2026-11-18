@@ -93,29 +93,32 @@ The 1xx nodes have two 1 Gbit/s NICs. The cluster uses Calico with IPIP CrossSub
 ### Storage
 
 > **Ceph storage is live.** Rook Ceph provides `fast-rbd`/`fast-fs` on the
-> CMR disks of glemmen130/150/160/170/180, `nvme-rbd`/`nvme-fs` on the raw
-> NVMe partitions of glemmen250/180/160, plus the `fast` RGW object store. The media library, Thanos blocks and Loki logs now live on
-> Ceph; SeaweedFS has been removed. `nvme-rbd`/`nvme-fs`,
-> `bulk-rbd`/`bulk-fs` and the bulk RGW pools are deferred: the 1xx NVMe OSDs
-> require a Talos reinstall, and `glemmen80` has not received its 24 × 12 TB
-> disks or external SAS HBA yet. The Ceph dashboard is at
-> <https://ceph.glem.men>. See `flux/infrastructure/rook-ceph/README.md`.
+> CMR disks of glemmen130/150/160/170/180 and `nvme-rbd`/`nvme-fs` on the raw
+> NVMe partitions of glemmen250/180/160, plus the `fast` RGW object store. The
+> media library, Thanos blocks, Loki logs and YugabyteDB data live on Ceph;
+> SeaweedFS has been removed. `bulk-rbd`/`bulk-fs` and the bulk RGW pools are
+> deferred until `glemmen80` receives its 24 × 12 TB disks and external SAS
+> HBA. The Ceph dashboard is at <https://ceph.glem.men>. See
+> `flux/infrastructure/rook-ceph/README.md`.
 
-Longhorn (`v1.12`) still serves the remaining un-migrated PVCs; the application and monitoring volumes have moved to Ceph, and the last Longhorn volumes are being drained. The data disks are btrfs volumes mounted by Talos unless they are Ceph OSDs:
+The CMR disks are dedicated whole-disk Ceph OSDs. The remaining data disks are
+unmounted:
 
 | Node | System disk | Data storage |
 |------|-------------|--------------|
-| 130 | sda | two CMR disks: Ceph OSDs (`deviceClass: cmr`) |
-| 150 | sda | one CMR disk: Ceph OSD |
-| 160 | nvme0n1 | sda: Ceph OSD (`cmr`); sdb: Longhorn (`/var/mnt/smr1`, SMR) |
-| 170 | nvme0n1 | sda: Ceph OSD (`cmr`); sdb: Longhorn (`/var/mnt/smr1`, SMR) |
-| 180 | nvme0n1 | sda: Ceph OSD (`cmr`) |
-| 250 | 250 GB NVMe | 100 GiB EPHEMERAL + 140 GiB Ceph OSD (`nvme`) |
-| 50 | 598 GB virtual disk | system disk |
-| 80 | RAID1 sda+sdb | sdc: Longhorn (`/var/mnt/hdd1`) |
-| 60 | sda | sdb: Longhorn (`/var/mnt/hdd1`, with the former SeaweedFS reservation) |
+| 130 | NVMe | sda+sdb: CMR Ceph OSDs (`cmr`); sdc: SMR, unused |
+| 150 | NVMe | sda: CMR Ceph OSD; sdb: SMR, unused |
+| 160 | nvme0n1 | sda: CMR Ceph OSD; NVMe: raw Ceph OSD (`nvme`); sdb: SMR, unused |
+| 170 | nvme0n1 | sda: CMR Ceph OSD; sdb: SMR, unused; NVMe OSD not added yet |
+| 180 | nvme0n1 | sda: CMR Ceph OSD; NVMe: raw Ceph OSD (`nvme`) |
+| 250 | 250 GB NVMe | 100 GiB EPHEMERAL + 140 GiB raw Ceph OSD (`nvme`) |
+| 50 | 598 GB virtual disk | system disk only |
+| 80 | sda | sdb/sdc: unmounted |
+| 60 | sda | sdb: unmounted |
 
-Longhorn volume backups go to a Google Drive folder through an in-cluster rclone S3 bridge (`flux/infrastructure/longhorn/rclone/`). Longhorn uses the backup target `s3://longhorn-backup@us-east-1/`; `rclone.conf` and the S3 keys are stored in the `rclone-backup-config` Secret in `longhorn-system`. This is only relevant while Longhorn is still present.
+Ceph volume snapshots and off-cluster backups are not configured. The media
+library is re-downloadable; Thanos and Loki protect their data with RF2 in the
+same cluster, but there is no off-site copy yet.
 
 Prometheus only retains the most recent metrics locally (15 GiB, see `retentionSize`). The Thanos side in `flux/monitoring/thanos/` uploads blocks to the `thanos` bucket in the Ceph RGW object store (`rook-ceph`), compacts and downsamples them, and exposes the history through a dedicated Grafana data source.
 

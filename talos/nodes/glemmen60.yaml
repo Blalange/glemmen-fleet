@@ -2,10 +2,7 @@
 #   sda 600 GB  - ServeRAID/PERC virtual disk, system disk (wiped by the
 #                 installer; matched by WWID - a size-based selector also
 #                 matches loop devices and the install media!)
-#   sdb 8.0 TB  - shared Longhorn data disk -> /var/mnt/hdd1. The former
-#                 hostPath SeaweedFS server is gone; its 6 TB reservation is
-#                 still in the Longhorn disk config until the disk is
-#                 repurposed for Ceph.
+#   sdb 8.0 TB  - data disk, unmounted and available for reuse
 #
 # Networking: single onboard Broadcom LOM (BCM5716, Dell/Quanta board) named
 # eno1 (altname enp3s0f0, confirmed from live media). The cable goes to USW Pro
@@ -17,8 +14,7 @@
 # comes up in maintenance mode (see talos/README.md).
 #
 # Before wiping this node its migration backups (/mnt/hdd1) were confirmed
-# expendable: the data has been restored on the new cluster, and Longhorn
-# backups are disabled until a permanent backupstore exists.
+# expendable; the data has been restored on the new cluster.
 apiVersion: v1alpha1
 kind: HostnameConfig
 hostname: glemmen60
@@ -41,25 +37,3 @@ provisioning:
   diskSelector:
     match: 'disk.wwid == "naa.6b8ca3a0f77e3f003260c7f61614887d"'
   wipe: true
----
-apiVersion: v1alpha1
-kind: UserVolumeConfig
-name: hdd1
-provisioning:
-  diskSelector:
-    match: 'disk.wwid == "naa.6b8ca3a0f77e3f003260ca1816169169"'
-  minSize: 100GiB
-  grow: true
-filesystem:
-  type: btrfs
----
-apiVersion: v1alpha1
-kind: KubeNodeConfig
-labels:
-  node.longhorn.io/create-default-disk: config
-annotations:
-  # Longhorn only reads this when it creates the default disks. Changing the
-  # reservation on an existing disk also requires patching the Longhorn Node
-  # CR (nodes.longhorn.io/glemmen60). Talos owns this annotation: update the
-  # machine config as well, or it will revert a kubectl-only patch.
-  node.longhorn.io/default-disks-config: '[{"name":"system","path":"/var/mnt/longhorn-system","allowScheduling":true,"storageReserved":170000000000},{"name":"hdd1","path":"/var/mnt/hdd1","allowScheduling":true,"storageReserved":6000000000000}]'
