@@ -89,6 +89,10 @@ cephClusterSpec:
       # Keep three OSDs on a 32 GB control-plane node reasonable. The OSD
       # daemon's own memory target is deliberately below the pod limit.
       osd_memory_target: "2147483648"
+    mds:
+      # Keep the MDS cache below the 4Gi pod limit. The Ceph default is 4Gi,
+      # which would leave no headroom for the daemon itself.
+      mds_cache_memory_limit: "3221225472"
 
   storage:
     useAllNodes: false
@@ -149,7 +153,7 @@ cephClusterSpec:
         cpu: 500m
         memory: 1Gi
       limits:
-        memory: 2Gi
+        memory: 3Gi
     mgr:
       requests:
         cpu: 200m
@@ -161,7 +165,7 @@ cephClusterSpec:
         cpu: 200m
         memory: 1Gi
       limits:
-        memory: 2Gi
+        memory: 3Gi
     prepareosd:
       requests:
         cpu: 500m
@@ -171,7 +175,7 @@ cephClusterSpec:
         cpu: 500m
         memory: 1Gi
       limits:
-        memory: 2Gi
+        memory: 4Gi
     rgw:
       requests:
         cpu: 200m
@@ -210,11 +214,11 @@ cephBlockPools:
         # RF2 with min_size 1 keeps writes available while a single OSD/host is
         # down. It is an availability trade-off, not additional redundancy.
         min_size: "1"
-        # One PG per pool is the Ceph default for a tiny cluster, but it
-        # serializes all writes through a single OSD. Spread the fast pool
-        # across the three OSDs.
-        pg_num: "32"
-        pgp_num: "32"
+        # Keep a floor of 32 PGs so the pool is spread across the OSDs, but
+        # let the PG autoscaler own pg_num. Do not set pg_num or pgp_num here:
+        # Rook re-applies every parameter on each reconcile, which would fight
+        # the autoscaler.
+        pg_num_min: "32"
     storageClass:
       enabled: false
 
@@ -229,8 +233,7 @@ cephBlockPools:
       deviceClass: nvme
       parameters:
         min_size: "1"
-        pg_num: "32"
-        pgp_num: "32"
+        pg_num_min: "32"
     storageClass:
       enabled: false
 
@@ -248,8 +251,7 @@ cephFileSystems:
         deviceClass: cmr
         parameters:
           min_size: "1"
-          pg_num: "32"
-          pgp_num: "32"
+          pg_num_min: "32"
       dataPools:
         - name: fast
           failureDomain: host
@@ -259,8 +261,7 @@ cephFileSystems:
           deviceClass: cmr
           parameters:
             min_size: "1"
-            pg_num: "32"
-            pgp_num: "32"
+            pg_num_min: "32"
         - name: nvme
           failureDomain: host
           replicated:
@@ -269,19 +270,25 @@ cephFileSystems:
           deviceClass: nvme
           parameters:
             min_size: "1"
-            pg_num: "32"
-            pgp_num: "32"
+            pg_num_min: "32"
       preserveFilesystemOnDelete: true
       metadataServer:
         activeCount: 1
         activeStandby: true
         priorityClassName: system-cluster-critical
+        placement:
+          podAntiAffinity:
+            requiredDuringSchedulingIgnoredDuringExecution:
+              - labelSelector:
+                  matchLabels:
+                    app: rook-ceph-mds
+                topologyKey: kubernetes.io/hostname
         resources:
           requests:
             cpu: 500m
             memory: 1Gi
           limits:
-            memory: 2Gi
+            memory: 4Gi
     storageClass:
       enabled: false
 
@@ -300,8 +307,8 @@ cephObjectStores:
         deviceClass: cmr
         parameters:
           min_size: "1"
-          pg_num: "32"
-          pgp_num: "32"
+          # Rook sets pg_num_min=8 on the RGW metadata/index pools itself.
+          # Leave pg_num/pgp_num unset so the autoscaler stays in control.
       dataPool:
         failureDomain: host
         replicated:
@@ -310,13 +317,19 @@ cephObjectStores:
         deviceClass: cmr
         parameters:
           min_size: "1"
-          pg_num: "32"
-          pgp_num: "32"
+          pg_num_min: "32"
       preservePoolsOnDelete: true
       gateway:
         port: 80
         instances: 2
         priorityClassName: system-cluster-critical
+        placement:
+          podAntiAffinity:
+            requiredDuringSchedulingIgnoredDuringExecution:
+              - labelSelector:
+                  matchLabels:
+                    app: rook-ceph-rgw
+                topologyKey: kubernetes.io/hostname
         resources:
           requests:
             cpu: 200m
