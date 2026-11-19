@@ -377,7 +377,10 @@ Final installed images:
 
 `talosctl services` on the five control planes has no `ext-nvidia-*` services.
 glemmen250 still has `ext-nvidia-persistenced` running and `ext-nvidia-cdi-gen`
-finished, which is expected for the GPU node.
+finished, which is expected for the GPU node. The install image on `glemmen60`
+was also switched to the base image without a reboot; `glemmen50` and
+`glemmen80` already referenced the base image. This only affects future
+reinstalls, not their running systems.
 
 ---
 
