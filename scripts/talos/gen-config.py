@@ -6,6 +6,8 @@ Steps:
   2. create the cluster secrets bundle (talos/generated/secrets.yaml) if missing
   3. generate the base control-plane config (talos/generated/base/) with the common patch
   4. merge each talos/nodes/<host>.yaml on top and validate the result
+  5. for TALOS_GPU_NODES, merge the GPU installer image while preserving the
+     node-specific UnattendedInstallConfig
 
 Everything lands in talos/generated/ (gitignored). The secrets bundle is the
 cluster PKI: back it up, losing it means losing talosctl access.
@@ -19,6 +21,7 @@ Usage: ./scripts/talos/gen-config.py
 from __future__ import annotations
 
 import argparse
+import shlex
 import shutil
 import sys
 from pathlib import Path
@@ -81,7 +84,9 @@ def render_netbird_patch() -> None:
     print(f"==> Rendered {output}")
 
 
-def render_install_patch(installer_image: str, disk_selector: str) -> None:
+def render_install_patch(
+    installer_image: str, disk_selector: str, output_name: str = "install.yaml"
+) -> None:
     yaml = common.require_yaml()
     payload = {
         "apiVersion": "v1alpha1",
@@ -93,11 +98,72 @@ def render_install_patch(installer_image: str, disk_selector: str) -> None:
             "wipe": True,
         },
     }
-    output = GENERATED / "patches" / "install.yaml"
+    output = GENERATED / "patches" / output_name
     output.write_text(
         yaml.safe_dump(payload, sort_keys=False), encoding="utf-8"
     )
     print(f"==> Rendered {output}")
+
+
+def gpu_node_names(settings: dict[str, str]) -> set[str]:
+    raw = settings.get("TALOS_GPU_NODES", "").strip()
+    if not raw:
+        return set()
+    try:
+        names = set(shlex.split(raw))
+    except ValueError as exc:
+        common.die(f"cannot parse TALOS_GPU_NODES: {exc}")
+    known = {node.name for node in common.parse_node_table(settings["TALOS_NODES"])}
+    unknown = sorted(names - known)
+    if unknown:
+        common.die(
+            "TALOS_GPU_NODES contains unknown node(s): " + ", ".join(unknown)
+        )
+    return names
+
+
+def render_gpu_install_patch(
+    node_file: Path, gpu_installer_image: str
+) -> Path:
+    """Render a per-node UnattendedInstallConfig with the GPU image.
+
+    A partial patch that only sets installer.image would replace the
+    UnattendedInstallConfig document and lose the node-specific disk selector
+    (for example glemmen250's NVMe WWID). Start from the node's existing
+    document and only replace the installer image.
+    """
+    yaml = common.require_yaml()
+    try:
+        documents = [
+            document
+            for document in yaml.safe_load_all(
+                node_file.read_text(encoding="utf-8")
+            )
+            if document
+        ]
+    except (OSError, ValueError) as exc:
+        common.die(f"failed to read {node_file}: {exc}")
+
+    install = next(
+        (
+            document
+            for document in documents
+            if document.get("kind") == "UnattendedInstallConfig"
+        ),
+        None,
+    )
+    if install is None:
+        common.die(
+            f"{node_file} has no UnattendedInstallConfig; cannot select the GPU image"
+        )
+
+    install["installer"] = {"image": gpu_installer_image}
+    output = GENERATED / "patches" / f"install-gpu-{node_file.stem}.yaml"
+    output.write_text(
+        yaml.safe_dump(install, sort_keys=False), encoding="utf-8"
+    )
+    print(f"==> Rendered {output}")
+    return output
 
 
 def generate_base_config(
@@ -141,7 +207,11 @@ def generate_base_config(
 
 
 def generate_node_configs(
-    talosctl: str, base_dir: Path, workers: set[str]
+    talosctl: str,
+    base_dir: Path,
+    workers: set[str],
+    gpu_nodes: set[str],
+    gpu_installer_image: str,
 ) -> None:
     print("==> Merging node configs")
     node_files = sorted(NODES_DIR.glob("*.yaml"))
@@ -157,19 +227,25 @@ def generate_node_configs(
             base = base_dir / "controlplane.yaml"
             role = "control-plane"
 
+        patches = [f"@{node_file}"]
+        if node in gpu_nodes:
+            gpu_patch = render_gpu_install_patch(
+                node_file, gpu_installer_image
+            )
+            patches.append(f"@{gpu_patch}")
+
+        command: list[str | Path] = [
+            talosctl,
+            "machineconfig",
+            "patch",
+            base,
+        ]
+        for patch in patches:
+            command.extend(["--patch", patch])
         output = GENERATED / f"{node}.yaml"
-        common.run(
-            [
-                talosctl,
-                "machineconfig",
-                "patch",
-                base,
-                "--patch",
-                f"@{node_file}",
-                "-o",
-                output,
-            ]
-        )
+        command.extend(["-o", output])
+        common.run(command)
+
         validation = common.run(
             [talosctl, "validate", "--config", output, "--mode", "metal"],
             capture=True,
@@ -288,26 +364,42 @@ def main(argv: list[str] | None = None) -> int:
 
     nodes = common.parse_node_table(settings["TALOS_NODES"])
     workers = common.worker_names(settings)
+    gpu_nodes = gpu_node_names(settings)
     bootstrap = common.bootstrap_node(settings, nodes)
     talosctl = common.require_tool("talosctl", "TALOSCTL")
     version = talos_version_string(talosctl)
     print(f"==> Using talosctl: {talosctl}" + (f" ({version})" if version else ""))
+    if gpu_nodes:
+        print(f"==> GPU schematic nodes: {', '.join(sorted(gpu_nodes))}")
 
     GENERATED.mkdir(parents=True, exist_ok=True)
     (GENERATED / "patches").mkdir(parents=True, exist_ok=True)
 
     schematic_id_file = GENERATED / "schematic-id"
-    if not schematic_id_file.is_file():
-        print("==> No schematic ID yet, running gen-iso.py")
+    gpu_schematic_id_file = GENERATED / "schematic-gpu-id"
+    if not schematic_id_file.is_file() or not gpu_schematic_id_file.is_file():
+        print("==> Missing schematic ID(s), running gen-iso.py")
         common.run([sys.executable, str(GEN_ISO)], capture=True)
+
     schematic_id = schematic_id_file.read_text(encoding="utf-8").strip()
+    gpu_schematic_id = gpu_schematic_id_file.read_text(encoding="utf-8").strip()
     if not schematic_id:
         common.die(f"{schematic_id_file} is empty (run ./scripts/talos/gen-iso.py)")
+    if not gpu_schematic_id:
+        common.die(
+            f"{gpu_schematic_id_file} is empty (run ./scripts/talos/gen-iso.py)"
+        )
+
     installer_image = (
         f"factory.talos.dev/metal-installer/{schematic_id}:"
         f"{settings['TALOS_VERSION']}"
     )
-    print(f"==> Schematic: {schematic_id}")
+    gpu_installer_image = (
+        f"factory.talos.dev/metal-installer/{gpu_schematic_id}:"
+        f"{settings['TALOS_VERSION']}"
+    )
+    print(f"==> Base schematic: {schematic_id}")
+    print(f"==> GPU schematic : {gpu_schematic_id}")
 
     render_netbird_patch()
     render_install_patch(installer_image, settings["INSTALL_DISK_SELECTOR"])
@@ -320,7 +412,13 @@ def main(argv: list[str] | None = None) -> int:
         print(f"==> Reusing existing secrets bundle {secrets_file}")
 
     base_dir = generate_base_config(talosctl, settings, installer_image)
-    generate_node_configs(talosctl, base_dir, workers)
+    generate_node_configs(
+        talosctl,
+        base_dir,
+        workers,
+        gpu_nodes,
+        gpu_installer_image,
+    )
     generate_profile_configs(talosctl, base_dir)
     write_talosconfig(talosctl, base_dir, nodes, workers, bootstrap)
 

@@ -21,6 +21,10 @@ configMapGenerator:
   - name: pxe-settings
     envs:
       - ../../../talos/settings.env
+  # Keep the PXE assets on the GPU schematic until the PXE server is split or
+  # relocated. Control planes are installed from the base schematic and do not
+  # run the NVIDIA services; glemmen250 still needs the GPU kernel/modules on
+  # its PXE boots. The file is mounted as /config/schematic.yaml.
   - name: pxe-schematic
     files:
-      - ../../../talos/schematic.yaml
+      - schematic.yaml=../../../talos/schematic-gpu.yaml

@@ -3,7 +3,8 @@
 
 The kernel arguments (bond + static IP + hostname) are derived from
 talos/nodes/<host>.yaml, so they always match the machine configuration.
-Extensions come from talos/schematic.yaml.
+Nodes in TALOS_GPU_NODES use talos/schematic-gpu.yaml; all others use the base
+talos/schematic.yaml.
 
 Output: talos/generated/iso/setup-<host>.iso + .sha256
 
@@ -17,6 +18,7 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import shlex
 import sys
 from pathlib import Path
 
@@ -26,7 +28,25 @@ sys.path.insert(0, str(SCRIPT_DIR.parent))
 import common  # noqa: E402
 
 SCHEMATIC_FILE = common.TALOS_DIR / "schematic.yaml"
+GPU_SCHEMATIC_FILE = common.TALOS_DIR / "schematic-gpu.yaml"
 ISO_DIR = common.GENERATED_DIR / "iso"
+
+
+def gpu_node_names(settings: dict[str, str]) -> set[str]:
+    raw = settings.get("TALOS_GPU_NODES", "").strip()
+    if not raw:
+        return set()
+    try:
+        names = set(shlex.split(raw))
+    except ValueError as exc:
+        common.die(f"cannot parse TALOS_GPU_NODES: {exc}")
+    known = {path.stem for path in common.NODES_DIR.glob("*.yaml")}
+    unknown = sorted(names - known)
+    if unknown:
+        common.die(
+            "TALOS_GPU_NODES contains unknown node(s): " + ", ".join(unknown)
+        )
+    return names
 
 
 def customization(host: str, schematic: dict) -> dict:
@@ -60,12 +80,17 @@ def main(argv: list[str] | None = None) -> int:
         common.die("TALOS_VERSION is not set in talos/settings.env")
     if not SCHEMATIC_FILE.is_file():
         common.die(f"{SCHEMATIC_FILE} not found")
+    if not GPU_SCHEMATIC_FILE.is_file():
+        common.die(f"{GPU_SCHEMATIC_FILE} not found")
 
+    gpu_nodes = gpu_node_names(settings)
     yaml = common.require_yaml()
-    try:
-        schematic = yaml.safe_load(SCHEMATIC_FILE.read_text(encoding="utf-8"))
-    except (OSError, ValueError) as exc:
-        common.die(f"failed to read {SCHEMATIC_FILE}: {exc}")
+    schematics: dict[str, dict] = {}
+    for label, path in (("base", SCHEMATIC_FILE), ("gpu", GPU_SCHEMATIC_FILE)):
+        try:
+            schematics[label] = yaml.safe_load(path.read_text(encoding="utf-8"))
+        except (OSError, ValueError) as exc:
+            common.die(f"failed to read {path}: {exc}")
 
     hosts = args.hosts or sorted(path.stem for path in common.NODES_DIR.glob("*.yaml"))
     if not hosts:
@@ -75,6 +100,7 @@ def main(argv: list[str] | None = None) -> int:
         ISO_DIR.mkdir(parents=True, exist_ok=True)
 
     for host in hosts:
+        schematic = schematics["gpu" if host in gpu_nodes else "base"]
         body = customization(host, schematic)
         arguments = body["customization"].get("extraKernelArgs", [])
 

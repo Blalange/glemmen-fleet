@@ -75,8 +75,8 @@ longer needed for rollback.
 ## Talos
 
 ```sh
-./scripts/talos/gen-iso.py [--download]      # Image Factory schematic + ISO URLs
-./scripts/talos/setup-images.py [--print]    # per-node maintenance-mode ISOs
+./scripts/talos/gen-iso.py [--download]      # base + GPU Image Factory schematics and ISO URLs
+./scripts/talos/setup-images.py [--print]    # per-node maintenance-mode ISOs (base/GPU by TALOS_GPU_NODES)
 ./scripts/talos/gen-config.py                # secrets + machine configs + talosconfig
 ./scripts/talos/gen-pxe.py                   # render the PXE iPXE boot script
 ./scripts/talos/manage.py update <node>      # apply regenerated config to a running node

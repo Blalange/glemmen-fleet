@@ -88,6 +88,7 @@ if hasattr(signal, "SIGPIPE"):
 SETTINGS: dict[str, str] = {}
 NODES: list["Node"] = []
 WORKERS: set[str] = set()
+GPU_NODES: set[str] = set()
 CONTROL_PLANES: list["Node"] = []
 BOOTSTRAP: "Node | None" = None
 _TALOSCTL: str | None = None
@@ -208,7 +209,7 @@ def resolve_names(refs: list[str] | None) -> list[str]:
 
 
 def load_config() -> None:
-    global SETTINGS, NODES, WORKERS, CONTROL_PLANES, BOOTSTRAP
+    global SETTINGS, NODES, WORKERS, GPU_NODES, CONTROL_PLANES, BOOTSTRAP
 
     SETTINGS = load_env_file(SETTINGS_FILE)
     NODES = parse_node_table(SETTINGS.get("TALOS_NODES", ""))
@@ -223,7 +224,16 @@ def load_config() -> None:
     if unknown_workers:
         die(f"TALOS_WORKERS contains unknown node(s): {', '.join(unknown_workers)}")
 
+    try:
+        gpu_names = shlex.split(SETTINGS.get("TALOS_GPU_NODES", ""))
+    except ValueError as exc:
+        die(f"cannot parse TALOS_GPU_NODES: {exc}")
+    unknown_gpu = sorted(set(gpu_names) - known_names)
+    if unknown_gpu:
+        die(f"TALOS_GPU_NODES contains unknown node(s): {', '.join(unknown_gpu)}")
+
     WORKERS = set(worker_names)
+    GPU_NODES = set(gpu_names)
     CONTROL_PLANES = [node for node in NODES if node.name not in WORKERS]
     if not CONTROL_PLANES:
         die("no control-plane nodes found (TALOS_WORKERS covers every node)")
@@ -1066,14 +1076,29 @@ def cmd_upgrade_talos(args: argparse.Namespace) -> int:
     if not schematic:
         die(f"{schematic_file} is empty (run ./scripts/talos/gen-iso.py)")
 
-    image = f"factory.talos.dev/metal-installer/{schematic}:{version}"
+    gpu_schematic = ""
+    if GPU_NODES:
+        gpu_schematic_file = GENERATED / "schematic-gpu-id"
+        if not gpu_schematic_file.is_file():
+            die(
+                f"{gpu_schematic_file} not found (run ./scripts/talos/gen-iso.py first)"
+            )
+        gpu_schematic = gpu_schematic_file.read_text(encoding="utf-8").strip()
+        if not gpu_schematic:
+            die(
+                f"{gpu_schematic_file} is empty (run ./scripts/talos/gen-iso.py)"
+            )
+
     nodes = resolve_nodes(args.nodes, NODES)
     if args.workers_first:
         order = {node.name: index for index, node in enumerate(NODES)}
         nodes.sort(key=lambda node: (node.name not in WORKERS, order.get(node.name, 10**9)))
 
     for node in nodes:
+        node_schematic = gpu_schematic if node.name in GPU_NODES else schematic
+        image = f"factory.talos.dev/metal-installer/{node_schematic}:{version}"
         print(f"==> Upgrading {node.name} to {version}")
+        print(f"    schematic: {node_schematic}")
         run_talos(["upgrade", "--image", image], nodes=node)
         print(f"==> Waiting for {node.name} to come back")
         wait_for_nodes([node], args.node_timeout)

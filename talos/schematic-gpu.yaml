@@ -1,0 +1,33 @@
+# GPU Talos Image Factory schematic for glemmen250.
+#
+# Keep the base extension list in sync with schematic.yaml, then add the NVIDIA
+# extensions. This file is selected automatically for nodes listed in
+# TALOS_GPU_NODES; all other nodes use the base schematic.
+#
+# Extensions:
+#   iscsi-tools     - iscsid/iscsiadm (legacy; retained in the image)
+#   util-linux-tools- blkid/fstrim and other disk utilities
+#   btrfs           - btrfs kernel module + mkfs.btrfs for user volumes
+#   netbird         - self-hosted Netbird client, keeps the node on the
+#                     blalange.intra mesh (management/SSH-less access via talosctl)
+#   bnx2-bnx2x      - firmware for Broadcom NetXtreme 1G/10G NICs
+#   nvidia-open-gpu-kernel-modules-production
+#                   - NVIDIA open GPU kernel modules for glemmen250's Turing
+#                     GPUs. The "production" variant is built against the
+#                     production driver branch that matches the Talos release.
+#   nvidia-container-toolkit-production
+#                   - NVIDIA userspace driver libraries and container toolkit
+#                     for the same driver branch (no host driver container).
+#
+# scripts/talos/gen-iso.py turns this file into a schematic ID and prints the
+# ISO/installer URLs.
+customization:
+  systemExtensions:
+    officialExtensions:
+      - siderolabs/iscsi-tools
+      - siderolabs/util-linux-tools
+      - siderolabs/btrfs
+      - siderolabs/netbird
+      - siderolabs/bnx2-bnx2x
+      - siderolabs/nvidia-open-gpu-kernel-modules-production
+      - siderolabs/nvidia-container-toolkit-production

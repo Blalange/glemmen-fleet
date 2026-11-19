@@ -2,7 +2,7 @@
 #
 # The NVIDIA kernel modules come from the
 # nvidia-open-gpu-kernel-modules-production system extension in
-# talos/schematic.yaml. Talos does not auto-load extension modules, so the four
+# talos/schematic-gpu.yaml. Talos does not auto-load extension modules, so the four
 # modules the driver and CUDA need are listed explicitly below.
 apiVersion: v1alpha1
 kind: HostnameConfig

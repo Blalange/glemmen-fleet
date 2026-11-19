@@ -1,6 +1,6 @@
 # NVIDIA GPU Operator - device plugin, GPU feature discovery and DCGM exporter
 # for glemmen250. The kernel driver and userspace libraries are Talos system
-# extensions (see talos/schematic.yaml), so the operator does not run a driver
+# extensions (see talos/schematic-gpu.yaml), so the operator does not run a driver
 # container and reuses the cluster's Node Feature Discovery.
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization

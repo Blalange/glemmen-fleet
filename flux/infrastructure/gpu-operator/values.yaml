@@ -2,7 +2,7 @@
 #
 # Talos provides the NVIDIA kernel modules and userspace libraries through the
 # nvidia-open-gpu-kernel-modules-production and
-# nvidia-container-toolkit-production extensions (talos/schematic.yaml), so the
+# nvidia-container-toolkit-production extensions (talos/schematic-gpu.yaml), so the
 # driver container is disabled. The operator still installs the container
 # toolkit under the writable /var and registers it with containerd through
 # CDI/NRI, matching the Sidero Labs NVIDIA extension instructions. CUDA

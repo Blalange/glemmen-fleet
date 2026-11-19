@@ -45,7 +45,11 @@ spec:
                   --connect-timeout 30 -o "$output" "$url"
               }
 
-              # Resolve the same schematic the Talos installer image uses.
+              # Resolve the GPU schematic. The PXE assets are shared by all
+              # nodes; non-GPU nodes are installed from the base schematic and
+              # do not run the NVIDIA services, so the GPU kernel is harmless
+              # there. Keeping the GPU kernel here preserves glemmen250's GPU
+              # support on PXE boots until the assets are split per node.
               schematic_id="$(curl -fsS --retry 5 --retry-delay 3 \
                 --retry-all-errors --connect-timeout 30 \
                 -X POST --data-binary @/config/schematic.yaml \

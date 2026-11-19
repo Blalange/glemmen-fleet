@@ -10,13 +10,14 @@ node (2 × GeForce GTX 1660 SUPER).
 | Path                               | Purpose                                                                                                     |
 | ---------------------------------- | ----------------------------------------------------------------------------------------------------------- |
 | `settings.env`                     | Versions, endpoint/VIP, node table — used by the scripts, Tuppr and `check-updates.py`                      |
-| `schematic.yaml`                   | Image Factory extensions: iscsi-tools, util-linux-tools, btrfs, netbird, bnx2 firmware, NVIDIA driver/toolkit |
+| `schematic.yaml`                   | Base Image Factory extensions (no NVIDIA): iscsi-tools, util-linux-tools, btrfs, netbird, bnx2 firmware |
+| `schematic-gpu.yaml`               | GPU schematic: the base extensions plus the NVIDIA driver/toolkit for `TALOS_GPU_NODES` (glemmen250) |
 | `patches/common.yaml`              | Common machine config patch (subnets, DNS, kubelet node IP, btrfs)                                          |
 | `patches/netbird.yaml.tpl`         | Netbird extension config template (`NB_SETUP_KEY` filled in by `scripts/talos/gen-config.py`)               |
 | `nodes/glemmen*.yaml`              | Per-node: hostname, bond/addresses, Ceph OSD/NVMe partitions, VIP                                           |
 | `profiles/*.yaml`                  | Reusable, non-host-specific worker profiles (e.g. `ephemeral-worker`)                                       |
 | `pxe.yaml`                         | SMBIOS serial/UUID/MAC identities used by the PXE chainloader                                               |
-| `../scripts/talos/gen-iso.py`      | Creates the schematic (base image) and prints/downloads the generic ISO + installer image                   |
+| `../scripts/talos/gen-iso.py`      | Creates the base and GPU schematics and prints/downloads the generic ISO + both installer images           |
 | `../scripts/talos/setup-images.py` | Per-node setup ISOs with the maintenance network baked in (`--print` shows the kernel args)                 |
 | `../scripts/talos/gen-config.py`   | Renders secrets + configs into `generated/` (gitignored) and validates them                                 |
 | `../scripts/talos/gen-pxe.py`      | Renders `flux/infrastructure/pxe/boot.ipxe` from `pxe.yaml` and the node configs                            |
@@ -121,10 +122,12 @@ boot entries: the default one and a
 > interface at all — neither in maintenance mode nor after install. Any new
 > machine with such a NIC must boot an ISO built from this schematic.
 >
-> **NVIDIA GPUs**: the schematic includes the open kernel modules and the
-> container toolkit for glemmen250's GTX 1660 SUPER cards. `nodes/glemmen250.yaml`
-> loads the four `nvidia*` kernel modules. The GPU operator in
-> `flux/infrastructure/gpu-operator/` consumes them; see the main README for the
+> **NVIDIA GPUs**: `schematic-gpu.yaml` includes the open kernel modules and
+> the container toolkit for glemmen250's GTX 1660 SUPER cards.
+> `nodes/glemmen250.yaml` loads the four `nvidia*` kernel modules. The GPU
+> operator in `flux/infrastructure/gpu-operator/` consumes them. The base
+> `schematic.yaml` has no NVIDIA extensions, so non-GPU nodes do not run the
+> NVIDIA services; see the main README for the
 > GPU stack.
 
 If you boot the generic ISO instead, press `e` in GRUB and append the arguments
@@ -255,27 +258,44 @@ directly.
 
 ### Schematic / system extensions
 
-System extensions are part of the installer image, so changing
-`schematic.yaml` cannot be applied with `apply-config`; the node must reboot
-into the new image. The NVIDIA kernel modules and container toolkit are built
-for a specific Talos release and driver branch, so they must be rebuilt and
-rolled out together when `TALOS_VERSION` changes.
+System extensions are part of the installer image, so changing a schematic
+cannot be applied with `apply-config`; the node must reboot into the new image.
+The NVIDIA kernel modules and container toolkit are built for a specific Talos
+release and driver branch, so they must be rebuilt and rolled out together when
+`TALOS_VERSION` changes.
 
-1. Edit `talos/schematic.yaml`.
-2. Create the new schematic and installer image:
+There are two schematics:
+
+* `talos/schematic.yaml` — base image for every node except the GPU nodes.
+* `talos/schematic-gpu.yaml` — base extensions plus the NVIDIA driver and
+  container toolkit for nodes listed in `TALOS_GPU_NODES` (currently only
+  `glemmen250`).
+
+Keep the common extension list identical in both files when adding an
+extension. `gen-iso.py` creates both schematics and writes
+`generated/schematic-id` and `generated/schematic-gpu-id`.
+
+1. Edit `talos/schematic.yaml` (base), and `talos/schematic-gpu.yaml` when the
+   GPU extension set changes.
+2. Create both schematics and installer images:
 
    ```sh
    ./scripts/talos/gen-iso.py
    ```
 
-   This updates `talos/generated/schematic-id` and prints the new installer
-   image.
+   This updates both generated schematic IDs and prints both installer images.
 
-3. Re-render the machine configs so they reference the new installer image:
+3. Re-render the machine configs:
 
    ```sh
    ./scripts/talos/gen-config.py
    ```
+
+   `gen-config.py` uses the base installer image for all nodes and replaces
+   the `UnattendedInstallConfig` image with the GPU image for each node in
+   `TALOS_GPU_NODES`. It preserves the node-specific disk selector (for
+   example glemmen250's NVMe WWID). Verify the generated configs before
+   applying them.
 
 4. Roll the new image out to the running nodes:
 
@@ -284,9 +304,9 @@ rolled out together when `TALOS_VERSION` changes.
    ```
 
    With no version argument it uses `TALOS_VERSION` from `settings.env`, so a
-   schematic-only change keeps the current version. The schematic/installer
-   image is different, and `upgrade-talos` reads the new schematic ID from
-   `generated/schematic-id`, reboots each node and waits for it to come back.
+   schematic-only change keeps the current version. `upgrade-talos` selects the
+   base schematic for normal nodes and the GPU schematic for `TALOS_GPU_NODES`.
+   It reboots one node at a time and waits for it to come back.
 
 5. Rebuild the per-node setup ISOs for future installs:
 
@@ -294,8 +314,18 @@ rolled out together when `TALOS_VERSION` changes.
    ./scripts/talos/setup-images.py --force
    ```
 
+   `setup-images.py` selects the GPU schematic for `TALOS_GPU_NODES` and the
+   base schematic for every other node.
+
 6. Verify extensions and versions with `talosctl get extensions`, or with
-   `./scripts/talos/manage.py version` and `status`.
+   `./scripts/talos/manage.py version` and `status`. On non-GPU nodes,
+   `talosctl services` should have no `ext-nvidia-*` services.
+
+The PXE asset server still uses `talos/schematic-gpu.yaml` for now so that
+glemmen250 keeps the GPU kernel/modules on its PXE boots. Control-plane nodes
+are installed from the base schematic, so their installed systems do not run
+the NVIDIA services even though the PXE kernel is the GPU variant. Splitting
+PXE assets per node and/or relocating the PXE server is a separate follow-up.
 
 ## Day-2 operations
 

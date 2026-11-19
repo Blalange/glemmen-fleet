@@ -121,10 +121,14 @@ The generated `iseq` lines end with `||`: a failed iPXE comparison returns
 
 ## Talos version updates
 
-The asset server resolves the schematic from `talos/schematic.yaml` and
-downloads the kernel/initramfs for `TALOS_VERSION` from `talos/settings.env`
-during pod startup. Updating either file changes a generated ConfigMap hash and
-Flux rolls the asset pod, which downloads the new assets. No manual upload is
+The asset server currently resolves the **GPU** schematic from
+`talos/schematic-gpu.yaml` and downloads the kernel/initramfs for
+`TALOS_VERSION` from `talos/settings.env` during pod startup. This keeps the
+PXE boot path GPU-capable for glemmen250. Non-GPU nodes are installed from the
+base `talos/schematic.yaml` and do not run the NVIDIA services, so the GPU
+kernel does not cause the non-GPU boot wait. Updating either schematic or the
+version changes a generated ConfigMap hash and Flux rolls the asset pod, which
+downloads the new assets. No manual upload is
 needed.
 
 `talos/settings.env` also sets `PXE_ASSET_URL` (`http://192.168.6.99:8080`).
