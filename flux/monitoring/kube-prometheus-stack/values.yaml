@@ -61,7 +61,8 @@ prometheus:
     storageSpec:
       volumeClaimTemplate:
         spec:
-          storageClassName: fast-rbd
+          # Prometheus WAL/TSDB is latency-sensitive; keep it on the NVMe tier.
+          storageClassName: nvme-rbd
           accessModes: ["ReadWriteOnce"]
           resources:
             requests:

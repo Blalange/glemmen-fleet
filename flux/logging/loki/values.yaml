@@ -71,7 +71,7 @@ singleBinary:
   persistence:
     enabled: true
     size: 20Gi
-    storageClass: fast-rbd
+    storageClass: nvme-rbd
   resources:
     requests:
       cpu: 250m

@@ -48,7 +48,7 @@ metadata:
 spec:
   accessModes:
     - ReadWriteOnce
-  storageClassName: fast-rbd
+  storageClassName: nvme-rbd
   resources:
     requests:
       storage: 5Gi

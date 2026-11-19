@@ -41,7 +41,7 @@ secret <name> -o jsonpath=...` when needed.
 
 ## Databases
 
-All media applications use SQLite on their Ceph `fast-rbd` config volumes:
+All media applications use SQLite on their Ceph `nvme-rbd` config volumes:
 
 - Sonarr/Radarr/Prowlarr: `<app>.db` under `/config`
 - Jellyfin: `/config/data/jellyfin.db`

@@ -266,7 +266,7 @@ this after the sidecar has uploaded the local blocks that should be kept. See
 Loki stores logs in the `loki` bucket in Ceph RGW and runs as a single
 binary (Monolithic) with one replica and one gateway
 (`logging/loki/values.yaml`). Chunks and the TSDB index live in object storage;
-the Loki pod keeps a 20Gi WAL/cache volume on the `fast-rbd` StorageClass.
+the Loki pod keeps a 20Gi WAL/cache volume on the `nvme-rbd` StorageClass.
 Retention is 30 days, enforced by the compactor. The chart's
 component-specific dashboards (reads/writes/backend) are mostly empty in
 Monolithic mode; the "Loki / Logs" and "Loki / Operational" dashboards are the

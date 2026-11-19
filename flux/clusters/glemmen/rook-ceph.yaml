@@ -1,7 +1,8 @@
 # Rook Ceph, kept separate from the infrastructure group so a long Ceph
 # bootstrap or a missing CSI secret cannot hold the rest of the cluster
-# hostage. Phase 1 provides fast-rbd and fast-fs only; see
-# flux/infrastructure/rook-ceph/README.md for the deferred tiers.
+# hostage. The CMR tier provides fast-rbd/fast-fs and the NVMe tier provides
+# nvme-rbd/nvme-fs; see flux/infrastructure/rook-ceph/README.md for the
+# deferred bulk tiers.
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
