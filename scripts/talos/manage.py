@@ -1099,7 +1099,13 @@ def cmd_upgrade_talos(args: argparse.Namespace) -> int:
         image = f"factory.talos.dev/metal-installer/{node_schematic}:{version}"
         print(f"==> Upgrading {node.name} to {version}")
         print(f"    schematic: {node_schematic}")
-        run_talos(["upgrade", "--image", image], nodes=node)
+        upgrade_command = ["upgrade", "--image", image]
+        if args.no_drain:
+            # Rook OSDs run with a maxUnavailable=0 PDB on their host. The
+            # default upgrade drain can therefore never evict them; the reboot
+            # still takes the OSDs down and Ceph recovers from RF2.
+            upgrade_command.append("--drain=false")
+        run_talos(upgrade_command, nodes=node)
         print(f"==> Waiting for {node.name} to come back")
         wait_for_nodes([node], args.node_timeout)
         if not args.no_health:
@@ -1330,6 +1336,8 @@ def build_parser() -> argparse.ArgumentParser:
                    help="health check timeout after each node (default: 10m)")
     p.add_argument("--no-health", action="store_true",
                    help="skip the cluster health check between nodes")
+    p.add_argument("--no-drain", action="store_true",
+                   help="skip the pre-upgrade Kubernetes drain (needed for Rook OSD hosts)")
 
     return parser
 
