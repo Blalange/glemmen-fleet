@@ -202,16 +202,45 @@ production.
 The media library is `media-data-ceph`, a 2300Gi `ReadWriteMany` claim on the
 `fast-fs` StorageClass. The CephFS data pool is `cephfs-fast` on the CMR OSDs
 in glemmen130/glemmen150, replicated twice with `failureDomain: host` and
-`min_size: 1`. The fast tier has about 2.5TiB usable and the library is about
-1.95TiB, so it fits with limited headroom.
+`min_size: 1`. After the import the claim reports about 2.0TiB used and 267G
+free (89%), so headroom is limited; move the claim to `bulk-fs` as soon as the
+glemmen80 disks are available.
 
 The migration copied the qBittorrent downloads and the existing Hærry Pot
 movie with rsync, verified the file sizes and skipped unreadable source files.
-The media Deployments were then switched to `media-data-ceph`. The rest of the
-media library will be re-imported/moved from `/data/downloads` by Radarr and
-Sonarr after the cutover; the old SeaweedFS cluster and its volumes were
-removed once the copy was verified. Media is re-downloadable and is not
-backed up off cluster; Ceph RF2 protects against a single OSD or host failure.
+The media Deployments were then switched to `media-data-ceph`; the old
+SeaweedFS cluster and its volumes were removed once the copy was verified.
+Media is re-downloadable and is not backed up off cluster; Ceph RF2 protects
+against a single OSD or host failure.
+
+### Library import and hardlinks
+
+The rest of the library was re-imported from `/data/downloads` with Radarr and
+Sonarr using `DownloadedMoviesScan` / `DownloadedEpisodesScan` and
+`importMode: copy`. Both apps have `copyUsingHardlinks` enabled, so the import
+created hardlinks in `/data/media` rather than copies. The media files share
+inodes with the qBittorrent downloads, which is why both directories can be
+used at the same time without doubling Ceph usage:
+
+```sh
+# Hardlinks are counted once when both paths are passed to du.
+# downloads ~2.0T + media ~50G (the unique Hærry Pot file)
+du -sh /data/downloads /data/media
+```
+
+Two releases are still RAR-only and were not imported because extracting them
+would create a second copy and break seeding:
+
+- `Charterfeber.SE.S01.SWEDiSH.1080p.WEB.h264-OLLONBORRE` (Sonarr 0/206)
+- `Key.And.Peele.S04.NORDiC.1080p.WEB.x264-PE2PE`
+
+The higher-quality `Foundation (2021) ... HONE` releases were imported; the
+smaller duplicate `Vyndros` sets remain in downloads. The English `Once Upon a
+Time... Man` Bluray set was imported; the multi-series French `Il Etait Une
+Fois` pack remains in downloads. Radarr still reports missing movies only where
+there is no complete download (Kung Fu Panda 2/3, Porco Rosso, The Hunger
+Games: Mockingjay Parts 1/2 and Sunrise on the Reaping) or the torrent is
+incomplete (`Alibi.com`, `Alibi.com 2`).
 
 Some old SeaweedFS EC volumes had corrupt metadata and could not be read; the
 rsync job logs those files and skips them. Re-download them through qBittorrent

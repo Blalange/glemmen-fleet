@@ -124,7 +124,7 @@ same cluster, but there is no off-site copy yet.
 
 Prometheus only retains the most recent metrics locally (15 GiB, see `retentionSize`). The Thanos side in `flux/monitoring/thanos/` uploads blocks to the `thanos` bucket in the Ceph RGW object store (`rook-ceph`), compacts and downsamples them, and exposes the history through a dedicated Grafana data source.
 
-The media stack uses a 2.3 TiB CephFS `ReadWriteMany` volume, `media-data-ceph`, mounted at `/data` by Jellyfin, Sonarr, Radarr and qBittorrent. It lives on the `fast-fs` class (`cephfs-fast`, RF2 on the CMR OSDs). The migration copied the qBittorrent downloads and the existing Hærry Pot movie; the rest of the media library will be re-imported/moved from `/data/downloads` by Radarr and Sonarr after the cutover. See `flux/apps/media/README.md`.
+The media stack uses a 2.3 TiB CephFS `ReadWriteMany` volume, `media-data-ceph`, mounted at `/data` by Jellyfin, Sonarr, Radarr and qBittorrent. It lives on the `fast-fs` class (`cephfs-fast`, RF2 on the CMR OSDs). The migration copied the qBittorrent downloads and the existing Hærry Pot movie; the rest of the media library was re-imported from `/data/downloads` by Radarr and Sonarr as hardlinks, so it is present under `/data/media` without duplicating Ceph data. The claim is at ~89% (267G free); move it to `bulk-fs` when glemmen80 has its disks. See `flux/apps/media/README.md`.
 
 Ceph RGW is exposed in-cluster at `rook-ceph-rgw-fast.rook-ceph.svc.cluster.local:80`. The `thanos` and `loki` buckets and their users are managed by Rook; the access keys are copied into the hand-created `thanos-objstore-config` and `loki-s3` Secrets in `monitoring`, not stored in Git.
 

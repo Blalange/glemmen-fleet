@@ -3,9 +3,10 @@
 # The media data lives on the CephFS fast tier. CephFS supports ReadWriteMany
 # and maps the volume root to the fsGroup (1000) used by Jellyfin, the
 # LinuxServer *arr apps and qBittorrent. The migration copied the qBittorrent
-# downloads and the existing Hærry Pot movie; the rest of the library is
-# re-imported/moved from `/data/downloads` by Radarr and Sonarr. Move the claim
-# to `bulk-fs` when glemmen80 has its 24×12 TB disks.
+# downloads and the existing Hærry Pot movie; the rest of the library was
+# re-imported from `/data/downloads` by Radarr and Sonarr as hardlinks, so
+# downloads and media share the same data. Move the claim to `bulk-fs` when
+# glemmen80 has its 24×12 TB disks.
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:

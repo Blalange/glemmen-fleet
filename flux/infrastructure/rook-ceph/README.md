@@ -18,7 +18,8 @@ cluster.
   application config volumes, the qBittorrent downloads and the Hærry Pot
   movie, Minecraft Radar, Frigate config/recordings, WebODM database/media,
   Energisjappa data/PostgreSQL, NetBox PostgreSQL/media, and all monitoring
-  volumes. Radarr/Sonarr re-import the media library from the downloads.
+  volumes. Radarr/Sonarr re-import the media library from the downloads as
+  hardlinks, so the downloads and the media directory share the same data.
 - NetBox media was copied to CephFS and NetBox now uses `netbox-media-ceph` and
   `netbox-postgres-ceph`; the old claims have been removed.
 - Prometheus and Alertmanager were copied with a single PV-rebind pass, so their

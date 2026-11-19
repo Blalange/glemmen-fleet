@@ -176,8 +176,9 @@ same.
 the privileged `media` namespace. The apps share one CephFS `ReadWriteMany`
 volume at `/data` (`media-data-ceph`, `fast-fs`, 2300Gi) with `downloads/`,
 `media/movies/` and `media/tv/`. The migration copied the qBittorrent downloads
-and the existing Hærry Pot movie; the rest of the library is re-imported/moved
-from `/data/downloads` by Radarr and Sonarr. Move the claim to `bulk-fs` when
+and the existing Hærry Pot movie; the rest of the library was re-imported from
+`/data/downloads` by Radarr and Sonarr as hardlinks, so it is present under
+`/data/media` without duplicating Ceph data. Move the claim to `bulk-fs` when
 glemmen80 has its disks. See [`apps/media/README.md`](../apps/media/README.md)
 for the secrets, CephFS migration, Authentik provider setup and first-run
 steps.
