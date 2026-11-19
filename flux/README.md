@@ -106,6 +106,15 @@ kubectl get pods -n gpu-operator
 kubectl get node glemmen250 -o jsonpath='{.status.allocatable.nvidia\.com/gpu}'
 ```
 
+Jellyfin requests **both** GPUs (`nvidia.com/gpu: 2`). With the 595.91.07
+driver in the Talos v1.14.5 GPU extension, NVENC/NVDEC initialization fails
+with `CUDA_ERROR_NO_DEVICE` when a container sees only some of the host's GPUs;
+CUDA compute and `nvidia-smi` still work. Passing both GPUs is the workaround
+until Talos ships the 610.x driver series, where the bug is fixed
+(`NVIDIA/nvidia-container-toolkit#1249`,
+`NVIDIA/k8s-device-plugin#1282`). Revert Jellyfin to one GPU after that
+upgrade.
+
 The operator's DCGM exporter ServiceMonitor is picked up by the cluster
 Prometheus. Driver versions are tied to the Talos release; when upgrading
 Talos, rebuild the schematic and roll the installer image (see

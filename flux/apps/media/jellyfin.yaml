@@ -86,7 +86,11 @@ spec:
               memory: 512Mi
             limits:
               memory: 4Gi
-              nvidia.com/gpu: 1
+              # NVIDIA drivers 570-595 fail NVENC/NVDEC in a container that
+              # sees only a subset of the host's GPUs (cuvidGetDecoderCaps ->
+              # CUDA_ERROR_NO_DEVICE). glemmen250 has two GPUs, so reserve
+              # both until Talos ships the 610+ driver with the fix.
+              nvidia.com/gpu: 2
           securityContext:
             allowPrivilegeEscalation: false
             capabilities:
