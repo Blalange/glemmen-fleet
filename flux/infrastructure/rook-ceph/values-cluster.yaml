@@ -17,7 +17,7 @@
 #   glemmen160: /dev/disk/by-partlabel/r-nvme-osd
 #
 # Deferred deliberately:
-#   - glemmen60 8 TB disk, the glemmen80 1 TB disks, and the SMR disks on
+#   - the glemmen80 1 TB disks and the SMR disks on
 #     glemmen130/150/160/170 are unmounted and not yet used by Ceph.
 #   - bulk-rbd/bulk-fs and the bulk RGW pools: glemmen80 has not received the
 #     24x12TB disks or the external SAS HBA yet. The fast RGW below is live.
@@ -98,6 +98,23 @@ cephClusterSpec:
     useAllNodes: false
     useAllDevices: false
     nodes:
+      - name: glemmen60
+        devices:
+          - name: /dev/disk/by-id/wwn-0x6b8ca3a0f77e3f003291bffdae6cda20
+            config:
+              deviceClass: cmr
+          - name: /dev/disk/by-id/wwn-0x6b8ca3a0f77e3f003291bffdae756f8f
+            config:
+              deviceClass: cmr
+          - name: /dev/disk/by-id/wwn-0x6b8ca3a0f77e3f003291bffeae7ee88b
+            config:
+              deviceClass: cmr
+          - name: /dev/disk/by-id/wwn-0x6b8ca3a0f77e3f003291bfffae88ae35
+            config:
+              deviceClass: cmr
+          - name: /dev/disk/by-id/wwn-0x6b8ca3a0f77e3f003291bfffae92d1d5
+            config:
+              deviceClass: cmr
       - name: glemmen130
         devices:
           - name: /dev/disk/by-id/wwn-0x5000c500f266aba4
@@ -222,8 +239,8 @@ cephBlockPools:
     storageClass:
       enabled: false
 
-# NVMe block tier. The NVMe OSDs are the raw partitions on the control-plane
-# nodes and glemmen250.
+  # NVMe block tier. The NVMe OSDs are the raw partitions on the control-plane
+  # nodes and glemmen250.
   - name: nvme-rbd
     spec:
       failureDomain: host
