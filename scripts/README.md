@@ -72,6 +72,41 @@ PV does not delete the backing RBD image or CephFS subvolume. Remove the
 leftover PV (and, if desired, the underlying image/subvolume) when it is no
 longer needed for rollback.
 
+## CephFS
+
+`mount-cephfs.py` mounts the cluster's CephFS on the local machine. It reads
+the monitor endpoints, FSID and `rook-csi-cephfs-node` key from the live
+cluster, so the host must reach the server VLAN (`192.168.6.0/24`) and have the
+Ceph client tools installed (`ceph` on Arch; `ceph-common` plus `ceph-fuse` on
+Debian/Ubuntu/Fedora).
+
+The kernel client (`mount.ceph`) requires root and has the best performance.
+The userspace client (`ceph-fuse`) runs as a normal user; it needs `/dev/fuse`
+and `fuse3`. The script selects `ceph-fuse` automatically when it is not run
+as root, or when `--fuse` is passed.
+
+```sh
+# kernel client (root)
+sudo ./scripts/mount-cephfs.py /mnt/cephfs
+sudo ./scripts/mount-cephfs.py --pvc media-data-ceph -n media /mnt/media
+
+# userspace client (normal user; --fuse is optional)
+./scripts/mount-cephfs.py --pvc media-data-ceph ~/media
+./scripts/mount-cephfs.py --fuse --read-only --subdir /volumes ~/ceph
+
+./scripts/mount-cephfs.py --status /mnt/cephfs
+sudo ./scripts/mount-cephfs.py --unmount /mnt/cephfs
+./scripts/mount-cephfs.py --unmount ~/media
+./scripts/mount-cephfs.py --print /mnt/cephfs     # show the command; no mount
+```
+
+`--pvc` resolves the claim's PV and mounts its CephFS `subvolumePath`
+directly, so `/mnt/media` is the same tree Jellyfin sees at `/data`. The
+default namespace is `media`. Use `--kubeconfig`/`--kubectl` to override the
+defaults from `talos/generated/kubeconfig` and `scripts/bin/kubectl`, and
+repeat `-o` for extra mount options. The CSI key is written to a mode-600
+temporary file and deleted after the mount.
+
 ## Talos
 
 ```sh
