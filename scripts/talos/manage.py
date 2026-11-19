@@ -24,6 +24,7 @@ Day-2 operations:
   dmesg <node>                     Show the kernel log
   links <node>                     List network links (names, MACs)
   disks <node>                     List disks (for disk selectors)
+  partitions <node>                List partitions (discovered volumes)
   mounts <node>                    Show user-volume mount status
   roles                            Label nodes: control planes get all roles,
                                    workers get the worker role only
@@ -39,6 +40,12 @@ Day-2 operations:
   netbird [node...]                Re-render and apply the Netbird config
   vip on|off [node...]             Add/remove the Layer2 VIP on the control planes
 
+Debugging:
+  debug [preset|image] [cmd...]    Create a temporary privileged debug pod on a
+                                   node and optionally attach a shell. Docker-
+                                   style flags: --rm, --it, --remove-orphans.
+                                   --list shows the pod presets.
+
 Maintenance and upgrades:
   etcd [members|status|snapshot] [path]   etcd membership, health and snapshots
   wipe <node> <disk>               Wipe a disk (e.g. /dev/sdb), removing old partitions
@@ -47,7 +54,7 @@ Maintenance and upgrades:
   upgrade-talos [version]          Upgrade Talos (default: TALOS_VERSION)
 
 Commands that access a node in maintenance mode accept --insecure (links, disks,
-mounts, services, logs, dmesg, wipe). Talos settings are read from
+partitions, mounts, services, logs, dmesg, wipe). Talos settings are read from
 talos/settings.env; TALOSCTL, KUBECTL, TALOSCONFIG, KUBECONFIG and
 TALOS_ENDPOINTS can be overridden in the environment. TALOS_ENDPOINTS is a
 comma-separated list and defaults to the control-plane addresses (workers cannot
@@ -58,8 +65,10 @@ from __future__ import annotations
 
 import argparse
 import contextlib
+import json
 import os
 import re
+import secrets
 import shlex
 import shutil
 import signal
@@ -101,6 +110,86 @@ class Node:
     address: str
 
 
+@dataclass(frozen=True)
+class DebugPreset:
+    image: str
+    shell: str
+    description: str
+
+
+# Keep the images on stable tags so repeated debug sessions are reproducible.
+# `--list` prints this table; any other image can be passed positionally or with
+# --image.
+DEBUG_PRESETS: dict[str, DebugPreset] = {
+    "netshoot": DebugPreset(
+        "docker.io/nicolaka/netshoot:latest",
+        "bash",
+        "network troubleshooting (tcpdump, dig, iperf3, ss, ...)",
+    ),
+    "debian": DebugPreset(
+        "docker.io/library/debian:stable-slim",
+        "bash",
+        "Debian with apt for installing packages",
+    ),
+    "ubuntu": DebugPreset(
+        "docker.io/library/ubuntu:24.04",
+        "bash",
+        "Ubuntu LTS with apt for installing packages",
+    ),
+    "alpine": DebugPreset(
+        "docker.io/library/alpine:3",
+        "sh",
+        "small Alpine Linux with BusyBox tools",
+    ),
+    "busybox": DebugPreset(
+        "docker.io/library/busybox:latest",
+        "sh",
+        "tiny BusyBox shell and utilities",
+    ),
+    "curl": DebugPreset(
+        "docker.io/curlimages/curl:latest",
+        "sh",
+        "curl and a small shell for HTTP debugging",
+    ),
+    "python": DebugPreset(
+        "docker.io/library/python:3.13-slim",
+        "bash",
+        "Python REPL and pip",
+    ),
+    "postgres": DebugPreset(
+        "docker.io/library/postgres:17",
+        "bash",
+        "psql client for PostgreSQL",
+    ),
+    "redis": DebugPreset(
+        "docker.io/library/redis:7",
+        "sh",
+        "redis-cli client",
+    ),
+    "cuda": DebugPreset(
+        "docker.io/nvidia/cuda:12.8.1-base-ubuntu24.04",
+        "bash",
+        "CUDA runtime; combine with --gpu on a GPU node",
+    ),
+    "kubectl": DebugPreset(
+        "docker.io/bitnami/kubectl:latest",
+        "bash",
+        "kubectl for API debugging; combine with --service-account",
+    ),
+}
+
+DEBUG_NAMESPACE = "debug"
+DEBUG_LABEL_SELECTOR = (
+    "app.kubernetes.io/managed-by=talos-manage,"
+    "app.kubernetes.io/component=debug-pod"
+)
+DNS_LABEL_RE = re.compile(r"^[a-z0-9]([-a-z0-9]*[a-z0-9])?$")
+DNS_SUBDOMAIN_RE = re.compile(
+    r"^[a-z0-9]([-a-z0-9]*[a-z0-9])?"
+    r"(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$"
+)
+
+
 def die(message: str, code: int = 1) -> None:
     sys.stdout.flush()
     print(f"ERROR: {message}", file=sys.stderr)
@@ -110,6 +199,20 @@ def die(message: str, code: int = 1) -> None:
 def warn(message: str) -> None:
     sys.stdout.flush()
     print(f"WARNING: {message}", file=sys.stderr)
+
+
+def print_table(headers: list[str], rows: list[list[str]]) -> None:
+    """Print a simple left-aligned table (talosctl/kubectl style)."""
+    widths = [len(header) for header in headers]
+    for row in rows:
+        for index, cell in enumerate(row):
+            widths[index] = max(widths[index], len(cell))
+
+    print("  ".join(header.ljust(widths[index])
+                    for index, header in enumerate(headers)).rstrip())
+    for row in rows:
+        print("  ".join(cell.ljust(widths[index])
+                        for index, cell in enumerate(row)).rstrip())
 
 
 def load_env_file(path: Path) -> dict[str, str]:
@@ -267,6 +370,7 @@ def run(
     capture: bool = False,
     quiet: bool = False,
     timeout: float | None = None,
+    input_text: str | None = None,
 ) -> subprocess.CompletedProcess[str]:
     argv = [str(part) for part in cmd]
     # Keep our own progress messages in order with the child's output.
@@ -279,6 +383,7 @@ def run(
             text=True,
             capture_output=capture,
             timeout=timeout,
+            input=input_text,
         )
     except FileNotFoundError:
         die(f"command not found: {argv[0]}")
@@ -780,6 +885,82 @@ def cmd_disks(args: argparse.Namespace) -> int:
     return _get_resource(args, "disks")
 
 
+def parse_json_documents(raw: str) -> list[dict]:
+    """Parse concatenated JSON documents (talosctl -o json output)."""
+    decoder = json.JSONDecoder()
+    documents: list[dict] = []
+    index = 0
+
+    while True:
+        while index < len(raw) and raw[index].isspace():
+            index += 1
+        if index >= len(raw):
+            break
+        try:
+            document, index = decoder.raw_decode(raw, index)
+        except json.JSONDecodeError as exc:
+            die(f"cannot parse talosctl JSON output: {exc}")
+
+        if isinstance(document, list):
+            documents.extend(item for item in document if isinstance(item, dict))
+        elif isinstance(document, dict):
+            documents.append(document)
+
+    return documents
+
+
+def cmd_partitions(args: argparse.Namespace) -> int:
+    node = resolve_node(args.node)
+    cmd: list[str | Path] = ["get", "discoveredvolumes", "-o", "json"]
+    if args.insecure:
+        cmd.append("--insecure")
+
+    result = run_talos(cmd, nodes=node, capture=True)
+    partitions: list[tuple[str, int, list[str]]] = []
+    for document in parse_json_documents(result.stdout):
+        spec = document.get("spec")
+        if not isinstance(spec, dict) or spec.get("type") != "partition":
+            continue
+
+        metadata = document.get("metadata")
+        if not isinstance(metadata, dict):
+            metadata = {}
+        partition_id = str(metadata.get("id", ""))
+        parent = str(spec.get("parent", "") or "-")
+        size = str(spec.get("pretty_size", "") or spec.get("size", "") or "-")
+        filesystem = str(spec.get("name", "") or "-")
+        label = str(spec.get("label", "") or "-")
+        partition_label = str(spec.get("partition_label", "") or "-")
+        partition_index = int(spec.get("partition_index") or 0)
+
+        partitions.append(
+            (
+                parent,
+                partition_index,
+                [
+                    partition_id,
+                    parent,
+                    size,
+                    filesystem,
+                    label,
+                    partition_label,
+                ],
+            )
+        )
+
+    if not partitions:
+        print(f"==> No partitions found on {node.name} ({node.address})")
+        return 0
+
+    partitions.sort(key=lambda item: (item[0], item[1], item[2][0]))
+    print(f"==> Partitions on {node.name} ({node.address})")
+    print_table(
+        ["PARTITION", "DISK", "SIZE", "FILESYSTEM", "LABEL", "PARTITION LABEL"],
+        [item[2] for item in partitions],
+    )
+    return 0
+
+
 def cmd_mounts(args: argparse.Namespace) -> int:
     return _get_resource(args, "mountstatus")
 
@@ -840,6 +1021,572 @@ def cmd_roles(_args: argparse.Namespace) -> int:
                 quiet=True,
             )
     return 0
+
+
+def parse_mount_spec(raw: str, kind: str) -> tuple[str, str, bool]:
+    """Parse NAME[:PATH[:ro|rw]] for a debug-pod volume."""
+    parts = raw.split(":")
+    if len(parts) == 1:
+        name = parts[0]
+        path = name if kind == "hostpath" else f"/mnt/{name}"
+        read_only = False
+    elif len(parts) == 2:
+        name, second = parts
+        if second in ("ro", "rw"):
+            path = name if kind == "hostpath" else f"/mnt/{name}"
+            read_only = second == "ro"
+        else:
+            path = second
+            read_only = False
+    elif len(parts) == 3:
+        name, path, mode = parts
+        if mode not in ("ro", "rw"):
+            die(
+                f"invalid {kind} mount mode {mode!r} "
+                f"(expected 'ro' or 'rw'): {raw!r}"
+            )
+        read_only = mode == "ro"
+    else:
+        die(f"invalid {kind} mount {raw!r} (expected NAME[:PATH[:ro|rw]])")
+
+    if not name:
+        die(f"invalid {kind} mount {raw!r}: name is empty")
+    if kind == "hostpath":
+        if not name.startswith("/"):
+            die(f"invalid host path {name!r} (must be absolute)")
+    elif not DNS_SUBDOMAIN_RE.fullmatch(name):
+        die(f"invalid {kind} name {name!r} (use a lowercase DNS name)")
+    if not path.startswith("/"):
+        die(f"invalid {kind} mount path {path!r} (must be absolute)")
+
+    return name, path, read_only
+
+
+def parse_env(raw: str) -> tuple[str, str]:
+    """Parse KEY=VALUE, or copy KEY from the local environment."""
+    key, separator, value = raw.partition("=")
+    key = key.strip()
+    if not re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*", key):
+        die(f"invalid environment variable name {key!r}")
+
+    if not separator:
+        if key not in os.environ:
+            die(
+                f"environment variable {key} is not set locally "
+                f"(use {key}=VALUE)"
+            )
+        value = os.environ[key]
+
+    return key, value
+
+
+def normalize_capability(raw: str) -> str:
+    capability = raw.strip().upper()
+    if capability.startswith("CAP_"):
+        capability = capability[len("CAP_") :]
+    if not re.fullmatch(r"[A-Z0-9_]+", capability):
+        die(f"invalid capability {raw!r}")
+    return capability
+
+
+def validate_pod_name(name: str) -> str:
+    if len(name) > 253 or not DNS_SUBDOMAIN_RE.fullmatch(name):
+        die(
+            f"invalid pod name {name!r} "
+            "(use lowercase DNS labels, max 253 characters)"
+        )
+    return name
+
+
+def validate_namespace(namespace: str) -> str:
+    if len(namespace) > 63 or not DNS_LABEL_RE.fullmatch(namespace):
+        die(
+            f"invalid namespace {namespace!r} "
+            "(use a lowercase DNS label, max 63 characters)"
+        )
+    return namespace
+
+
+def debug_pod_name(image: str, preset_name: str | None) -> str:
+    if preset_name:
+        base = preset_name
+    else:
+        base = image.split("@", 1)[0].rsplit("/", 1)[-1].split(":", 1)[0]
+    base = re.sub(r"[^a-z0-9-]+", "-", base.lower()).strip("-")[:40] or "pod"
+    return f"debug-{base}-{secrets.token_hex(3)}"
+
+
+def get_namespace(namespace: str) -> dict | None:
+    result = run_kubectl(
+        ["get", "namespace", namespace, "--ignore-not-found", "-o", "json"],
+        capture=True,
+        check=False,
+        quiet=True,
+    )
+    if result.returncode != 0:
+        die(f"cannot read namespace {namespace}: {result.stderr.strip()}")
+
+    output = result.stdout.strip()
+    if not output:
+        return None
+
+    try:
+        data = json.loads(output)
+    except json.JSONDecodeError as exc:
+        die(f"cannot parse namespace {namespace} JSON: {exc}")
+    return data if isinstance(data, dict) else None
+
+
+def label_debug_namespace(namespace: str) -> None:
+    run_kubectl(
+        [
+            "label",
+            "namespace",
+            namespace,
+            "pod-security.kubernetes.io/enforce=privileged",
+            "pod-security.kubernetes.io/warn=privileged",
+            "pod-security.kubernetes.io/audit=privileged",
+            "--overwrite",
+        ]
+    )
+
+
+def ensure_debug_namespace(namespace: str, *, elevated: bool) -> None:
+    data = get_namespace(namespace)
+    if data is None:
+        print(f"==> Creating namespace {namespace}")
+        run_kubectl(["create", "namespace", namespace])
+        if elevated or namespace == DEBUG_NAMESPACE:
+            label_debug_namespace(namespace)
+        return
+
+    labels = (data.get("metadata") or {}).get("labels") or {}
+    enforce = str(labels.get("pod-security.kubernetes.io/enforce", "") or "")
+
+    if namespace == DEBUG_NAMESPACE:
+        if enforce != "privileged":
+            print(f"==> Labeling namespace {namespace} for privileged debug pods")
+            label_debug_namespace(namespace)
+        return
+
+    if not elevated:
+        return
+
+    if enforce and enforce != "privileged":
+        die(
+            f"namespace {namespace} enforces Pod Security {enforce!r}; "
+            "privileged or host-namespace debug pods would be rejected. "
+            "Use --namespace debug (privileged by default), label the namespace "
+            "pod-security.kubernetes.io/enforce=privileged, or pass --no-privileged."
+        )
+    if not enforce:
+        warn(
+            f"namespace {namespace} has no pod-security.kubernetes.io/enforce "
+            "label; the cluster default may reject privileged debug pods"
+        )
+
+
+def resource_exists(kind: str, name: str, namespace: str | None = None) -> bool:
+    cmd = ["get", kind, name]
+    if namespace:
+        cmd.extend(["-n", namespace])
+    cmd.extend(["--ignore-not-found", "-o", "name"])
+
+    result = run_kubectl(cmd, capture=True, check=False, quiet=True)
+    if result.returncode != 0:
+        location = f" in namespace {namespace}" if namespace else ""
+        die(f"cannot read {kind} {name}{location}: {result.stderr.strip()}")
+    return bool(result.stdout.strip())
+
+
+def remove_orphaned_debug_pods(namespace: str) -> None:
+    result = run_kubectl(
+        ["get", "pods", "-n", namespace, "-l", DEBUG_LABEL_SELECTOR, "-o", "name"],
+        capture=True,
+        check=False,
+        quiet=True,
+    )
+    if result.returncode != 0:
+        die(
+            f"cannot list debug pods in namespace {namespace}: "
+            f"{result.stderr.strip()}"
+        )
+
+    pods = [line.strip() for line in result.stdout.splitlines() if line.strip()]
+    if not pods:
+        print(f"==> No orphaned debug pods in namespace {namespace}")
+        return
+
+    print(f"==> Removing {len(pods)} orphaned debug pod(s) in namespace {namespace}")
+    for pod in pods:
+        print(f"    {pod.removeprefix('pod/')}")
+    run_kubectl(
+        ["delete", "-n", namespace, *pods, "--ignore-not-found", "--wait=false"]
+    )
+
+
+def delete_debug_pod(namespace: str, name: str) -> None:
+    print(f"==> Deleting pod {name}")
+    result = run_kubectl(
+        ["delete", "pod", name, "-n", namespace, "--ignore-not-found", "--wait=false"],
+        capture=True,
+        check=False,
+        quiet=True,
+    )
+    if result.returncode != 0:
+        warn(f"could not delete pod {name}: {result.stderr.strip()}")
+
+
+def wait_for_debug_pod(namespace: str, name: str, timeout: float) -> None:
+    seconds = max(1, int(timeout))
+    result = run_kubectl(
+        [
+            "wait",
+            "--for=condition=Ready",
+            "pod",
+            name,
+            "-n",
+            namespace,
+            f"--timeout={seconds}s",
+        ],
+        capture=True,
+        check=False,
+        quiet=True,
+    )
+    if result.returncode == 0:
+        return
+
+    if result.stderr.strip():
+        print(result.stderr.rstrip(), file=sys.stderr)
+    run_kubectl(["describe", "pod", name, "-n", namespace], check=False)
+
+    logs = run_kubectl(
+        ["logs", name, "-n", namespace, "--tail=50"],
+        capture=True,
+        check=False,
+        quiet=True,
+    )
+    if logs.stdout.strip():
+        print(logs.stdout.rstrip())
+    if logs.stderr.strip():
+        print(logs.stderr.rstrip(), file=sys.stderr)
+
+    die(f"pod {name} did not become ready within {seconds}s")
+
+
+def cmd_debug(args: argparse.Namespace) -> int:
+    if args.list:
+        rows = [
+            [name, preset.image, preset.description]
+            for name, preset in sorted(DEBUG_PRESETS.items())
+        ]
+        print_table(["PRESET", "IMAGE", "DESCRIPTION"], rows)
+        print()
+        print("Use any container image as the positional argument or with --image.")
+        return 0
+
+    if args.image:
+        # With --image the image is explicit, so positional arguments are the
+        # command even though argparse assigns the first one to `target`.
+        command = ([args.target] if args.target else []) + list(args.command or [])
+        image = args.image
+        preset = None
+        preset_name = None
+    else:
+        target = args.target or "netshoot"
+        preset = DEBUG_PRESETS.get(target)
+        preset_name = target if preset else None
+        image = preset.image if preset else target
+        command = list(args.command or [])
+        if not preset:
+            print(
+                f"==> Using image {image} (not a preset; --list shows presets)",
+                file=sys.stderr,
+            )
+
+    namespace = validate_namespace(args.namespace)
+    if args.service_account and not DNS_SUBDOMAIN_RE.fullmatch(
+        args.service_account
+    ):
+        die(
+            f"invalid service account name {args.service_account!r} "
+            "(use a lowercase DNS name)"
+        )
+    name = (
+        validate_pod_name(args.name)
+        if args.name
+        else debug_pod_name(image, preset_name)
+    )
+    node_name = resolve_node(args.node).name if args.node else None
+
+    if args.it:
+        args.interactive = True
+        args.tty = True
+    interactive = bool(args.interactive)
+    tty = bool(args.tty)
+
+    explicit_detach = bool(args.detach)
+    detach = explicit_detach
+    if not detach and not interactive and not command and not tty:
+        if sys.stdin.isatty():
+            interactive = True
+            tty = True
+            print(
+                "==> No command given; attaching an interactive shell "
+                "(use --detach to only create the pod)",
+                file=sys.stderr,
+            )
+        else:
+            detach = True
+
+    if detach:
+        if args.rm:
+            if explicit_detach:
+                die("--rm cannot be combined with --detach (the pod is left running)")
+            die(
+                "no command given and stdin is not a TTY; provide a command "
+                "or use --detach (without --rm)"
+            )
+        if interactive or tty:
+            die("--detach cannot be combined with -i/-t/--it")
+        if command:
+            die("--detach cannot be combined with a command")
+    if tty and not interactive and not command:
+        die("-t/--tty without -i/--interactive cannot attach a shell; use --it")
+    if tty and not interactive:
+        warn("allocating a TTY without --interactive; stdin will not be attached")
+
+    mounts: list[tuple[str, str, str, bool]] = []
+    for kind, values in (
+        ("pvc", args.pvc),
+        ("hostpath", args.host_path),
+        ("configmap", args.configmap),
+        ("secret", args.secret),
+    ):
+        for raw in values or []:
+            mounts.append((kind, *parse_mount_spec(raw, kind)))
+
+    env_values: dict[str, str] = {}
+    for raw in args.env or []:
+        key, value = parse_env(raw)
+        env_values[key] = value
+
+    cap_add = [normalize_capability(cap) for cap in args.cap_add or []]
+    cap_drop = [normalize_capability(cap) for cap in args.cap_drop or []]
+
+    elevated = (
+        not args.no_privileged
+        or args.host_network
+        or args.host_pid
+        or args.host_ipc
+        or bool(args.host_path)
+        or any(cap != "NET_BIND_SERVICE" for cap in cap_add)
+    )
+
+    security_context: dict[str, object] = {}
+    if not args.no_privileged:
+        security_context.update(
+            {
+                "privileged": True,
+                "runAsUser": 0,
+                "runAsGroup": 0,
+                "runAsNonRoot": False,
+                "seccompProfile": {"type": "Unconfined"},
+            }
+        )
+    if cap_add or cap_drop:
+        capabilities: dict[str, list[str]] = {}
+        if cap_add:
+            capabilities["add"] = cap_add
+        if cap_drop:
+            capabilities["drop"] = cap_drop
+        security_context["capabilities"] = capabilities
+
+    container: dict[str, object] = {
+        "name": "debug",
+        "image": image,
+        "imagePullPolicy": args.image_pull_policy,
+        "command": ["sleep", "infinity"],
+    }
+    if security_context:
+        container["securityContext"] = security_context
+    if env_values:
+        container["env"] = [
+            {"name": key, "value": value} for key, value in env_values.items()
+        ]
+    if args.gpu:
+        container["resources"] = {
+            "limits": {"nvidia.com/gpu": str(args.gpu)},
+            "requests": {"nvidia.com/gpu": str(args.gpu)},
+        }
+
+    volume_mounts: list[dict[str, object]] = []
+    volumes: list[dict[str, object]] = []
+    for kind, resource_name, mount_path, read_only in mounts:
+        volume_name = f"{kind}-{len(volumes)}"
+        volume_mounts.append(
+            {
+                "name": volume_name,
+                "mountPath": mount_path,
+                "readOnly": read_only,
+            }
+        )
+        if kind == "pvc":
+            volumes.append(
+                {
+                    "name": volume_name,
+                    "persistentVolumeClaim": {"claimName": resource_name},
+                }
+            )
+        elif kind == "hostpath":
+            volumes.append(
+                {"name": volume_name, "hostPath": {"path": resource_name}}
+            )
+        elif kind == "configmap":
+            volumes.append(
+                {"name": volume_name, "configMap": {"name": resource_name}}
+            )
+        else:
+            volumes.append(
+                {"name": volume_name, "secret": {"secretName": resource_name}}
+            )
+    if volume_mounts:
+        container["volumeMounts"] = volume_mounts
+
+    spec: dict[str, object] = {
+        "restartPolicy": "Never",
+        "terminationGracePeriodSeconds": 0,
+        "enableServiceLinks": False,
+        "containers": [container],
+        # Harmless when nodeName is set; useful if the pod is scheduled.
+        "tolerations": [
+            {
+                "key": "node-role.kubernetes.io/control-plane",
+                "operator": "Exists",
+                "effect": "NoSchedule",
+            },
+            {
+                "key": "node-role.kubernetes.io/master",
+                "operator": "Exists",
+                "effect": "NoSchedule",
+            },
+        ],
+    }
+    if volumes:
+        spec["volumes"] = volumes
+    if node_name:
+        spec["nodeName"] = node_name
+    if args.host_network:
+        spec["hostNetwork"] = True
+        spec["dnsPolicy"] = "ClusterFirstWithHostNet"
+    if args.host_pid:
+        spec["hostPID"] = True
+    if args.host_ipc:
+        spec["hostIPC"] = True
+    if args.service_account:
+        spec["serviceAccountName"] = args.service_account
+        spec["automountServiceAccountToken"] = True
+    else:
+        spec["automountServiceAccountToken"] = False
+
+    manifest = {
+        "apiVersion": "v1",
+        "kind": "Pod",
+        "metadata": {
+            "name": name,
+            "namespace": namespace,
+            "labels": {
+                "app.kubernetes.io/managed-by": "talos-manage",
+                "app.kubernetes.io/component": "debug-pod",
+            },
+            "annotations": {
+                "talos.glemmen.no/debug-image": image,
+                "talos.glemmen.no/debug-created": datetime.now()
+                .astimezone()
+                .isoformat(timespec="seconds"),
+            },
+        },
+        "spec": spec,
+    }
+
+    if args.dry_run:
+        print(json.dumps(manifest, indent=2))
+        return 0
+
+    ensure_debug_namespace(namespace, elevated=elevated)
+    if args.remove_orphans:
+        remove_orphaned_debug_pods(namespace)
+
+    for kind, resource_name, _mount_path, _read_only in mounts:
+        if kind == "hostpath":
+            continue
+        if not resource_exists(kind, resource_name, namespace):
+            label = {
+                "pvc": "PersistentVolumeClaim",
+                "configmap": "ConfigMap",
+                "secret": "Secret",
+            }[kind]
+            die(
+                f"{label} {resource_name!r} not found in namespace {namespace} "
+                "(namespaced resources must be in the pod namespace)"
+            )
+    if args.service_account and not resource_exists(
+        "serviceaccount", args.service_account, namespace
+    ):
+        die(
+            f"ServiceAccount {args.service_account!r} not found in namespace "
+            f"{namespace}"
+        )
+    if node_name and not resource_exists("node", node_name):
+        known = ", ".join(node.name for node in NODES)
+        die(
+            f"node {node_name!r} is not registered in Kubernetes "
+            f"(known Talos nodes: {known})"
+        )
+
+    created = False
+    print_left_running_hint = True
+    try:
+        print(f"==> Creating pod {name} in namespace {namespace}")
+        if node_name:
+            print(f"    node: {node_name}")
+        print(f"    image: {image}")
+        run_kubectl(["create", "-f", "-"], input_text=json.dumps(manifest))
+        created = True
+        wait_for_debug_pod(namespace, name, args.timeout)
+        print(f"==> Pod {name} is ready")
+
+        if detach:
+            shell = args.shell or (preset.shell if preset else "sh")
+            print()
+            print("Exec into it with:")
+            print(f"  kubectl -n {namespace} exec -it {name} -- {shell}")
+            print("Delete it with:")
+            print(f"  kubectl -n {namespace} delete pod {name}")
+            print_left_running_hint = False
+            return 0
+
+        exec_command = command or [
+            args.shell or (preset.shell if preset else "sh")
+        ]
+        exec_flags: list[str] = []
+        if interactive:
+            exec_flags.append("-i")
+        if tty:
+            exec_flags.append("-t")
+
+        result = run_kubectl(
+            ["exec", *exec_flags, "-n", namespace, name, "--", *exec_command],
+            check=False,
+        )
+        return result.returncode
+    finally:
+        if created and args.rm:
+            delete_debug_pod(namespace, name)
+        elif created and print_left_running_hint:
+            print(file=sys.stderr)
+            print(f"==> Pod {name} left running; delete it with:", file=sys.stderr)
+            print(f"    kubectl -n {namespace} delete pod {name}", file=sys.stderr)
 
 
 def cmd_cordon(args: argparse.Namespace) -> int:
@@ -1129,6 +1876,16 @@ def positive_float(value: str) -> float:
     return number
 
 
+def positive_int(value: str) -> int:
+    try:
+        number = int(value)
+    except ValueError as exc:
+        raise argparse.ArgumentTypeError(f"not an integer: {value!r}") from exc
+    if number <= 0:
+        raise argparse.ArgumentTypeError("must be greater than zero")
+    return number
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="manage.py",
@@ -1238,6 +1995,7 @@ def build_parser() -> argparse.ArgumentParser:
     for name, func, resource in (
         ("links", cmd_links, "network links (names, MACs)"),
         ("disks", cmd_disks, "disks (for disk selectors)"),
+        ("partitions", cmd_partitions, "partitions (discovered volumes)"),
         ("mounts", cmd_mounts, "user-volume mount status"),
     ):
         p = add(name, func, f"List {resource} on a node")
@@ -1246,6 +2004,85 @@ def build_parser() -> argparse.ArgumentParser:
                        help="talk to a node in maintenance mode")
 
     add("roles", cmd_roles, "Label control-plane and worker nodes")
+
+    p = add(
+        "debug",
+        cmd_debug,
+        "Create a temporary privileged debug pod on a node",
+    )
+    p.add_argument(
+        "target",
+        nargs="?",
+        metavar="preset|image",
+        help="pod preset or container image (default: netshoot; --list shows presets)",
+    )
+    p.add_argument(
+        "command",
+        nargs="*",
+        metavar="command",
+        help="command to run in the pod (use -- before command flags)",
+    )
+    p.add_argument(
+        "--image", help="container image (alternative to the preset argument)"
+    )
+    p.add_argument("--list", action="store_true", help="list pod presets and exit")
+    p.add_argument("--node", help="schedule the pod on this node (name or IP)")
+    p.add_argument(
+        "--namespace",
+        default=DEBUG_NAMESPACE,
+        help=f"pod namespace (default: {DEBUG_NAMESPACE}; created privileged)",
+    )
+    p.add_argument("--name", help="pod name (default: debug-<preset>-<random>)")
+    p.add_argument(
+        "--shell",
+        help="shell used when no command is given (default: preset shell or sh)",
+    )
+    p.add_argument("-i", "--interactive", action="store_true",
+                   help="keep stdin attached (docker -i)")
+    p.add_argument("-t", "--tty", action="store_true",
+                   help="allocate a TTY (docker -t)")
+    p.add_argument("--it", action="store_true", help="shorthand for -i -t")
+    p.add_argument("--rm", action="store_true",
+                   help="delete the pod when the session or command ends")
+    p.add_argument("-d", "--detach", action="store_true",
+                   help="create the pod and print how to exec into it")
+    p.add_argument("--remove-orphans", action="store_true",
+                   help="delete leftover debug pods in the namespace first")
+    p.add_argument("--timeout", type=positive_float, default=120.0,
+                   help="seconds to wait for the pod to become ready (default: 120)")
+    p.add_argument("--dry-run", action="store_true",
+                   help="print the pod manifest as JSON and exit")
+
+    p.add_argument("--env", action="append", metavar="KEY[=VALUE]",
+                   help="environment variable (repeatable; KEY copies the local value)")
+    p.add_argument("--pvc", action="append", metavar="NAME[:PATH[:ro]]",
+                   help="mount a PersistentVolumeClaim (repeatable)")
+    p.add_argument("--host-path", action="append", metavar="HOST[:PATH[:ro]]",
+                   help="mount a path from the node (repeatable)")
+    p.add_argument("--configmap", action="append", metavar="NAME[:PATH[:ro]]",
+                   help="mount a ConfigMap (repeatable)")
+    p.add_argument("--secret", action="append", metavar="NAME[:PATH[:ro]]",
+                   help="mount a Secret (repeatable)")
+    p.add_argument("--host-network", action="store_true",
+                   help="use the node's network namespace")
+    p.add_argument("--host-pid", action="store_true",
+                   help="use the node's PID namespace")
+    p.add_argument("--host-ipc", action="store_true",
+                   help="use the node's IPC namespace")
+    p.add_argument("--no-privileged", action="store_true",
+                   help="do not run the container as privileged")
+    p.add_argument("--cap-add", action="append", metavar="CAP",
+                   help="add a Linux capability (repeatable)")
+    p.add_argument("--cap-drop", action="append", metavar="CAP",
+                   help="drop a Linux capability (repeatable)")
+    p.add_argument("--gpu", nargs="?", const=1, type=positive_int, default=0,
+                   metavar="N", help="request N NVIDIA GPUs (default when given: 1)")
+    p.add_argument("--service-account",
+                   help="run with this service account (mounts its token)")
+    p.add_argument("--image-pull-policy",
+                   choices=("Always", "IfNotPresent", "Never"),
+                   default="IfNotPresent",
+                   help="image pull policy (default: IfNotPresent)")
 
     p = add("cordon", cmd_cordon, "Mark Kubernetes nodes unschedulable")
     p.add_argument("nodes", nargs="+", metavar="node")

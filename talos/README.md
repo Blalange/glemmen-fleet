@@ -347,6 +347,7 @@ PXE assets per node and/or relocating the PXE server is a separate follow-up.
 ./scripts/talos/manage.py shutdown glemmen170    # graceful Talos shutdown (cordons/drains first)
 ./scripts/talos/manage.py links glemmen60        # interface names/MACs of a node
 ./scripts/talos/manage.py disks glemmen130       # disks for selectors
+./scripts/talos/manage.py partitions glemmen130  # partitions and filesystems per disk
 ./scripts/talos/manage.py mounts glemmen130      # user-volume mount status
 ./scripts/talos/manage.py logs glemmen130 etcd   # service logs (add -f to follow)
 ./scripts/talos/manage.py dmesg glemmen130       # kernel log
@@ -362,8 +363,8 @@ PXE assets per node and/or relocating the PXE server is a separate follow-up.
 `vip`, `netbird`, `apply-all`, `shutdown`, `reboot` and `upgrade-talos` default to
 the node table (VIP uses the control planes only). Node arguments accept names,
 addresses and comma-separated lists. Commands that access a node before its
-config is applied (`links`, `disks`, `mounts`, `services`, `logs`, `dmesg`,
-`wipe`) accept `--insecure`; `apply <config-name> <address>` (or `--config`)
+config is applied (`links`, `disks`, `partitions`, `mounts`, `services`, `logs`,
+`dmesg`, `wipe`) accept `--insecure`; `apply <config-name> <address>` (or `--config`)
 handles a maintenance-mode address that is not in the node table.
 
 `scripts/talos/manage.py` prefers the pinned `scripts/bin/talosctl` (matching
@@ -378,6 +379,58 @@ endpoint list.
 Patches are applied live (network/VIP changes are immediate, kubelet changes
 need a reboot). `talosctl` can be used directly with
 `TALOSCONFIG=talos/generated/talosconfig`.
+
+### Debug pods
+
+`debug` creates a temporary privileged pod that runs `sleep infinity`, waits
+for it to become ready, and then runs a command in it with `kubectl exec`. With
+no command it attaches an interactive shell when stdin is a TTY; otherwise it
+leaves the pod running (or fails when `--rm` was requested).
+
+```sh
+./scripts/talos/manage.py debug --list                 # presets and images
+./scripts/talos/manage.py debug --node glemmen60       # netshoot shell on a node
+./scripts/talos/manage.py debug debian --rm            # Debian shell, deleted on exit
+./scripts/talos/manage.py debug alpine --rm -- sh -c 'ip addr; nslookup kubernetes'
+./scripts/talos/manage.py debug --image ghcr.io/org/tool:tag --rm -- tool --version
+./scripts/talos/manage.py debug cuda --gpu --node glemmen170 --rm -- nvidia-smi
+```
+
+Presets are `netshoot`, `debian`, `ubuntu`, `alpine`, `busybox`, `curl`,
+`python`, `postgres`, `redis`, `cuda` and `kubectl`. The positional argument
+is either a preset name or a container image; use `--image` to make an image
+explicit (for example when its name matches a preset).
+
+Docker-style flags: `--rm` deletes the pod after the command or session,
+`-i`/`-t`/`--it` control stdin and TTY attachment (the default for an
+interactive shell), `-d`/`--detach` only creates the pod and prints the
+`exec`/`delete` commands, and `--remove-orphans` deletes leftover managed debug
+pods in the namespace first. `--name`, `--namespace` and `--timeout` override
+the generated name, the default `debug` namespace and the readiness timeout.
+
+Advanced configuration (all mount flags are repeatable):
+
+* `--pvc NAME[:PATH[:ro]]` mounts a PersistentVolumeClaim at `/mnt/NAME` by
+  default. `--host-path HOST[:PATH[:ro]]`, `--configmap NAME[:PATH[:ro]]` and
+  `--secret NAME[:PATH[:ro]]` work the same way; host paths default to the
+  same path. Namespaced resources must exist in the pod namespace.
+* `--env KEY[=VALUE]` sets environment variables; a bare `KEY` copies the
+  local value.
+* `--host-network`, `--host-pid` and `--host-ipc` join the node's namespaces.
+* The container is privileged, runs as root and uses an unconfined seccomp
+  profile by default. `--no-privileged`, `--cap-add CAP` and `--cap-drop CAP`
+  adjust that.
+* `--gpu [N]` requests NVIDIA GPUs (use with the `cuda` preset), and
+  `--service-account NAME` mounts that account's token.
+* `--shell` overrides the shell used when no command is given,
+  `--image-pull-policy` sets the pull policy, and `--dry-run` prints the pod
+  manifest as JSON without contacting the cluster.
+
+Pods are labeled `app.kubernetes.io/managed-by=talos-manage` and
+`app.kubernetes.io/component=debug-pod`. The namespace is created with
+privileged Pod Security Admission labels when necessary. Placement uses
+`spec.nodeName`, so cordoned and tainted nodes (including control planes) can
+be targeted; control-plane tolerations are included.
 
 ### NetBird and Calico
 

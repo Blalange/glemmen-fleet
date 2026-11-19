@@ -80,8 +80,12 @@ longer needed for rollback.
 ./scripts/talos/gen-config.py                # secrets + machine configs + talosconfig
 ./scripts/talos/gen-pxe.py                   # render the PXE iPXE boot script
 ./scripts/talos/manage.py update <node>      # apply regenerated config to a running node
+./scripts/talos/manage.py debug --node <node>  # temporary privileged debug pod
 ./scripts/talos/manage.py <command>          # other day-2 operations
 ```
+
+`manage.py debug` supports presets, custom images, `--rm`/`--it`/`--detach`,
+PVC and host-path mounts, and more; see `talos/README.md` for details.
 
 `gen-config.py`, `gen-iso.py`, `gen-pxe.py`, `setup-images.py` and
 `check-network-config.py` need PyYAML (`python3 -m pip install pyyaml`).
