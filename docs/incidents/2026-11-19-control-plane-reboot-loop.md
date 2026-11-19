@@ -3,7 +3,7 @@
 **Incident date:** 2026-11-18 / 2026-11-19  
 **Report date:** 2026-11-19  
 **Severity:** SEV-1 (full Kubernetes API and Ceph data-plane outage)  
-**Status:** Resolved; permanent image fix still pending  
+**Status:** Resolved; image split implemented and rolled out; PXE relocation still pending  
 **Affected systems:** `glemmen130`, `glemmen150`, `glemmen160`, `glemmen170`, `glemmen180` (Talos control planes and Ceph OSD hosts), Kubernetes API, etcd, Ceph, all workloads that depend on the API or Ceph
 
 ---
@@ -20,7 +20,7 @@ The five control-plane nodes entered a **graceful reboot loop every ~72 minutes*
 
 The first reboot loop started on 2026-11-18 at 21:53 UTC, immediately after the control planes were booted from the new image. By 2026-11-19 02:42 UTC all five control planes had booted at least once since the loop began, but each was stuck in the NVIDIA boot-sequence wait; none reached `running`. The in-cluster PXE server was on a control-plane node and was no longer available, so any node that timed out and rebooted could not PXE-boot. The cluster was restored between 11:06 and 11:55 UTC after using iDRAC one-time PXE boot and a temporary PXE server on a worker node.
 
-There is **no evidence of data loss**: Ceph reported 12/12 OSDs up at the end of recovery, no unfound objects, and only the expected `aes` CephX warnings. The permanent fix (splitting the base image from the GPU image) has not yet been applied; the immediate mitigation is runtime-only.
+There is **no evidence of data loss**: Ceph reported 12/12 OSDs up at the end of recovery, no unfound objects, and only the expected `aes` CephX warnings. The image split is now implemented in commit `6e321d7` and rolled out to all five control planes; the PXE server relocation remains deferred. The runtime stop of the NVIDIA services was the immediate mitigation before the image rollout.
 
 ---
 
@@ -67,7 +67,7 @@ Times are taken from `node_boot_time_seconds` in Thanos, Talos `kernel.log`, iDR
 | 2026-11-19 11:18 | Kubernetes API reachable again on the individual control-plane addresses; etcd quorum restored. |
 | 2026-11-19 11:22–11:38 | `glemmen180` drained and rebooted to clear the rbd/OSD activation deadlock. |
 | 2026-11-19 11:45–11:55 | Ceph returned to 12/12 OSDs up/in. NVIDIA services stopped on all non-GPU control planes; boot sequences reached `running`. |
-| 2026-11-19 12:00+ | Flux and workloads recovered; Ceph rebalancing continued. |
+| 2026-11-19 12:00–12:30 | Image split implemented; all five control planes upgraded to the base image and applied the regenerated config. glemmen250 remains on the GPU image. PXE assets stay on the GPU schematic; PXE relocation remains pending. Ceph returned to 12/12 OSDs and rebalancing continued. |
 
 ---
 
@@ -95,14 +95,14 @@ The pattern — powered-on hosts, healthy BMCs, open ICMP, no Talos or Kubernete
 
 ### 1. NVIDIA extension services on non-GPU nodes
 
-`talos/schematic.yaml` adds these system extensions to **every node**:
+At the time of the incident, `talos/schematic.yaml` added these system extensions to **every node**:
 
 ```yaml
 - siderolabs/nvidia-open-gpu-kernel-modules-production
 - siderolabs/nvidia-container-toolkit-production
 ```
 
-They were added for `glemmen250`, the only GPU node. The image is shared by all nodes, so the control planes also received the NVIDIA extension services.
+They were added for `glemmen250`, the only GPU node. Because the image was shared by all nodes, the control planes also received the NVIDIA extension services. The schematic has since been split: `talos/schematic.yaml` is the base image without NVIDIA, and `talos/schematic-gpu.yaml` is used only for `TALOS_GPU_NODES` (`glemmen250`).
 
 On a non-GPU host, `talosctl services` showed:
 
@@ -329,6 +329,56 @@ Then:
 - Verified the in-cluster PXE asset VIP `192.168.6.99:8080` from the server VLAN.
 - Verified the API VIP `192.168.6.98:6443` and all Flux Kustomizations.
 
+### 5. Image split and live rollout
+
+The permanent image split was implemented after the recovery in commits `6e321d7` (base/GPU schematics) and `6e1dc08` (`upgrade-talos --no-drain`):
+
+- `talos/schematic.yaml` is now the base image without NVIDIA.
+- `talos/schematic-gpu.yaml` is the GPU image with the two NVIDIA extensions; it is selected only for `TALOS_GPU_NODES`.
+- `TALOS_GPU_NODES=glemmen250` in `talos/settings.env`.
+- `gen-iso.py` creates both schematics and writes `generated/schematic-id` plus
+  `generated/schematic-gpu-id`. The base ID is
+  `f8930ac51fd450022344c59c9ba1cf956652c6f5366d5c721d23619e1010c0da`
+  (the previous pre-NVIDIA image); the GPU ID is
+  `e8a49586a7107ddb8424fe2e1c8a8241ca53828de8ee014e7b15df37bf038ece`
+  (the previous global image).
+- `gen-config.py` uses the base installer for every node and injects the GPU
+  installer only for `TALOS_GPU_NODES`. For glemmen250 it starts from the node's
+  existing `UnattendedInstallConfig` so the NVMe WWID disk selector is preserved.
+- `setup-images.py` selects the base or GPU schematic per host.
+- `manage.py upgrade-talos` selects the base or GPU schematic per node.
+- The PXE asset server deliberately remains on the GPU schematic for now, per
+  the instruction not to relocate PXE. Control planes are installed from the
+  base image and do not run the NVIDIA services, so the GPU PXE kernel does not
+  reintroduce the boot wait. Splitting/relocating PXE remains a follow-up.
+
+Rollout order was `glemmen150`, `glemmen160`, `glemmen170`, `glemmen180`, and
+finally `glemmen130`. Each node was upgraded with the base image, then the
+generated config was applied with `--mode no-reboot` to update its
+`UnattendedInstallConfig.installer.image` for future reinstalls.
+
+The first upgrade attempt on glemmen150 used the default `talosctl upgrade`
+drain. Rook's OSD host PDB has `maxUnavailable: 0`, so the drain could not evict
+`rook-ceph-osd-1`/`rook-ceph-osd-10` and timed out after five minutes. The node
+was left cordoned; it was uncordoned, the `--no-drain` option was added to
+`manage.py`, and the upgrade was retried. The reboot still takes the OSDs down,
+but Ceph RF2 with `min_size: 1` keeps the data available and the OSDs return.
+
+Final installed images:
+
+| Node | Installed image |
+|---|---|
+| glemmen130 | base `f8930…` |
+| glemmen150 | base `f8930…` |
+| glemmen160 | base `f8930…` |
+| glemmen170 | base `f8930…` |
+| glemmen180 | base `f8930…` |
+| glemmen250 | GPU `e8a495…` |
+
+`talosctl services` on the five control planes has no `ext-nvidia-*` services.
+glemmen250 still has `ext-nvidia-persistenced` running and `ext-nvidia-cdi-gen`
+finished, which is expected for the GPU node.
+
 ---
 
 ## Verification
@@ -339,9 +389,9 @@ Final state:
 - All Flux Kustomizations `Ready`.
 - Ceph: `12 osds: 12 up, 12 in`; no degraded PGs or unfound objects at the end of recovery.
 - Ceph health: only the expected `AUTH_INSECURE_*` warnings for the `aes` CephX keys used by the CSI clients.
-- `pxe-assets` and `pxe-dnsmasq` pods running.
+- `pxe-assets` and `pxe-dnsmasq` pods running; PXE assets remain on the GPU schematic and `pxe-dnsmasq` was left in-cluster.
 - The temporary PXE server on `glemmen60` is stopped.
-- No repository changes were required for the runtime recovery; the working tree was clean after the recovery.
+- Control planes run the base installed image and have no NVIDIA services; glemmen250 remains on the GPU image.
 
 Ceph rebalancing was still in progress after recovery (~23% misplaced PGs), with recovery running at ~17–80 MiB/s. That is normal after bringing 12 OSDs back and was not related to the outage.
 
@@ -366,13 +416,18 @@ Ceph rebalancing was still in progress after recovery (~23% misplaced PGs), with
 
 ### P0 — must be done before the next reboot of a control plane
 
-1. **Split the image into base and GPU variants.**
-   - Remove the two NVIDIA extensions from the base `talos/schematic.yaml`.
-   - Add a separate `talos/schematic-gpu.yaml` for `glemmen250`.
-   - Add per-node schematic selection to `gen-config.py`, `gen-iso.py`, `setup-images.py` and the PXE asset generation.
-   - Acceptance: `talosctl services` on every non-GPU node has no `ext-nvidia-*` services; glemmen250 still has working NVIDIA drivers and GPU Operator.
+1. **Split the image into base and GPU variants. ✅ Done (`6e321d7`, `6e1dc08`).**
+   - Removed the two NVIDIA extensions from the base `talos/schematic.yaml`.
+   - Added `talos/schematic-gpu.yaml` for `glemmen250`.
+   - Added per-node schematic selection to `gen-iso.py`, `gen-config.py`,
+     `setup-images.py` and `manage.py upgrade-talos`.
+   - Rolled the base image to glemmen130/150/160/170/180 and applied the
+     regenerated configs; verified no `ext-nvidia-*` services on those nodes.
+     glemmen250 remains on the GPU image.
+   - PXE asset generation is intentionally still on the GPU schematic; this is
+     part of the deferred PXE work, not the image split.
 
-2. **Move the PXE server off the control planes.**
+2. **Move the PXE server off the control planes.** *(pending)*
    - Pin `pxe-dnsmasq` and `pxe-assets` to a stable worker (for example `glemmen60` or `glemmen80`), or run the proxyDHCP/TFTP service outside Kubernetes.
    - Keep the asset server and proxyDHCP on the same L2 network as the nodes.
    - Add a documented manual fallback using iDRAC virtual media or the setup ISOs.
@@ -565,12 +620,23 @@ All Lifecycle log entries report an offset of `-06:00`, but the clock values ali
 
 ## Appendix D — Files and commits involved
 
-- `talos/schematic.yaml` — global NVIDIA extensions; root cause.
+- `talos/schematic.yaml` — base image without NVIDIA (post-incident fix).
+- `talos/schematic-gpu.yaml` — GPU image for `TALOS_GPU_NODES`.
+- `talos/settings.env` — `TALOS_GPU_NODES=glemmen250`.
 - `talos/nodes/glemmen250.yaml` — `KernelModuleConfig` for the GPU modules; correct for the GPU node.
-- `flux/infrastructure/pxe/dnsmasq.yaml` — PXE server pinned to control-plane nodes.
-- `flux/infrastructure/pxe/assets.yaml` — PXE asset server on `glemmen60`.
-- `1878aa9` — add glemmen250 GPU worker and NVIDIA GPU Operator.
+- `scripts/talos/gen-iso.py` — creates base and GPU schematics and writes both IDs.
+- `scripts/talos/gen-config.py` — selects the GPU installer per node and preserves the node `UnattendedInstallConfig`.
+- `scripts/talos/setup-images.py` — selects base/GPU schematic per setup ISO.
+- `scripts/talos/manage.py` — selects base/GPU image for `upgrade-talos`; `--no-drain` for Rook OSD hosts.
+- `flux/infrastructure/pxe/dnsmasq.yaml` — PXE server pinned to control-plane nodes (relocation pending).
+- `flux/infrastructure/pxe/assets.yaml` and `kustomization.yaml` — PXE asset server on `glemmen60`, currently using the GPU schematic.
+- `1878aa9` — add glemmen250 GPU worker and NVIDIA GPU Operator (introduced the global NVIDIA extensions).
 - `a8d0f3f` — disable tuppr (Tuppr was not running during the incident).
 - `8991a31` — last Git revision before the incident (NVMe OSD documentation).
+- `6e321d7` — split base and GPU image schematics.
+- `6e1dc08` — add `--no-drain` to `upgrade-talos` for Rook OSD hosts.
 
-No permanent configuration change was committed as part of the incident recovery; the stop of the NVIDIA services is a runtime mitigation. The image split and PXE relocation should be tracked as follow-up work before the next control-plane reboot.
+The image split is committed and rolled out to the control planes. The runtime
+stop of the NVIDIA services remains a fallback if a node is ever booted from
+the old GPU image, but it is no longer required on the five control planes. PXE
+relocation is the only remaining P0 item.
