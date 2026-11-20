@@ -125,6 +125,40 @@ spec:
     - host: seerr.glem.men
       http:
         paths:
+          # Seerr registers /sw.js as a service worker. While a sign-in is
+          # pending, the browser's background update check for it reaches the
+          # app and makes the Authentik proxy outpost drop the pending session
+          # cookie, so the OAuth callback then returns 400. Serve the public
+          # PWA assets directly so they never touch the outpost. See the
+          # Authentik section of README.md.
+          - path: /sw.js
+            pathType: Exact
+            backend:
+              service:
+                name: seerr
+                port:
+                  number: 5055
+          - path: /offline.html
+            pathType: Exact
+            backend:
+              service:
+                name: seerr
+                port:
+                  number: 5055
+          - path: /site.webmanifest
+            pathType: Exact
+            backend:
+              service:
+                name: seerr
+                port:
+                  number: 5055
+          - path: /favicon.ico
+            pathType: Exact
+            backend:
+              service:
+                name: seerr
+                port:
+                  number: 5055
           - path: /
             pathType: Prefix
             backend:

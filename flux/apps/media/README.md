@@ -319,6 +319,18 @@ Create an outpost named `glemmen-media` of type Proxy with these providers:
 | Seerr | Proxy | https://seerr.glem.men | http://seerr.media.svc.cluster.local:5055 |
 | qBittorrent | Proxy | https://torrent.glem.men | http://qbittorrent.media.svc.cluster.local:8080 |
 
+Seerr registers the service worker `/sw.js`. On Authentik outposts 2026.8.x,
+an unauthenticated request that arrives between `/outpost.goauthentik.io/start`
+and the OAuth callback makes the outpost discard the pending session cookie, so
+the callback returns `400`. The browser's background check of `/sw.js` triggers
+this after the first sign-in. The Seerr Ingress therefore routes `/sw.js`,
+`/offline.html`, `/site.webmanifest` and `/favicon.ico` directly to the Seerr
+Service, bypassing the outpost; all of them are public PWA assets. Do not fold
+those paths back into the `/` route, and route any additional asset that the
+service worker fetches before authentication directly as well. See
+[goauthentik/authentik#27723](https://github.com/goauthentik/authentik/issues/27723)
+for the upstream bug.
+
 The outpost is deployed by this Kustomization, not by an Authentik service
 connection. Copy its token into the `authentik-outpost` Secret and restart the
 outpost:
@@ -489,6 +501,14 @@ kubectl -n media logs -f job/resume-now
   download) also leaves the rules behind, so keep the 512Mi limit.
 - qBittorrent shows the Authentik page but then its own login: add
   `10.42.0.0/16` to the Web UI subnet whitelist.
+- Seerr's Authentik login ends on a blank `400 Bad Request` at
+  `/outpost.goauthentik.io/callback?...`: the browser revalidated Seerr's
+  `/sw.js` service worker while the sign-in was pending, and the outpost
+  discarded the pending cookie. The Ingress sends `/sw.js`, `/offline.html`,
+  `/site.webmanifest` and `/favicon.ico` directly to Seerr to prevent this. If
+  it returns, confirm those exact paths still target the `seerr` Service and
+  look for `auth callback without a valid session cookie` in the outpost log;
+  see [goauthentik/authentik#27723](https://github.com/goauthentik/authentik/issues/27723).
 - qBittorrent says `The configured network interface is invalid`: use `tun0`,
   not `wg0`. Gluetun creates the WireGuard tunnel as `tun0` inside the pod.
 - qBittorrent keeps restarting with `OOMKilled`: do not use a build with
