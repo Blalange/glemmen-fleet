@@ -97,10 +97,11 @@ data:
             country: "Norge"
             language: "norsk"
 
-      # The three series below list their episodes oldest first. With
+      # The series below list their episodes oldest first. With
       # break_on_existing yt-dlp would stop at episode 1 on every run and never
-      # see newly published episodes at the end, so scan the whole (small)
-      # season and let the download archive skip what is already present.
+      # see newly published episodes at the end, so scan the whole season and
+      # let the download archive skip what is already present. These are small
+      # enough that a full rescan every day is cheap.
       nrk_tv_full_scan:
         preset:
           - "nrk_tv"
@@ -163,6 +164,98 @@ data:
           - "https://tv.nrk.no/program/KMNO10002722"
           - "https://tv.nrk.no/program/KMNO10006120"
 
+      "~Rådebank":
+        tv_show_plot: "Livet går tilsynelatende videre i rånerbygda Bø. Hege og GT har det så bra sammen at Hege holder pusten for hver dag som går. Det kan jo ikke vare?"
+        tv_show_year: "2020"
+        tv_show_genre: "Drama"
+        tv_show_content_rating: "TV-14"
+        s01_name: "Sesong 1"
+        s01_url: "https://tv.nrk.no/serie/raadebank/sesong/1"
+        s02_name: "Sesong 2"
+        s02_url: "https://tv.nrk.no/serie/raadebank/sesong/2"
+        s03_name: "Sesong 3"
+        s03_url: "https://tv.nrk.no/serie/raadebank/sesong/3"
+        s00_name: "Ekstramateriale"
+        s00_url:
+          - "https://tv.nrk.no/program/KMNO10000822"
+          - "https://tv.nrk.no/program/KMNO10001121"
+          - "https://tv.nrk.no/program/KMNO10003020"
+
+      "~Uti vår hage":
+        tv_show_plot: "Novellefilmene i denne serien handler lite om hagearbeid, men mye om hva tre lystige hjerner kan finne på når de kommer sammen."
+        tv_show_year: "2003"
+        tv_show_genre: "Komedie"
+        tv_show_content_rating: "TV-14"
+        s01_name: "Sesong 1"
+        s01_url: "https://tv.nrk.no/serie/uti-vaar-hage/sesong/1"
+        s02_name: "Sesong 2"
+        s02_url: "https://tv.nrk.no/serie/uti-vaar-hage/sesong/2"
+
+      "~Norske grønnsaker – sommersnutter":
+        tv_show_plot: "Animert humor. Norske Grønnsaker serverer et skråblikk på den norske sommeren."
+        tv_show_year: "2016"
+        tv_show_genre: "Komedie"
+        tv_show_content_rating: "TV-14"
+        s01_name: "Sesong 1"
+        s01_url: "https://tv.nrk.no/serie/norske-groennsaker-sommersnutter/sesong/1"
+        s02_name: "Sesong 2"
+        s02_url: "https://tv.nrk.no/serie/norske-groennsaker-sommersnutter/sesong/2"
+        s03_name: "Sesong 3"
+        s03_url: "https://tv.nrk.no/serie/norske-groennsaker-sommersnutter/sesong/3"
+        s04_name: "Sesong 4"
+        s04_url: "https://tv.nrk.no/serie/norske-groennsaker-sommersnutter/sesong/4"
+
+      "~Canada på tvers":
+        tv_show_plot: "8252 kilometer. 947 dager. Ekstreme temperaturer og ville dyr. Lars Monsen fikk den perfekte utfordringen i et av klodens mest øde villmarksområder."
+        tv_show_year: "2004"
+        tv_show_genre: "Dokumentar"
+        tv_show_content_rating: "TV-PG"
+        s01_name: "Sesong 1"
+        s01_url: "https://tv.nrk.no/serie/canada-paa-tvers/sesong/1"
+
+      "~Distriktspolitiet":
+        tv_show_plot: "Fantasifull norsk animasjonsserie for voksne, om to politimenn som alene må håndtere Norges nyeste og største fylke."
+        tv_show_year: "2020"
+        tv_show_genre: "Komedie"
+        tv_show_content_rating: "TV-14"
+        s01_name: "Sesong 1"
+        s01_url: "https://tv.nrk.no/serie/distriktspolitiet/sesong/1"
+
+      "~Manndag":
+        tv_show_plot: "Hver dag er en kamp, og ingen kamp er for liten."
+        tv_show_year: "2023"
+        tv_show_genre: "Komedie"
+        tv_show_content_rating: "TV-PG"
+        s01_name: "Sesong 1"
+        s01_url: "https://tv.nrk.no/serie/mann-dag/sesong/1"
+        s02_name: "Sesong 2"
+        s02_url: "https://tv.nrk.no/serie/mann-dag/sesong/2"
+
+      "~Flex":
+        tv_show_plot: "All pain, no gain. Velkommen til treningssenteret Flex!"
+        tv_show_year: "2022"
+        tv_show_genre: "Komedie"
+        tv_show_content_rating: "TV-14"
+        s01_name: "Sesong 1"
+        s01_url: "https://tv.nrk.no/serie/flex/sesong/1"
+        s00_name: "Ekstramateriale"
+        s00_url:
+          - "https://tv.nrk.no/program/KMNO10006122"
+
+      "~Verdens minste kommentatorboks":
+        tv_show_plot: "Komikere kommenterer fotgjengere og tilfeldig forbipasserende fra verdens minste kommentatorboks."
+        tv_show_year: "2014"
+        tv_show_genre: "Komedie"
+        tv_show_content_rating: "TV-PG"
+        s01_name: "Sesong 1"
+        s01_url: "https://tv.nrk.no/serie/verdens-minste-kommentatorboks/sesong/1"
+        s02_name: "Sesong 2"
+        s02_url: "https://tv.nrk.no/serie/verdens-minste-kommentatorboks/sesong/2"
+        s03_name: "Sesong 3"
+        s03_url: "https://tv.nrk.no/serie/verdens-minste-kommentatorboks/sesong/3"
+        s04_name: "Sesong 4"
+        s04_url: "https://tv.nrk.no/serie/verdens-minste-kommentatorboks/sesong/4"
+
     # Nytt på nytt's season pages are newest first, so break_on_existing is
     # correct here: a fully archived season stops at its newest episode.
     # NRK's rights window currently expires 1999 and 2011-2022; yt-dlp skips
@@ -211,6 +304,32 @@ data:
         s16_url: "https://tv.nrk.no/serie/nytt-paa-nytt/sesong/2025"
         s17_name: "2026"
         s17_url: "https://tv.nrk.no/serie/nytt-paa-nytt/sesong/2026"
+
+      # Sámi Grand Prix also has year-seasons, but they are small and listed
+      # newest first, so the normal break-on-existing path is enough.
+      "~Sámi Grand Prix":
+        tv_show_plot: "Sápmis største musikkshow byr på rå joik, moderne rytmer og pop. Det blir minneverdige øyeblikk med de fremste joikerne og sangerne i Sápmi."
+        tv_show_year: "2019"
+        tv_show_genre: "Musikk"
+        tv_show_content_rating: "TV-14"
+        s01_name: "2019"
+        s01_url: "https://tv.nrk.no/serie/sami-grand-prix-tv/sesong/2019"
+        s02_name: "2021"
+        s02_url: "https://tv.nrk.no/serie/sami-grand-prix-tv/sesong/2021"
+        s03_name: "2022"
+        s03_url: "https://tv.nrk.no/serie/sami-grand-prix-tv/sesong/2022"
+        s04_name: "2023"
+        s04_url: "https://tv.nrk.no/serie/sami-grand-prix-tv/sesong/2023"
+        s05_name: "2024"
+        s05_url: "https://tv.nrk.no/serie/sami-grand-prix-tv/sesong/2024"
+        s06_name: "2025"
+        s06_url: "https://tv.nrk.no/serie/sami-grand-prix-tv/sesong/2025"
+        s07_name: "2026"
+        s07_url: "https://tv.nrk.no/serie/sami-grand-prix-tv/sesong/2026"
+        s00_name: "Ekstramateriale"
+        s00_url:
+          - "https://tv.nrk.no/program/KMNO10020826"
+          - "https://tv.nrk.no/program/KMNO10003625"
 
   cron: |
     #!/bin/sh

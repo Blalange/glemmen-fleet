@@ -147,6 +147,15 @@ files. It has no web UI, Service, Ingress or Authentik provider.
 | Monsen og nasjonalparkene | https://tv.nrk.no/serie/monsen-og-nasjonalparkene | 1-2 + Ekstramateriale |
 | Med Monsen på villspor | https://tv.nrk.no/serie/monsen-paa-villspor | 1-4 + Ekstramateriale |
 | Nytt på nytt | https://tv.nrk.no/serie/nytt-paa-nytt | 1999, 2011-2026 |
+| Rådebank | https://tv.nrk.no/serie/raadebank | 1-3 + Ekstramateriale |
+| Uti vår hage | https://tv.nrk.no/serie/uti-vaar-hage | 1-2 |
+| Sámi Grand Prix | https://tv.nrk.no/serie/sami-grand-prix-tv | 2019, 2021-2026 + Ekstramateriale |
+| Norske grønnsaker – sommersnutter | https://tv.nrk.no/serie/norske-groennsaker-sommersnutter | 1-4 |
+| Canada på tvers | https://tv.nrk.no/serie/canada-paa-tvers | 1 |
+| Distriktspolitiet | https://tv.nrk.no/serie/distriktspolitiet | 1 |
+| Manndag | https://tv.nrk.no/serie/mann-dag | 1-2 |
+| Flex | https://tv.nrk.no/serie/flex | 1 + Ekstramateriale |
+| Verdens minste kommentatorboks | https://tv.nrk.no/serie/verdens-minste-kommentatorboks | 1-4 |
 
 Everything is in the `ytdl-sub-config` ConfigMap (`ytdl-sub-config.yaml`),
 mounted read-only at `/configs`:
@@ -199,10 +208,10 @@ Førstegangstjenesten/
   show `poster.jpg`; add `poster.jpg`/`fanart.jpg` to the series folder (or
   upload them in Jellyfin) if you want custom show art.
 - Norwegian subtitles (`nb-ttv` from NRK) are written as `<video>.nb.vtt`.
-- Episode numbers come from the NRK playlist order for the three older shows.
-  `Nytt på nytt` uses date-based numbers (`MMDD` plus a two-digit same-day
-  index) because its year-seasons are listed newest first; a playlist index
-  would renumber every episode when a new one airs. Season 0
+- Episode numbers come from the NRK playlist order for the full-scan shows
+  and Sámi Grand Prix. `Nytt på nytt` uses date-based numbers (`MMDD` plus a
+  two-digit same-day index) because its year-seasons are listed newest first;
+  a playlist index would renumber every episode when a new one airs. Season 0
   (Ekstramateriale) uses the upload date because those entries are individual
   program URLs with no playlist index.
 
@@ -229,10 +238,10 @@ s18_url: "https://tv.nrk.no/serie/nytt-paa-nytt/sesong/2027"
 Use `nrk_tv` for newest-first season pages and `nrk_tv_full_scan` for
 oldest-first pages. The full-scan preset disables `break_on_existing`: on an
 oldest-first page yt-dlp would otherwise stop at episode 1 on every run and
-never see newly published episodes at the end. The three older series are
-small enough to rescan completely each day; Nytt på nytt is newest-first and
-keeps the fast break-on-existing path (expired seasons are still enumerated,
-but each season is a separate, small playlist).
+never see newly published episodes at the end. The full-scan series are small
+enough to rescan completely each day; Nytt på nytt and Sámi Grand Prix are
+newest-first and keep the fast break-on-existing path (expired seasons are
+still enumerated, but each season is a separate, small playlist).
 
 NRK only serves this content from Norwegian addresses, and a season page can
 list episodes that are not published yet ("Kommer om 14 dager") or have been
@@ -242,7 +251,7 @@ usable archive is 2023-2026 (about 115 episodes). The older seasons stay in
 the config in case NRK republishes them.
 
 The first archive is still sizeable: about 115 Nytt på nytt episodes plus
-about 60 episodes of the other series. Expect roughly 150-250 GB at 1080p
+about 190 episodes of the other series. Expect roughly 250-450 GB at 1080p
 (the 50 fps episodes are the larger ones). The media claim was grown by
 3000Gi (about 3TB) for this library; see the capacity section below.
 
@@ -541,9 +550,9 @@ kubectl -n media logs -f job/resume-now
   order, or disable YoutubeMetadata for that library; the generated `.nfo`
   files contain the correct season and episode. The `.info.json` sidecars are
   still written for the plugin.
-- A new Nytt på nytt year is missing: add the next `sNN_name`/`sNN_url` pair
-  under the `Nytt på nytt` subscription and commit. The season page is not
-  discovered automatically, and the collection preset supports up to 40
+- A new Nytt på nytt or Sámi Grand Prix year is missing: add the next
+  `sNN_name`/`sNN_url` pair under that subscription and commit. The season page
+  is not discovered automatically, and the collection preset supports up to 40
   seasons.
 - A ConfigMap edit is not visible yet: the file is mounted read-only at
   `/configs` and Kubernetes can take about a minute to update it. The next
