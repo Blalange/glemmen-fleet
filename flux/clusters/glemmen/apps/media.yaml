@@ -1,5 +1,5 @@
-# Media stack: Jellyfin, Sonarr, Radarr, Prowlarr, Profilarr, Seerr and
-# qBittorrent.
+# Media stack: Jellyfin, Sonarr, Radarr, Prowlarr, Profilarr, ytdl-sub,
+# Seerr and qBittorrent.
 # Waits for the shared CephFS media PVC.
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization

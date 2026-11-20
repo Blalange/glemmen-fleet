@@ -92,3 +92,16 @@ spec:
   resources:
     requests:
       storage: 2Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: ytdl-sub-config-ceph
+  annotations:
+    kustomize.toolkit.fluxcd.io/ssa: IfNotPresent
+spec:
+  accessModes: [ReadWriteOnce]
+  storageClassName: nvme-rbd
+  resources:
+    requests:
+      storage: 2Gi

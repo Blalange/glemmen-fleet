@@ -1,14 +1,19 @@
 # Media stack
 
-Jellyfin, Sonarr, Radarr, Prowlarr, Profilarr, Seerr and qBittorrent run in the
-`media` namespace. They share one CephFS-backed `ReadWriteMany` volume at
-`/data`:
+Jellyfin, Sonarr, Radarr, Prowlarr, Profilarr, ytdl-sub, Seerr and
+qBittorrent run in the `media` namespace. They share one CephFS-backed
+`ReadWriteMany` volume at `/data`:
 
 ```
 /data/downloads              qBittorrent downloads (incomplete/ below it)
 /data/media/movies           Radarr root folder
 /data/media/tv               Sonarr root folder
+/data/ytdl-sub               ytdl-sub NRK library (Season NN + sidecars)
 ```
+
+ytdl-sub mounts the same claim at `/media`, so its paths are
+`/media/ytdl-sub` and `/media/.ytdl-sub-working`; Jellyfin sees the finished
+library as `/data/ytdl-sub`.
 
 Sonarr/Radarr import from `/data/downloads` into `/data/media` on the same
 filesystem, so the normal move/rename path works and hardlinks are supported by
@@ -21,6 +26,7 @@ CephFS. The *arr apps can keep "Use Hardlinks instead of Copy" enabled.
 | Radarr | https://radarr.glem.men | Authentik proxy, app auth `External` |
 | Prowlarr | https://prowlarr.glem.men | Authentik proxy, app auth `External` |
 | Profilarr | https://profilarr.glem.men | Authentik proxy, app auth off |
+| ytdl-sub | — (cron worker) | None; no web UI |
 | Seerr | https://seerr.glem.men | Authentik proxy + Seerr login |
 | qBittorrent | https://torrent.glem.men | Authentik proxy; qBittorrent auth bypassed for the pod network |
 
@@ -39,9 +45,13 @@ The local admin passwords are only for break-glass access; normal Jellyfin and
 qBittorrent access goes through Authentik. Read them with `kubectl -n media get
 secret <name> -o jsonpath=...` when needed.
 
+ytdl-sub needs no Secret: the NRK subscriptions are public and live in the
+`ytdl-sub-config` ConfigMap.
+
 ## Databases
 
-All media applications use SQLite on their Ceph `nvme-rbd` config volumes:
+The database-backed media applications use SQLite on their Ceph `nvme-rbd`
+config volumes:
 
 - Sonarr/Radarr/Prowlarr: `<app>.db` under `/config`
 - Jellyfin: `/config/data/jellyfin.db`
@@ -49,6 +59,10 @@ All media applications use SQLite on their Ceph `nvme-rbd` config volumes:
 - Profilarr: `/config/data/profilarr.db`, with cloned profile repositories
   under `/config/data/databases`
 - qBittorrent: its own settings database under `/config`
+
+ytdl-sub has no database. It keeps a yt-dlp download archive named
+`.ytdl-sub-<series>-download-archive.json` in each series folder under
+`/data/ytdl-sub`; deleting it makes the next run treat every episode as new.
 
 YugabyteDB was evaluated for Sonarr/Radarr/Prowlarr, but their
 `DatabaseVersionParser` calls `.NET Version.Parse()` on YSQL's
@@ -119,6 +133,144 @@ kubectl -n media exec deploy/sonarr -- sh -c \
 
 Then link a database and sync the entities you want. The first sync can create
 a lot of custom formats; review the changes in Profilarr before pushing them.
+
+## ytdl-sub
+
+ytdl-sub archives NRK series that are not available through Sonarr's
+indexers. It is a yt-dlp wrapper: it downloads each season page, renames the
+episodes into a Jellyfin layout and writes the metadata and artwork as sidecar
+files. It has no web UI, Service, Ingress or Authentik provider.
+
+| Series | NRK page | Seasons |
+|---|---|---|
+| Førstegangstjenesten | https://tv.nrk.no/serie/foerstegangstjenesten | 1-2 + Ekstramateriale |
+| Monsen og nasjonalparkene | https://tv.nrk.no/serie/monsen-og-nasjonalparkene | 1-2 + Ekstramateriale |
+| Med Monsen på villspor | https://tv.nrk.no/serie/monsen-paa-villspor | 1-4 + Ekstramateriale |
+| Nytt på nytt | https://tv.nrk.no/serie/nytt-paa-nytt | 1999, 2011-2026 |
+
+Everything is in the `ytdl-sub-config` ConfigMap (`ytdl-sub-config.yaml`),
+mounted read-only at `/configs`:
+
+- `config.yaml` - the custom Jellyfin TV collection preset. It is the upstream
+  preset with `_episode_video_tags` removed and chapter embedding disabled, so
+  ffmpeg never rewrites the finished file. It also sets the episode filename,
+  subtitle naming and the NFO tags.
+- `subscriptions.yaml` - the series, their seasons and the per-series genre,
+  plot and rating.
+- `cron` - the command the LinuxServer cron wrapper runs:
+  `ytdl-sub --config /configs/config.yaml sub /configs/subscriptions.yaml`.
+
+The container runs the cron schedule `15 4 * * *` (Europe/Oslo).
+`CRON_RUN_ON_START=true` starts the first archive as soon as the pod is up, so
+a fresh install does not wait for 04:15. A Git change to `config.yaml` or
+`subscriptions.yaml` is picked up by the next run; a change to the `cron`
+script itself needs a pod restart because an init container copies it to
+`/config`, where the LinuxServer cron wrapper expects an executable file.
+
+### Layout and metadata
+
+The media PVC is mounted at `/media` and the library is `/media/ytdl-sub`.
+Jellyfin mounts the same claim at `/data`, so add a **Shows** library for
+`/data/ytdl-sub`. A series looks like:
+
+```
+Førstegangstjenesten/
+  tvshow.nfo
+  poster/season art when NRK provides it
+  Season 01/
+    Førstegangstjenesten - S01E01 - 1. Pilot - del 1 [MUHH35000119].mp4
+    Førstegangstjenesten - S01E01 - 1. Pilot - del 1 [MUHH35000119].info.json
+    Førstegangstjenesten - S01E01 - 1. Pilot - del 1 [MUHH35000119].nfo
+    Førstegangstjenesten - S01E01 - 1. Pilot - del 1 [MUHH35000119]-thumb.jpg
+    Førstegangstjenesten - S01E01 - 1. Pilot - del 1 [MUHH35000119].nb.vtt
+  Season 00/                       Ekstramateriale (trailers and bonus clips)
+```
+
+- The `.nfo` files carry the title, plot, air date, season/episode, genre,
+  content rating, year, studio (`NRK`), country and language.
+- The `.info.json` files are yt-dlp's full metadata (description, thumbnail
+  URLs, subtitles, formats). The filename matches the video basename and
+  includes the yt-dlp ID in square brackets, which is the layout the
+  `jellyfin-youtube-metadata-plugin` looks for. If that plugin is enabled for
+  this library, put the NFO reader first in Jellyfin's local metadata reader
+  order; see Troubleshooting.
+- The `-thumb.jpg` files are episode thumbnails that Jellyfin reads natively.
+  NRK has no channel avatar, so ytdl-sub may write a season poster but not a
+  show `poster.jpg`; add `poster.jpg`/`fanart.jpg` to the series folder (or
+  upload them in Jellyfin) if you want custom show art.
+- Norwegian subtitles (`nb-ttv` from NRK) are written as `<video>.nb.vtt`.
+- Episode numbers come from the NRK playlist order for the three older shows.
+  `Nytt på nytt` uses date-based numbers (`MMDD` plus a two-digit same-day
+  index) because its year-seasons are listed newest first; a playlist index
+  would renumber every episode when a new one airs. Season 0
+  (Ekstramateriale) uses the upload date because those entries are individual
+  program URLs with no playlist index.
+
+### No transcoding or remuxing
+
+ytdl-sub does not convert, remux or re-encode the media. No `file_convert`
+plugin is configured, video tags and chapter embedding are disabled, and the
+only ffmpeg step is yt-dlp merging NRK's separate HLS video and audio streams
+into an `.mp4` (stream copy, same H.264/AAC codecs). Metadata lives in sidecar
+files, not in the container.
+
+### Adding series and seasons
+
+Add a subscription under the `nrk_tv` or `nrk_tv_full_scan` key in
+`subscriptions.yaml`. Each season is an `sNN_name`/`sNN_url` pair; the
+collection preset supports up to 40 seasons. For example, when NRK starts the
+2027 season of Nytt på nytt, add:
+
+```yaml
+s18_name: "2027"
+s18_url: "https://tv.nrk.no/serie/nytt-paa-nytt/sesong/2027"
+```
+
+Use `nrk_tv` for newest-first season pages and `nrk_tv_full_scan` for
+oldest-first pages. The full-scan preset disables `break_on_existing`: on an
+oldest-first page yt-dlp would otherwise stop at episode 1 on every run and
+never see newly published episodes at the end. The three older series are
+small enough to rescan completely each day; Nytt på nytt is newest-first and
+keeps the fast break-on-existing path (expired seasons are still enumerated,
+but each season is a separate, small playlist).
+
+NRK only serves this content from Norwegian addresses, and a season page can
+list episodes that are not published yet ("Kommer om 14 dager") or have been
+removed ("Ikke tilgjengelig lenger"). yt-dlp skips those; they are not errors.
+Nytt på nytt's 1999 and 2011-2022 seasons are currently expired at NRK, so the
+usable archive is 2023-2026 (about 115 episodes). The older seasons stay in
+the config in case NRK republishes them.
+
+The first archive is still sizeable: about 115 Nytt på nytt episodes plus
+about 60 episodes of the other series. Expect roughly 150-250 GB at 1080p
+(the 50 fps episodes are the larger ones). The media claim was grown by
+3000Gi (about 3TB) for this library; see the capacity section below.
+
+### Operations
+
+The cron output goes to the container log (the LinuxServer stdout-logs mod
+links `.cron.log` to stdout):
+
+```sh
+kubectl -n media logs deploy/ytdl-sub
+```
+
+To validate a change without downloading, run a dry run inside the pod:
+
+```sh
+kubectl -n media exec deploy/ytdl-sub -- \
+  ytdl-sub --dry-run --config /configs/config.yaml sub /configs/subscriptions.yaml
+```
+
+Do not run a second real `ytdl-sub` process while cron is running: it can
+download the same episode twice. The download archive is written after each
+episode, so an interrupted run resumes where it stopped.
+
+The image is pinned to `ghcr.io/jmbannon/ytdl-sub:2026.11.19`; update it with
+the other media images. The container uses uid/gid 1000, writes to the media
+volume as uid 1000, and keeps only cron state, logs and the LinuxServer
+defaults on the `ytdl-sub-config-ceph` volume. `/tmp` is an emptyDir for
+ytdl-sub's file locks.
 
 ## WireGuard
 
@@ -199,12 +351,15 @@ production.
 
 ## CephFS capacity and backups
 
-The media library is `media-data-ceph`, a 2300Gi `ReadWriteMany` claim on the
-`fast-fs` StorageClass. The CephFS data pool is `cephfs-fast` on the CMR OSDs
-in glemmen130/glemmen150, replicated twice with `failureDomain: host` and
-`min_size: 1`. After the import the claim reports about 2.0TiB used and 267G
-free (89%), so headroom is limited; move the claim to `bulk-fs` as soon as the
-glemmen80 disks are available.
+The media library is `media-data-ceph`, a 5300Gi `ReadWriteMany` claim on the
+`fast-fs` StorageClass. It was grown from 2300Gi by 3000Gi for the ytdl-sub
+NRK archive. The CephFS data pool is `cephfs-fast` on the CMR OSDs in
+glemmen130/glemmen150, replicated twice with `failureDomain: host` and
+`min_size: 1`. The original library still uses about 2.0TiB; the added 3000Gi is
+headroom for ytdl-sub. A PVC resize only raises the CephFS quota, so the
+`fast-fs` pool must have the physical space. If it does not, move the claim to
+`bulk-fs` as soon as the glemmen80 disks are available instead of filling the
+CMR OSDs.
 
 The migration copied the qBittorrent downloads and the existing Hærry Pot
 movie with rsync, verified the file sizes and skipped unreadable source files.
@@ -247,8 +402,9 @@ rsync job logs those files and skips them. Re-download them through qBittorrent
 if the corresponding media is still wanted.
 
 When the 24 × 12TB disks and SAS HBA are installed in glemmen80, add the bulk
-CephFS pool and move this claim to `bulk-fs`. Do not grow the fast-tier claim
-past its free space in the meantime.
+CephFS pool and move this claim to `bulk-fs`. Check the pool's free space
+before growing the fast-tier claim again; the 3000Gi growth for ytdl-sub is the
+last planned increase on `fast-fs`.
 
 ## Errored downloads
 
@@ -294,10 +450,11 @@ kubectl -n media logs -f job/resume-now
    folders to `/data/media/tv` and `/data/media/movies`, and confirm downloads
    are imported from `/data/downloads`.
 4. **Jellyfin**: the local `admin` account is already created; its password is
-   in the `jellyfin-admin` Secret. Add libraries for `/data/media/movies` and
-   `/data/media/tv`. The SSO-Auth 5.1.1 plugin is already installed under
-   `/config/plugins/SSO-Auth` and configured with the `authentik` OIDC provider
-   (issuer `https://auth.blalange.org/application/o/jellyfin/`, redirect
+   in the `jellyfin-admin` Secret. Add libraries for `/data/media/movies`,
+   `/data/media/tv` and `/data/ytdl-sub` (Shows). The SSO-Auth 5.1.1 plugin is
+   already installed under `/config/plugins/SSO-Auth` and configured with the
+   `authentik` OIDC provider (issuer
+   `https://auth.blalange.org/application/o/jellyfin/`, redirect
    `https://jellyfin.glem.men/sso/OID/redirect/authentik`). If you rebuild the
    config volume, reinstall the plugin from the K0lin manifest and re-add the
    provider with `POST /SSO/OID/Add/authentik`.
@@ -307,6 +464,11 @@ kubectl -n media logs -f job/resume-now
    internal URLs above and their API keys, then link a profile database and
    sync. Do this after Prowlarr has added the indexers and the Arr apps are
    otherwise configured.
+7. **ytdl-sub**: nothing to create. The subscriptions are in Git and the cron
+   job runs on pod start. Add the Jellyfin Shows library for `/data/ytdl-sub`
+   (step 4), enable the built-in NFO metadata reader, and check the first run
+   with `kubectl -n media logs -f deploy/ytdl-sub`. The NRK archive is large;
+   let the first run finish before adding more series.
 
 ## Troubleshooting
 
@@ -340,3 +502,30 @@ kubectl -n media logs -f job/resume-now
   has `*__POSTGRES__*` env vars, remove them and recreate the Deployment
   (`kubectl -n media delete deploy <app>` then re-apply), because a normal
   `kubectl apply` can retain env entries owned by another manager.
+- ytdl-sub downloads at 480p or stops with `downloaded at a low resolution ...
+  you've probably been throttled`: NRK rate-limited the run. The resolution
+  assert stops the archive rather than filling it with bad copies; wait a few
+  hours and run again. Set `enable_resolution_assert: False` only if low
+  resolution is acceptable.
+- ytdl-sub logs `Ikke tilgjengelig lenger` or `Kommer om ... dager`: the season
+  page lists an episode that has been removed or is not published yet. yt-dlp
+  skips it; no action is needed.
+- ytdl-sub reports `No files changed` for every series: the yt-dlp download
+  archive already contains those episodes. Delete
+  `.ytdl-sub-<series>-download-archive.json` in the series folder to force a
+  re-check, or confirm the ConfigMap still has the expected `sNN_url` entries.
+- Jellyfin shows every ytdl-sub episode in Season 1: the
+  `jellyfin-youtube-metadata-plugin` local episode provider always reports
+  season 1. Put the built-in NFO reader (or `Local Metadata`) before
+  `YoutubeMetadata` in the `/data/ytdl-sub` library's local metadata reader
+  order, or disable YoutubeMetadata for that library; the generated `.nfo`
+  files contain the correct season and episode. The `.info.json` sidecars are
+  still written for the plugin.
+- A new Nytt på nytt year is missing: add the next `sNN_name`/`sNN_url` pair
+  under the `Nytt på nytt` subscription and commit. The season page is not
+  discovered automatically, and the collection preset supports up to 40
+  seasons.
+- A ConfigMap edit is not visible yet: the file is mounted read-only at
+  `/configs` and Kubernetes can take about a minute to update it. The next
+  cron run reads the new file; a manual `kubectl -n media rollout restart
+  deploy/ytdl-sub` is the reliable option.

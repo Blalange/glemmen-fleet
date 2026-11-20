@@ -5,8 +5,9 @@
 # LinuxServer *arr apps and qBittorrent. The migration copied the qBittorrent
 # downloads and the existing Hærry Pot movie; the rest of the library was
 # re-imported from `/data/downloads` by Radarr and Sonarr as hardlinks, so
-# downloads and media share the same data. Move the claim to `bulk-fs` when
-# glemmen80 has its 24×12 TB disks.
+# downloads and media share the same data. The claim was grown by 3000Gi
+# (about 3TB) for the ytdl-sub NRK archive (2300Gi + 3000Gi); move it to
+# `bulk-fs` when glemmen80 has its 24×12 TB disks.
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
@@ -17,4 +18,4 @@ spec:
   storageClassName: fast-fs
   resources:
     requests:
-      storage: 2300Gi
+      storage: 5300Gi

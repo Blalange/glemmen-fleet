@@ -1,0 +1,112 @@
+# ytdl-sub archives NRK series with yt-dlp. It runs from the LinuxServer
+# image's cron, writes into /media/ytdl-sub on the shared CephFS volume and
+# leaves yt-dlp's .info.json, an .nfo, a poster/thumbnail and Norwegian
+# subtitles next to every episode for Jellyfin.
+#
+# There is no web UI, Service or Ingress. All configuration lives in the
+# `ytdl-sub-config` ConfigMap (ytdl-sub-config.yaml). It is mounted read-only
+# at /configs so a Git change is picked up by the next cron run without a pod
+# restart. The container also needs /config for the LinuxServer init, cron
+# wrapper and logs; that is a small RWO Ceph RBD claim. An init container
+# copies the cron script there because the LinuxServer init chmods/chowns it.
+#
+# NRK serves video and audio as separate HLS streams, so yt-dlp must merge
+# them with ffmpeg (stream copy, no re-encode). No post-processor converts the
+# container or codecs, and no chapters/metadata are embedded in the file; all
+# metadata is written as sidecar files.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ytdl-sub
+  labels:
+    app.kubernetes.io/name: ytdl-sub
+    app.kubernetes.io/instance: ytdl-sub
+    app.kubernetes.io/part-of: media
+spec:
+  replicas: 1
+  revisionHistoryLimit: 2
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: ytdl-sub
+      app.kubernetes.io/instance: ytdl-sub
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: ytdl-sub
+        app.kubernetes.io/instance: ytdl-sub
+        app.kubernetes.io/part-of: media
+    spec:
+      automountServiceAccountToken: false
+      terminationGracePeriodSeconds: 30
+      securityContext:
+        fsGroup: 1000
+        fsGroupChangePolicy: OnRootMismatch
+        seccompProfile:
+          type: RuntimeDefault
+      initContainers:
+        # The LinuxServer init chmods/chowns its cron script, which fails on a
+        # read-only ConfigMap. Copy it into the writable /config volume first.
+        - name: cron-script
+          image: busybox:1.38.0
+          imagePullPolicy: IfNotPresent
+          command:
+            - sh
+            - -c
+            - cp /configs/cron /config/cron && chmod 0755 /config/cron && chown 1000:1000 /config/cron
+          securityContext:
+            allowPrivilegeEscalation: false
+          volumeMounts:
+            - name: config
+              mountPath: /config
+            - name: configmap
+              mountPath: /configs
+              readOnly: true
+      containers:
+        - name: ytdl-sub
+          image: ghcr.io/jmbannon/ytdl-sub:2026.11.19
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: PUID
+              value: "1000"
+            - name: PGID
+              value: "1000"
+            - name: TZ
+              value: Europe/Oslo
+            # Daily at 04:15. CRON_RUN_ON_START starts the first archive as
+            # soon as the pod is up, and also after a restart.
+            - name: CRON_SCHEDULE
+              value: "15 4 * * *"
+            - name: CRON_RUN_ON_START
+              value: "true"
+          volumeMounts:
+            - name: config
+              mountPath: /config
+            - name: configmap
+              mountPath: /configs
+              readOnly: true
+            - name: media
+              mountPath: /media
+            - name: tmp
+              mountPath: /tmp
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              memory: 2Gi
+      volumes:
+        - name: config
+          persistentVolumeClaim:
+            claimName: ytdl-sub-config-ceph
+        - name: configmap
+          configMap:
+            name: ytdl-sub-config
+            defaultMode: 0444
+        - name: media
+          persistentVolumeClaim:
+            claimName: media-data-ceph
+        - name: tmp
+          emptyDir:
+            sizeLimit: 1Gi

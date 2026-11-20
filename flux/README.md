@@ -181,11 +181,14 @@ same.
 
 ## Media stack
 
-`apps/media` runs Jellyfin, Sonarr, Radarr, Prowlarr, Seerr, FlareSolverr and qBittorrent in
-the privileged `media` namespace. The apps share one CephFS `ReadWriteMany`
-volume at `/data` (`media-data-ceph`, `fast-fs`, 2300Gi) with `downloads/`,
-`media/movies/` and `media/tv/`. The migration copied the qBittorrent downloads
-and the existing Hærry Pot movie; the rest of the library was re-imported from
+`apps/media` runs Jellyfin, Sonarr, Radarr, Prowlarr, Profilarr, ytdl-sub, Seerr,
+FlareSolverr and qBittorrent in the privileged `media` namespace. The apps share
+one CephFS `ReadWriteMany` volume at `/data` (`media-data-ceph`, `fast-fs`,
+5300Gi) with `downloads/`, `media/movies/`, `media/tv/` and `ytdl-sub/`
+(ytdl-sub mounts the claim at `/media` and writes `/media/ytdl-sub`). The claim
+was grown from 2300Gi by 3000Gi for the NRK archive; the original library is
+still about 2.0TiB. The migration copied the qBittorrent downloads and the
+existing Hærry Pot movie; the rest of the library was re-imported from
 `/data/downloads` by Radarr and Sonarr as hardlinks, so it is present under
 `/data/media` without duplicating Ceph data. Move the claim to `bulk-fs` when
 glemmen80 has its disks. See [`apps/media/README.md`](../apps/media/README.md)

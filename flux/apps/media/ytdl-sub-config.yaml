@@ -1,0 +1,220 @@
+# ytdl-sub configuration. The container mounts this ConfigMap read-only at
+# /configs. `cron` is sourced by the LinuxServer cron wrapper and runs
+# `ytdl-sub sub`; edit the subscriptions below to add or remove a series.
+#
+# The preset is the Jellyfin TV preset with two changes:
+#
+#   * `_episode_video_tags` is not included, and chapters are not embedded.
+#     Those would run ffmpeg over the finished file. Only the HLS video/audio
+#     merge that yt-dlp has to do remains (stream copy, no re-encode).
+#   * episode numbers come from the NRK playlist index, except for season 0
+#     ("Ekstramateriale"), which uses the upload date because those are
+#     individual /program URLs with no playlist index. `Nytt på nytt` uses
+#     date-based episode numbers too: NRK lists its year-seasons newest first,
+#     so a playlist index would renumber every episode whenever a new one airs.
+#
+# NRK season URLs are used instead of the bare series URL because yt-dlp
+# expands a series page to a flat list without season numbers, and the bare
+# `nytt-paa-nytt` page only contains the latest episodes.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ytdl-sub-config
+  labels:
+    app.kubernetes.io/name: ytdl-sub
+    app.kubernetes.io/instance: ytdl-sub
+    app.kubernetes.io/part-of: media
+data:
+  config.yaml: |
+    configuration:
+      # Keep downloads on the same filesystem as the finished media so the
+      # final move is a rename. The dot-directory is outside the library root.
+      working_directory: "/media/.ytdl-sub-working"
+      umask: "002"
+
+    presets:
+      nrk_tv:
+        preset:
+          - "_base"
+          - "_episode_base"
+          - "_episode_nfo_tags"
+          - "_tv_show_collection_episode_ordering"
+          - "_tv_show_collection"
+        overrides:
+          tv_show_directory: "/media/ytdl-sub"
+          tv_show_poster_file_name: "poster.jpg"
+          tv_show_fanart_file_name: "fanart.jpg"
+          season_poster_file_name: "season{season_number_padded}-poster.jpg"
+
+          # Used by _tv_show_collection_episode_ordering. The per-subscription
+          # `nrk_episode_number_style` switches Nytt på nytt to date numbering.
+          tv_show_collection_episode_ordering: "playlist-index"
+          nrk_episode_number_style: "playlist"
+
+          # NRK titles are "Series - episode title"; the file name already has
+          # the series name, so strip the prefix when it is present.
+          episode_title: >-
+            { %replace(title, %concat(tv_show_name, " - "), "") }
+          episode_plot: "{description}"
+
+          # Keep yt-dlp's ID in square brackets: the Jellyfin YoutubeMetadata
+          # plugin expects it, and the .info.json basename matches the video.
+          episode_file_name: >-
+            {tv_show_name} - S{season_number_padded}E{episode_number_padded} - {episode_title} [{uid}]
+          episode_number_and_padded_: >-
+            {
+              %if(
+                %eq(collection_season_number, "0"),
+                [ %concat(upload_year_truncated, upload_month_padded, upload_day_padded, upload_date_index_padded), 8 ],
+                %if(
+                  %eq(nrk_episode_number_style, "date"),
+                  [ %concat(upload_month_padded, upload_day_padded, upload_date_index_padded), 6 ],
+                  [ %concat(playlist_index), 2 ]
+                )
+              )
+            }
+        chapters:
+          embed_chapters: False
+        subtitles:
+          subtitles_name: "{episode_file_path}.nb.{subtitles_ext}"
+          subtitles_type: "vtt"
+          embed_subtitles: False
+          languages:
+            - "nb-ttv"
+          allow_auto_generated_subtitles: False
+        nfo_tags:
+          tags:
+            showtitle: "{tv_show_name}"
+            originaltitle: "{title}"
+            studio: "NRK"
+            country: "Norge"
+            language: "norsk"
+        output_directory_nfo_tags:
+          tags:
+            plot: "{tv_show_plot}"
+            year: "{tv_show_year}"
+            studio: "NRK"
+            country: "Norge"
+            language: "norsk"
+
+      # The three series below list their episodes oldest first. With
+      # break_on_existing yt-dlp would stop at episode 1 on every run and never
+      # see newly published episodes at the end, so scan the whole (small)
+      # season and let the download archive skip what is already present.
+      nrk_tv_full_scan:
+        preset:
+          - "nrk_tv"
+        ytdl_options:
+          break_on_existing: False
+
+  subscriptions.yaml: |
+    nrk_tv_full_scan:
+      "~Førstegangstjenesten":
+        tv_show_plot: "En krigsentusiast, en bortskjemt russ, en kvinnelig mannssjåvinist og en identitetsforvirret fyr fra Oslo øst. Er det disse som skal beskytte Norge?"
+        tv_show_year: "2019"
+        tv_show_genre: "Komedie"
+        tv_show_content_rating: "TV-14"
+        s01_name: "Sesong 1"
+        s01_url: "https://tv.nrk.no/serie/foerstegangstjenesten/sesong/1"
+        s02_name: "Sesong 2"
+        s02_url: "https://tv.nrk.no/serie/foerstegangstjenesten/sesong/2"
+        s00_name: "Ekstramateriale"
+        s00_url:
+          - "https://tv.nrk.no/program/KMNO10007421"
+          - "https://tv.nrk.no/program/KMNO10006820"
+          - "https://tv.nrk.no/program/MUHH58002520"
+          - "https://tv.nrk.no/program/MUHH58002420"
+          - "https://tv.nrk.no/program/MUHH58002320"
+          - "https://tv.nrk.no/program/KMNO10000220"
+
+      "~Monsen og nasjonalparkene":
+        tv_show_plot: "Lars Monsen er på tur igjen! Nå jakter han spektakulære naturopplevelser og nyttig kunnskap om den unike naturen vi har valgt å verne."
+        tv_show_year: "2025"
+        tv_show_genre: "Dokumentar"
+        tv_show_content_rating: "TV-PG"
+        s01_name: "Sesong 1"
+        s01_url: "https://tv.nrk.no/serie/monsen-og-nasjonalparkene/sesong/1"
+        s02_name: "Sesong 2"
+        s02_url: "https://tv.nrk.no/serie/monsen-og-nasjonalparkene/sesong/2"
+        s00_name: "Ekstramateriale"
+        s00_url:
+          - "https://tv.nrk.no/program/KMNO10001526"
+          - "https://tv.nrk.no/program/KMNO10013826"
+          - "https://tv.nrk.no/program/MUHU02600025"
+          - "https://tv.nrk.no/program/KMNO10002625"
+          - "https://tv.nrk.no/program/KMNO10009625"
+          - "https://tv.nrk.no/program/KMNO10002125"
+
+      "~Med Monsen på villspor":
+        tv_show_plot: "Lars Monsen skal på villspor igjen, men denne gangen ikke alene. Hvem gjesten er, vet han først når han tar av seg bindet for øynene og turen starter."
+        tv_show_year: "2014"
+        tv_show_genre: "Dokumentar"
+        tv_show_content_rating: "TV-PG"
+        s01_name: "Sesong 1"
+        s01_url: "https://tv.nrk.no/serie/monsen-paa-villspor/sesong/1"
+        s02_name: "Sesong 2"
+        s02_url: "https://tv.nrk.no/serie/monsen-paa-villspor/sesong/2"
+        s03_name: "Sesong 3"
+        s03_url: "https://tv.nrk.no/serie/monsen-paa-villspor/sesong/3"
+        s04_name: "Sesong 4"
+        s04_url: "https://tv.nrk.no/serie/monsen-paa-villspor/sesong/4"
+        s00_name: "Ekstramateriale"
+        s00_url:
+          - "https://tv.nrk.no/program/KMNO10002722"
+          - "https://tv.nrk.no/program/KMNO10006120"
+
+    # Nytt på nytt's season pages are newest first, so break_on_existing is
+    # correct here: a fully archived season stops at its newest episode.
+    # NRK's rights window currently expires 1999 and 2011-2022; yt-dlp skips
+    # those episodes, but they are still enumerated because nothing from them
+    # is in the archive. They stay listed so they are picked up if NRK
+    # republishes them; the usable archive is 2023-2026.
+    nrk_tv:
+      "~Nytt på nytt":
+        tv_show_plot: "Hva skjedde egentlig i uka som gikk? To programledere og to smarte gjester oppsummerer de viktigste sakene for deg."
+        tv_show_year: "1999"
+        tv_show_genre: "Satire"
+        tv_show_content_rating: "TV-14"
+        nrk_episode_number_style: "date"
+        episode_year: "{collection_season_name}"
+        s01_name: "1999"
+        s01_url: "https://tv.nrk.no/serie/nytt-paa-nytt/sesong/1999"
+        s02_name: "2011"
+        s02_url: "https://tv.nrk.no/serie/nytt-paa-nytt/sesong/2011"
+        s03_name: "2012"
+        s03_url: "https://tv.nrk.no/serie/nytt-paa-nytt/sesong/2012"
+        s04_name: "2013"
+        s04_url: "https://tv.nrk.no/serie/nytt-paa-nytt/sesong/2013"
+        s05_name: "2014"
+        s05_url: "https://tv.nrk.no/serie/nytt-paa-nytt/sesong/2014"
+        s06_name: "2015"
+        s06_url: "https://tv.nrk.no/serie/nytt-paa-nytt/sesong/2015"
+        s07_name: "2016"
+        s07_url: "https://tv.nrk.no/serie/nytt-paa-nytt/sesong/2016"
+        s08_name: "2017"
+        s08_url: "https://tv.nrk.no/serie/nytt-paa-nytt/sesong/2017"
+        s09_name: "2018"
+        s09_url: "https://tv.nrk.no/serie/nytt-paa-nytt/sesong/2018"
+        s10_name: "2019"
+        s10_url: "https://tv.nrk.no/serie/nytt-paa-nytt/sesong/2019"
+        s11_name: "2020"
+        s11_url: "https://tv.nrk.no/serie/nytt-paa-nytt/sesong/2020"
+        s12_name: "2021"
+        s12_url: "https://tv.nrk.no/serie/nytt-paa-nytt/sesong/2021"
+        s13_name: "2022"
+        s13_url: "https://tv.nrk.no/serie/nytt-paa-nytt/sesong/2022"
+        s14_name: "2023"
+        s14_url: "https://tv.nrk.no/serie/nytt-paa-nytt/sesong/2023"
+        s15_name: "2024"
+        s15_url: "https://tv.nrk.no/serie/nytt-paa-nytt/sesong/2024"
+        s16_name: "2025"
+        s16_url: "https://tv.nrk.no/serie/nytt-paa-nytt/sesong/2025"
+        s17_name: "2026"
+        s17_url: "https://tv.nrk.no/serie/nytt-paa-nytt/sesong/2026"
+
+  cron: |
+    #!/bin/sh
+    set -eu
+    # /config is the container's writable state directory; the active
+    # configuration is the read-only ConfigMap at /configs.
+    ytdl-sub --config /configs/config.yaml sub /configs/subscriptions.yaml

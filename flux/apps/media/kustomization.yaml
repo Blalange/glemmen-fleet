@@ -1,5 +1,5 @@
-# Media stack: Jellyfin, Sonarr, Radarr, Prowlarr, Profilarr, Seerr and
-# qBittorrent.
+# Media stack: Jellyfin, Sonarr, Radarr, Prowlarr, Profilarr, ytdl-sub,
+# Seerr and qBittorrent.
 #
 # They share the `media` namespace because the ReadWriteMany media PVC can only
 # be mounted by pods in one namespace. The namespace is privileged for gluetun
@@ -17,6 +17,8 @@ resources:
   - profilarr.yaml
   - seerr.yaml
   - flaresolverr.yaml
+  - ytdl-sub.yaml
+  - ytdl-sub-config.yaml
   - qbittorrent.yaml
   - qbittorrent-resume-cronjob.yaml
   - authentik-outpost.yaml
