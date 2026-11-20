@@ -565,7 +565,9 @@ is managed by external-dns.
   (Windscribe profile), `qbittorrent-webui` (qBittorrent admin),
   `jellyfin-admin` (Jellyfin local admin) and `authentik-outpost` (outpost
   token) in `media`; created for ARTEX: `artex-db` (PostgreSQL password and
-  DSN) and `artex-authentik-outpost` (outpost token) in `artex`).
+  DSN) and `artex-authentik-outpost` (outpost token) in `artex`; created for
+  the private ARTEX image: `ghcr-pull` (GitHub `read:packages` credential) in
+  `artex`).
 - The Rancher import installed `cattle-system` (kept) and
   `cattle-fleet-system` (Fleet removed on 2026-10-15 — Flux does the GitOps).
 - Future services can share `.99` on other ports with MetalLB (`autoAssign` is

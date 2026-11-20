@@ -89,6 +89,11 @@ spec:
       securityContext:
         seccompProfile:
           type: RuntimeDefault
+      # The image package is private; the credential is in the hand-created
+      # `ghcr-pull` Secret. Make the package public and remove this if the
+      # registry policy changes (see README.md).
+      imagePullSecrets:
+        - name: ghcr-pull
       # The image includes Chromium, bbot and a scanner toolchain, and three
       # concurrent workers can be memory-hungry. glemmen80 has 192 GiB and a
       # 1 TB system disk, so keep the scans off the smaller nodes.

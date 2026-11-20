@@ -54,9 +54,19 @@ docker login ghcr.io
 ```
 
 The script clones the tag, builds the upstream Dockerfile for `linux/amd64`
-and pushes it. The GHCR package must be public for the cluster to pull it
-without an image pull secret; if it is private, create one in the `artex`
-namespace and add `imagePullSecrets` to the Deployment.
+and pushes it. The GHCR package is private, so the Deployment uses the
+hand-created `ghcr-pull` image pull Secret in the `artex` namespace:
+
+```sh
+kubectl -n artex create secret docker-registry ghcr-pull \
+  --docker-server=ghcr.io \
+  --docker-username=<github-user> \
+  --docker-password=<token-with-read:packages> \
+  --docker-email=<email>
+```
+
+Make the package public in the GitHub package settings and remove
+`imagePullSecrets` from `artex.yaml` if anonymous pulls are preferred.
 
 To upgrade, bump `ARTEX_VERSION` in the script and the image tag in
 `artex.yaml`, rebuild, and commit. ARTEX applies its embedded schema and
