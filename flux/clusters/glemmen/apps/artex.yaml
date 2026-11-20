@@ -1,0 +1,23 @@
+# ARTEX and its dedicated PostgreSQL. Waits for the Ceph storage classes and
+# the nvme-rbd volumes.
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: artex
+  namespace: flux-system
+spec:
+  interval: 1h
+  retryInterval: 2m
+  # The first pull of the ARTEX image can take a while; it contains the Go
+  # binary, Chromium, bbot and the scanner toolchain.
+  timeout: 30m
+  path: ./flux/apps/artex
+  prune: true
+  wait: true
+  targetNamespace: artex
+  dependsOn:
+    - name: infrastructure
+    - name: rook-ceph
+  sourceRef:
+    kind: GitRepository
+    name: flux-system

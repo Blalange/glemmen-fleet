@@ -53,6 +53,11 @@ metadata:
 apiVersion: v1
 kind: Namespace
 metadata:
+  name: artex
+---
+apiVersion: v1
+kind: Namespace
+metadata:
   name: energisjappa
 ---
 apiVersion: v1

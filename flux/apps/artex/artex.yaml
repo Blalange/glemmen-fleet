@@ -1,0 +1,163 @@
+# ARTEX: LLM-driven autonomous penetration testing. The Go binary embeds the
+# Next.js UI and listens on 8787 (UI, API and SSE) and 8788 (the internal
+# traffic-recording proxy). Only 8787 is exposed, and only through the
+# Authentik proxy outpost in this namespace.
+#
+# No LLM keys are configured here. Add LLM profiles under System -> LLM in the
+# UI; ARTEX encrypts them in PostgreSQL with keys/secret.key from the keys PVC.
+# Until a provider is configured the backend logs `engine idle`.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: artex-data-ceph
+  annotations:
+    kustomize.toolkit.fluxcd.io/ssa: IfNotPresent
+  labels:
+    app.kubernetes.io/name: artex
+    app.kubernetes.io/instance: artex
+    app.kubernetes.io/part-of: artex
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: nvme-rbd
+  resources:
+    requests:
+      storage: 20Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: artex-keys-ceph
+  annotations:
+    kustomize.toolkit.fluxcd.io/ssa: IfNotPresent
+  labels:
+    app.kubernetes.io/name: artex
+    app.kubernetes.io/instance: artex
+    app.kubernetes.io/part-of: artex
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: nvme-rbd
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: artex
+  labels:
+    app.kubernetes.io/name: artex
+    app.kubernetes.io/instance: artex
+    app.kubernetes.io/part-of: artex
+spec:
+  selector:
+    app.kubernetes.io/name: artex
+    app.kubernetes.io/instance: artex
+  ports:
+    - name: http
+      port: 8787
+      targetPort: http
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: artex
+  labels:
+    app.kubernetes.io/name: artex
+    app.kubernetes.io/instance: artex
+    app.kubernetes.io/part-of: artex
+spec:
+  replicas: 1
+  revisionHistoryLimit: 3
+  # One ReadWriteOnce data volume and one keys volume: never run two pods.
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: artex
+      app.kubernetes.io/instance: artex
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: artex
+        app.kubernetes.io/instance: artex
+        app.kubernetes.io/part-of: artex
+    spec:
+      automountServiceAccountToken: false
+      terminationGracePeriodSeconds: 60
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
+      # The image includes Chromium, bbot and a scanner toolchain, and three
+      # concurrent workers can be memory-hungry. glemmen80 has 192 GiB and a
+      # 1 TB system disk, so keep the scans off the smaller nodes.
+      nodeSelector:
+        kubernetes.io/hostname: glemmen80
+      containers:
+        - name: artex
+          image: ghcr.io/blalange/artex:v0.6.0
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: ARTEX_PG_DSN
+              valueFrom:
+                secretKeyRef:
+                  name: artex-db
+                  key: dsn
+            - name: ARTEX_JWT_KEY_DIR
+              value: /app/keys
+            # Requests reach ARTEX from the outpost pod. Trust the Calico pod
+            # CIDR so the login rate limit uses X-Forwarded-For instead of
+            # treating every user as the outpost.
+            - name: ARTEX_TRUSTED_PROXIES
+              value: 10.42.0.0/16
+          ports:
+            - name: http
+              containerPort: 8787
+            - name: proxy
+              containerPort: 8788
+          # The schema and built-in seed run on every start; give the first
+          # startup enough time before the liveness probe can restart it.
+          startupProbe:
+            httpGet:
+              path: /api/health
+              port: http
+            periodSeconds: 10
+            failureThreshold: 30
+          readinessProbe:
+            httpGet:
+              path: /api/health
+              port: http
+            periodSeconds: 10
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /api/health
+              port: http
+            initialDelaySeconds: 60
+            periodSeconds: 30
+            failureThreshold: 6
+          resources:
+            requests:
+              cpu: 250m
+              memory: 1Gi
+            limits:
+              memory: 6Gi
+          # Upstream's compose file runs with no-new-privileges. The default
+          # capability set is kept: the server starts as root and drops each
+          # agent process to the unprivileged executor, and nmap needs
+          # NET_RAW for raw scans.
+          securityContext:
+            allowPrivilegeEscalation: false
+          volumeMounts:
+            - name: data
+              mountPath: /app/data
+            - name: keys
+              mountPath: /app/keys
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: artex-data-ceph
+        - name: keys
+          persistentVolumeClaim:
+            claimName: artex-keys-ceph

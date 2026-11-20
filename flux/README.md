@@ -212,6 +212,26 @@ steps.
   single OSD or host failure. The media app config volumes are on Ceph
   `fast-rbd`; there is no off-cluster volume backup yet.
 
+## ARTEX
+
+`apps/artex` runs [ARTEX](https://github.com/BaaRai/ARTEX), an LLM-driven
+autonomous penetration-testing platform, at <https://artex.glem.men>. The Go
+binary embeds the Next.js UI and serves the API and SSE stream on port 8787;
+the internal traffic-recording proxy on 8788 is not exposed. A dedicated
+Authentik proxy outpost (`glemmen-artex`) authenticates every request against
+the `ARTEX` provider and proxies it to `artex.artex.svc.cluster.local:8787`.
+
+ARTEX uses a dedicated PostgreSQL 18.6 instance in the `artex` namespace
+(`artex-postgres`, 8 GiB `nvme-rbd`), not the shared YugabyteDB cluster: its
+schema needs GiST indexes on `inet`/`cidr`, a GIN index on `JSONB[]`, and a
+`UNIQUE` constraint on a `CIDR`, which YSQL does not implement. The app keeps
+its 20 GiB traffic/task volume and 1 GiB JWT/secret-key volume on `nvme-rbd`
+and is pinned to `glemmen80` for memory and disk headroom. No LLM keys are
+stored in Git or the Deployment; configure providers in **System -> LLM** in
+the UI, where they are encrypted with `keys/secret.key`. Until then the engine
+stays idle. See [`apps/artex/README.md`](../apps/artex/README.md) for the
+image build, secrets, Authentik objects and first-run steps.
+
 ## Thanos and long-term metrics
 
 Prometheus runs two replicas for high availability. Each replica is capped at
@@ -498,6 +518,7 @@ role passwords are in `yugabyte-auth` (`yugabyte` namespace) and `grafana-db`
 - `infrastructure` -> `rook-ceph` (Rook Ceph cluster, fast/NVMe pools, RGW and storage classes)
 - `infrastructure` + `metallb-pool` -> `pxe` (proxyDHCP/TFTP chainloader + Talos boot assets)
 - `infrastructure` + `rook-ceph` -> `media` (Jellyfin, *arr, Seerr, qBittorrent)
+- `infrastructure` + `rook-ceph` -> `artex` (ARTEX and its dedicated PostgreSQL)
 - `cert-manager-issuers` -> `cert-manager-certificates` -> `ingress` (Traefik)
 - `infrastructure` + `rook-ceph` -> `monitoring` (kube-prometheus-stack -> Thanos) -> `monitoring-dashboards` / `monitoring-alerts`
 - `monitoring` -> `logging` (Loki -> Alloy)
@@ -543,7 +564,8 @@ is managed by external-dns.
   `monitoring`; created for the media stack: `qbittorrent-wireguard`
   (Windscribe profile), `qbittorrent-webui` (qBittorrent admin),
   `jellyfin-admin` (Jellyfin local admin) and `authentik-outpost` (outpost
-  token) in `media`).
+  token) in `media`; created for ARTEX: `artex-db` (PostgreSQL password and
+  DSN) and `artex-authentik-outpost` (outpost token) in `artex`).
 - The Rancher import installed `cattle-system` (kept) and
   `cattle-fleet-system` (Fleet removed on 2026-10-15 — Flux does the GitOps).
 - Future services can share `.99` on other ports with MetalLB (`autoAssign` is

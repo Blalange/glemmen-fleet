@@ -1,0 +1,120 @@
+# PostgreSQL for ARTEX. ARTEX requires PostgreSQL; its schema uses GiST
+# indexes on inet/cidr columns and a GIN index on JSONB[], which YugabyteDB
+# YSQL does not implement. The database is internal-only: only the ARTEX
+# Deployment connects to it through the headless Service.
+#
+# The official postgres image only creates the database/user and sets the
+# password while the data directory is empty. Changing the `artex-db` Secret
+# later does not change the password inside the database; rotate it with SQL
+# as well.
+apiVersion: v1
+kind: Service
+metadata:
+  name: artex-postgres
+  labels:
+    app.kubernetes.io/name: artex-postgres
+    app.kubernetes.io/instance: artex
+    app.kubernetes.io/part-of: artex
+spec:
+  # Headless: the single pod's DNS name is the Service name, which is all a
+  # single-writer database needs.
+  clusterIP: None
+  selector:
+    app.kubernetes.io/name: artex-postgres
+    app.kubernetes.io/instance: artex
+  ports:
+    - name: postgres
+      port: 5432
+      targetPort: postgres
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: artex-postgres-ceph
+  annotations:
+    kustomize.toolkit.fluxcd.io/ssa: IfNotPresent
+  labels:
+    app.kubernetes.io/name: artex-postgres
+    app.kubernetes.io/instance: artex
+    app.kubernetes.io/part-of: artex
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: nvme-rbd
+  resources:
+    requests:
+      storage: 8Gi
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: artex-postgres
+  labels:
+    app.kubernetes.io/name: artex-postgres
+    app.kubernetes.io/instance: artex
+    app.kubernetes.io/part-of: artex
+spec:
+  serviceName: artex-postgres
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: artex-postgres
+      app.kubernetes.io/instance: artex
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: artex-postgres
+        app.kubernetes.io/instance: artex
+        app.kubernetes.io/part-of: artex
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: postgres
+          image: docker.io/library/postgres:18.6-alpine
+          imagePullPolicy: IfNotPresent
+          securityContext:
+            allowPrivilegeEscalation: false
+          env:
+            - name: POSTGRES_DB
+              value: artex
+            - name: POSTGRES_USER
+              value: artex
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: artex-db
+                  key: password
+          ports:
+            - name: postgres
+              containerPort: 5432
+          # postgres:18 keeps its cluster in /var/lib/postgresql/18/docker, so
+          # the volume mounts one level above the data directory.
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/postgresql
+          readinessProbe:
+            exec:
+              command: ["pg_isready", "-U", "artex", "-d", "artex"]
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          livenessProbe:
+            exec:
+              command: ["pg_isready", "-U", "artex", "-d", "artex"]
+            initialDelaySeconds: 30
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 6
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              memory: 1Gi
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: artex-postgres-ceph

@@ -1,0 +1,17 @@
+# ARTEX (autonomous penetration testing) and its dedicated PostgreSQL.
+#
+# Secrets are created by hand and never committed:
+#
+#   artex-db                  PostgreSQL password + ARTEX DSN (keys `password`, `dsn`)
+#   artex-authentik-outpost   token of the `glemmen-artex` Authentik outpost (key `token`)
+#
+# See README.md for the secret commands, the Authentik objects and first-run
+# steps.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: artex
+resources:
+  - postgres.yaml
+  - artex.yaml
+  - authentik-outpost.yaml
+  - ingress.yaml
