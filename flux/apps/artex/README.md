@@ -53,8 +53,11 @@ docker login ghcr.io
 # defaults: v0.6.0 -> ghcr.io/blalange/artex:v0.6.0
 ```
 
-The script clones the tag, builds the upstream Dockerfile for `linux/amd64`
-and pushes it. The GHCR package is private, so the Deployment uses the
+The script clones the tag and builds the vendored
+`dockerfiles/artex/Dockerfile` against that checkout as the build context.
+The Dockerfile is the unmodified upstream file for v0.6.0; replace it from the
+new tag when upgrading, together with the version in the script and the image
+tag in `artex.yaml`. The GHCR package is private, so the Deployment uses the
 hand-created `ghcr-pull` image pull Secret in the `artex` namespace:
 
 ```sh

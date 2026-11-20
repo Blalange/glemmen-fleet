@@ -140,6 +140,7 @@ Passwords are stored in Kubernetes Secrets, not in Git: `netbox-secrets` in `net
 - `flux/` — Flux v2 configuration. `scripts/flux/setup.py` bootstraps Flux against this repository, and `scripts/flux/manage.py` shows status and suspends/resumes reconciliation. Application manifests live under `flux/apps/`, infrastructure under `flux/infrastructure/`, monitoring under `flux/monitoring/` and ingress under `flux/ingress/`.
 - `talos/` — Talos machine configuration: `schematic.yaml` (base Image Factory extensions), `schematic-gpu.yaml` (GPU extensions for `TALOS_GPU_NODES`), `nodes/` (per-node documents), `patches/` and a runbook in `talos/README.md`. Generated configurations and secrets live in `talos/generated/` (not committed).
 - `scripts/` — operational and generation scripts: `scripts/talos/` (gen-iso, setup-images, gen-config, gen-pxe, manage), `scripts/flux/` (setup, manage), `scripts/download-tools.py` (pinned `talosctl`/`kubectl`/`flux`/`pv-migrate` into `scripts/bin/`), `scripts/check-updates.py` (Talos/Kubernetes/Flux/Helm/image updates), `scripts/redfish.py` (parallel multi-server Redfish power/fan control), plus `network-test.py` and `update-grafana-dashboards.py`.
+- `dockerfiles/` — custom Dockerfiles for images the cluster builds itself. Each image has its own subdirectory; the build context and builder are documented in `dockerfiles/README.md`.
 - `network/` — network hardware documentation and switch backups.
 
 ## GitOps and configuration
