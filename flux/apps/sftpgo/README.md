@@ -3,6 +3,7 @@
 `flux/apps/sftpgo` runs [SFTPGo](https://github.com/drakkan/sftpgo) as the
 cluster's file service:
 
+- **Web UI** at <https://sftpgo.glem.men/> (WebClient and WebAdmin)
 - **WebDAV** at <https://dav.glem.men/>
 - **SFTP** at `sftp.glem.men:22022` (and `192.168.6.99:22022` on the LAN)
 - **Homes** on a 100 GiB CephFS volume on the CMR `fast-fs` tier
@@ -18,10 +19,12 @@ no Samba/SMB service in the cluster.
 | --- | --- |
 | `sftpgo-homes-ceph` PVC | `fast-fs`, 100Gi, `ReadWriteMany`; per-user homes under `/data/homes` |
 | `sftpgo-state-ceph` PVC | `nvme-rbd`, 5Gi; SQLite DB, SSH host keys and DB backups |
-| `Deployment/sftpgo` | SFTPGo WebDAV (8081) and SFTP (2022 internal); HTTPD 8080 stays internal |
+| `Deployment/sftpgo` | SFTPGo Web UI (8080), WebDAV (8081) and SFTP (2022 internal) |
 | `Deployment/authentik-ldap` | in-cluster Authentik LDAP outpost (3389) |
-| `Service/sftpgo-webdav` | ClusterIP backend for the Traefik Ingress |
+| `Service/sftpgo-webui` | ClusterIP backend for the Web UI Ingress |
+| `Service/sftpgo-webdav` | ClusterIP backend for the WebDAV Ingress |
 | `Service/sftpgo-sftp` | LoadBalancer on `192.168.6.99:22022` |
+| `Ingress/sftpgo-webui` | `https://sftpgo.glem.men` (WebAdmin/WebClient) |
 | `Ingress/sftpgo-webdav` | `https://dav.glem.men` with the wildcard TLS certificate |
 
 The SFTPGo image does not include the LDAP auth plugin. An init container
@@ -130,6 +133,22 @@ The Deployment reads `token` for the outpost and `ldap-password` for the
 plugin's bind DN. If either is wrong, the outpost or login fails; check the
 outpost and SFTPGo logs.
 
+The Web UI has a local break-glass administrator. Its password and the HTTPD
+session signing passphrase are also hand-created and never stored in Git:
+
+```sh
+kubectl -n sftpgo create secret generic sftpgo-admin \
+  --from-literal=password='<admin password>' \
+  --from-literal=signing-passphrase='<random passphrase>' \
+  --dry-run=client -o yaml | kubectl apply -f -
+```
+
+The username is `admin`. SFTPGo creates this account on startup while no admin
+exists; changing the Secret later does not rotate the password in the database.
+Rotate it in the WebAdmin UI (or recreate the database admin) if needed.
+Regular WebClient users still sign in with their Authentik-backed LDAP
+credentials.
+
 ## Users and permissions
 
 - Any user allowed by the Authentik application can log in; no SFTPGo local
@@ -148,6 +167,19 @@ outpost and SFTPGo logs.
   shared CephFS volume needs limits.
 
 ## Using it
+
+### Web UI
+
+Open <https://sftpgo.glem.men/>:
+
+- **WebClient** (`/web/client`) for regular users; sign in with the same
+  Authentik-backed username/password used for WebDAV and SFTP.
+- **WebAdmin** (`/web/admin`) for the local `admin` break-glass account. Use it
+  to inspect users, transfer history and server status.
+
+The Web UI is exposed directly over Traefik TLS and uses SFTPGo's own login
+page; it is not behind an Authentik proxy outpost, so there is no second SSO
+login in front of the SFTPGo login.
 
 ### WebDAV
 
@@ -194,9 +226,15 @@ external-dns creates `sftp.glem.men` pointing at the WAN address
   `ldapservice` bind password travel from SFTPGo to the in-cluster LDAP outpost
   over plain LDAP on the pod network; the outpost talks to Authentik over
   HTTPS. Use LDAPS/StartTLS if you want the pod-network hop encrypted as well.
-- The SFTPGo HTTPD/WebAdmin/REST listener on 8080 is disabled from the Ingress
-  and has WebAdmin/WebClient/REST turned off. Use `kubectl port-forward` if
-  you ever need to inspect it.
+- The SFTPGo WebAdmin/WebClient/REST listener on 8080 is exposed at
+  `https://sftpgo.glem.men`. The local `admin` password is the break-glass
+  credential; keep it in a password manager. Regular users authenticate
+  through the LDAP auth plugin.
+- `httpd.token_validation=1` disables binding Web UI JWT/CSRF tokens to the
+  request source IP. Traefik's ECMP/DaemonSet path presents different source
+  addresses for successive requests, which otherwise causes random
+  `invalid CSRF` errors and logouts. Tokens remain signed and short-lived
+  (20-minute sessions, 4-hour login/CSRF tokens).
 - The plugin release is pinned and verified by SHA256 in both the init
   container and SFTPGo's plugin configuration.
 

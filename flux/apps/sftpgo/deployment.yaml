@@ -8,7 +8,10 @@
 # WebDAV is served on 8081 (exposed through Traefik as https://dav.glem.men).
 # SFTP listens on 2022 inside the pod; the LoadBalancer exposes it on the shared
 # .99 VIP as 22022 because external port 2022 is already used by another host.
-# The HTTPD port 8080 is only used internally and is not exposed.
+# The HTTPD listener on 8080 serves WebAdmin and WebClient and is exposed as
+# https://sftpgo.glem.men. The local `admin` account is created from the
+# hand-created `sftpgo-admin` Secret; regular users use their Authentik-backed
+# LDAP credentials.
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -92,7 +95,26 @@ spec:
             - name: SFTPGO_DATA_PROVIDER__BACKUPS_PATH
               value: /var/lib/sftpgo/backups
             - name: SFTPGO_DATA_PROVIDER__CREATE_DEFAULT_ADMIN
-              value: "false"
+              value: "true"
+            - name: SFTPGO_DEFAULT_ADMIN_USERNAME
+              value: admin
+            - name: SFTPGO_DEFAULT_ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: sftpgo-admin
+                  key: password
+            - name: SFTPGO_HTTPD__SIGNING_PASSPHRASE
+              valueFrom:
+                secretKeyRef:
+                  name: sftpgo-admin
+                  key: signing-passphrase
+            # Traefik may present different source IPs for successive requests
+            # (ECMP/DaemonSet). Tokens are still signed and short-lived, but
+            # do not bind them to the request source IP.
+            - name: SFTPGO_HTTPD__TOKEN_VALIDATION
+              value: "1"
+            - name: SFTPGO_COMMON__DEFENDER__ENABLED
+              value: "true"
             - name: SFTPGO_SFTPD__BINDINGS__0__PORT
               value: "2022"
             - name: SFTPGO_WEBDAVD__BINDINGS__0__PORT
@@ -100,11 +122,18 @@ spec:
             - name: SFTPGO_HTTPD__BINDINGS__0__PORT
               value: "8080"
             - name: SFTPGO_HTTPD__BINDINGS__0__ENABLE_WEB_ADMIN
-              value: "false"
+              value: "true"
             - name: SFTPGO_HTTPD__BINDINGS__0__ENABLE_WEB_CLIENT
-              value: "false"
+              value: "true"
             - name: SFTPGO_HTTPD__BINDINGS__0__ENABLE_REST_API
-              value: "false"
+              value: "true"
+            # Traefik is the only client allowed to supply the real client IP.
+            # SFTPGo's CSRF token audience includes the client IP; without this
+            # a browser jumping between Traefik pods could get "invalid CSRF".
+            - name: SFTPGO_HTTPD__BINDINGS__0__PROXY_ALLOWED
+              value: 10.42.0.0/16
+            - name: SFTPGO_HTTPD__BINDINGS__0__CLIENT_IP_PROXY_HEADER
+              value: X-Forwarded-For
             # Authentik LDAP auth plugin. The password is injected from the
             # hand-created Secret; SFTPGo passes all SFTPGO_PLUGIN_AUTH_* vars
             # to the plugin by prefix.

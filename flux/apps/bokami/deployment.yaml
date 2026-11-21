@@ -95,7 +95,7 @@ spec:
             - name: books
               mountPath: /app/books
             - name: tmp
-              emptyDir: {}
+              mountPath: /tmp
       volumes:
         - name: data
           persistentVolumeClaim:

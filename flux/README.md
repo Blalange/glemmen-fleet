@@ -218,6 +218,7 @@ steps.
 
 `apps/sftpgo` runs [SFTPGo](https://github.com/drakkan/sftpgo) as the cluster's
 file service. It serves WebDAV at <https://dav.glem.men> and SFTP on
+`https://sftpgo.glem.men` (WebAdmin/WebClient) and SFTP on
 `192.168.6.99:22022` (`sftp.glem.men:22022`), with per-user homes on the 100 GiB
 `sftpgo-homes-ceph` CephFS volume (`fast-fs`, CMR OSDs). SFTPGo's SQLite
 database, SSH host keys and DB backups live on the small `sftpgo-state-ceph`
@@ -228,8 +229,9 @@ Authentication goes through an in-cluster Authentik LDAP outpost
 `sftpgo-plugin-auth` release. Users are auto-created on first login with
 `/data/homes/<username>` and full permissions below their own home. The
 hand-created `sftpgo-authentik` Secret holds the outpost token and the
-`ldapservice` bind password. The Authentik LDAP provider, application, bind
-flow and outpost are created by hand; see
+`ldapservice` bind password; the `sftpgo-admin` Secret holds the local `admin`
+break-glass password and HTTPD signing passphrase. The Authentik LDAP
+provider, application, bind flow and outpost are created by hand; see
 [`apps/sftpgo/README.md`](apps/sftpgo/README.md) for the base DN, service
 account and permissions.
 
@@ -614,7 +616,8 @@ is managed by external-dns.
   (Windscribe profile), `qbittorrent-webui` (qBittorrent admin),
   `jellyfin-admin` (Jellyfin local admin) and `authentik-outpost` (outpost
   token) in `media`; created for SFTPGo: `sftpgo-authentik` (Authentik LDAP
-  outpost token and `ldapservice` bind password) in `sftpgo`; created for
+  outpost token and `ldapservice` bind password) and `sftpgo-admin` (local
+  WebAdmin password and signing passphrase) in `sftpgo`; created for
   ARTEX: `artex-db` (PostgreSQL password and
   DSN) and `artex-authentik-outpost` (outpost token) in `artex`; created for
   the private ARTEX image: `ghcr-pull` (GitHub `read:packages` credential) in

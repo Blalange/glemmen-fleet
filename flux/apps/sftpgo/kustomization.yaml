@@ -1,8 +1,8 @@
 # SFTPGo WebDAV and SFTP file access on CephFS, authenticated by Authentik LDAP.
 #
-# The sftpgo-authentik Secret is created by hand and is not in Git. Create it
-# before Flux reconciles this Kustomization; see README.md for the Secret,
-# Authentik LDAP provider/outpost and user provisioning steps.
+# The sftpgo-authentik and sftpgo-admin Secrets are created by hand and are not
+# in Git. Create them before Flux reconciles this Kustomization; see README.md
+# for the Secrets, Authentik LDAP provider/outpost and user provisioning steps.
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 namespace: sftpgo
@@ -12,5 +12,7 @@ resources:
   - authentik-ldap.yaml
   - deployment.yaml
   - service-webdav.yaml
+  - service-webui.yaml
   - service-sftp.yaml
   - ingress.yaml
+  - ingress-webui.yaml

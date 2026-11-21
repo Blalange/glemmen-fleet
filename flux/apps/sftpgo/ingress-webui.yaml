@@ -1,0 +1,24 @@
+# SFTPGo WebAdmin/WebClient over the existing *.glem.men wildcard TLS
+# certificate. Users sign in with their Authentik-backed LDAP credentials for
+# WebClient; the local `admin` account is the break-glass WebAdmin login.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: sftpgo-webui
+  labels:
+    app.kubernetes.io/name: sftpgo
+    app.kubernetes.io/instance: sftpgo
+    app.kubernetes.io/part-of: sftpgo
+spec:
+  ingressClassName: traefik
+  rules:
+    - host: sftpgo.glem.men
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: sftpgo-webui
+                port:
+                  number: 8080

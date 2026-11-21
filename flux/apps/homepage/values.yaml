@@ -226,6 +226,14 @@ config:
             icon: frigate.png
             href: https://frigate.glem.men
             description: Kameraovervåking og opptak
+        - SFTPGo:
+            icon: sftpgo.png
+            href: https://sftpgo.glem.men
+            description: WebDAV, SFTP og nettleser for filer
+        - Bokami:
+            icon: calibre-web.png
+            href: https://bokami.glem.men
+            description: Digital bokhylle og leser
         - NetBox:
             icon: netbox.png
             href: https://netbox.glem.men

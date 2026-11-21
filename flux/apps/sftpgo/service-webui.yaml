@@ -1,0 +1,19 @@
+# SFTPGo WebAdmin/WebClient backend. Traefik terminates TLS at
+# https://sftpgo.glem.men and forwards to the HTTPD listener on 8080.
+apiVersion: v1
+kind: Service
+metadata:
+  name: sftpgo-webui
+  labels:
+    app.kubernetes.io/name: sftpgo
+    app.kubernetes.io/instance: sftpgo
+    app.kubernetes.io/part-of: sftpgo
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: sftpgo
+    app.kubernetes.io/instance: sftpgo
+  ports:
+    - name: http
+      port: 8080
+      targetPort: http
