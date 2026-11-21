@@ -58,6 +58,11 @@ metadata:
 apiVersion: v1
 kind: Namespace
 metadata:
+  name: bokami
+---
+apiVersion: v1
+kind: Namespace
+metadata:
   name: energisjappa
 ---
 apiVersion: v1
