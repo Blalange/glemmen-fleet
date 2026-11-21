@@ -1,0 +1,22 @@
+# Traefik terminates TLS with the *.glem.men wildcard certificate and forwards
+# directly to Bokami, which enforces its own reader/admin authentication.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: bokami
+  labels:
+    app.kubernetes.io/name: bokami
+    app.kubernetes.io/instance: bokami
+spec:
+  ingressClassName: traefik
+  rules:
+    - host: bokami.glem.men
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: bokami
+                port:
+                  number: 3000
