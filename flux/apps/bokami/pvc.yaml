@@ -1,0 +1,35 @@
+# Persistent storage for Bokami on Rook Ceph (RF2, Retain, expandable).
+# bokami-data-ceph: config, profiles, sessions, bookmarks and cover cache
+# (small, latency-sensitive -> nvme-rbd).
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: bokami-data-ceph
+  labels:
+    app.kubernetes.io/name: bokami
+    app.kubernetes.io/instance: bokami
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: nvme-rbd
+  resources:
+    requests:
+      storage: 2Gi
+---
+# bokami-books-ceph: books (image series, PDF and EPUB) on CephFS (fast-fs,
+# ReadWriteMany). Can be mounted directly with:
+#   ./scripts/mount-cephfs.py --pvc bokami-books-ceph -n bokami
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: bokami-books-ceph
+  labels:
+    app.kubernetes.io/name: bokami
+    app.kubernetes.io/instance: bokami
+spec:
+  accessModes:
+    - ReadWriteMany
+  storageClassName: fast-fs
+  resources:
+    requests:
+      storage: 20Gi
