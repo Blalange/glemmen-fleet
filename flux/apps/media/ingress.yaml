@@ -1,6 +1,7 @@
 # TLS is terminated by Traefik using the existing *.glem.men wildcard
-# certificate in kube-system. Only Jellyfin is routed directly; the other apps
-# go through the Authentik proxy outpost so they are protected by SSO.
+# certificate in kube-system. Jellyfin and Seerr are routed directly because
+# they have their own authentication; the other apps go through the Authentik
+# proxy outpost so they are protected by SSO.
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
@@ -125,47 +126,13 @@ spec:
     - host: seerr.glem.men
       http:
         paths:
-          # Seerr registers /sw.js as a service worker. While a sign-in is
-          # pending, the browser's background update check for it reaches the
-          # app and makes the Authentik proxy outpost drop the pending session
-          # cookie, so the OAuth callback then returns 400. Serve the public
-          # PWA assets directly so they never touch the outpost. See the
-          # Authentik section of README.md.
-          - path: /sw.js
-            pathType: Exact
-            backend:
-              service:
-                name: seerr
-                port:
-                  number: 5055
-          - path: /offline.html
-            pathType: Exact
-            backend:
-              service:
-                name: seerr
-                port:
-                  number: 5055
-          - path: /site.webmanifest
-            pathType: Exact
-            backend:
-              service:
-                name: seerr
-                port:
-                  number: 5055
-          - path: /favicon.ico
-            pathType: Exact
-            backend:
-              service:
-                name: seerr
-                port:
-                  number: 5055
           - path: /
             pathType: Prefix
             backend:
               service:
-                name: authentik-outpost
+                name: seerr
                 port:
-                  number: 9000
+                  number: 5055
 ---
 apiVersion: networking.k8s.io/v1
 kind: Ingress

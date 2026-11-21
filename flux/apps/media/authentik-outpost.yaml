@@ -1,7 +1,7 @@
 # In-cluster Authentik proxy outpost for the apps that have no native OIDC.
 #
 # Create the outpost in the Authentik admin UI (or via the API runbook), assign
-# the Sonarr/Radarr/Prowlarr/Seerr/qBittorrent proxy providers to it, and put
+# the Sonarr/Radarr/Prowlarr/Profilarr/qBittorrent proxy providers to it, and put
 # the outpost token in the hand-created `authentik-outpost` Secret:
 #
 #   kubectl -n media create secret generic authentik-outpost \

@@ -204,9 +204,11 @@ steps.
   profile lives only in the hand-created `qbittorrent-wireguard` Secret.
   Gluetun's firewall blocks all non-VPN egress.
 - **SSO:** Jellyfin uses the SSO-Auth plugin and the existing Authentik
-  `jellyfin` OAuth2 provider. The other apps are proxied by an in-cluster
-  Authentik outpost connected to `https://auth.blalange.org`; Sonarr, Radarr,
-  Prowlarr and qBittorrent run with application authentication `External`.
+  `jellyfin` OAuth2 provider. Sonarr, Radarr, Prowlarr, Profilarr and
+  qBittorrent are proxied by an in-cluster Authentik outpost connected to
+  `https://auth.blalange.org`; Sonarr, Radarr, Prowlarr and qBittorrent run with
+  application authentication `External`. Seerr is exposed directly and uses its
+  own built-in login.
 - **Backups:** the media library lives on CephFS and is treated as
   re-downloadable; it has no off-cluster backup. Ceph RF2 protects against a
   single OSD or host failure. The media app config volumes are on Ceph

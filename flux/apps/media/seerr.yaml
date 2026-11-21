@@ -1,7 +1,6 @@
-# Seerr 3.5.1 request manager. It uses YugabyteDB for its database and the
-# Authentik proxy outpost for the edge login. Seerr still has its own Jellyfin
-# login page after the proxy because stable Seerr has no native OIDC support;
-# see README.md for the limitation.
+# Seerr 3.5.1 request manager. It uses SQLite for its database and its own
+# built-in login page, so it is exposed directly rather than through the
+# Authentik proxy outpost; see README.md.
 apiVersion: apps/v1
 kind: Deployment
 metadata:

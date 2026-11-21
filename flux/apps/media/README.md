@@ -27,7 +27,7 @@ CephFS. The *arr apps can keep "Use Hardlinks instead of Copy" enabled.
 | Prowlarr | https://prowlarr.glem.men | Authentik proxy, app auth `External` |
 | Profilarr | https://profilarr.glem.men | Authentik proxy, app auth off |
 | ytdl-sub | — (cron worker) | None; no web UI |
-| Seerr | https://seerr.glem.men | Authentik proxy + Seerr login |
+| Seerr | https://seerr.glem.men | Seerr login (built-in auth) |
 | qBittorrent | https://torrent.glem.men | Authentik proxy; qBittorrent auth bypassed for the pod network |
 
 ## Secrets
@@ -312,10 +312,10 @@ namespace already permits it.
 
 Create two groups in Authentik: `media-users` (normal viewers/requesters) and
 `media-admins` (Sonarr/Radarr/Prowlarr/Profilarr/qBittorrent administrators).
-Bind the Jellyfin and Seerr applications to `media-users`, and the other proxy
-applications to `media-admins`. Do not grant the admin-only apps to
-`media-users`: the *arr apps and Profilarr run with their own authentication
-disabled and trust the proxy.
+Bind the Jellyfin application to `media-users`, and the proxy applications to
+`media-admins`. Do not grant the admin-only apps to `media-users`: the *arr
+apps and Profilarr run with their own authentication disabled and trust the
+proxy. Seerr is not an Authentik application; it keeps its own login.
 
 Create an outpost named `glemmen-media` of type Proxy with these providers:
 
@@ -325,20 +325,7 @@ Create an outpost named `glemmen-media` of type Proxy with these providers:
 | Radarr | Proxy | https://radarr.glem.men | http://radarr.media.svc.cluster.local:7878 |
 | Prowlarr | Proxy | https://prowlarr.glem.men | http://prowlarr.media.svc.cluster.local:9696 |
 | Profilarr | Proxy | https://profilarr.glem.men | http://profilarr.media.svc.cluster.local:6868 |
-| Seerr | Proxy | https://seerr.glem.men | http://seerr.media.svc.cluster.local:5055 |
 | qBittorrent | Proxy | https://torrent.glem.men | http://qbittorrent.media.svc.cluster.local:8080 |
-
-Seerr registers the service worker `/sw.js`. On Authentik outposts 2026.8.x,
-an unauthenticated request that arrives between `/outpost.goauthentik.io/start`
-and the OAuth callback makes the outpost discard the pending session cookie, so
-the callback returns `400`. The browser's background check of `/sw.js` triggers
-this after the first sign-in. The Seerr Ingress therefore routes `/sw.js`,
-`/offline.html`, `/site.webmanifest` and `/favicon.ico` directly to the Seerr
-Service, bypassing the outpost; all of them are public PWA assets. Do not fold
-those paths back into the `/` route, and route any additional asset that the
-service worker fetches before authentication directly as well. See
-[goauthentik/authentik#27723](https://github.com/goauthentik/authentik/issues/27723)
-for the upstream bug.
 
 The outpost is deployed by this Kustomization, not by an Authentik service
 connection. Copy its token into the `authentik-outpost` Secret and restart the
@@ -365,10 +352,10 @@ the redirect URI above. Map `media-admins` to Jellyfin administrators and
 `media-users` to normal users. Keep a local Jellyfin administrator as a
 break-glass account.
 
-The Stable Seerr image has no native OIDC, so users authenticate at Authentik
-and then log in to Seerr with their Jellyfin/local Seerr account. Switching to
-the `preview-new-oidc` image removes the second login but is not recommended for
-production.
+Seerr is exposed directly rather than through the outpost because it has its
+own login page. The stable image has no native OIDC, so users sign in with
+their Jellyfin or local Seerr account. The `preview-new-oidc` image adds OIDC
+but is not recommended for production.
 
 ## CephFS capacity and backups
 
@@ -510,14 +497,6 @@ kubectl -n media logs -f job/resume-now
   download) also leaves the rules behind, so keep the 512Mi limit.
 - qBittorrent shows the Authentik page but then its own login: add
   `10.42.0.0/16` to the Web UI subnet whitelist.
-- Seerr's Authentik login ends on a blank `400 Bad Request` at
-  `/outpost.goauthentik.io/callback?...`: the browser revalidated Seerr's
-  `/sw.js` service worker while the sign-in was pending, and the outpost
-  discarded the pending cookie. The Ingress sends `/sw.js`, `/offline.html`,
-  `/site.webmanifest` and `/favicon.ico` directly to Seerr to prevent this. If
-  it returns, confirm those exact paths still target the `seerr` Service and
-  look for `auth callback without a valid session cookie` in the outpost log;
-  see [goauthentik/authentik#27723](https://github.com/goauthentik/authentik/issues/27723).
 - qBittorrent says `The configured network interface is invalid`: use `tun0`,
   not `wg0`. Gluetun creates the WireGuard tunnel as `tun0` inside the pod.
 - qBittorrent keeps restarting with `OOMKilled`: do not use a build with
