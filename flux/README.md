@@ -262,6 +262,23 @@ the UI, where they are encrypted with `keys/secret.key`. Until then the engine
 stays idle. See [`apps/artex/README.md`](../apps/artex/README.md) for the
 image build, secrets, Authentik objects and first-run steps.
 
+## Bokami
+
+`apps/bokami` runs [Bokami](https://github.com/t0m0t0w/bokami), a minimalist
+book shelf and reader for image series, PDF and EPUB, at
+<https://bokami.glem.men>. Because Bokami has its own built-in reader and
+admin authentication, Traefik routes traffic directly to it without an
+Authentik proxy outpost.
+
+App configuration, user profiles, sessions and the cover cache live on a
+2 GiB `nvme-rbd` volume (`bokami-data-ceph`). The book library lives on a
+20 GiB `fast-fs` CephFS `ReadWriteMany` volume (`bokami-books-ceph`), which
+can also be mounted directly with
+`./scripts/mount-cephfs.py --pvc bokami-books-ceph -n bokami`. Static
+passwords can optionally be provided through a hand-created `bokami-secrets`
+Secret in `bokami` (`reader-password`, `admin-password`); without it, Bokami
+generates random passwords on first start and prints them to its pod logs.
+
 ## Thanos and long-term metrics
 
 Prometheus runs two replicas for high availability. Each replica is capped at
@@ -550,6 +567,7 @@ role passwords are in `yugabyte-auth` (`yugabyte` namespace) and `grafana-db`
 - `infrastructure` + `rook-ceph` -> `media` (Jellyfin, *arr, Seerr, qBittorrent)
 - `infrastructure` + `rook-ceph` + `metallb-pool` -> `sftpgo` (SFTPGo WebDAV/SFTP on CephFS)
 - `infrastructure` + `rook-ceph` -> `artex` (ARTEX and its dedicated PostgreSQL)
+- `infrastructure` + `rook-ceph` -> `bokami` (Bokami book reader)
 - `cert-manager-issuers` -> `cert-manager-certificates` -> `ingress` (Traefik)
 - `infrastructure` + `rook-ceph` -> `monitoring` (kube-prometheus-stack -> Thanos) -> `monitoring-dashboards` / `monitoring-alerts`
 - `monitoring` -> `logging` (Loki -> Alloy)

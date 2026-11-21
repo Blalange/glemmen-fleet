@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: bokami
+  labels:
+    app.kubernetes.io/name: bokami
+    app.kubernetes.io/instance: bokami
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: bokami
+    app.kubernetes.io/instance: bokami
+  ports:
+    - name: http
+      port: 3000
+      targetPort: http

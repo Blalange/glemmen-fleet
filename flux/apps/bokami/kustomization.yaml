@@ -1,0 +1,18 @@
+# Bokami - digital bookshelf and reader (https://bokami.glem.men).
+#
+# Optional Secret for static passwords (created by hand, never committed):
+#
+#   kubectl -n bokami create secret generic bokami-secrets \
+#     --from-literal=reader-password='...' \
+#     --from-literal=admin-password='...'
+#
+# Without this Secret, Bokami generates random passwords on first start and
+# prints them to the container log (kubectl -n bokami logs deploy/bokami).
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: bokami
+resources:
+  - pvc.yaml
+  - deployment.yaml
+  - service.yaml
+  - ingress.yaml
