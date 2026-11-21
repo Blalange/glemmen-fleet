@@ -1,0 +1,21 @@
+# SFTPGo state: SQLite data provider, auto-created SSH host keys and database
+# backups. This is small and latency-sensitive, so it lives on nvme-rbd rather
+# than the CMR CephFS tier. Persisting the volume keeps SSH host keys stable
+# across pod restarts.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: sftpgo-state-ceph
+  annotations:
+    kustomize.toolkit.fluxcd.io/ssa: IfNotPresent
+  labels:
+    app.kubernetes.io/name: sftpgo
+    app.kubernetes.io/instance: sftpgo
+    app.kubernetes.io/part-of: sftpgo
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: nvme-rbd
+  resources:
+    requests:
+      storage: 5Gi

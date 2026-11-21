@@ -1,0 +1,109 @@
+# In-cluster Authentik LDAP outpost for SFTPGo.
+#
+# The outpost object `glemmen-sftpgo-ldap`, the LDAP provider/application and
+# the `ldapservice` account are created through the Authentik API/UI; they are
+# deliberately not managed by a service connection. Put the outpost token and
+# the `ldapservice` bind password in the hand-created `sftpgo-authentik`
+# Secret:
+#
+#   kubectl -n sftpgo create secret generic sftpgo-authentik \
+#     --from-literal=token='...' \
+#     --from-literal=ldap-password='...'
+#
+# See README.md for the Authentik objects, base DN and search permission.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: authentik-ldap
+  labels:
+    app.kubernetes.io/name: authentik-ldap
+    app.kubernetes.io/instance: sftpgo
+    app.kubernetes.io/part-of: sftpgo
+spec:
+  replicas: 1
+  revisionHistoryLimit: 2
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: authentik-ldap
+      app.kubernetes.io/instance: sftpgo
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: authentik-ldap
+        app.kubernetes.io/instance: sftpgo
+        app.kubernetes.io/part-of: sftpgo
+    spec:
+      automountServiceAccountToken: false
+      terminationGracePeriodSeconds: 10
+      securityContext:
+        runAsUser: 1000
+        runAsGroup: 1000
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: ldap
+          image: ghcr.io/goauthentik/ldap:2026.8.5
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: AUTHENTIK_HOST
+              value: https://auth.blalange.org
+            - name: AUTHENTIK_INSECURE
+              value: "false"
+            - name: AUTHENTIK_LOG_LEVEL
+              value: info
+            - name: AUTHENTIK_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: sftpgo-authentik
+                  key: token
+          ports:
+            - name: ldap
+              containerPort: 3389
+            - name: ldaps
+              containerPort: 6636
+          readinessProbe:
+            tcpSocket:
+              port: ldap
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            failureThreshold: 6
+          livenessProbe:
+            tcpSocket:
+              port: ldap
+            initialDelaySeconds: 30
+            periodSeconds: 30
+            failureThreshold: 6
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              memory: 256Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: authentik-ldap
+  labels:
+    app.kubernetes.io/name: authentik-ldap
+    app.kubernetes.io/instance: sftpgo
+    app.kubernetes.io/part-of: sftpgo
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: authentik-ldap
+    app.kubernetes.io/instance: sftpgo
+  ports:
+    - name: ldap
+      port: 3389
+      targetPort: ldap
+    - name: ldaps
+      port: 6636
+      targetPort: ldaps

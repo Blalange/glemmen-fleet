@@ -1,0 +1,199 @@
+# SFTPGo: WebDAV and SFTP on a CephFS home volume, with Authentik LDAP auth.
+#
+# The official image does not bundle the LDAP auth plugin. The init container
+# downloads the pinned plugin release into a shared emptyDir and verifies its
+# SHA256; SFTPGo verifies the same hash again before spawning the plugin.
+# Upgrade the plugin version and hash together.
+#
+# WebDAV is served on 8081 (exposed through Traefik as https://dav.glem.men).
+# SFTP listens on 2022 inside the pod; the LoadBalancer exposes it on the shared
+# .99 VIP as 22022 because external port 2022 is already used by another host.
+# The HTTPD port 8080 is only used internally and is not exposed.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sftpgo
+  labels:
+    app.kubernetes.io/name: sftpgo
+    app.kubernetes.io/instance: sftpgo
+    app.kubernetes.io/part-of: sftpgo
+spec:
+  replicas: 1
+  revisionHistoryLimit: 2
+  # Both volumes are single-writer state; never run two pods at once.
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: sftpgo
+      app.kubernetes.io/instance: sftpgo
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: sftpgo
+        app.kubernetes.io/instance: sftpgo
+        app.kubernetes.io/part-of: sftpgo
+    spec:
+      automountServiceAccountToken: false
+      terminationGracePeriodSeconds: 30
+      # The pinned auth plugin release is linux-amd64.
+      nodeSelector:
+        kubernetes.io/arch: amd64
+      securityContext:
+        runAsUser: 1000
+        runAsGroup: 1000
+        runAsNonRoot: true
+        fsGroup: 1000
+        fsGroupChangePolicy: OnRootMismatch
+        seccompProfile:
+          type: RuntimeDefault
+      initContainers:
+        - name: fetch-auth-plugin
+          image: alpine:3.23
+          imagePullPolicy: IfNotPresent
+          command:
+            - /bin/sh
+            - -ec
+          args:
+            - |
+              wget -qO /opt/sftpgo-plugin/sftpgo-plugin-auth \
+                https://github.com/sftpgo/sftpgo-plugin-auth/releases/download/v1.0.18/sftpgo-plugin-auth-linux-amd64
+              echo "92b7b6233c316f5f5fbe89fac411bf85a2fa2333e175b74af46c027456868b09  /opt/sftpgo-plugin/sftpgo-plugin-auth" | sha256sum -c -
+              chmod 0755 /opt/sftpgo-plugin/sftpgo-plugin-auth
+          securityContext:
+            # Inherits the pod's non-root user. The fsGroup on the emptyDir and
+            # the PVCs makes them writable without requiring a privileged init
+            # container.
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+            seccompProfile:
+              type: RuntimeDefault
+          volumeMounts:
+            - name: plugin
+              mountPath: /opt/sftpgo-plugin
+      containers:
+        - name: sftpgo
+          image: ghcr.io/drakkan/sftpgo:v2.7.6
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: TZ
+              value: Europe/Oslo
+            - name: TMPDIR
+              value: /tmp
+            - name: SFTPGO_LOG_LEVEL
+              value: info
+            - name: SFTPGO_DATA_PROVIDER__DRIVER
+              value: sqlite
+            - name: SFTPGO_DATA_PROVIDER__NAME
+              value: /var/lib/sftpgo/sftpgo.db
+            - name: SFTPGO_DATA_PROVIDER__USERS_BASE_DIR
+              value: /data/homes
+            - name: SFTPGO_DATA_PROVIDER__BACKUPS_PATH
+              value: /var/lib/sftpgo/backups
+            - name: SFTPGO_DATA_PROVIDER__CREATE_DEFAULT_ADMIN
+              value: "false"
+            - name: SFTPGO_SFTPD__BINDINGS__0__PORT
+              value: "2022"
+            - name: SFTPGO_WEBDAVD__BINDINGS__0__PORT
+              value: "8081"
+            - name: SFTPGO_HTTPD__BINDINGS__0__PORT
+              value: "8080"
+            - name: SFTPGO_HTTPD__BINDINGS__0__ENABLE_WEB_ADMIN
+              value: "false"
+            - name: SFTPGO_HTTPD__BINDINGS__0__ENABLE_WEB_CLIENT
+              value: "false"
+            - name: SFTPGO_HTTPD__BINDINGS__0__ENABLE_REST_API
+              value: "false"
+            # Authentik LDAP auth plugin. The password is injected from the
+            # hand-created Secret; SFTPGo passes all SFTPGO_PLUGIN_AUTH_* vars
+            # to the plugin by prefix.
+            - name: SFTPGO_PLUGINS__0__TYPE
+              value: auth
+            - name: SFTPGO_PLUGINS__0__AUTH_OPTIONS__SCOPE
+              value: "5"
+            - name: SFTPGO_PLUGINS__0__CMD
+              value: /opt/sftpgo-plugin/sftpgo-plugin-auth
+            - name: SFTPGO_PLUGINS__0__ARGS
+              value: serve
+            - name: SFTPGO_PLUGINS__0__AUTO_MTLS
+              value: "1"
+            - name: SFTPGO_PLUGINS__0__ENV_PREFIX
+              value: SFTPGO_PLUGIN_AUTH_
+            - name: SFTPGO_PLUGINS__0__SHA256SUM
+              value: 92b7b6233c316f5f5fbe89fac411bf85a2fa2333e175b74af46c027456868b09
+            - name: SFTPGO_PLUGIN_AUTH_LDAP_URL
+              value: ldap://authentik-ldap.sftpgo.svc.cluster.local:3389
+            - name: SFTPGO_PLUGIN_AUTH_LDAP_BASE_DN
+              value: ou=users,ou=sftpgo,dc=ldap,dc=goauthentik,dc=io
+            - name: SFTPGO_PLUGIN_AUTH_LDAP_BIND_DN
+              value: cn=ldapservice,ou=users,ou=sftpgo,dc=ldap,dc=goauthentik,dc=io
+            - name: SFTPGO_PLUGIN_AUTH_LDAP_SEARCH_QUERY
+              value: "(&(objectClass=user)(cn=%username%))"
+            - name: SFTPGO_PLUGIN_AUTH_USERS_BASE_DIR
+              value: /data/homes
+            # Cache successful binds briefly so WebDAV's per-request Basic auth
+            # does not hit Authentik for every request.
+            - name: SFTPGO_PLUGIN_AUTH_CACHE_TIME
+              value: "300"
+            - name: SFTPGO_PLUGIN_AUTH_LDAP_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: sftpgo-authentik
+                  key: ldap-password
+          ports:
+            - name: sftp
+              containerPort: 2022
+            - name: webdav
+              containerPort: 8081
+            - name: http
+              containerPort: 8080
+          startupProbe:
+            tcpSocket:
+              port: webdav
+            periodSeconds: 5
+            failureThreshold: 30
+          readinessProbe:
+            tcpSocket:
+              port: webdav
+            periodSeconds: 10
+            failureThreshold: 3
+          livenessProbe:
+            tcpSocket:
+              port: webdav
+            periodSeconds: 30
+            failureThreshold: 6
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              memory: 1Gi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+            readOnlyRootFilesystem: true
+          volumeMounts:
+            - name: state
+              mountPath: /var/lib/sftpgo
+            - name: homes
+              mountPath: /data
+            - name: plugin
+              mountPath: /opt/sftpgo-plugin
+              readOnly: true
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: state
+          persistentVolumeClaim:
+            claimName: sftpgo-state-ceph
+        - name: homes
+          persistentVolumeClaim:
+            claimName: sftpgo-homes-ceph
+        - name: plugin
+          emptyDir:
+            sizeLimit: 64Mi
+        - name: tmp
+          emptyDir:
+            sizeLimit: 256Mi

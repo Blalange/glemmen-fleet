@@ -28,7 +28,7 @@ flux/
 ├── ingress/                    Traefik HelmRelease + values
 ├── monitoring/                 kube-prometheus-stack, Thanos, smartctl-exporter, idrac-exporter, network-mesh, unpoller
 ├── logging/                    Loki (single replica) and the Alloy log collector
-└── apps/                       Kustomization objects, Homepage, NetBox + inventory sync, media stack, Minecraft servers (Radar)
+└── apps/                       Kustomization objects, Homepage, NetBox + inventory sync, media stack, SFTPGo, Minecraft servers (Radar)
 ```
 
 The application manifests themselves stay in the repository root (`colibri/`,
@@ -213,6 +213,34 @@ steps.
   re-downloadable; it has no off-cluster backup. Ceph RF2 protects against a
   single OSD or host failure. The media app config volumes are on Ceph
   `fast-rbd`; there is no off-cluster volume backup yet.
+
+## SFTPGo file access
+
+`apps/sftpgo` runs [SFTPGo](https://github.com/drakkan/sftpgo) as the cluster's
+file service. It serves WebDAV at <https://dav.glem.men> and SFTP on
+`192.168.6.99:22022` (`sftp.glem.men:22022`), with per-user homes on the 100 GiB
+`sftpgo-homes-ceph` CephFS volume (`fast-fs`, CMR OSDs). SFTPGo's SQLite
+database, SSH host keys and DB backups live on the small `sftpgo-state-ceph`
+`nvme-rbd` volume.
+
+Authentication goes through an in-cluster Authentik LDAP outpost
+(`authentik-ldap` in the `sftpgo` namespace) and the pinned
+`sftpgo-plugin-auth` release. Users are auto-created on first login with
+`/data/homes/<username>` and full permissions below their own home. The
+hand-created `sftpgo-authentik` Secret holds the outpost token and the
+`ldapservice` bind password. The Authentik LDAP provider, application, bind
+flow and outpost are created by hand; see
+[`apps/sftpgo/README.md`](apps/sftpgo/README.md) for the base DN, service
+account and permissions.
+
+WebDAV uses HTTP Basic auth over TLS, so native clients use the Authentik
+password or an app password. There is no Samba/SMB service; Windows WebDAV
+clients have a 50 MB default file-size limit and are less seamless than a
+native SMB drive. SFTP host keys are persisted on the state volume, so the
+fingerprint survives restarts. UniFi forwards TCP 22022 to `192.168.6.99`
+for public SFTP; WebDAV uses the existing 443 forward. The plugin binary is
+downloaded by an init container and verified by SHA256 in both the init
+container and SFTPGo.
 
 ## ARTEX
 
@@ -520,6 +548,7 @@ role passwords are in `yugabyte-auth` (`yugabyte` namespace) and `grafana-db`
 - `infrastructure` -> `rook-ceph` (Rook Ceph cluster, fast/NVMe pools, RGW and storage classes)
 - `infrastructure` + `metallb-pool` -> `pxe` (proxyDHCP/TFTP chainloader + Talos boot assets)
 - `infrastructure` + `rook-ceph` -> `media` (Jellyfin, *arr, Seerr, qBittorrent)
+- `infrastructure` + `rook-ceph` + `metallb-pool` -> `sftpgo` (SFTPGo WebDAV/SFTP on CephFS)
 - `infrastructure` + `rook-ceph` -> `artex` (ARTEX and its dedicated PostgreSQL)
 - `cert-manager-issuers` -> `cert-manager-certificates` -> `ingress` (Traefik)
 - `infrastructure` + `rook-ceph` -> `monitoring` (kube-prometheus-stack -> Thanos) -> `monitoring-dashboards` / `monitoring-alerts`
@@ -566,7 +595,9 @@ is managed by external-dns.
   `monitoring`; created for the media stack: `qbittorrent-wireguard`
   (Windscribe profile), `qbittorrent-webui` (qBittorrent admin),
   `jellyfin-admin` (Jellyfin local admin) and `authentik-outpost` (outpost
-  token) in `media`; created for ARTEX: `artex-db` (PostgreSQL password and
+  token) in `media`; created for SFTPGo: `sftpgo-authentik` (Authentik LDAP
+  outpost token and `ldapservice` bind password) in `sftpgo`; created for
+  ARTEX: `artex-db` (PostgreSQL password and
   DSN) and `artex-authentik-outpost` (outpost token) in `artex`; created for
   the private ARTEX image: `ghcr-pull` (GitHub `read:packages` credential) in
   `artex`).

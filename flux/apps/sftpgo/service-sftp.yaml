@@ -1,0 +1,31 @@
+# SFTP endpoint on the shared MetalLB VIP. UniFi must forward TCP 22022 to
+# 192.168.6.99 for access from outside the LAN. External port 2022 is already
+# used by another host, so the public service uses 22022 and maps it to
+# SFTPGo's internal 2022 listener. The same Authentik LDAP accounts and CephFS
+# homes are used as for WebDAV.
+apiVersion: v1
+kind: Service
+metadata:
+  name: sftpgo-sftp
+  labels:
+    app.kubernetes.io/name: sftpgo
+    app.kubernetes.io/instance: sftpgo
+    app.kubernetes.io/part-of: sftpgo
+  annotations:
+    metallb.io/loadBalancerIPs: "192.168.6.99"
+    metallb.io/allow-shared-ip: glemmen-vip
+    external-dns.kubernetes.io/hostname: sftp.glem.men
+    external-dns.kubernetes.io/target: "109.247.229.146"
+spec:
+  type: LoadBalancer
+  # The VIP is shared with Traefik and other services; Cluster policy is
+  # required for MetalLB's shared-IP allocation.
+  externalTrafficPolicy: Cluster
+  selector:
+    app.kubernetes.io/name: sftpgo
+    app.kubernetes.io/instance: sftpgo
+  ports:
+    - name: sftp
+      protocol: TCP
+      port: 22022
+      targetPort: sftp

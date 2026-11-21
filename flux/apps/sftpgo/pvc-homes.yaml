@@ -1,0 +1,26 @@
+# Per-user SFTPGo home directories on the CMR CephFS tier.
+#
+# The LDAP auth plugin creates `/data/homes/<username>` on first login and gives
+# each user full permissions below their own home only. ReadWriteMany keeps the
+# volume usable if SFTPGo is temporarily scaled or the pod moves.
+#
+# The StorageClass uses Retain: deleting the PVC keeps the CephFS subvolume.
+# Grow the claim with `kubectl -n sftpgo edit pvc sftpgo-homes-ceph`.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: sftpgo-homes-ceph
+  annotations:
+    # Do not let Flux revert a manually grown claim.
+    kustomize.toolkit.fluxcd.io/ssa: IfNotPresent
+  labels:
+    app.kubernetes.io/name: sftpgo
+    app.kubernetes.io/instance: sftpgo
+    app.kubernetes.io/part-of: sftpgo
+spec:
+  accessModes:
+    - ReadWriteMany
+  storageClassName: fast-fs
+  resources:
+    requests:
+      storage: 100Gi

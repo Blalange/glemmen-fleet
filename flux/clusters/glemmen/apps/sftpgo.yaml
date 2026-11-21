@@ -1,0 +1,22 @@
+# SFTPGo WebDAV/SFTP file access on CephFS with Authentik LDAP auth. The
+# LoadBalancer SFTP Service needs the MetalLB pool; WebDAV uses Traefik.
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: sftpgo
+  namespace: flux-system
+spec:
+  interval: 1h
+  retryInterval: 2m
+  timeout: 15m
+  path: ./flux/apps/sftpgo
+  prune: true
+  wait: true
+  targetNamespace: sftpgo
+  dependsOn:
+    - name: infrastructure
+    - name: rook-ceph
+    - name: metallb-pool
+  sourceRef:
+    kind: GitRepository
+    name: flux-system

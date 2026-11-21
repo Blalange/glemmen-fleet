@@ -1,0 +1,26 @@
+# WebDAV over the existing *.glem.men wildcard TLS certificate.
+#
+# SFTPGo authenticates every request against Authentik's LDAP outpost, so this
+# Ingress does not use an Authentik proxy outpost. WebDAV clients use HTTP
+# Basic auth with their Authentik password or an app password.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: sftpgo-webdav
+  labels:
+    app.kubernetes.io/name: sftpgo
+    app.kubernetes.io/instance: sftpgo
+    app.kubernetes.io/part-of: sftpgo
+spec:
+  ingressClassName: traefik
+  rules:
+    - host: dav.glem.men
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: sftpgo-webdav
+                port:
+                  number: 8081

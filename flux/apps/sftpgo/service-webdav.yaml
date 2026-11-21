@@ -1,0 +1,18 @@
+# WebDAV backend for the Traefik Ingress at https://dav.glem.men.
+apiVersion: v1
+kind: Service
+metadata:
+  name: sftpgo-webdav
+  labels:
+    app.kubernetes.io/name: sftpgo
+    app.kubernetes.io/instance: sftpgo
+    app.kubernetes.io/part-of: sftpgo
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: sftpgo
+    app.kubernetes.io/instance: sftpgo
+  ports:
+    - name: webdav
+      port: 8081
+      targetPort: webdav
