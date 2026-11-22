@@ -18,6 +18,8 @@ spec:
       app.kubernetes.io/instance: bokami
   template:
     metadata:
+      annotations:
+        bokami.glem.men/rollout: "46ad5bb"
       labels:
         app.kubernetes.io/name: bokami
         app.kubernetes.io/instance: bokami
