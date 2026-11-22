@@ -74,9 +74,11 @@ Until then the media library stays on `fast-fs` and Frigate recordings stay on
 
 ## Ceph RGW
 
-The fast RGW (`rook-ceph-rgw-fast`) runs on the CMR tier. Its metadata and data
-pools are replicated RF2 on `deviceClass: cmr`, with `preservePoolsOnDelete`
-set. Thanos and Loki use the `thanos` and `loki` buckets through this endpoint.
+The fast RGW (`rook-ceph-rgw-fast`) runs on the CMR tier and is exposed over
+HTTPS at <https://s3.glem.men> via Traefik (path-style S3 access). Its metadata
+and data pools are replicated RF2 on `deviceClass: cmr`, with
+`preservePoolsOnDelete` set. Thanos, Loki, and Plus use the `thanos`, `loki`,
+and `plus-media` buckets through this store.
 
 The RGW is intended to move to the bulk EC 8+2 pools on glemmen80 later. The
 bucket names and clients do not need to change for that move.

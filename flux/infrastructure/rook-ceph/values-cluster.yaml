@@ -364,8 +364,8 @@ cephObjectStores:
       enabled: false
 
 # The credentials are generated into
-# rook-ceph-object-user-fast-{thanos,loki}. The buckets themselves are created
-# once with radosgw-admin and are not managed by these users.
+# rook-ceph-object-user-fast-{thanos,loki,plus}. The buckets themselves are
+# created once and are not managed by these users.
 cephObjectStoreUsers:
   - name: thanos
     spec:
@@ -375,5 +375,9 @@ cephObjectStoreUsers:
     spec:
       store: fast
       displayName: Loki
+  - name: plus
+    spec:
+      store: fast
+      displayName: Plus
 
 cephECBlockPools: []
