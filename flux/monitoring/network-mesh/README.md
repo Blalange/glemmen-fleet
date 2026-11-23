@@ -17,9 +17,11 @@ Each probe has two independent schedules:
 
 The results are exposed on `/metrics` and scraped by the `network-mesh-probe`
 PodMonitor. The **Network Mesh** Grafana dashboard (`glemmen-network-mesh`)
-renders four source/destination matrices: ping RTT, packet loss, upload
-throughput and download throughput. Each matrix has an `avg` and a `max` row
-per source, aggregated over the dashboard time range.
+renders source/destination matrices for ping RTT, packet loss, upload and
+download throughput, and upload and download utilization. An **Aggregation**
+variable at the top selects how each table reduces the samples over the
+dashboard time range: `max`, `min`, `avg`, `p50`, `p95`, `p99` or `latest`.
+Each matrix has one row per source; columns are the destinations.
 
 ## Why pod networking and iperf3?
 

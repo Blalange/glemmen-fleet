@@ -27,7 +27,7 @@
         "type": "prometheus",
         "uid": "thanos"
       },
-      "description": "Number of probe pods currently scraped. Expect 9: one per current Linux node.",
+      "description": "Number of probe pods currently scraped. Expect 8: one per current Linux node.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -43,11 +43,11 @@
               },
               {
                 "color": "yellow",
-                "value": 8
+                "value": 7
               },
               {
                 "color": "green",
-                "value": 9
+                "value": 8
               }
             ]
           },
@@ -99,7 +99,7 @@
         "type": "prometheus",
         "uid": "thanos"
       },
-      "description": "Minimum number of peer links any probe tests (expected node count minus one). max() hid a single node with no peers.",
+      "description": "Minimum number of peer links any probe tests (expected node count minus one: 7). max() hid a single node with no peers.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -115,11 +115,11 @@
               },
               {
                 "color": "yellow",
-                "value": 7
+                "value": 6
               },
               {
                 "color": "green",
-                "value": 8
+                "value": 7
               }
             ]
           },
@@ -311,7 +311,7 @@
         "type": "prometheus",
         "uid": "thanos"
       },
-      "description": "Average and maximum ICMP RTT over the dashboard time range. Each source has an avg and a max row.",
+      "description": "ICMP RTT over the dashboard time range, using the aggregation selected at the top. One row per source.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -408,7 +408,7 @@
             "uid": "thanos"
           },
           "editorMode": "code",
-          "expr": "(label_join(label_replace(max by (source,destination) (avg_over_time(mesh_ping_rtt_ms[$__range])), \"agg\", \"avg\", \"source\", \".*\"), \"row\", \" \", \"source\", \"agg\")) or (label_join(label_replace(max by (source,destination) (max_over_time(mesh_ping_rtt_ms[$__range])), \"agg\", \"max\", \"source\", \".*\"), \"row\", \" \", \"source\", \"agg\"))",
+          "expr": "(label_replace(max by (source,destination) (max_over_time(mesh_ping_rtt_ms[$__range])), \"agg\", \"max\", \"__name__\", \".*\") or label_replace(max by (source,destination) (min_over_time(mesh_ping_rtt_ms[$__range])), \"agg\", \"min\", \"__name__\", \".*\") or label_replace(max by (source,destination) (avg_over_time(mesh_ping_rtt_ms[$__range])), \"agg\", \"avg\", \"__name__\", \".*\") or label_replace(max by (source,destination) (quantile_over_time(0.50, mesh_ping_rtt_ms[$__range])), \"agg\", \"p50\", \"__name__\", \".*\") or label_replace(max by (source,destination) (quantile_over_time(0.95, mesh_ping_rtt_ms[$__range])), \"agg\", \"p95\", \"__name__\", \".*\") or label_replace(max by (source,destination) (quantile_over_time(0.99, mesh_ping_rtt_ms[$__range])), \"agg\", \"p99\", \"__name__\", \".*\") or label_replace(max by (source,destination) (last_over_time(mesh_ping_rtt_ms[$__range])), \"agg\", \"latest\", \"__name__\", \".*\")) and on(agg) label_replace(vector(1), \"agg\", \"$agg\", \"__name__\", \".*\")",
           "format": "table",
           "instant": true,
           "legendFormat": "__auto",
@@ -416,13 +416,13 @@
           "refId": "A"
         }
       ],
-      "title": "Ping RTT - avg / max (ms)",
+      "title": "Ping RTT - $agg (ms)",
       "transformations": [
         {
           "id": "groupingToMatrix",
           "options": {
             "columnField": "destination",
-            "rowField": "row",
+            "rowField": "source",
             "valueField": "Value"
           }
         },
@@ -433,7 +433,7 @@
               "Time": true
             },
             "renameByName": {
-              "row\\destination": "Source \\ Destination"
+              "source\\destination": "Source \\ Destination"
             }
           }
         }
@@ -445,7 +445,7 @@
         "type": "prometheus",
         "uid": "thanos"
       },
-      "description": "Average and maximum ICMP packet loss over the dashboard time range. Each source has an avg and a max row.",
+      "description": "ICMP packet loss over the dashboard time range, using the aggregation selected at the top. One row per source.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -542,7 +542,7 @@
             "uid": "thanos"
           },
           "editorMode": "code",
-          "expr": "(label_join(label_replace(max by (source,destination) (avg_over_time(mesh_ping_loss_percent[$__range])), \"agg\", \"avg\", \"source\", \".*\"), \"row\", \" \", \"source\", \"agg\")) or (label_join(label_replace(max by (source,destination) (max_over_time(mesh_ping_loss_percent[$__range])), \"agg\", \"max\", \"source\", \".*\"), \"row\", \" \", \"source\", \"agg\"))",
+          "expr": "(label_replace(max by (source,destination) (max_over_time(mesh_ping_loss_percent[$__range])), \"agg\", \"max\", \"__name__\", \".*\") or label_replace(max by (source,destination) (min_over_time(mesh_ping_loss_percent[$__range])), \"agg\", \"min\", \"__name__\", \".*\") or label_replace(max by (source,destination) (avg_over_time(mesh_ping_loss_percent[$__range])), \"agg\", \"avg\", \"__name__\", \".*\") or label_replace(max by (source,destination) (quantile_over_time(0.50, mesh_ping_loss_percent[$__range])), \"agg\", \"p50\", \"__name__\", \".*\") or label_replace(max by (source,destination) (quantile_over_time(0.95, mesh_ping_loss_percent[$__range])), \"agg\", \"p95\", \"__name__\", \".*\") or label_replace(max by (source,destination) (quantile_over_time(0.99, mesh_ping_loss_percent[$__range])), \"agg\", \"p99\", \"__name__\", \".*\") or label_replace(max by (source,destination) (last_over_time(mesh_ping_loss_percent[$__range])), \"agg\", \"latest\", \"__name__\", \".*\")) and on(agg) label_replace(vector(1), \"agg\", \"$agg\", \"__name__\", \".*\")",
           "format": "table",
           "instant": true,
           "legendFormat": "__auto",
@@ -550,13 +550,13 @@
           "refId": "A"
         }
       ],
-      "title": "Packet loss - avg / max (%)",
+      "title": "Packet loss - $agg (%)",
       "transformations": [
         {
           "id": "groupingToMatrix",
           "options": {
             "columnField": "destination",
-            "rowField": "row",
+            "rowField": "source",
             "valueField": "Value"
           }
         },
@@ -567,7 +567,7 @@
               "Time": true
             },
             "renameByName": {
-              "row\\destination": "Source \\ Destination"
+              "source\\destination": "Source \\ Destination"
             }
           }
         }
@@ -579,7 +579,7 @@
         "type": "prometheus",
         "uid": "thanos"
       },
-      "description": "Average and maximum aggregate HTTP upload throughput over the dashboard time range, using parallel flows. Each source has an avg and a max row.",
+      "description": "Aggregate iperf3 upload throughput over the dashboard time range, using 16 parallel TCP flows and the aggregation selected at the top. One row per source.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -676,7 +676,7 @@
             "uid": "thanos"
           },
           "editorMode": "code",
-          "expr": "(label_join(label_replace(max by (source,destination) (avg_over_time(mesh_transfer_mbps{direction=\"upload\"}[$__range])), \"agg\", \"avg\", \"source\", \".*\"), \"row\", \" \", \"source\", \"agg\")) or (label_join(label_replace(max by (source,destination) (max_over_time(mesh_transfer_mbps{direction=\"upload\"}[$__range])), \"agg\", \"max\", \"source\", \".*\"), \"row\", \" \", \"source\", \"agg\"))",
+          "expr": "(label_replace(max by (source,destination) (max_over_time(mesh_transfer_mbps{direction=\"upload\"}[$__range])), \"agg\", \"max\", \"__name__\", \".*\") or label_replace(max by (source,destination) (min_over_time(mesh_transfer_mbps{direction=\"upload\"}[$__range])), \"agg\", \"min\", \"__name__\", \".*\") or label_replace(max by (source,destination) (avg_over_time(mesh_transfer_mbps{direction=\"upload\"}[$__range])), \"agg\", \"avg\", \"__name__\", \".*\") or label_replace(max by (source,destination) (quantile_over_time(0.50, mesh_transfer_mbps{direction=\"upload\"}[$__range])), \"agg\", \"p50\", \"__name__\", \".*\") or label_replace(max by (source,destination) (quantile_over_time(0.95, mesh_transfer_mbps{direction=\"upload\"}[$__range])), \"agg\", \"p95\", \"__name__\", \".*\") or label_replace(max by (source,destination) (quantile_over_time(0.99, mesh_transfer_mbps{direction=\"upload\"}[$__range])), \"agg\", \"p99\", \"__name__\", \".*\") or label_replace(max by (source,destination) (last_over_time(mesh_transfer_mbps{direction=\"upload\"}[$__range])), \"agg\", \"latest\", \"__name__\", \".*\")) and on(agg) label_replace(vector(1), \"agg\", \"$agg\", \"__name__\", \".*\")",
           "format": "table",
           "instant": true,
           "legendFormat": "__auto",
@@ -684,13 +684,13 @@
           "refId": "A"
         }
       ],
-      "title": "Upload throughput - avg / max (Mbit/s)",
+      "title": "Upload throughput - $agg (Mbit/s)",
       "transformations": [
         {
           "id": "groupingToMatrix",
           "options": {
             "columnField": "destination",
-            "rowField": "row",
+            "rowField": "source",
             "valueField": "Value"
           }
         },
@@ -701,7 +701,7 @@
               "Time": true
             },
             "renameByName": {
-              "row\\destination": "Source \\ Destination"
+              "source\\destination": "Source \\ Destination"
             }
           }
         }
@@ -713,7 +713,7 @@
         "type": "prometheus",
         "uid": "thanos"
       },
-      "description": "Average and maximum aggregate HTTP download throughput over the dashboard time range, using parallel flows. Each source has an avg and a max row.",
+      "description": "Aggregate iperf3 download throughput over the dashboard time range, using 16 parallel TCP flows and the aggregation selected at the top. One row per source.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -810,7 +810,7 @@
             "uid": "thanos"
           },
           "editorMode": "code",
-          "expr": "(label_join(label_replace(max by (source,destination) (avg_over_time(mesh_transfer_mbps{direction=\"download\"}[$__range])), \"agg\", \"avg\", \"source\", \".*\"), \"row\", \" \", \"source\", \"agg\")) or (label_join(label_replace(max by (source,destination) (max_over_time(mesh_transfer_mbps{direction=\"download\"}[$__range])), \"agg\", \"max\", \"source\", \".*\"), \"row\", \" \", \"source\", \"agg\"))",
+          "expr": "(label_replace(max by (source,destination) (max_over_time(mesh_transfer_mbps{direction=\"download\"}[$__range])), \"agg\", \"max\", \"__name__\", \".*\") or label_replace(max by (source,destination) (min_over_time(mesh_transfer_mbps{direction=\"download\"}[$__range])), \"agg\", \"min\", \"__name__\", \".*\") or label_replace(max by (source,destination) (avg_over_time(mesh_transfer_mbps{direction=\"download\"}[$__range])), \"agg\", \"avg\", \"__name__\", \".*\") or label_replace(max by (source,destination) (quantile_over_time(0.50, mesh_transfer_mbps{direction=\"download\"}[$__range])), \"agg\", \"p50\", \"__name__\", \".*\") or label_replace(max by (source,destination) (quantile_over_time(0.95, mesh_transfer_mbps{direction=\"download\"}[$__range])), \"agg\", \"p95\", \"__name__\", \".*\") or label_replace(max by (source,destination) (quantile_over_time(0.99, mesh_transfer_mbps{direction=\"download\"}[$__range])), \"agg\", \"p99\", \"__name__\", \".*\") or label_replace(max by (source,destination) (last_over_time(mesh_transfer_mbps{direction=\"download\"}[$__range])), \"agg\", \"latest\", \"__name__\", \".*\")) and on(agg) label_replace(vector(1), \"agg\", \"$agg\", \"__name__\", \".*\")",
           "format": "table",
           "instant": true,
           "legendFormat": "__auto",
@@ -818,13 +818,13 @@
           "refId": "A"
         }
       ],
-      "title": "Download throughput - avg / max (Mbit/s)",
+      "title": "Download throughput - $agg (Mbit/s)",
       "transformations": [
         {
           "id": "groupingToMatrix",
           "options": {
             "columnField": "destination",
-            "rowField": "row",
+            "rowField": "source",
             "valueField": "Value"
           }
         },
@@ -835,7 +835,7 @@
               "Time": true
             },
             "renameByName": {
-              "row\\destination": "Source \\ Destination"
+              "source\\destination": "Source \\ Destination"
             }
           }
         }
@@ -856,7 +856,7 @@
           "showLineNumbers": false,
           "showMiniMap": false
         },
-        "content": "## Node-to-node network tests\n\nOne `network-mesh-probe` pod runs on every node with pod networking, so the tests traverse the Calico pod network and its pod-CIDR routes. Every five minutes each probe tests every other probe pod:\n\n- **Ping** - 4 ICMP echo requests, 200 ms apart. The table shows the average and maximum RTT and packet loss over the selected range.\n- **Upload** - runs a 2-second iperf3 TCP test with 16 parallel streams to the peer and records the receiver-side throughput.\n- **Download** - runs the same iperf3 test in reverse (`-R`) and records the receiver-side throughput.\n\nRows are the node running the test (`source`), columns are the peer (`destination`). Each source has an `avg` and a `max` row; the values are computed over the dashboard time range. Upload tests send data from row to column; download tests send data from column to row. The tests are phase-shifted across nodes, so the full mesh is not saturated at once.\n\nMetrics are scraped from each probe pod's IP on port 9101 by the `network-mesh-probe` PodMonitor. Long-term history is available through the Thanos data source.\n"
+        "content": "## Node-to-node network tests\n\nOne `network-mesh-probe` pod runs on every node with pod networking, so the tests traverse the Calico pod network and its pod-CIDR routes. Every 60 seconds each probe sends 10 ICMP echo requests to every other probe pod:\n\n- **Ping** - 10 ICMP echo requests, 200 ms apart. The table shows the selected aggregation of RTT and packet loss over the range.\n- **Upload** - every 30 minutes, runs a 3-second iperf3 TCP test with 16 parallel streams to the peer and records the receiver-side throughput.\n- **Download** - runs the same iperf3 test in reverse (`-R`) and records the receiver-side throughput.\n\nRows are the node running the test (`source`), columns are the peer (`destination`). The **Aggregation** variable at the top selects how each table reduces the samples over the dashboard time range: `max`, `min`, `avg`, `p50`, `p95`, `p99` or `latest`. Upload tests send data from row to column; download tests send data from column to row. The tests are phase-shifted across nodes, so the full mesh is not saturated at once.\n\nMetrics are scraped from each probe pod's IP on port 9101 by the `network-mesh-probe` PodMonitor. Long-term history is available through the Thanos data source.\n"
       },
       "title": "How this works",
       "type": "text"
@@ -934,7 +934,7 @@
         "type": "prometheus",
         "uid": "thanos"
       },
-      "description": "Average and maximum throughput as a percentage of the slower endpoint capacity. Green means the pair is using at least half of its expected link capacity.",
+      "description": "Upload throughput as a percentage of the slower endpoint capacity, using the aggregation selected at the top. Green means the pair uses at least half of its expected link capacity.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -1033,7 +1033,7 @@
             "uid": "thanos"
           },
           "editorMode": "code",
-          "expr": "(label_join(label_replace(max by (source,destination) (avg_over_time(mesh_transfer_utilization_percent{direction=\"upload\"}[$__range])), \"agg\", \"avg\", \"source\", \".*\"), \"row\", \" \", \"source\", \"agg\")) or (label_join(label_replace(max by (source,destination) (max_over_time(mesh_transfer_utilization_percent{direction=\"upload\"}[$__range])), \"agg\", \"max\", \"source\", \".*\"), \"row\", \" \", \"source\", \"agg\"))",
+          "expr": "(label_replace(max by (source,destination) (max_over_time(mesh_transfer_utilization_percent{direction=\"upload\"}[$__range])), \"agg\", \"max\", \"__name__\", \".*\") or label_replace(max by (source,destination) (min_over_time(mesh_transfer_utilization_percent{direction=\"upload\"}[$__range])), \"agg\", \"min\", \"__name__\", \".*\") or label_replace(max by (source,destination) (avg_over_time(mesh_transfer_utilization_percent{direction=\"upload\"}[$__range])), \"agg\", \"avg\", \"__name__\", \".*\") or label_replace(max by (source,destination) (quantile_over_time(0.50, mesh_transfer_utilization_percent{direction=\"upload\"}[$__range])), \"agg\", \"p50\", \"__name__\", \".*\") or label_replace(max by (source,destination) (quantile_over_time(0.95, mesh_transfer_utilization_percent{direction=\"upload\"}[$__range])), \"agg\", \"p95\", \"__name__\", \".*\") or label_replace(max by (source,destination) (quantile_over_time(0.99, mesh_transfer_utilization_percent{direction=\"upload\"}[$__range])), \"agg\", \"p99\", \"__name__\", \".*\") or label_replace(max by (source,destination) (last_over_time(mesh_transfer_utilization_percent{direction=\"upload\"}[$__range])), \"agg\", \"latest\", \"__name__\", \".*\")) and on(agg) label_replace(vector(1), \"agg\", \"$agg\", \"__name__\", \".*\")",
           "format": "table",
           "instant": true,
           "legendFormat": "__auto",
@@ -1041,13 +1041,13 @@
           "refId": "A"
         }
       ],
-      "title": "Upload utilization - avg / max (%)",
+      "title": "Upload utilization - $agg (%)",
       "transformations": [
         {
           "id": "groupingToMatrix",
           "options": {
             "columnField": "destination",
-            "rowField": "row",
+            "rowField": "source",
             "valueField": "Value"
           }
         },
@@ -1058,7 +1058,7 @@
               "Time": true
             },
             "renameByName": {
-              "row\\destination": "Source \\ Destination"
+              "source\\destination": "Source \\ Destination"
             }
           }
         }
@@ -1070,7 +1070,7 @@
         "type": "prometheus",
         "uid": "thanos"
       },
-      "description": "Average and maximum throughput as a percentage of the slower endpoint capacity. Green means the pair is using at least half of its expected link capacity.",
+      "description": "Download throughput as a percentage of the slower endpoint capacity, using the aggregation selected at the top. Green means the pair uses at least half of its expected link capacity.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -1169,7 +1169,7 @@
             "uid": "thanos"
           },
           "editorMode": "code",
-          "expr": "(label_join(label_replace(max by (source,destination) (avg_over_time(mesh_transfer_utilization_percent{direction=\"download\"}[$__range])), \"agg\", \"avg\", \"source\", \".*\"), \"row\", \" \", \"source\", \"agg\")) or (label_join(label_replace(max by (source,destination) (max_over_time(mesh_transfer_utilization_percent{direction=\"download\"}[$__range])), \"agg\", \"max\", \"source\", \".*\"), \"row\", \" \", \"source\", \"agg\"))",
+          "expr": "(label_replace(max by (source,destination) (max_over_time(mesh_transfer_utilization_percent{direction=\"download\"}[$__range])), \"agg\", \"max\", \"__name__\", \".*\") or label_replace(max by (source,destination) (min_over_time(mesh_transfer_utilization_percent{direction=\"download\"}[$__range])), \"agg\", \"min\", \"__name__\", \".*\") or label_replace(max by (source,destination) (avg_over_time(mesh_transfer_utilization_percent{direction=\"download\"}[$__range])), \"agg\", \"avg\", \"__name__\", \".*\") or label_replace(max by (source,destination) (quantile_over_time(0.50, mesh_transfer_utilization_percent{direction=\"download\"}[$__range])), \"agg\", \"p50\", \"__name__\", \".*\") or label_replace(max by (source,destination) (quantile_over_time(0.95, mesh_transfer_utilization_percent{direction=\"download\"}[$__range])), \"agg\", \"p95\", \"__name__\", \".*\") or label_replace(max by (source,destination) (quantile_over_time(0.99, mesh_transfer_utilization_percent{direction=\"download\"}[$__range])), \"agg\", \"p99\", \"__name__\", \".*\") or label_replace(max by (source,destination) (last_over_time(mesh_transfer_utilization_percent{direction=\"download\"}[$__range])), \"agg\", \"latest\", \"__name__\", \".*\")) and on(agg) label_replace(vector(1), \"agg\", \"$agg\", \"__name__\", \".*\")",
           "format": "table",
           "instant": true,
           "legendFormat": "__auto",
@@ -1177,13 +1177,13 @@
           "refId": "A"
         }
       ],
-      "title": "Download utilization - avg / max (%)",
+      "title": "Download utilization - $agg (%)",
       "transformations": [
         {
           "id": "groupingToMatrix",
           "options": {
             "columnField": "destination",
-            "rowField": "row",
+            "rowField": "source",
             "valueField": "Value"
           }
         },
@@ -1194,7 +1194,7 @@
               "Time": true
             },
             "renameByName": {
-              "row\\destination": "Source \\ Destination"
+              "source\\destination": "Source \\ Destination"
             }
           }
         }
@@ -1211,7 +1211,62 @@
     "throughput"
   ],
   "templating": {
-    "list": []
+    "list": [
+      {
+        "current": {
+          "selected": true,
+          "text": "avg",
+          "value": "avg"
+        },
+        "description": "Aggregation applied to every mesh table over the dashboard time range. \"latest\" uses the most recent sample; p50/p95/p99 are quantiles.",
+        "hide": 0,
+        "includeAll": false,
+        "label": "Aggregation",
+        "multi": false,
+        "name": "agg",
+        "options": [
+          {
+            "selected": false,
+            "text": "max",
+            "value": "max"
+          },
+          {
+            "selected": false,
+            "text": "min",
+            "value": "min"
+          },
+          {
+            "selected": true,
+            "text": "avg",
+            "value": "avg"
+          },
+          {
+            "selected": false,
+            "text": "p50",
+            "value": "p50"
+          },
+          {
+            "selected": false,
+            "text": "p95",
+            "value": "p95"
+          },
+          {
+            "selected": false,
+            "text": "p99",
+            "value": "p99"
+          },
+          {
+            "selected": false,
+            "text": "latest",
+            "value": "latest"
+          }
+        ],
+        "query": "max,min,avg,p50,p95,p99,latest",
+        "queryValue": "",
+        "skipUrlSync": false,
+        "type": "custom"
+      }
+    ]
   },
   "time": {
     "from": "now-15m",
