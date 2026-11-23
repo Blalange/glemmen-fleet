@@ -60,8 +60,6 @@ try {
         Add-ADGroupMember -Identity $groupName -Members 'simon' -ErrorAction SilentlyContinue
     }
     Add-ADGroupMember -Identity 'ftp-users' -Members 'ftpuser' -ErrorAction SilentlyContinue
-    Remove-ADGroupMember -Identity 'Remote Desktop Users' -Members 'ftpuser' -ErrorAction SilentlyContinue
-    Remove-ADGroupMember -Identity 'ssh-users' -Members 'ftpuser' -ErrorAction SilentlyContinue
     Write-Step 'AD group memberships are set'
 
     # A domain controller does not grant Domain Users "log on locally". IIS FTP
@@ -98,11 +96,14 @@ try {
         Add-DnsServerPrimaryZone -Name $zone -ReplicationScope 'Domain' -DynamicUpdate 'None' | Out-Null
         Write-Step "Created DNS zone $zone"
     }
-    Get-DnsServerResourceRecord -ZoneName $zone -Name '@' -RRType A -ErrorAction SilentlyContinue |
-        ForEach-Object {
-            Remove-DnsServerResourceRecord -ZoneName $zone -Name '@' -RRType A -RecordData $_.RecordData -Force
+    $existing = @(Get-DnsServerResourceRecord -ZoneName $zone -Name '@' -RRType A -ErrorAction SilentlyContinue)
+    $hasAddress = $existing | Where-Object { $_.RecordData.IPv4Address.IPAddressToString -eq '192.168.6.96' }
+    if (-not $hasAddress) {
+        foreach ($record in $existing) {
+            Remove-DnsServerResourceRecord -ZoneName $zone -InputObject $record -Force
         }
-    Add-DnsServerResourceRecordA -ZoneName $zone -Name '@' -IPv4Address '192.168.6.96' | Out-Null
+        Add-DnsServerResourceRecordA -ZoneName $zone -Name '@' -IPv4Address '192.168.6.96' | Out-Null
+    }
     Set-DnsServerForwarder -IPAddress 192.168.6.1, 1.1.1.1 | Out-Null
     Get-NetAdapter | Where-Object { $_.Status -eq 'Up' } | ForEach-Object {
         Set-DnsClientServerAddress -InterfaceIndex $_.ifIndex -ServerAddresses 127.0.0.1
@@ -130,7 +131,12 @@ try {
             $cfg += "`r`nPasswordAuthentication yes`r`n"
         }
         $cfg = [regex]::Replace($cfg, '(?m)^\s*AllowUsers\s+.*$', '')
-        $cfg = $cfg.TrimEnd() + "`r`nAllowUsers simon`r`n"
+        $allow = "AllowUsers simon GLEMMEN\simon`r`n"
+        if ($cfg -match '(?m)^Match\s+') {
+            $cfg = [regex]::Replace($cfg, '(?m)^Match\s+', $allow + 'Match ', 1)
+        } else {
+            $cfg = $cfg.TrimEnd() + "`r`n$allow"
+        }
         Set-Content -Path $sshdConfig -Value $cfg -Encoding ascii
     }
     Restart-Service -Name sshd -Force
@@ -139,7 +145,12 @@ try {
         -Value 'C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe'
     if (-not (Get-NetFirewallRule -Name 'OpenSSH-Server-In-TCP' -ErrorAction SilentlyContinue)) {
         New-NetFirewallRule -Name 'OpenSSH-Server-In-TCP' -DisplayName 'OpenSSH Server (sshd)' `
-            -Enabled True -Direction Inbound -Protocol TCP -Action Allow -LocalPort 22 | Out-Null
+            -Enabled True -Direction Inbound -Protocol TCP -Action Allow -LocalPort 22 -Profile Any -RemoteAddress Any | Out-Null
+    }
+    Set-NetFirewallRule -Name 'OpenSSH-Server-In-TCP' -Profile Any -RemoteAddress Any -Enabled True -ErrorAction SilentlyContinue
+    if (-not (Get-NetFirewallRule -Name 'SSH-22-Any' -ErrorAction SilentlyContinue)) {
+        New-NetFirewallRule -Name 'SSH-22-Any' -DisplayName 'SSH (TCP 22)' `
+            -Protocol TCP -LocalPort 22 -Direction Inbound -Action Allow -Profile Any -RemoteAddress Any | Out-Null
     }
     Write-Step 'SSH is enabled for simon'
 
@@ -153,21 +164,38 @@ try {
     }
     Set-ItemProperty -Path 'IIS:\Sites\FTP' -Name physicalPath -Value $ftpRoot
     Set-ItemProperty -Path 'IIS:\Sites\FTP' -Name serverAutoStart -Value $true
-    Start-WebSite -Name 'FTP' -ErrorAction SilentlyContinue
-    Set-WebConfigurationProperty -PSPath 'IIS:\' -Filter 'system.ftpserver/security/authentication' -Name 'anonymousAuthentication.enabled' -Value $false
-    Set-WebConfigurationProperty -PSPath 'IIS:\' -Filter 'system.ftpserver/security/authentication' -Name 'basicAuthentication.enabled' -Value $true
-    Clear-WebConfiguration -PSPath 'IIS:\' -Filter 'system.ftpserver/security/authorization' -ErrorAction SilentlyContinue
+
+    # The site's ftpServer element (authentication, SSL policy, external IP)
+    # is not exposed as system.ftpServer through the IIS: provider. Edit it
+    # through Microsoft.Web.Administration.
+    [Reflection.Assembly]::LoadFrom("$env:SystemRoot\System32\inetsrv\Microsoft.Web.Administration.dll") | Out-Null
+    $sm = New-Object Microsoft.Web.Administration.ServerManager
+    $site = $sm.Sites | Where-Object { $_.Name -eq 'FTP' }
+    if (-not $site) { throw 'FTP site not found' }
+    $ftp = $site.GetChildElement('ftpServer')
+    $security = $ftp.GetChildElement('security')
+    $auth = $security.GetChildElement('authentication')
+    $auth.GetChildElement('basicAuthentication').SetAttributeValue('enabled', $true)
+    $auth.GetChildElement('anonymousAuthentication').SetAttributeValue('enabled', $false)
+    $ssl = $security.GetChildElement('ssl')
+    $ssl.SetAttributeValue('controlChannelPolicy', 'SslAllow')
+    $ssl.SetAttributeValue('dataChannelPolicy', 'SslAllow')
+    $ftp.GetChildElement('firewallSupport').SetAttributeValue('externalIp4Address', '192.168.6.96')
+    $site.ServerAutoStart = $true
+    $sm.CommitChanges()
+
+    # Passive port range is server-level; restart FTPSVC so it takes effect.
+    & "$env:SystemRoot\System32\inetsrv\appcmd.exe" set config /section:system.ftpServer/firewallSupport /lowDataChannelPort:50000 /highDataChannelPort:50009 | Out-Null
+    Clear-WebConfiguration -PSPath 'IIS:\' -Filter 'system.ftpserver/security/authorization' -Confirm:$false -ErrorAction SilentlyContinue
     Add-WebConfiguration -PSPath 'IIS:\' -Filter 'system.ftpserver/security/authorization' -Value @{ accessType = 'Allow'; users = 'GLEMMEN\ftpuser'; permissions = 3 }
-    Set-WebConfigurationProperty -PSPath 'IIS:\' -Filter 'system.ftpserver/firewallSupport' -Name 'externalIp' -Value '192.168.6.96'
-    Set-WebConfigurationProperty -PSPath 'IIS:\' -Filter 'system.ftpserver/firewallSupport' -Name 'lowDataChannelPort' -Value 50000
-    Set-WebConfigurationProperty -PSPath 'IIS:\' -Filter 'system.ftpserver/firewallSupport' -Name 'highDataChannelPort' -Value 50009
+    Restart-Service -Name FTPSVC -Force
     foreach ($rule in @(
         @{ Name = 'FTP-Server-21'; Display = 'FTP Server (TCP 21)'; Port = '21' },
         @{ Name = 'FTP-Passive-50000-50009'; Display = 'FTP Passive (TCP 50000-50009)'; Port = '50000-50009' }
     )) {
         if (-not (Get-NetFirewallRule -Name $rule.Name -ErrorAction SilentlyContinue)) {
             New-NetFirewallRule -Name $rule.Name -DisplayName $rule.Display -Protocol TCP `
-                -LocalPort $rule.Port -Direction Inbound -Action Allow | Out-Null
+                -LocalPort $rule.Port -Direction Inbound -Action Allow -Profile Any -RemoteAddress Any | Out-Null
         }
     }
     icacls 'C:\ftp' /grant 'GLEMMEN\ftpuser:(OI)(CI)RX' /C | Out-Null
@@ -218,7 +246,10 @@ try {
         Select-Object -First 1
     if ($sqlcmd) {
         $query = "IF NOT EXISTS (SELECT 1 FROM sys.server_principals WHERE name = N'simon') CREATE LOGIN [simon] WITH PASSWORD = N'$($secrets.simon_password)', CHECK_POLICY = ON; ALTER SERVER ROLE sysadmin ADD MEMBER [simon];"
-        & $sqlcmd.FullName -S localhost -E -Q $query
+        & $sqlcmd.FullName -S localhost -U sa -P $secrets.sa_password -C -l 30 -Q $query
+        if ($LASTEXITCODE -ne 0) {
+            throw "sqlcmd failed with exit code $LASTEXITCODE"
+        }
         Write-Step 'Created SQL login simon and granted sysadmin'
     } else {
         Write-Step 'sqlcmd not found; GLEMMEN\simon is still a SQL sysadmin from setup'

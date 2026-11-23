@@ -65,11 +65,21 @@ try {
     Start-Sleep -Seconds 10
 
     $promoted = $false
-    try {
-        Get-ADDomain -ErrorAction Stop | Out-Null
-        $promoted = $true
-    } catch {
-        $promoted = $false
+    for ($i = 0; $i -lt 90; $i++) {
+        try {
+            Get-ADDomain -ErrorAction Stop | Out-Null
+            $promoted = $true
+            break
+        } catch {
+            # After the promotion reboot, NTDS can be running before AD Web
+            # Services answers Get-ADDomain. Wait instead of trying to promote
+            # an already-promoted server again.
+            if (Get-Service -Name NTDS -ErrorAction SilentlyContinue) {
+                Start-Sleep -Seconds 10
+                continue
+            }
+            break
+        }
     }
 
     if ($promoted) {
