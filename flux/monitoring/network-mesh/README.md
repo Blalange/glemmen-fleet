@@ -28,19 +28,15 @@ same Calico pod-CIDR routes as application pods. Running with `hostNetwork`
 would measure only the directly connected server-VLAN link and would never exceed
 1 Gbit/s on a 1xx node.
 
-The throughput tests use iperf3 with 16 parallel TCP streams. The earlier
-Python HTTP transfer was CPU-bound in its write path at roughly 1 Gbit/s and
-could not show the available aggregate. Jumbo frames raise the practical
-TCP ceiling from about 1.88 to 1.96 Gbit/s; live 16-flow results are about
-1.9 Gbit/s upload and 1.75–1.83 Gbit/s download. iperf3 runs in C and measures the
-receiver-side rate; `-R` reverses the direction so each probe records both
-upload and download. The probe image is `nicolaka/netshoot`, which already
-provides Python 3 and iperf3.
+The throughput tests use iperf3 with 16 parallel TCP streams. iperf3 runs in
+C and measures the receiver-side rate; `-R` reverses the direction so each
+probe records both upload and download. The probe image is
+`nicolaka/netshoot`, which already provides Python 3 and iperf3.
 
 Each throughput test lasts 2 measured seconds per direction. Tests are
 phase-shifted across nodes so only one node runs a throughput cycle at a time;
 a full cycle moves roughly `N * (N - 1) * 2 * rate * seconds`. At eight nodes
-and 1.8 Gbit/s, that is about 40 GB every 30 minutes, or roughly 0.18 Gbit/s of
+and 0.9 Gbit/s, that is about 20 GB every 30 minutes, or roughly 0.09 Gbit/s of
 aggregate average background traffic. The probe exposes `mesh_test_active`
 while a throughput cycle is running so switch-drop alerts can be suppressed
 during the intentional bursts. Increase `TRANSFER_INTERVAL_SECONDS` if the
