@@ -1,9 +1,11 @@
 # Talos boot assets for the PXE chainloader.
 #
-# The init container resolves the current Image Factory schematic and
-# downloads the matching kernel/initramfs into an emptyDir. nginx serves them
-# on the shared MetalLB VIP; the generated boot.ipxe in the TFTP root points
-# here. Only public boot assets are served, never machine configs or secrets.
+# The init container resolves the current base and GPU Image Factory
+# schematics and downloads both kernel/initramfs pairs into an emptyDir. The
+# base pair is served at /vmlinuz and /initramfs.xz; the GPU pair is served
+# under /gpu/ and is used only by TALOS_GPU_NODES. nginx serves them on the
+# shared MetalLB VIP; the generated boot.ipxe in the TFTP root points here.
+# Only public boot assets are served, never machine configs or secrets.
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -36,7 +38,7 @@ spec:
             - -ec
           args:
             - |
-              mkdir -p /assets
+              mkdir -p /assets/gpu
 
               fetch() {
                 url="$1"
@@ -45,35 +47,40 @@ spec:
                   --connect-timeout 30 -o "$output" "$url"
               }
 
-              # Resolve the GPU schematic. The PXE assets are shared by all
-              # nodes; non-GPU nodes are installed from the base schematic and
-              # do not run the NVIDIA services, so the GPU kernel is harmless
-              # there. Keeping the GPU kernel here preserves glemmen250's GPU
-              # support on PXE boots until the assets are split per node.
-              schematic_id="$(curl -fsS --retry 5 --retry-delay 3 \
-                --retry-all-errors --connect-timeout 30 \
-                -X POST --data-binary @/config/schematic.yaml \
-                -H 'Content-Type: application/yaml' \
-                https://factory.talos.dev/schematics \
-                | sed -n 's/.*"id":"\([a-f0-9]*\)".*/\1/p')"
-              if [ -z "$schematic_id" ]; then
-                echo "could not resolve the Image Factory schematic" >&2
-                exit 1
-              fi
-              echo "schematic: $schematic_id"
-              echo "talos: $TALOS_VERSION"
+              # Resolve and download one schematic. /assets is the base image
+              # used by every non-GPU node; /assets/gpu is the NVIDIA image
+              # used only by nodes in TALOS_GPU_NODES.
+              fetch_schematic() {
+                schematic_file="$1"
+                destination="$2"
+                schematic_id="$(curl -fsS --retry 5 --retry-delay 3 \
+                  --retry-all-errors --connect-timeout 30 \
+                  -X POST --data-binary @"$schematic_file" \
+                  -H 'Content-Type: application/yaml' \
+                  https://factory.talos.dev/schematics \
+                  | sed -n 's/.*"id":"\([a-f0-9]*\)".*/\1/p')"
+                if [ -z "$schematic_id" ]; then
+                  echo "could not resolve $schematic_file" >&2
+                  exit 1
+                fi
+                echo "$schematic_file: $schematic_id"
+                echo "talos: $TALOS_VERSION"
 
-              fetch \
-                "https://factory.talos.dev/image/$schematic_id/$TALOS_VERSION/kernel-amd64" \
-                /assets/vmlinuz
-              fetch \
-                "https://factory.talos.dev/image/$schematic_id/$TALOS_VERSION/initramfs-amd64.xz" \
-                /assets/initramfs.xz
+                fetch \
+                  "https://factory.talos.dev/image/$schematic_id/$TALOS_VERSION/kernel-amd64" \
+                  "$destination/vmlinuz"
+                fetch \
+                  "https://factory.talos.dev/image/$schematic_id/$TALOS_VERSION/initramfs-amd64.xz" \
+                  "$destination/initramfs.xz"
+              }
+
+              fetch_schematic /config/schematic.yaml /assets
+              fetch_schematic /config/schematic-gpu.yaml /assets/gpu
 
               cp /boot-script/boot.ipxe /assets/boot.ipxe
               : > /assets/healthz
               chmod -R a+rX /assets
-              ls -lh /assets
+              ls -lh /assets /assets/gpu
           env:
             - name: TALOS_VERSION
               valueFrom:
@@ -95,7 +102,7 @@ spec:
           volumeMounts:
             - name: assets
               mountPath: /assets
-            - name: schematic
+            - name: schematics
               mountPath: /config
               readOnly: true
             - name: boot-script
@@ -139,9 +146,9 @@ spec:
       volumes:
         - name: assets
           emptyDir: {}
-        - name: schematic
+        - name: schematics
           configMap:
-            name: pxe-schematic
+            name: pxe-schematics
         - name: boot-script
           configMap:
             name: pxe-boot-script

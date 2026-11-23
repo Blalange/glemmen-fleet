@@ -45,13 +45,15 @@ to load, get an iPXE menu with two choices:
 
 ## Endpoints
 
-| URL                                     | Purpose                                  |
-| --------------------------------------- | ---------------------------------------- |
-| `http://192.168.6.99:8080/vmlinuz`      | Current Talos kernel                     |
-| `http://192.168.6.99:8080/initramfs.xz` | Current Talos initramfs                  |
-| `http://192.168.6.99:8080/boot.ipxe`    | Generated iPXE script (HTTP copy)        |
-| `http://192.168.6.99:8080/healthz`      | Asset server health check                |
-| TFTP on every control-plane node        | `undionly.kpxe`, `ipxe.efi`, `boot.ipxe` |
+| URL                                         | Purpose                                  |
+| ------------------------------------------- | ---------------------------------------- |
+| `http://192.168.6.99:8080/vmlinuz`          | Base Talos kernel (all non-GPU nodes)    |
+| `http://192.168.6.99:8080/initramfs.xz`     | Base Talos initramfs                     |
+| `http://192.168.6.99:8080/gpu/vmlinuz`      | GPU Talos kernel (`TALOS_GPU_NODES`)     |
+| `http://192.168.6.99:8080/gpu/initramfs.xz` | GPU Talos initramfs                      |
+| `http://192.168.6.99:8080/boot.ipxe`        | Generated iPXE script (HTTP copy)        |
+| `http://192.168.6.99:8080/healthz`          | Asset server health check                |
+| TFTP on every control-plane node            | `undionly.kpxe`, `ipxe.efi`, `boot.ipxe` |
 
 ## UniFi configuration
 
@@ -121,14 +123,18 @@ The generated `iseq` lines end with `||`: a failed iPXE comparison returns
 
 ## Talos version updates
 
-The asset server currently resolves the **GPU** schematic from
-`talos/schematic-gpu.yaml` and downloads the kernel/initramfs for
-`TALOS_VERSION` from `talos/settings.env` during pod startup. This keeps the
-PXE boot path GPU-capable for glemmen250. Non-GPU nodes are installed from the
-base `talos/schematic.yaml` and do not run the NVIDIA services, so the GPU
-kernel does not cause the non-GPU boot wait. Updating either schematic or the
-version changes a generated ConfigMap hash and Flux rolls the asset pod, which
-downloads the new assets. No manual upload is
+The asset server resolves both schematics and downloads both kernel/initramfs
+pairs for `TALOS_VERSION` from `talos/settings.env` during pod startup:
+
+- `talos/schematic.yaml` → `/vmlinuz` and `/initramfs.xz` for every non-GPU node,
+- `talos/schematic-gpu.yaml` → `/gpu/vmlinuz` and `/gpu/initramfs.xz` for the
+  nodes in `TALOS_GPU_NODES` (currently `glemmen250`).
+
+`scripts/talos/gen-pxe.py` reads `TALOS_GPU_NODES` and points only those nodes
+at the `/gpu` paths. Booting a non-GPU node from the GPU image reintroduces
+the NVIDIA service boot wait that caused the 2026-11-19 reboot loop. Updating
+either schematic or the version changes a generated ConfigMap hash and Flux
+rolls the asset pod, which downloads the new assets. No manual upload is
 needed.
 
 `talos/settings.env` also sets `PXE_ASSET_URL` (`http://192.168.6.99:8080`).
@@ -142,6 +148,8 @@ kubectl -n pxe logs deploy/pxe-assets -c fetch-assets
 curl http://192.168.6.99:8080/healthz
 curl -I http://192.168.6.99:8080/vmlinuz
 curl -I http://192.168.6.99:8080/initramfs.xz
+curl -I http://192.168.6.99:8080/gpu/vmlinuz
+curl -I http://192.168.6.99:8080/gpu/initramfs.xz
 tftp <control-plane-ip> -c get ipxe.efi
 tftp <control-plane-ip> -c get undionly.kpxe
 tftp <control-plane-ip> -c get boot.ipxe
