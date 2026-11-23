@@ -202,7 +202,7 @@ available to the firmware network stack. On Dell R630 also verify:
   proxyDHCP on an independent port, use a provisioning port or the setup ISO.
   Test one 1xx node before relying on PXE there.
 - glemmen170 must PXE-boot on every boot: its system disk is an NVMe drive the
-  R250 firmware cannot see. Its ports use the same independent-link layout
+  R250 firmware cannot see. Its ports use the same 2-port LACP layout
   (untagged server VLAN plus tagged VLAN 1), so the firmware PXE
   phase can pass traffic on `eno8303`. Do not add those two ports to a UniFi
   LAG.

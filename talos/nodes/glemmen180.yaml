@@ -6,9 +6,21 @@ apiVersion: v1alpha1
 kind: HostnameConfig
 hostname: glemmen180
 ---
+# Two-port LACP bundle: both onboard 1G ports. The switch side is
+# port-channel14 with LACP active, layer3+4 hashing and no lacp
+# suspend-individual for PXE.
 apiVersion: v1alpha1
-kind: LinkConfig
-name: eno8303
+kind: BondConfig
+name: bond0
+links:
+  - eno8303
+  - eno8403
+bondMode: 802.3ad
+xmitHashPolicy: layer3+4
+lacpRate: fast
+miimon: 100
+updelay: 200
+downdelay: 200
 up: true
 mtu: 9000
 addresses:
@@ -21,25 +33,19 @@ routes:
     gateway: 192.168.6.1
     metric: 50
 ---
-apiVersion: v1alpha1
-kind: LinkConfig
-name: eno8403
-up: true
-mtu: 9000
----
 # Keep the legacy interface name so the PXE proxyDHCP pod keeps working while
 # the other control-plane nodes still use bond0.1.
 apiVersion: v1alpha1
 kind: VLANConfig
 name: bond0.1
-parent: eno8303
+parent: bond0
 vlanID: 1
 mtu: 1500
 ---
 apiVersion: v1alpha1
 kind: Layer2VIPConfig
 name: 192.168.6.98
-link: eno8303
+link: bond0
 ---
 apiVersion: v1alpha1
 kind: SysctlConfig

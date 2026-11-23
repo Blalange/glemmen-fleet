@@ -60,16 +60,17 @@ the current Talos kernel/initramfs. If Talos is already installed, the network
 boot hands off to the installed system; otherwise the node comes up in
 maintenance mode. Unknown machines get a fallback menu offering netboot.xyz or
 a generic Talos maintenance-mode boot. The setup ISOs remain the fallback when
-the cluster or network boot infrastructure is down. All 1xx nodes use
-independent links with PXE on `eno8303`; the switch ports carry the server VLAN
-untagged plus VLAN 1 tagged. The server VLAN interfaces run at MTU 9000; the
+the cluster or network boot infrastructure is down. The 1xx control-plane nodes use LACP bonds (six ports on
+glemmen130/150/160, two on glemmen170/180) with PXE on the first member; the
+switch ports carry the server VLAN untagged plus VLAN 1 tagged and use
+`no lacp suspend-individual` so PXE works before the bond forms. The server VLAN interfaces run at MTU 9000; the
 legacy `bond0.1` VLAN 1 stays at 1500 for PXE and the Default
 network, and PXE clients negotiate 1500-byte TCP MSS. Calico pods use 8980
 bytes. Test PXE on one node first; if the
 firmware cannot reach the proxyDHCP, use a non-LAG provisioning port or the
 ISO. glemmen170 is the exception: its system disk is an NVMe drive that the
 R250 firmware cannot boot, so it relies on the PXE chainloader for every boot.
-Its switch ports are already converted to the same independent-link layout.
+Its switch ports are part of the same 2-port LACP bond.
 
 1. Boot the node over PXE, or use the Image Factory ISO (USB or virtual media)
    when PXE is unavailable.
