@@ -21,9 +21,9 @@ KubeVirt v1.10 is built for Kubernetes v1.37, matching this cluster.
 ## Requirements and node placement
 
 KubeVirt needs `/dev/kvm` on the node. Talos includes the KVM host support;
-virtualization must be enabled in the BIOS. All eight ready nodes are
-KubeVirt-schedulable (`kubectl get nodes -l kubevirt.io/schedulable=true`);
-`winsrv01` currently runs on `glemmen80` with KVM acceleration. A node with
+virtualization must be enabled in the BIOS. The nodes are KubeVirt-schedulable
+(`kubectl get nodes -l kubevirt.io/schedulable=true`); `winsrv01` currently
+runs on `glemmen60` with KVM acceleration. A node with
 virtualization disabled would be marked unschedulable unless `useEmulation`
 is enabled.
 

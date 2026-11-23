@@ -27,6 +27,12 @@ below. It runs on KubeVirt; the KubeVirt/CDI stack is in
 | FTP | `192.168.6.96:21`, passive `50000-50009` | `GLEMMEN\ftpuser` |
 | Active Directory | forest `ad.glemmen.internal` | `GLEMMEN\simon` (Domain Admin), `GLEMMEN\ftpuser` |
 
+The Service uses `externalTrafficPolicy: Cluster`, so the VM can run on any
+KubeVirt-schedulable node. MetalLB announces the VIP on the
+`glem.men/ecmp-node` speakers; source addresses are SNATed to the announcing
+node, which the Windows firewall rules allow. The VM currently runs on
+`glemmen60`.
+
 The DNS server is authoritative for the AD zone `ad.glemmen.internal` and an
 internal forward zone `simon.no` with an apex A record pointing to
 `192.168.6.96`. It forwards everything else to `192.168.6.1` and `1.1.1.1`.

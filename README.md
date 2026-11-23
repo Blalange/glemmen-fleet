@@ -138,13 +138,15 @@ install media into Ceph RBD volumes, using the `nvme-rbd` tier for both the
 images and its scratch space. Live migration is enabled on the KubeVirt CR and
 VM disks are on shared Ceph storage.
 
-KubeVirt marks all eight ready nodes as schedulable
-(`kubectl get nodes -l kubevirt.io/schedulable=true`). `winsrv01` currently runs
-on `glemmen80` with KVM acceleration. A node with virtualization disabled in
-the BIOS is marked unschedulable unless emulation is enabled. `winsrv01` uses
-Hyper-V reenlightenment, so KubeVirt currently reports it as not
-live-migratable without a TSC frequency; it restarts on another schedulable
-node if evicted.
+KubeVirt marks the nodes as schedulable
+(`kubectl get nodes -l kubevirt.io/schedulable=true`). `winsrv01` currently
+runs on `glemmen60` with KVM acceleration; it is not pinned to a node. Its
+Service uses `externalTrafficPolicy: Cluster`, so the VM can run on any
+KubeVirt-schedulable node while MetalLB announces the VIP on the ECMP nodes.
+A node with virtualization disabled in the BIOS is marked unschedulable unless
+emulation is enabled. `winsrv01` uses Hyper-V reenlightenment, so KubeVirt
+currently reports it as not live-migratable without a TSC frequency; it
+restarts on another schedulable node if evicted.
 
 `winsrv01` in the `virtualization` namespace is a Windows Server 2025 Standard
 Evaluation (Desktop Experience) VM: 2 vCPU, 8 GiB RAM, a 64 GiB `nvme-rbd`
