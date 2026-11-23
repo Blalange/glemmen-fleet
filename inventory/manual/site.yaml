@@ -28,6 +28,9 @@ manufacturers:
   - name: Intel
     slug: intel
     description: Intel processors and controllers.
+  - name: Komplett
+    slug: komplett
+    description: Komplett custom-built desktop PCs.
   - name: Micron
     slug: micron
     description: Micron memory modules.

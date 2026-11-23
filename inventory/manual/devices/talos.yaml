@@ -213,3 +213,15 @@ devices:
         ip_addresses:
           - address: 192.168.4.80/24
             dns_name: idrac-9syd132
+
+  - name: glemmen250
+    role: worker
+    device_type: komplett-pc-i9-11900k
+    talos_node: glemmen250
+    serial: "22403308"
+    description: >-
+      Komplett desktop used as the GPU worker; 2 x NVIDIA GeForce GTX 1660
+      SUPER.
+    contacts:
+      - contact: Simon Bråten
+        role: technical-contact

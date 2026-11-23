@@ -271,3 +271,16 @@ device_types:
     images:
       front: images/rail-one-front.jpg
       rear: images/rail-one-back.jpg
+
+  - manufacturer: komplett
+    model: Komplett PC i9-11900K
+    slug: komplett-pc-i9-11900k
+    u_height: 0
+    is_full_depth: false
+    description: >-
+      Komplett custom desktop used as the GPU worker: Intel Core i9-11900K,
+      12 GB DDR4, 250 GB Kingston SA2000M8250G NVMe and 2 x NVIDIA GeForce
+      GTX 1660 SUPER.
+    comments: >-
+      DMI reports manufacturer Komplett, product name "Komplett PC" and serial
+      22403308. The machine is not rack-mounted.
