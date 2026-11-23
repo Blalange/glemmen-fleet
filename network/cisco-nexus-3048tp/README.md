@@ -15,8 +15,8 @@ Configured and saved to startup on 2026-11-23 with NX-OS `7.0(3)I7(4)`.
   iDRACs through the UDM.
 - SFP1 (`Ethernet1/49`) is up at 10G to glemmen80. SFP2 is empty. SFP4 has a
   DAC but is administratively shut; the USW remains on UDM port 1.
-- `port-channel10–14` exist but are down until the server LAG cables are
-  moved.
+- `port-channel10` is up with glemmen130's six LACP members. `port-channel11–14`
+  are down until the glemmen150/160/170/180 cables are moved.
 - PSU 1 reports failed/absent; PSU 2 is OK, so the switch is running
   non-redundant.
 
