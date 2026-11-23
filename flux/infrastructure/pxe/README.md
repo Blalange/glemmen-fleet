@@ -121,6 +121,13 @@ The generated `iseq` lines end with `||`: a failed iPXE comparison returns
 `-ERANGE`, and without the trailing `||` iPXE aborts the whole script with
 `Could not boot image: Result too large`.
 
+## Scheduling
+
+`pxe-dnsmasq` is pinned to `glemmen160`. glemmen150 accepts the proxyDHCP
+request but does not answer TFTP on UDP/69, which makes firmware PXE fail with
+`PXE-E18` (server response timeout). Keep the proxyDHCP/TFTP server on
+glemmen160 until the PXE relocation to a stable worker is completed.
+
 ## Talos version updates
 
 The asset server resolves both schematics and downloads both kernel/initramfs

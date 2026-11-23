@@ -32,6 +32,11 @@ spec:
       dnsPolicy: Default
       nodeSelector:
         node-role.kubernetes.io/control-plane: ""
+        # glemmen150 accepts the DHCP proxy but does not answer UDP/69
+        # (TFTP), which makes firmware PXE fail with PXE-E18. Keep the
+        # proxyDHCP/TFTP server on glemmen160 until the PXE relocation to a
+        # stable worker is completed.
+        kubernetes.io/hostname: glemmen160
       tolerations:
         - key: node-role.kubernetes.io/control-plane
           operator: Exists
