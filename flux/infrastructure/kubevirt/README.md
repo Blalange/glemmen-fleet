@@ -21,12 +21,11 @@ KubeVirt v1.10 is built for Kubernetes v1.37, matching this cluster.
 ## Requirements and node placement
 
 KubeVirt needs `/dev/kvm` on the node. Talos includes the KVM host support;
-virtualization must be enabled in the BIOS:
-
-- `glemmen130`–`glemmen180`: VT-x is enabled, `/dev/kvm` exists.
-- `glemmen80`, `glemmen60`, `glemmen250`: VT-x/AMD-V is disabled in the BIOS.
-  KubeVirt marks these nodes unschedulable (unless emulation is enabled), so
-  VMs stay on the 1xx nodes.
+virtualization must be enabled in the BIOS. All eight ready nodes are
+KubeVirt-schedulable (`kubectl get nodes -l kubevirt.io/schedulable=true`);
+`winsrv01` currently runs on `glemmen80` with KVM acceleration. A node with
+virtualization disabled would be marked unschedulable unless `useEmulation`
+is enabled.
 
 The `kubevirt` namespace is marked privileged in the upstream manifest because
 virt-handler mounts host devices. `cdi` is patched to privileged as well; the
@@ -35,9 +34,10 @@ privileged.
 
 ## Configuration choices
 
-- **Live migration** is enabled. All 1xx nodes share the Ceph RBD storage, so a
-  VM can move between them during KubeVirt upgrades or node maintenance.
-  `workloadUpdateStrategy` uses `LiveMigrate`.
+- **Live migration** is enabled on the KubeVirt CR and `workloadUpdateStrategy`
+  uses `LiveMigrate`. VM disks are on shared Ceph RBD. `winsrv01` uses
+  Hyper-V reenlightenment and is reported as non-live-migratable without a
+  TSC frequency; it can be restarted on another node with a brief downtime.
 - **CDI scratch space** is `nvme-rbd`. CDI imports images through a scratch
   volume; this avoids installing `local-path-provisioner` just for CDI and
   keeps the 6 GiB Windows ISO off node-local disk.

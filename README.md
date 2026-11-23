@@ -135,14 +135,16 @@ SFTPGo provides a Web UI at <https://sftpgo.glem.men>, WebDAV at <https://dav.gl
 KubeVirt v1.10.0 and the Containerized Data Importer v1.66.1 run in the
 `kubevirt` and `cdi` namespaces (`flux/infrastructure/kubevirt/`). CDI imports
 install media into Ceph RBD volumes, using the `nvme-rbd` tier for both the
-images and its scratch space. Live migration is enabled; the VM disk is on
-shared Ceph storage.
+images and its scratch space. Live migration is enabled on the KubeVirt CR and
+VM disks are on shared Ceph storage.
 
-KVM is available on the five 1xx nodes (`glemmen130`–`glemmen180`).
-`glemmen80`, `glemmen60` and `glemmen250` have virtualization disabled in the
-BIOS, so KubeVirt keeps virtual machines on the 1xx nodes. `glemmen130`–`180`
-are control planes and workers, so this is the same pool that already runs
-workloads.
+KubeVirt marks all eight ready nodes as schedulable
+(`kubectl get nodes -l kubevirt.io/schedulable=true`). `winsrv01` currently runs
+on `glemmen80` with KVM acceleration. A node with virtualization disabled in
+the BIOS is marked unschedulable unless emulation is enabled. `winsrv01` uses
+Hyper-V reenlightenment, so KubeVirt currently reports it as not
+live-migratable without a TSC frequency; it restarts on another schedulable
+node if evicted.
 
 `winsrv01` in the `virtualization` namespace is a Windows Server 2025 Standard
 Evaluation (Desktop Experience) VM: 2 vCPU, 8 GiB RAM, a 64 GiB `nvme-rbd`
