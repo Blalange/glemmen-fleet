@@ -5,7 +5,7 @@ Calico only sets the veth MTU when a pod is created; existing pods keep the
 old MTU forever. This script finds controllers that own pod-network pods and
 rolls them. It is dry-run by default; pass --apply to actually restart
 workloads. Use --verify after the rollout to inspect host-side veth MTUs via
-the ecmp-route-agent pods.
+the calico-node pods.
 
 This is intentionally conservative: hostNetwork pods (Calico node, MetalLB
 speaker, kube-proxy, node-exporter, etc.) have no Calico veth and are skipped.
@@ -96,7 +96,8 @@ def rollout(kubectl_path: Path, kubeconfig: Path,
 
 def verify(kubectl_path: Path, kubeconfig: Path) -> int:
     completed = kubectl(kubectl_path, kubeconfig,
-                        ["get", "pods", "-n", "ecmp-system", "-o", "json"])
+                        ["get", "pods", "-n", "calico-system",
+                         "-l", "k8s-app=calico-node", "-o", "json"])
     pods = json.loads(completed.stdout).get("items", [])
     bad = 0
     for pod in pods:
@@ -104,7 +105,7 @@ def verify(kubectl_path: Path, kubeconfig: Path) -> int:
         node = pod["spec"].get("nodeName", "?")
         result = kubectl(
             kubectl_path, kubeconfig,
-            ["exec", "-n", "ecmp-system", name, "--", "sh", "-c",
+            ["exec", "-n", "calico-system", name, "--", "sh", "-c",
              "ip -d link show type veth 2>/dev/null "
              "| grep -o 'mtu [0-9]*' | sort | uniq -c"],
             check=False,

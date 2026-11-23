@@ -1,7 +1,7 @@
 # Pod-network mesh tests (ICMP latency/loss and HTTP upload/download).
 #
 # The probe runs as a pod-network DaemonSet so its traffic traverses the
-# Calico pod-CIDR routes and the ECMP multipath links between nodes. The script
+# Calico pod-CIDR routes between nodes. The script
 # is kept in the ConfigMap and mounted into the netshoot image, which provides
 # Python 3 and iperf3; no custom image build is required. The generated
 # ConfigMap name carries a hash, so changing probe.py rolls the DaemonSet.

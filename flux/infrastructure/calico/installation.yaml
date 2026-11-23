@@ -165,9 +165,9 @@ spec:
   logSeverityScreen: Info
   nftablesFlowTableOffload: Disabled
   nftablesMode: Disabled
-  # The ecmp-route-agent owns pod-CIDR routes so it can install multipath
-  # routes; Felix would otherwise rewrite them to a single path.
-  programClusterRoutes: Disabled
+  # Felix owns the pod-CIDR routes again. BGP stays disabled; Calico uses
+  # IPIPCrossSubnet and the per-node IPAM blocks to program cluster routes.
+  programClusterRoutes: Enabled
   reportingInterval: 0s
   vxlanPort: 4789
   vxlanVNI: 4096
@@ -183,9 +183,8 @@ kind: BGPConfiguration
 metadata:
   name: default
 spec:
-  # BGP is disabled in the Installation above.  Keep the mesh off and route
-  # programming disabled so re-enabling BGP later cannot take ownership of the
-  # pod-CIDR routes from the ecmp-route-agent.
+  # BGP is disabled in the Installation above. Keep the node-to-node mesh off;
+  # Felix still programs the cluster routes from Calico's IPAM state.
   logSeverityScreen: Info
   nodeToNodeMeshEnabled: false
-  programClusterRoutes: Disabled
+  programClusterRoutes: Enabled

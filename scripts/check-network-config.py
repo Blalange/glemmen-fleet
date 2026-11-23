@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """Validate the cluster-specific networking invariants.
 
-Checks that every live node has a Calico IP pool matching its pod CIDR and a
-route-agent entry, that the Talos node configs use MTU 9000 on the server/VLAN7
-links, that MetalLB never includes the API VIP, and that BGP is disabled.
+Checks that every live node has a Calico IP pool matching its pod CIDR, that
+Felix owns cluster-route programming, that the Talos node configs use MTU 9000
+on the server VLAN and no longer carry ECMP VLAN 7, that MetalLB never includes
+the API VIP, and that BGP is disabled.
 
 This is a repository/live-state check, not a mutating script.
 """
@@ -12,7 +13,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import re
 import subprocess
 import sys
 from pathlib import Path
@@ -78,7 +78,7 @@ def check_live_nodes(kubectl: Path, kubeconfig: Path) -> None:
                 name))
 
 
-def check_pools_and_agent() -> None:
+def check_pools_and_routes() -> None:
     installation_path = (ROOT / "flux" / "infrastructure" / "calico" /
                          "installation.yaml")
     installation = installation_path.read_text()
@@ -87,26 +87,41 @@ def check_pools_and_agent() -> None:
 
     documents = list(yaml.safe_load_all(installation))
     glemmen50_pool = False
+    felix_enabled = False
+    bgp_enabled = False
     for document in documents:
-        if not document or document.get("kind") != "Installation":
+        if not document:
             continue
-        for pool in document.get("spec", {}).get("calicoNetwork", {}).get(
-                "ipPools", []):
-            if pool.get("cidr") == "10.42.16.0/24" and \
-                    "glemmen50" in pool.get("nodeSelector", ""):
-                glemmen50_pool = True
+        kind = document.get("kind")
+        if kind == "Installation":
+            for pool in document.get("spec", {}).get("calicoNetwork", {}).get(
+                    "ipPools", []):
+                if pool.get("cidr") == "10.42.16.0/24" and \
+                        "glemmen50" in pool.get("nodeSelector", ""):
+                    glemmen50_pool = True
+        elif kind == "FelixConfiguration":
+            felix_enabled = document.get("spec", {}).get(
+                "programClusterRoutes") == "Enabled"
+        elif kind == "BGPConfiguration":
+            bgp_enabled = document.get("spec", {}).get(
+                "programClusterRoutes") == "Enabled"
     if not glemmen50_pool:
         fail("Calico has no 10.42.16.0/24 pool for glemmen50")
+    if not felix_enabled:
+        fail("FelixConfiguration does not enable programClusterRoutes")
+    if not bgp_enabled:
+        fail("BGPConfiguration does not enable programClusterRoutes")
 
-    agent = (ROOT / "flux" / "infrastructure" / "ecmp-route-agent" /
-             "agent.sh").read_text()
+    infra = (ROOT / "flux" / "infrastructure" / "kustomization.yaml").read_text()
+    if "ecmp-route-agent" in infra:
+        fail("flux/infrastructure/kustomization.yaml still includes ecmp-route-agent")
+
     for path in sorted((ROOT / "talos" / "nodes").glob("*.yaml")):
-        name = path.stem
-        if "mtu: 9000" not in path.read_text():
+        text = path.read_text()
+        if "mtu: 9000" not in text:
             fail("{} has no mtu: 9000 LinkConfig".format(path.relative_to(ROOT)))
-        if not re.search(r"\b{}\b".format(re.escape(name)), agent):
-            fail("{} is missing from the ECMP route-agent map".format(name))
-
+        if "vlanID: 7" in text or "192.168.7." in text:
+            fail("{} still configures ECMP VLAN 7".format(path.relative_to(ROOT)))
 
 def check_metallb() -> None:
     path = (ROOT / "flux" / "infrastructure" / "metallb" / "resources" /
@@ -147,7 +162,7 @@ def main() -> int:
     parser.add_argument("--kubeconfig", type=Path, default=DEFAULT_KUBECONFIG)
     args = parser.parse_args()
 
-    check_pools_and_agent()
+    check_pools_and_routes()
     check_metallb()
     check_kube_proxy()
     try:

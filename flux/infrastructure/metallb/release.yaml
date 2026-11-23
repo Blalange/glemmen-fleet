@@ -6,8 +6,8 @@
 # service that wants an external IP must ask for one explicitly (annotation
 # metallb.io/loadBalancerIPs).
 #
-# Only the ECMP-capable server NICs (1xx eno8303 / glemmen80 enp4s0f0) may
-# announce the VIP. The speakers are restricted to the same nodes; MetalLB's
+# Only the server-VLAN NICs (1xx eno8303 / glemmen80 enp4s0f0) may announce
+# the VIP. The speakers are restricted to the same nodes; MetalLB's
 # FRR/BGP backend is disabled because this cluster only uses L2.
 apiVersion: source.toolkit.fluxcd.io/v1
 kind: HelmRepository
@@ -37,7 +37,7 @@ spec:
       enabled: false
     controller:
       # glemmen50 cannot currently reach the API service from its pod network;
-      # keep the controller on an ECMP-capable node.
+      # keep the controller on a server-VLAN node.
       nodeSelector:
         glem.men/ecmp-node: "true"
     speaker:

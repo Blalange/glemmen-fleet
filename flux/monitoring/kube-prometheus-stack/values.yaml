@@ -457,7 +457,7 @@ nodeExporter:
 # so PromQL can query per node (the default instance label is just the pod IP).
 # The subchart is configured under its own name, not under nodeExporter.
 prometheus-node-exporter:
-  # ethtool/conntrack metrics plus the ECMP agent's textfile metrics.  The
+  # ethtool/conntrack metrics and the node-exporter textfile collector.  The
   # node-exporter image runs as root with NET_ADMIN because the ethtool
   # collector needs netlink access; it is a host-network DaemonSet either way.
   extraArgs:

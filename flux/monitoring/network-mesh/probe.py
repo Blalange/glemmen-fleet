@@ -11,7 +11,7 @@ node. Every instance periodically:
 and exposes the results as Prometheus metrics on /metrics. Peer probe pods are
 discovered from the Kubernetes API (or from STATIC_PEERS when running outside
 the cluster). Running on the pod network makes the tests traverse the Calico
-pod-CIDR routes, including the ECMP multipath links.
+pod-CIDR routes.
 
 The HTTP server also implements endpoints for metrics, health and manual
 transfer checks:
@@ -24,7 +24,7 @@ transfer checks:
 
 Only the Python standard library is used, plus the iperf3 binary for the
 throughput tests. The probe runs in the nicolaka/netshoot image, which provides
-Python 3 and iperf3 and is already used by the ECMP route agent.
+Python 3 and iperf3.
 """
 
 import json

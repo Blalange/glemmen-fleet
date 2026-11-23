@@ -62,8 +62,8 @@ maintenance mode. Unknown machines get a fallback menu offering netboot.xyz or
 a generic Talos maintenance-mode boot. The setup ISOs remain the fallback when
 the cluster or network boot infrastructure is down. All 1xx nodes use
 independent links with PXE on `eno8303`; the switch ports carry the server VLAN
-untagged plus VLAN 1 and VLAN 7 tagged. The server and VLAN 7 interfaces run at
-MTU 9000; the legacy `bond0.1` VLAN 1 stays at 1500 for PXE and the Default
+untagged plus VLAN 1 tagged. The server VLAN interfaces run at MTU 9000; the
+legacy `bond0.1` VLAN 1 stays at 1500 for PXE and the Default
 network, and PXE clients negotiate 1500-byte TCP MSS. Calico pods use 8980
 bytes. Test PXE on one node first; if the
 firmware cannot reach the proxyDHCP, use a non-LAG provisioning port or the

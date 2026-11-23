@@ -3,8 +3,8 @@
 #
 # UniFi keeps handing out IP addresses; dnsmasq only answers the PXE options.
 # It must run with host networking on a control-plane node. The server VLAN is
-# the untagged interface (bond0 on the LACP nodes, eno8303 on the ECMP pilot
-# nodes) and bond0.1 carries tagged VLAN 1 (the Default network) on all
+# the untagged interface (bond0 on the LACP nodes, eno8303 on the
+# independent-link nodes) and bond0.1 carries tagged VLAN 1 (the Default network) on all
 # control planes. Dnsmasq binds dynamically, so it works on either layout.
 apiVersion: apps/v1
 kind: Deployment

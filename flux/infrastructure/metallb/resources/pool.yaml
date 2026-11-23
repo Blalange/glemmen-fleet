@@ -14,9 +14,9 @@ spec:
     - 192.168.6.99-192.168.6.99
   autoAssign: false
 ---
-# Only the server-VLAN NICs on the ECMP-capable nodes may announce the VIP.
-# This keeps .99 off VLAN 7, the legacy VLAN 1 PXE interface and the second
-# 1xx NIC, while still allowing any 1xx node or glemmen80 to own it.
+# Only the server-VLAN NICs on the server nodes may announce the VIP.
+# This keeps .99 off the legacy VLAN 1 PXE interface and the second 1xx NIC,
+# while still allowing any 1xx node or glemmen80 to own it.
 apiVersion: metallb.io/v1beta1
 kind: L2Advertisement
 metadata:

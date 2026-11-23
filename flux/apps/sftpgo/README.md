@@ -231,7 +231,7 @@ external-dns creates `sftp.glem.men` pointing at the WAN address
   credential; keep it in a password manager. Regular users authenticate
   through the LDAP auth plugin.
 - `httpd.token_validation=1` disables binding Web UI JWT/CSRF tokens to the
-  request source IP. Traefik's ECMP/DaemonSet path presents different source
+  request source IP. Traefik's DaemonSet path presents different source
   addresses for successive requests, which otherwise causes random
   `invalid CSRF` errors and logouts. Tokens remain signed and short-lived
   (20-minute sessions, 4-hour login/CSRF tokens).

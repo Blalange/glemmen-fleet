@@ -7,7 +7,7 @@
 # The Service is a LoadBalancer served by MetalLB at 192.168.6.99 (the IP the
 # UniFi router forwards 80/443 to).
 #
-# Run Traefik as a DaemonSet on every ECMP-capable node (all 1xx nodes plus
+# Run Traefik as a DaemonSet on every server-VLAN node (all 1xx nodes plus
 # glemmen80). MetalLB may move the VIP to any of those nodes, and
 # externalTrafficPolicy: Local requires a Traefik pod on the node that owns the
 # VIP. A Deployment with a few replicas would blackhole traffic whenever the

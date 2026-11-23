@@ -68,12 +68,12 @@ On both the server network (`192.168.6.0/24`) and the Default network
 The dnsmasq pod uses proxyDHCP only: it does not allocate addresses, routers or
 DNS servers.
 
-The 1xx switch ports carry the Default network as tagged VLAN 1 and the ECMP
-network as tagged VLAN 7, in addition to the untagged server VLAN. Talos creates
-`bond0.1` (a legacy name; on the converted nodes it is a VLAN subinterface of
-`eno8303`) for VLAN 1 and gets an address from UniFi with `ignoreRoutes: true`,
-so it does not install a competing default route. The server VLAN and VLAN 7
-run at MTU 9000; `bond0.1` stays at 1500 for the Default network/PXE. PXE
+The 1xx switch ports carry the Default network as tagged VLAN 1 in addition to
+the untagged server VLAN. Talos creates `bond0.1` (a legacy name; on the
+converted nodes it is a VLAN subinterface of `eno8303`) for VLAN 1 and gets an
+address from UniFi with `ignoreRoutes: true`, so it does not install a competing
+default route. The server VLAN runs at MTU 9000; `bond0.1` stays at 1500 for the
+Default network/PXE. PXE
 clients negotiate a 1500-byte TCP MSS, so the larger server MTU does not affect
 firmware PXE or the asset server. ProxyDHCP only needs an
 address on the subnet; it does not use that address as a gateway for the PXE
@@ -203,7 +203,7 @@ available to the firmware network stack. On Dell R630 also verify:
   Test one 1xx node before relying on PXE there.
 - glemmen170 must PXE-boot on every boot: its system disk is an NVMe drive the
   R250 firmware cannot see. Its ports use the same independent-link layout
-  (untagged server VLAN plus tagged VLAN 1 and VLAN 7), so the firmware PXE
+  (untagged server VLAN plus tagged VLAN 1), so the firmware PXE
   phase can pass traffic on `eno8303`. Do not add those two ports to a UniFi
   LAG.
 - glemmen250 also PXE-boots on every boot: its Kingston NVMe is not exposed as

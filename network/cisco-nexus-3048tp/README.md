@@ -76,15 +76,14 @@ access/trunk mode.
 | 3 | Servere | `192.168.6.0/24` | Server VLAN; untagged/native on all server ports |
 | 4 | Server tilbehør | `192.168.4.0/24` | iDRAC/IMM and switch management |
 | 5 | JubA | `10.23.42.0/24` | Carried on the uplinks for the USW and wireless devices |
-| 7 | Servere ECMP | `192.168.7.0/24` | Tagged on server ports and uplinks |
 
 - UDM Pro port 10 is the uplink. It is currently an all-network trunk and
-  carries tagged VLAN 3, 4, 5 and 7. The switch side uses native VLAN 1; if
+  carries tagged VLAN 3, 4 and 5. The switch side uses native VLAN 1; if
   untagged VLAN 1 (PXE/Default) is needed over this trunk, set the UDM port's
   native network to Default.
 - The USW Pro 24 PoE stays uplinked to UDM Pro port 1. It is not connected to
   the Nexus; SFP4 is shut down.
-- Server ports are trunks with native VLAN 3 and tagged VLAN 1 and 7. They do
+- Server ports are trunks with native VLAN 3 and tagged VLAN 1. They do
   not carry VLAN 4; iDRACs are on separate access ports.
 - The iDRAC access ports are ordinary edge ports with BPDU guard enabled.
 
@@ -112,11 +111,10 @@ access/trunk mode.
   one cable fails.
 
 The six-port LAGs replace the current two independent links on
-glemmen130/150/160. That changes the server-side ECMP design: all six links
-are now one bundle, with VLAN 3 native and VLAN 7 tagged. Update the Talos
-node configs and the ECMP route-agent expectations when the new NICs are
-installed; the switch configuration itself is ready for either the old
-individual-link layout or the new bond.
+glemmen130/150/160. All six links become one bundle with VLAN 3 native and
+VLAN 1 tagged. Update the Talos node configs when the new NICs are installed;
+the switch configuration itself is ready for either the old individual-link
+layout or the new bond.
 
 ## Jumbo frames
 
@@ -131,7 +129,7 @@ system qos
   service-policy type network-qos jumbo
 ```
 
-The server and ECMP VLANs use MTU 9000 end to end. The iDRAC VLAN and the
+The server VLAN uses MTU 9000 end to end. The iDRAC VLAN and the
 legacy VLAN 1 PXE path stay at 1500 on the hosts; the global switch MTU only
 sets the maximum frame size.
 
@@ -202,8 +200,8 @@ The output should report `HW MTU: 9216`.
 
 ## Migration order
 
-1. **Prepare the UDM.** Confirm UDM Pro port 10 carries tagged VLAN 3, 4, 5
-   and 7, and set its native network to Default if untagged VLAN 1 is needed.
+1. **Prepare the UDM.** Confirm UDM Pro port 10 carries tagged VLAN 3, 4 and
+   5, and set its native network to Default if untagged VLAN 1 is needed.
    Keep UDM port 8 on VLAN 4 for `mgmt0`.
 2. **Install the Nexus.** Apply the configuration over the console. Leave
    SFP2, SFP4 and the spare ports shut down.
@@ -215,7 +213,7 @@ The output should report `HW MTU: 9216`.
 5. **Move the single-link servers.** glemmen250 to `Ethernet1/43`, glemmen50
    to `Ethernet1/44` and glemmen60 to `Ethernet1/45`.
 6. **Move glemmen80.** Move its 10G link from USW port 26 to SFP1
-   (`Ethernet1/49`). Verify the server VLAN and VLAN 7.
+   (`Ethernet1/49`). Verify the server VLAN.
 7. **Move glemmen170 and glemmen180.** Cable the two links to
    `Ethernet1/39–40` and `Ethernet1/41–42`, then configure the server LACP
    bonds.

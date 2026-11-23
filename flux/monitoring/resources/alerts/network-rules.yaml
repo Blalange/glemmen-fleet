@@ -92,58 +92,6 @@ spec:
             summary: 'iperf3 server is not listening on a probe'
             description: 'The probe is Ready but its iperf3 server is unavailable, so throughput tests to that node will fail.'
             runbook_url: 'https://github.com/Blalange/glemmen-fleet/blob/main/README.md#networking'
-    - name: network.ecmp
-      rules:
-        - alert: ECMPPathsMissing
-          expr: ecmp_paths < ecmp_expected_paths
-          for: 10m
-          labels:
-            severity: warning
-            team: network
-          annotations:
-            summary: 'ECMP path count below expected for {{ $labels.peer }} on {{ $labels.node }}'
-            description: 'The route agent installed {{ $value }} paths; expected {{ $labels.peer }} to have its full multipath set.'
-            runbook_url: 'https://github.com/Blalange/glemmen-fleet/blob/main/README.md#networking'
-        - alert: ECMPPeerDown
-          expr: ecmp_peer_up == 0
-          for: 10m
-          labels:
-            severity: critical
-            team: network
-          annotations:
-            summary: 'No route to {{ $labels.peer }} pod CIDR on {{ $labels.node }}'
-            description: 'The route agent blackholed the peer after sustained probe failures.'
-            runbook_url: 'https://github.com/Blalange/glemmen-fleet/blob/main/README.md#networking'
-        - alert: ECMPRouteFlapping
-          expr: sum by (node, peer) (increase(ecmp_route_flaps_total[15m])) > 3
-          for: 5m
-          labels:
-            severity: warning
-            team: network
-          annotations:
-            summary: 'ECMP route is flapping for {{ $labels.peer }} on {{ $labels.node }}'
-            description: 'More than 3 route mode changes were recorded in 15 minutes; this rehashes live flows.'
-            runbook_url: 'https://github.com/Blalange/glemmen-fleet/blob/main/README.md#networking'
-        - alert: ECMPAgentMissing
-          expr: absent(ecmp_agent_up) == 1
-          for: 10m
-          labels:
-            severity: critical
-            team: network
-          annotations:
-            summary: 'No ECMP route-agent metrics'
-            description: 'The agent is not exporting ecmp_agent_up, so pod-CIDR routes may be unmanaged.'
-            runbook_url: 'https://github.com/Blalange/glemmen-fleet/blob/main/README.md#networking'
-        - alert: ECMPAgentStale
-          expr: max(time() - ecmp_agent_last_run_timestamp_seconds) > 120
-          for: 5m
-          labels:
-            severity: warning
-            team: network
-          annotations:
-            summary: 'ECMP route agent loop is stale'
-            description: 'The agent has not completed a loop in more than 2 minutes.'
-            runbook_url: 'https://github.com/Blalange/glemmen-fleet/blob/main/README.md#networking'
     - name: network.metallb
       rules:
         - alert: MetalLBMetricsDown
@@ -224,14 +172,14 @@ spec:
             description: 'The link changed carrier state more than twice in 10 minutes.'
             runbook_url: 'https://github.com/Blalange/glemmen-fleet/blob/main/README.md#networking'
         - alert: NodeMTUMismatch
-          expr: node_network_mtu_bytes{device=~"eno8303|eno8403|eno8403\\.7|enp4s0f0|enp4s0f0\\.7|eno1|enp6s0"} != 9000
+          expr: node_network_mtu_bytes{device=~"eno8303|eno8403|enp4s0f0|eno1|enp6s0"} != 9000
           for: 15m
           labels:
             severity: warning
             team: network
           annotations:
             summary: 'Unexpected MTU on {{ $labels.instance }} {{ $labels.device }}'
-            description: 'The server VLAN and VLAN 7 interfaces must be MTU 9000; bond0.1 remains 1500.'
+            description: 'The server VLAN interfaces must be MTU 9000; bond0.1 remains 1500.'
             runbook_url: 'https://github.com/Blalange/glemmen-fleet/blob/main/README.md#networking'
         - alert: NodeConntrackHigh
           expr: node_nf_conntrack_entries / node_nf_conntrack_entries_limit > 0.8

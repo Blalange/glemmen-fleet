@@ -19,18 +19,6 @@ addresses:
 routes:
     - gateway: 192.168.6.1
 ---
-# Tagged VLAN 7 on the 10G SFP+ link. The switch port (USW Pro 24 PoE port
-# 26) must carry VLAN 7 as a tagged network. MTU 9000. This lets glemmen80 use both
-# 1 Gbit/s links of each 1xx node without a second physical link.
-apiVersion: v1alpha1
-kind: VLANConfig
-name: enp4s0f0.7
-parent: enp4s0f0
-vlanID: 7
-mtu: 9000
-addresses:
-    - address: 192.168.7.80/24
----
 # Install to the ST91000640NS (slot moved to sda); overrides the common install target.
 apiVersion: v1alpha1
 kind: UnattendedInstallConfig

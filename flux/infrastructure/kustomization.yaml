@@ -9,7 +9,6 @@ kind: Kustomization
 resources:
   - namespaces.yaml
   - calico/
-  - ecmp-route-agent/
   - cert-manager/
   - external-dns/
   - metallb/

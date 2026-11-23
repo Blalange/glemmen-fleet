@@ -109,7 +109,7 @@ spec:
                   name: sftpgo-admin
                   key: signing-passphrase
             # Traefik may present different source IPs for successive requests
-            # (ECMP/DaemonSet). Tokens are still signed and short-lived, but
+            # (DaemonSet). Tokens are still signed and short-lived, but
             # do not bind them to the request source IP.
             - name: SFTPGO_HTTPD__TOKEN_VALIDATION
               value: "1"

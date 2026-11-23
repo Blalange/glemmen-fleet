@@ -1,10 +1,10 @@
 # One probe per node. The probe runs on the pod network (not hostNetwork) so
-# its pings and iperf3 tests traverse the Calico pod-CIDR routes and exercise
-# the ECMP multipath links between nodes. It discovers the peer probe pods via
+# its pings and iperf3 tests traverse the Calico pod-CIDR routes between
+# nodes. It discovers the peer probe pods via
 # the Kubernetes API and uses their pod IPs.
 #
-# The node/VLAN underlay is MTU 9000, Calico pods use 8980 bytes, and the route
-# agent raises the NIC rings, so the iperf3 test uses the jumbo/ECMP path.
+# The node/VLAN underlay is MTU 9000 and Calico pods use 8980 bytes, so the
+# iperf3 test uses the jumbo-frame path.
 #
 # Pings run every minute and are the health signal.  Throughput tests run
 # every 30 minutes with 16 parallel iperf3 streams in each direction; they are

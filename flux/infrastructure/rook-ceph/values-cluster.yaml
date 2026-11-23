@@ -77,7 +77,7 @@ cephClusterSpec:
 
   cephConfig:
     global:
-      # Do not let Ceph advertise the Netbird or ECMP addresses.
+      # Do not let Ceph advertise the Netbird or second-NIC addresses.
       public_network: 192.168.6.0/24
       cluster_network: 192.168.6.0/24
       # RF2 is the cluster-wide default. The only pool that does not set a

@@ -30,18 +30,6 @@ name: eno8403
 up: true
 mtu: 9000
 ---
-# Second ECMP path. VLAN 7 ("Servere ECMP" in UniFi) is already tagged on the
-# server ports; the untagged Servere VLAN stays available for firmware PXE on
-# eno8403 as well. MTU 9000.
-apiVersion: v1alpha1
-kind: VLANConfig
-name: eno8403.7
-parent: eno8403
-vlanID: 7
-mtu: 9000
-addresses:
-  - address: 192.168.7.150/24
----
 # Keep the legacy interface name so the PXE proxyDHCP pod keeps working while
 # the other control-plane nodes still use bond0.1. The Default VLAN/PXE stays
 # at MTU 1500; the parent server VLAN is 9000.
@@ -61,13 +49,9 @@ apiVersion: v1alpha1
 kind: SysctlConfig
 params:
   net.ipv4.ip_forward: "1"
-  net.ipv4.fib_multipath_hash_policy: "1"
-  net.ipv4.fib_multipath_use_neigh: "1"
   net.ipv4.conf.all.rp_filter: "0"
   net.ipv4.conf.default.rp_filter: "0"
-  # Only answer ARP on the interface that owns the address.  The server VLAN
-  # is untagged on both eno8303 and the eno8403 parent (which is otherwise only
-  # the VLAN 7 parent), so arp_ignore=0 makes the API VIP answer from two MACs.
+  # Only answer ARP on the interface that owns the address.
   net.ipv4.conf.all.arp_ignore: "1"
   net.ipv4.conf.all.arp_announce: "2"
   net.ipv4.conf.all.accept_redirects: "0"
@@ -101,5 +85,4 @@ provisioning:
 apiVersion: v1alpha1
 kind: KubeNodeConfig
 labels:
-  glem.men/ecmp-pilot: "true"
   glem.men/ecmp-node: "true"
