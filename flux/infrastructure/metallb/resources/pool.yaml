@@ -14,9 +14,10 @@ spec:
     - 192.168.6.99-192.168.6.99
   autoAssign: false
 ---
-# Only the server-VLAN NICs on the server nodes may announce the VIP.
-# This keeps .99 off the legacy VLAN 1 PXE interface and the second 1xx NIC,
-# while still allowing any 1xx node or glemmen80 to own it.
+# Only the server-VLAN interface on the server nodes may announce the VIP.
+# The 1xx nodes carry the server VLAN on bond0 (LACP); glemmen80 uses its
+# single 10G enp4s0f0 link. This keeps .99 off the legacy VLAN 1 PXE
+# interface.
 apiVersion: metallb.io/v1beta1
 kind: L2Advertisement
 metadata:
@@ -33,7 +34,7 @@ spec:
           operator: NotIn
           values: ["glemmen80"]
   interfaces:
-    - eno8303
+    - bond0
 ---
 apiVersion: metallb.io/v1beta1
 kind: L2Advertisement
