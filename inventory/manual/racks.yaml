@@ -39,7 +39,7 @@ racks:
       - device: apc-ats
       - device: glemmen80
       - device: server70
-      - device: glemmen50
+      - gap: 2
       - device: zyxel-gs1920-24
         face: rear
       - gap: 8

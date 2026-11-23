@@ -26,8 +26,8 @@ spec:
       # publishes labels from this namespace when it is explicitly allowed.
       extraLabelNs:
         - nvidia.com
-  # The worker is a DaemonSet and glemmen50 is intentionally offline, so the
-  # release would otherwise wait for a permanently-missing worker replica.
+  # The worker is a DaemonSet; do not block the release on every replica
+  # becoming ready during a rolling node change.
   install:
     disableWait: true
   upgrade:

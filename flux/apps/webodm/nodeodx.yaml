@@ -1,10 +1,10 @@
 # NodeODX processing workers (the WebODM/ODX successor of NodeODM).
 #
 # One StatefulSet per worker node instead of one StatefulSet with a replica
-# count: the worker nodes are very different (24/16/12 threads and roughly
-# 141/110/188 GiB allocatable), while a StatefulSet has a single pod template.
+# count: the worker nodes are very different (16 vs 12 threads and roughly
+# 110 vs 188 GiB allocatable), while a StatefulSet has a single pod template.
 # With replicas every worker would get the same request/limit, wasting most of
-# glemmen50 and glemmen80. Each worker below is pinned to its node and sized to
+# glemmen60 and glemmen80. Each worker below is pinned to its node and sized to
 # use almost all of that node's memory and CPU.
 #
 # StatefulSet, not Deployment: ClusterODX addresses each worker individually
@@ -32,66 +32,6 @@ spec:
     - name: api
       port: 3000
       targetPort: api
----
-apiVersion: apps/v1
-kind: StatefulSet
-metadata:
-  name: nodeodx-glemmen50
-  labels:
-    app.kubernetes.io/name: nodeodx
-    app.kubernetes.io/instance: nodeodx-glemmen50
-spec:
-  serviceName: nodeodx-hl
-  replicas: 0
-  selector:
-    matchLabels:
-      app.kubernetes.io/name: nodeodx
-      app.kubernetes.io/instance: nodeodx-glemmen50
-  template:
-    metadata:
-      labels:
-        app.kubernetes.io/name: nodeodx
-        app.kubernetes.io/instance: nodeodx-glemmen50
-    spec:
-      nodeSelector:
-        kubernetes.io/hostname: glemmen50
-      containers:
-        - name: nodeodx
-          # NodeODX publishes no version tags; `latest` tracks the ODX releases.
-          image: webodm/nodeodx:latest
-          imagePullPolicy: IfNotPresent
-          ports:
-            - name: api
-              containerPort: 3000
-          readinessProbe:
-            httpGet:
-              path: /info
-              port: api
-            initialDelaySeconds: 15
-            periodSeconds: 15
-          livenessProbe:
-            httpGet:
-              path: /info
-              port: api
-            initialDelaySeconds: 60
-            periodSeconds: 30
-          volumeMounts:
-            - name: scratch
-              mountPath: /tmp
-          # glemmen50: 24 threads, 141 GiB allocatable. Other pods request
-          # ~3.2 CPU and 0.3 GiB. NodeODX runs one task at a time by default
-          # and ODX sizes max-concurrency from the available cores, so this
-          # effectively dedicates the machine.
-          resources:
-            requests:
-              cpu: "20.5"
-              memory: 136Gi
-            limits:
-              cpu: "23"
-              memory: 136Gi
-      volumes:
-        - name: scratch
-          emptyDir: {}
 ---
 apiVersion: apps/v1
 kind: StatefulSet

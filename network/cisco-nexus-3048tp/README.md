@@ -51,7 +51,7 @@ before saving the configuration.
 | `Ethernet1/39–40` | glemmen170, 2 × 1G | LACP `port-channel13` |
 | `Ethernet1/41–42` | glemmen180, 2 × 1G | LACP `port-channel14` |
 | `Ethernet1/43` | glemmen250, 1G | Server trunk |
-| `Ethernet1/44` | glemmen50, 1G | Server trunk |
+| `Ethernet1/44` | spare | Server trunk, shut down |
 | `Ethernet1/45` | glemmen60, 1G | Server trunk |
 | `Ethernet1/46–48` | spare | Server trunk, shut down |
 | `Ethernet1/49` (SFP1) | glemmen80, 10G | Server trunk |
@@ -210,8 +210,8 @@ The output should report `HW MTU: 9216`.
 4. **Move the iDRACs.** Patch iDRAC/IMM cables from the Zyxel to
    `Ethernet1/1–20`, then remove the Zyxel and move `mgmt0` to its VLAN 4
    access port. Verify Redfish/IPMI.
-5. **Move the single-link servers.** glemmen250 to `Ethernet1/43`, glemmen50
-   to `Ethernet1/44` and glemmen60 to `Ethernet1/45`.
+5. **Move the single-link servers.** glemmen250 to `Ethernet1/43` and
+   glemmen60 to `Ethernet1/45`. `Ethernet1/44` is now spare and shut down.
 6. **Move glemmen80.** Move its 10G link from USW port 26 to SFP1
    (`Ethernet1/49`). Verify the server VLAN.
 7. **Move glemmen170 and glemmen180.** Cable the two links to

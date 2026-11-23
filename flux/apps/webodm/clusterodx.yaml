@@ -91,7 +91,7 @@ spec:
             - -c
             - |
               while true; do
-                for worker in nodeodx-glemmen50 nodeodx-glemmen60 nodeodx-glemmen80; do
+                for worker in nodeodx-glemmen60 nodeodx-glemmen80; do
                   host="${worker}-0.nodeodx-hl.webodm.svc.cluster.local"
                   if nslookup "$host" >/dev/null 2>&1; then
                     printf 'NODE ADD %s 3000\r\n' "$host" | nc -w 3 127.0.0.1 8080 >/dev/null 2>&1 || true

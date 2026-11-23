@@ -2,7 +2,7 @@
 
 Talos Linux v1.14.5 configuration for the glemmen cluster (Kubernetes 1.37.2).
 The `glemmen1xx` machines run control plane + etcd + worker roles; `glemmen80`,
-`glemmen60`, `glemmen250` and `glemmen50` are workers. `glemmen250` is the GPU
+`glemmen60` and `glemmen250` are workers. `glemmen250` is the GPU
 node (2 × GeForce GTX 1660 SUPER).
 
 ## Files

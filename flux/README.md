@@ -587,8 +587,7 @@ external-dns 0.23+) and uses `upsert-only`, so hand-managed records such as the
 `*.glem.men` wildcard are never deleted.
 
 The Minecraft Radar Bedrock server (`flux/apps/minecraft/radar`, resources
-prefixed `minecraft-radar`) is pinned to `glemmen50`, `glemmen60` and
-`glemmen80`. It uses NetherNet on custom ports: **TCP 19142** for signaling and
+prefixed `minecraft-radar`) is pinned to `glemmen60` and `glemmen80`. It uses NetherNet on custom ports: **TCP 19142** for signaling and
 **UDP 19143-19158** for gameplay. Connect with `radar.mc.glem.men:19142`. UniFi
 forwards both ranges to the shared MetalLB VIP `192.168.6.99`; the DNS record
 is managed by external-dns.

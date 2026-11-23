@@ -86,27 +86,18 @@ def check_pools_and_routes() -> None:
         fail("Calico BGP is not explicitly disabled in installation.yaml")
 
     documents = list(yaml.safe_load_all(installation))
-    glemmen50_pool = False
     felix_enabled = False
     bgp_enabled = False
     for document in documents:
         if not document:
             continue
         kind = document.get("kind")
-        if kind == "Installation":
-            for pool in document.get("spec", {}).get("calicoNetwork", {}).get(
-                    "ipPools", []):
-                if pool.get("cidr") == "10.42.16.0/24" and \
-                        "glemmen50" in pool.get("nodeSelector", ""):
-                    glemmen50_pool = True
-        elif kind == "FelixConfiguration":
+        if kind == "FelixConfiguration":
             felix_enabled = document.get("spec", {}).get(
                 "programClusterRoutes") == "Enabled"
         elif kind == "BGPConfiguration":
             bgp_enabled = document.get("spec", {}).get(
                 "programClusterRoutes") == "Enabled"
-    if not glemmen50_pool:
-        fail("Calico has no 10.42.16.0/24 pool for glemmen50")
     if not felix_enabled:
         fail("FelixConfiguration does not enable programClusterRoutes")
     if not bgp_enabled:
@@ -122,6 +113,7 @@ def check_pools_and_routes() -> None:
             fail("{} has no mtu: 9000 LinkConfig".format(path.relative_to(ROOT)))
         if "vlanID: 7" in text or "192.168.7." in text:
             fail("{} still configures ECMP VLAN 7".format(path.relative_to(ROOT)))
+
 
 def check_metallb() -> None:
     path = (ROOT / "flux" / "infrastructure" / "metallb" / "resources" /

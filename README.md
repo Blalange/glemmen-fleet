@@ -15,9 +15,9 @@ All ingress services using one of these domains are automatically available on t
 
 ## Infrastructure
 
-The cluster consists of nine physical Talos Linux nodes: `glemmen50`, `glemmen60`, `glemmen80`, `glemmen250` and `glemmen130`–`glemmen180`. They run Talos Linux `v1.14.5` with Kubernetes `v1.37.2`.
+The cluster consists of eight physical Talos Linux nodes: `glemmen60`, `glemmen80`, `glemmen250` and `glemmen130`–`glemmen180`. They run Talos Linux `v1.14.5` with Kubernetes `v1.37.2`.
 
-`glemmen130`, `glemmen150`, `glemmen160`, `glemmen170` and `glemmen180` are control-plane nodes running etcd. `glemmen50`, `glemmen60`, `glemmen80` and `glemmen250` are workers.
+`glemmen130`, `glemmen150`, `glemmen160`, `glemmen170` and `glemmen180` are control-plane nodes running etcd. `glemmen60`, `glemmen80` and `glemmen250` are workers.
 
 ### Hardware
 
@@ -49,12 +49,6 @@ The 1xx nodes are Dell PowerEdge R250 servers:
 - 110 GB RAM
 - 599 GB system disk + 8 TB data disk
 
-`glemmen50` is an IBM System x3650 M3:
-
-- 2 × Intel Xeon E5645
-- 144 GB DDR3 RAM
-- 598 GB virtual disk
-
 The Dell iDRACs are scraped over Redfish by `idrac-exporter`
 (`flux/monitoring/idrac-exporter/`). The `BMC` and `BMC overview` dashboards in
 Grafana show per-server health, power, temperature, fans and disks.
@@ -81,14 +75,14 @@ installer image whenever `TALOS_VERSION` changes.
 
 ### Networking
 
-The 1xx nodes have two onboard 1 Gbit/s NICs. glemmen130/150/160 add a four-port card and use a six-member `bond0`; glemmen170/180 use a two-member `bond0`. The bond carries the server VLAN (`192.168.6.0/24`) and `bond0.1` carries the legacy VLAN 1 PXE/Default interface used by PXE. `glemmen80` uses its 10G `enp4s0f0`; `glemmen250` has a single 1 Gbit/s `enp6s0` link at `192.168.6.250`. The switch ports carry the server VLAN untagged and VLAN 1 tagged. The server VLAN uses MTU 9000; Calico is configured for 8980-byte pod veths (20 bytes reserved for IPIP), while the legacy `bond0.1` PXE/Default-VLAN interface stays at 1500. `glemmen60` has a single 1 Gbit/s link. `glemmen50` is online with pod CIDR `10.42.16.0/24`. All nodes have static addresses in `192.168.6.0/24`. See `network/cisco-nexus-3048tp/` for the switch and cabling.
+The 1xx nodes have two onboard 1 Gbit/s NICs. glemmen130/150/160 add a four-port card and use a six-member `bond0`; glemmen170/180 use a two-member `bond0`. The bond carries the server VLAN (`192.168.6.0/24`) and `bond0.1` carries the legacy VLAN 1 PXE/Default interface used by PXE. `glemmen80` uses its 10G `enp4s0f0`; `glemmen250` has a single 1 Gbit/s `enp6s0` link at `192.168.6.250`. The switch ports carry the server VLAN untagged and VLAN 1 tagged. The server VLAN uses MTU 9000; Calico is configured for 8980-byte pod veths (20 bytes reserved for IPIP), while the legacy `bond0.1` PXE/Default-VLAN interface stays at 1500. `glemmen60` has a single 1 Gbit/s link. All nodes have static addresses in `192.168.6.0/24`. See `network/cisco-nexus-3048tp/` for the switch and cabling.
 
 - **Kubernetes API**: `192.168.6.98` (Talos Layer2 VIP, advertised by the control-plane nodes).
 - **Ingress**: `192.168.6.99` (MetalLB L2 pool `.96`–`.97` plus `.99`; `.98` is reserved for the Talos API VIP). The UniFi router forwards ports 80 and 443 to this address. Traefik runs as a DaemonSet on every 1xx node and `glemmen80`, and MetalLB speakers are restricted to the same nodes and server-VLAN interfaces. The Service uses `externalTrafficPolicy: Local`, so the VIP only lands on a node with a Traefik pod. Traefik terminates TLS with cert-manager wildcard certificates. Services that need additional ports on the same IP can use MetalLB with `metallb.io/loadBalancerIPs: 192.168.6.99`.
 - **PXE/network boot**: a proxyDHCP/TFTP chainloader on the control-plane nodes and a Talos asset server at `http://192.168.6.99:8080` boot BIOS/UEFI machines from the current Talos kernel/initramfs on both the server VLAN (`192.168.6.0/24`) and the UDM Default VLAN (`192.168.50.0/24`). Known nodes boot their installed Talos system (including NVMe disks that the firmware cannot boot directly) or maintenance mode; unknown machines get a fallback menu offering netboot.xyz or a generic Talos maintenance-mode boot. See `flux/infrastructure/pxe/`.
 - **Netbird** runs on every node as a Talos system extension, so the nodes remain reachable over the mesh network (`*.blalange.intra`). Kubernetes traffic uses the LAN addresses.
 - **Network mesh tests**: `network-mesh-probe` runs a pod-network DaemonSet on every node, so the tests traverse the Calico pod-CIDR routes. Every 60 seconds each probe sends 10 ICMP echo requests to every other probe pod; every 30 minutes it runs a 3-second iperf3 TCP test with sixteen parallel streams in each direction. Tests are phase-shifted so only one node runs a throughput cycle at a time. Prometheus scrapes the results and the **Network Mesh** Grafana dashboard shows ping RTT, packet loss, upload/download throughput and capacity-relative utilization as source/destination tables. There are alerts for mesh loss/RTT, Calico/MetalLB scrape failures, NIC and switch-port drops, and blackbox API/ingress/DNS probes. See `flux/monitoring/network-mesh/` for configuration and metrics.
-- **Server network and accessories**: the Cisco Nexus 3048TP-1GE is installed at `192.168.4.2` and is replacing the Zyxel GS1920-24; the USW Pro 24 PoE remains uplinked to UDM Pro port 1 and is not connected to the Nexus. Ports 1–20 are iDRAC/IMM access ports on VLAN 4 (`192.168.4.0/24`); ports 21–45 are server trunks on VLAN 3 (`192.168.6.0/24`, native) with VLAN 1 (PXE) tagged. glemmen130/150/160 use 6 × 1G LACP bundles, glemmen170/180 use 2 × 1G LACP bundles, and glemmen250/50/60 use single links. SFP1 goes to glemmen80, SFP2 is reserved for glemmen70, SFP3 uplinks to UDM Pro port 10, and SFP4 is unused and shut down. The UDM provides the gateway and DHCP at `192.168.4.1` and `192.168.6.1`, and the APC has a DHCP reservation at `192.168.4.3`. The target configuration, port map and migration order are documented in `network/cisco-nexus-3048tp/`; the old Zyxel configuration remains in `network/zyxel-gs1920-24/` for rollback.
+- **Server network and accessories**: the Cisco Nexus 3048TP-1GE is installed at `192.168.4.2` and is replacing the Zyxel GS1920-24; the USW Pro 24 PoE remains uplinked to UDM Pro port 1 and is not connected to the Nexus. Ports 1–20 are iDRAC/IMM access ports on VLAN 4 (`192.168.4.0/24`); ports 21–45 are server trunks on VLAN 3 (`192.168.6.0/24`, native) with VLAN 1 (PXE) tagged. glemmen130/150/160 use 6 × 1G LACP bundles, glemmen170/180 use 2 × 1G LACP bundles, and glemmen250/60 use single links. SFP1 goes to glemmen80, SFP2 is reserved for glemmen70, SFP3 uplinks to UDM Pro port 10, and SFP4 is unused and shut down. The UDM provides the gateway and DHCP at `192.168.4.1` and `192.168.6.1`, and the APC has a DHCP reservation at `192.168.4.3`. The target configuration, port map and migration order are documented in `network/cisco-nexus-3048tp/`; the old Zyxel configuration remains in `network/zyxel-gs1920-24/` for rollback.
 - Nodes are managed with `talosctl` (see `talos/`), not over SSH.
 
 ### Storage
@@ -114,7 +108,6 @@ unmounted:
 | 170 | nvme0n1 | sda: CMR Ceph OSD; NVMe: raw Ceph OSD (`nvme`); sdb: SMR, unused |
 | 180 | nvme0n1 | sda: CMR Ceph OSD; NVMe: raw Ceph OSD (`nvme`) |
 | 250 | 250 GB NVMe | 100 GiB EPHEMERAL + 140 GiB raw Ceph OSD (`nvme`) |
-| 50 | 598 GB virtual disk | system disk only |
 | 80 | sda | sdb/sdc: unmounted |
 | 60 | sda | sdb: unmounted |
 

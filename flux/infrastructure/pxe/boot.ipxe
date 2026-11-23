@@ -98,14 +98,6 @@ iseq ${mac} FC:34:97:9E:FF:C4 && goto talos_glemmen250 ||
 iseq ${mac:hexhyp} fc-34-97-9e-ff-c4 && goto talos_glemmen250 ||
 iseq ${mac:hexhyp} FC-34-97-9E-FF-C4 && goto talos_glemmen250 ||
 
-# glemmen50 (worker)
-iseq ${serial} KD65TTR && goto talos_glemmen50 ||
-iseq ${serial} kd65ttr && goto talos_glemmen50 ||
-iseq ${uuid} 601b5291-fbf9-3108-b1e5-f33cca2a2fe5 && goto talos_glemmen50 ||
-iseq ${uuid} 601B5291-FBF9-3108-B1E5-F33CCA2A2FE5 && goto talos_glemmen50 ||
-iseq ${uuid} 601b5291fbf93108b1e5f33cca2a2fe5 && goto talos_glemmen50 ||
-iseq ${uuid} 601B5291FBF93108B1E5F33CCA2A2FE5 && goto talos_glemmen50 ||
-
 # glemmen60 (worker)
 iseq ${serial} JVCJGZ1 && goto talos_glemmen60 ||
 iseq ${serial} jvcjgz1 && goto talos_glemmen60 ||
@@ -139,43 +131,37 @@ goto fallback
 
 # glemmen130 (control-plane)
 :talos_glemmen130
-kernel http://192.168.6.99:8080/vmlinuz initrd=initramfs.xz talos.platform=metal console=tty0 slab_nomerge pti=on consoleblank=0 printk.devkmsg=on selinux=1 module.sig_enforce=1 proc_mem.force_override=never ip=192.168.6.130::192.168.6.1:255.255.255.0:glemmen130:eno8303:off:192.168.6.1:1.1.1.1: || goto fallback
+kernel http://192.168.6.99:8080/vmlinuz initrd=initramfs.xz talos.platform=metal console=tty0 slab_nomerge pti=on consoleblank=0 printk.devkmsg=on selinux=1 module.sig_enforce=1 proc_mem.force_override=never bond=bond0:eno8303,eno8403,enp4s0f0,enp4s0f1,enp5s0f0,enp5s0f1:mode=802.3ad,xmit_hash_policy=layer3+4,lacp_rate=fast,miimon=100 ip=192.168.6.130::192.168.6.1:255.255.255.0:glemmen130:bond0:off:192.168.6.1:1.1.1.1: || goto fallback
 initrd http://192.168.6.99:8080/initramfs.xz || goto fallback
 boot || goto fallback
 
 # glemmen150 (control-plane)
 :talos_glemmen150
-kernel http://192.168.6.99:8080/vmlinuz initrd=initramfs.xz talos.platform=metal console=tty0 slab_nomerge pti=on consoleblank=0 printk.devkmsg=on selinux=1 module.sig_enforce=1 proc_mem.force_override=never ip=192.168.6.150::192.168.6.1:255.255.255.0:glemmen150:eno8303:off:192.168.6.1:1.1.1.1: || goto fallback
+kernel http://192.168.6.99:8080/vmlinuz initrd=initramfs.xz talos.platform=metal console=tty0 slab_nomerge pti=on consoleblank=0 printk.devkmsg=on selinux=1 module.sig_enforce=1 proc_mem.force_override=never bond=bond0:eno8303,eno8403,ens2f0,ens2f1,ens2f2,ens2f3:mode=802.3ad,xmit_hash_policy=layer3+4,lacp_rate=fast,miimon=100 ip=192.168.6.150::192.168.6.1:255.255.255.0:glemmen150:bond0:off:192.168.6.1:1.1.1.1: || goto fallback
 initrd http://192.168.6.99:8080/initramfs.xz || goto fallback
 boot || goto fallback
 
 # glemmen160 (control-plane)
 :talos_glemmen160
-kernel http://192.168.6.99:8080/vmlinuz initrd=initramfs.xz talos.platform=metal console=tty0 slab_nomerge pti=on consoleblank=0 printk.devkmsg=on selinux=1 module.sig_enforce=1 proc_mem.force_override=never ip=192.168.6.160::192.168.6.1:255.255.255.0:glemmen160:eno8303:off:192.168.6.1:1.1.1.1: || goto fallback
+kernel http://192.168.6.99:8080/vmlinuz initrd=initramfs.xz talos.platform=metal console=tty0 slab_nomerge pti=on consoleblank=0 printk.devkmsg=on selinux=1 module.sig_enforce=1 proc_mem.force_override=never bond=bond0:eno8303,eno8403,ens2f0,ens2f1,ens2f2,ens2f3:mode=802.3ad,xmit_hash_policy=layer3+4,lacp_rate=fast,miimon=100 ip=192.168.6.160::192.168.6.1:255.255.255.0:glemmen160:bond0:off:192.168.6.1:1.1.1.1: || goto fallback
 initrd http://192.168.6.99:8080/initramfs.xz || goto fallback
 boot || goto fallback
 
 # glemmen170 (control-plane)
 :talos_glemmen170
-kernel http://192.168.6.99:8080/vmlinuz initrd=initramfs.xz talos.platform=metal console=tty0 slab_nomerge pti=on consoleblank=0 printk.devkmsg=on selinux=1 module.sig_enforce=1 proc_mem.force_override=never ip=192.168.6.170::192.168.6.1:255.255.255.0:glemmen170:eno8303:off:192.168.6.1:1.1.1.1: || goto fallback
+kernel http://192.168.6.99:8080/vmlinuz initrd=initramfs.xz talos.platform=metal console=tty0 slab_nomerge pti=on consoleblank=0 printk.devkmsg=on selinux=1 module.sig_enforce=1 proc_mem.force_override=never bond=bond0:eno8303,eno8403:mode=802.3ad,xmit_hash_policy=layer3+4,lacp_rate=fast,miimon=100 ip=192.168.6.170::192.168.6.1:255.255.255.0:glemmen170:bond0:off:192.168.6.1:1.1.1.1: || goto fallback
 initrd http://192.168.6.99:8080/initramfs.xz || goto fallback
 boot || goto fallback
 
 # glemmen180 (control-plane)
 :talos_glemmen180
-kernel http://192.168.6.99:8080/vmlinuz initrd=initramfs.xz talos.platform=metal console=tty0 slab_nomerge pti=on consoleblank=0 printk.devkmsg=on selinux=1 module.sig_enforce=1 proc_mem.force_override=never ip=192.168.6.180::192.168.6.1:255.255.255.0:glemmen180:eno8303:off:192.168.6.1:1.1.1.1: || goto fallback
+kernel http://192.168.6.99:8080/vmlinuz initrd=initramfs.xz talos.platform=metal console=tty0 slab_nomerge pti=on consoleblank=0 printk.devkmsg=on selinux=1 module.sig_enforce=1 proc_mem.force_override=never bond=bond0:eno8303,eno8403:mode=802.3ad,xmit_hash_policy=layer3+4,lacp_rate=fast,miimon=100 ip=192.168.6.180::192.168.6.1:255.255.255.0:glemmen180:bond0:off:192.168.6.1:1.1.1.1: || goto fallback
 initrd http://192.168.6.99:8080/initramfs.xz || goto fallback
 boot || goto fallback
 
 # glemmen250 (worker)
 :talos_glemmen250
 kernel http://192.168.6.99:8080/vmlinuz initrd=initramfs.xz talos.platform=metal console=tty0 slab_nomerge pti=on consoleblank=0 printk.devkmsg=on selinux=1 module.sig_enforce=1 proc_mem.force_override=never ip=192.168.6.250::192.168.6.1:255.255.255.0:glemmen250:enp6s0:off:192.168.6.1:1.1.1.1: || goto fallback
-initrd http://192.168.6.99:8080/initramfs.xz || goto fallback
-boot || goto fallback
-
-# glemmen50 (worker)
-:talos_glemmen50
-kernel http://192.168.6.99:8080/vmlinuz initrd=initramfs.xz talos.platform=metal console=tty0 slab_nomerge pti=on consoleblank=0 printk.devkmsg=on selinux=1 module.sig_enforce=1 proc_mem.force_override=never ip=192.168.6.50::192.168.6.1:255.255.255.0:glemmen50:enp11s0f0:off:192.168.6.1:1.1.1.1: || goto fallback
 initrd http://192.168.6.99:8080/initramfs.xz || goto fallback
 boot || goto fallback
 

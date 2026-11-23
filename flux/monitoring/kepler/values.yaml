@@ -18,21 +18,9 @@ daemonset:
     privileged: true
     runAsNonRoot: false
 
-  # Run on every node that actually has a power sensor. Kepler treats a missing
-  # CPU power meter as fatal, so it must not be scheduled on:
-  #   glemmen50 - Xeon E5645: no RAPL support and no hwmon power sensor.
-  # All other nodes have working RAPL (130/150/160/170/180/80) or the AMD
-  # fam15h_power hwmon sensor (60).
-  affinity:
-    nodeAffinity:
-      requiredDuringSchedulingIgnoredDuringExecution:
-        nodeSelectorTerms:
-          - matchExpressions:
-              - key: kubernetes.io/hostname
-                operator: NotIn
-                values:
-                  - glemmen50
-
+  # Run on every node. All current nodes expose a usable power sensor:
+  # RAPL on 130/150/160/170/180/80 and the AMD fam15h_power hwmon sensor
+  # on glemmen60.
   # All nodes are schedulable and may carry taints (they all have the control
   # plane role), so tolerate everything instead of relying on the chart's
   # control-plane-only tolerations.

@@ -57,22 +57,6 @@ device_types:
       rear: images/dell-poweredge-r630-rear.jpg
 
   - manufacturer: ibm
-    model: System x3650 M3
-    slug: ibm-system-x3650-m3
-    u_height: 2
-    is_full_depth: true
-    part_number: 7945KNG
-    airflow: front-to-rear
-    description: 2U IBM System x server with ServeRAID M5014.
-    images:
-      front: images/ibm-system-x3650-m3-front.jpg
-      rear: images/ibm-system-x3650-m3-rear.jpg
-      other:
-        - name: Server front
-          file: images/ibm-system-x3650-m3-other.jpg
-          description: IBM System x3650 M3 front-panel layout.
-
-  - manufacturer: ibm
     model: Storwize V5000 LFF Expansion Enclosure
     slug: ibm-storwize-v5000-lff-expansion
     u_height: 2

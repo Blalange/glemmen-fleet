@@ -43,14 +43,14 @@ spec:
             description: 'An expected probe peer is missing or not Ready.'
             runbook_url: 'https://github.com/Blalange/glemmen-fleet/blob/main/README.md#networking'
         - alert: MeshProbeMissing
-          expr: count(mesh_probe_info) < 9
+          expr: count(mesh_probe_info) < 8
           for: 15m
           labels:
             severity: critical
             team: network
           annotations:
             summary: 'Only {{ $value }} network-mesh probes are running'
-            description: 'Expected one probe per current node (9). A node outage or DaemonSet scheduling failure is invisible in the per-pair tables.'
+            description: 'Expected one probe per current node (8). A node outage or DaemonSet scheduling failure is invisible in the per-pair tables.'
             runbook_url: 'https://github.com/Blalange/glemmen-fleet/blob/main/README.md#networking'
         - alert: MeshPingStale
           expr: max(time() - mesh_probe_last_ping_timestamp_seconds) > 180

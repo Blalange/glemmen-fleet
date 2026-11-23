@@ -1,5 +1,5 @@
 # WebODM (drone photogrammetry) with a ClusterODX front-end and one NodeODX
-# worker per processing node (glemmen50/60/80), translated from the upstream
+# worker per processing node (glemmen60/80), translated from the upstream
 # docker-compose.
 #
 # Secrets (create them before/while Flux rolls this out):

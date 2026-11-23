@@ -12,8 +12,8 @@ cluster.
 - The Ceph dashboard is at <https://ceph.glem.men>. The admin password is in
   `rook-ceph/rook-ceph-dashboard-password`.
 - The CSI plugin image is pinned to cephcsi v3.17.1 by digest. v3.18.x is a
-  Rocky Linux 10 build and crashes on the x86-64-v2 CPUs in glemmen50 and
-  glemmen60 (rook/rook#18607).
+  Rocky Linux 10 build and crashes on the x86-64-v2 CPU in glemmen60
+  (rook/rook#18607).
 - All application and monitoring volumes are on Ceph: volunteer keys, media
   application config volumes, the qBittorrent downloads and the Hærry Pot
   movie, Minecraft Radar, Frigate config/recordings, WebODM database/media,

@@ -605,34 +605,6 @@ config:
                       unless on(device, node) label_replace(node_bonding_slaves, "device", "$1", "slave", "(.+)")
                     )
                   format: *byterate
-        - glemmen50:
-            icon: linux.png
-            href: https://grafana.glem.men/d/rYdddlPWk/node-exporter-full?var-job=node-exporter&var-nodename=glemmen50
-            description: CPU, RAM og nettverk
-            widget:
-              type: prometheusmetric
-              url: http://kube-prometheus-stack-prometheus.monitoring.svc.cluster.local:9090
-              metrics:
-                - label: CPU
-                  query: 100 * (1 - avg(irate(node_cpu_seconds_total{mode="idle",node="glemmen50"}[2m])))
-                  format: *percent
-                - label: RAM
-                  query: 100 * (1 - node_memory_MemAvailable_bytes{node="glemmen50"} / node_memory_MemTotal_bytes{node="glemmen50"})
-                  format: *percent
-                - label: Ned
-                  query: >-
-                    sum(
-                      irate(node_network_receive_bytes_total{node="glemmen50",device!~"lo|veth.*|br.*|cali.*|flannel.*|cni.*|docker.*|kube.*|nodelocaldns|lhnet.*|wt.*|tun.*|tap.*|wg.*"}[2m])
-                      unless on(device, node) label_replace(node_bonding_slaves, "device", "$1", "slave", "(.+)")
-                    )
-                  format: *byterate
-                - label: Opp
-                  query: >-
-                    sum(
-                      irate(node_network_transmit_bytes_total{node="glemmen50",device!~"lo|veth.*|br.*|cali.*|flannel.*|cni.*|docker.*|kube.*|nodelocaldns|lhnet.*|wt.*|tun.*|tap.*|wg.*"}[2m])
-                      unless on(device, node) label_replace(node_bonding_slaves, "device", "$1", "slave", "(.+)")
-                    )
-                  format: *byterate
     # Live WAN throughput graph. Homepage has no PromQL graph widget, so this
     # links to panel 3 ("WAN Throughput") from the UniFi Poller USG Insights
     # dashboard in Grafana. Grafana now requires an Authentik login and no

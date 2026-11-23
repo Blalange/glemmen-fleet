@@ -1,5 +1,5 @@
-# Minecraft Radar - Bedrock Dedicated Server. Pinned to the three worker nodes;
-# glemmen50 is currently cordoned/offline, so it runs on glemmen60 or glemmen80.
+# Minecraft Radar - Bedrock Dedicated Server. Pinned to the two worker nodes;
+# it runs on glemmen60 or glemmen80.
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -36,7 +36,6 @@ spec:
                   - key: kubernetes.io/hostname
                     operator: In
                     values:
-                      - glemmen50
                       - glemmen60
                       - glemmen80
       containers:

@@ -36,8 +36,7 @@ spec:
     frrk8s:
       enabled: false
     controller:
-      # glemmen50 cannot currently reach the API service from its pod network;
-      # keep the controller on a server-VLAN node.
+      # Keep the controller on a server-VLAN node.
       nodeSelector:
         glem.men/ecmp-node: "true"
     speaker:

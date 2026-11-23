@@ -159,34 +159,6 @@ devices:
         ip_addresses:
           - address: 192.168.4.180/24
             dns_name: idrac-2l51jz3
-  - name: glemmen50
-    role: worker
-    device_type: ibm-system-x3650-m3
-    talos_node: glemmen50
-    service_tag: KD65TTR
-    # IBM IMM: IPMI 2.0, no Redfish.
-    ipmi_ip: 192.168.4.50
-    oob_ip: 192.168.4.50
-    contacts:
-      - contact: Simon Bråten
-        role: technical-contact
-    uplinks:
-      - interface: enp11s0f0
-        switch: USW Pro 24 PoE
-        port: 3
-        type: cat6
-
-    interfaces:
-      - name: IMM
-        type: 1000base-t
-        enabled: true
-        mgmt_only: true
-        description: IBM IMM out-of-band management.
-        untagged_vlan: 4
-        ip_addresses:
-          - address: 192.168.4.50/24
-            dns_name: imm-kd65ttr
-
   - name: glemmen60
     role: worker
     device_type: dell-poweredge-r515

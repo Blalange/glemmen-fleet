@@ -81,7 +81,7 @@ credential profiles and `from_env` / `from_file` / `from_k8s_secret` values.
 | SNMP | manual `snmp_ip` on the UDM Pro, USW Pro 24 PoE and Zyxel GS1920-24; Zyxel has `snmp_interfaces: true` and `snmp_cables: true` |
 | Talos | `sources.talos` profile `glemmen`; `talos/generated/kubeconfig`, `scripts/bin/talosctl`, `talos/generated/talosconfig` |
 | Redfish | R250/R630 iDRACs with `redfish_ip`; read-only `readonly`/`readonly` account |
-| IPMI | iDRAC 6 on `glemmen60` and the IBM IMM on `glemmen50` via `ipmi_ip` |
+| IPMI | iDRAC 6 on `glemmen60` via `ipmi_ip` |
 
 The collector merges sources into the generated layer. Redfish is preferred
 over Talos for compute components; Talos is the fallback. IPMI supplies fan/PSU

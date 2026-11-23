@@ -97,9 +97,9 @@ spec:
             - name: IPERF_OMIT_SECONDS
               value: "1"
             - name: EXPECTED_NODES
-              value: "glemmen50,glemmen60,glemmen80,glemmen130,glemmen150,glemmen160,glemmen170,glemmen180,glemmen250"
+              value: "glemmen60,glemmen80,glemmen130,glemmen150,glemmen160,glemmen170,glemmen180,glemmen250"
             - name: NODE_CAPACITIES
-              value: "glemmen50:1000,glemmen60:1000,glemmen80:10000,glemmen130:2000,glemmen150:2000,glemmen160:2000,glemmen170:2000,glemmen180:2000,glemmen250:1000"
+              value: "glemmen60:1000,glemmen80:10000,glemmen130:2000,glemmen150:2000,glemmen160:2000,glemmen170:2000,glemmen180:2000,glemmen250:1000"
             - name: PYTHONDONTWRITEBYTECODE
               value: "1"
           ports:
