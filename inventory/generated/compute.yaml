@@ -42,7 +42,6 @@ devices:
   - production
   sources:
   - manual
-  - redfish
   - unifi
   interfaces:
   - name: Port 1
@@ -57,112 +56,6 @@ devices:
     - address: 192.168.6.230/24
       dns_name: ubuntu-server
       primary: true
-  module_bays:
-  - name: CPU 1
-    position: '1'
-    bay_type: cpu-socket
-    description: Processor socket.
-    sources:
-    - redfish
-  - name: DIMM A2
-    position: '2'
-    bay_type: dimm-ddr4
-    description: Memory module slot.
-    sources:
-    - redfish
-  - name: DIMM A1
-    position: '3'
-    bay_type: dimm-ddr4
-    description: Memory module slot.
-    sources:
-    - redfish
-  - name: Drive 1
-    position: '4'
-    bay_type: drive-3-5
-    description: Drive bay.
-    sources:
-    - redfish
-  - name: Fan 1
-    position: '5'
-    bay_type: fan
-    description: Chassis cooling fan.
-    sources:
-    - redfish
-  - name: Fan 2
-    position: '6'
-    bay_type: fan
-    description: Chassis cooling fan.
-    sources:
-    - redfish
-  - name: Fan 3
-    position: '7'
-    bay_type: fan
-    description: Chassis cooling fan.
-    sources:
-    - redfish
-  - name: Fan 4
-    position: '8'
-    bay_type: fan
-    description: Chassis cooling fan.
-    sources:
-    - redfish
-  modules:
-  - bay: CPU 1
-    module_type: intel-xeon-e-2314-cpu-2-80ghz
-    status: active
-    serial: ''
-    description: Intel Xeon E-2314 CPU @ 2.80GHz
-    sources:
-    - redfish
-  - bay: DIMM A2
-    module_type: micron-9asf2g72az-3g2f1
-    status: active
-    serial: 3FE369A4
-    description: 16 GB DDR4 3200 MT/s
-    sources:
-    - redfish
-  - bay: DIMM A1
-    module_type: micron-9asf2g72az-3g2f1
-    status: active
-    serial: 3FE36CC0
-    description: 16 GB DDR4 3200 MT/s
-    sources:
-    - redfish
-  - bay: Drive 1
-    module_type: seagate-st2000nm012b-2td
-    status: active
-    serial: WRE0MWG0
-    description: 2000 GB HD
-    sources:
-    - redfish
-  - bay: Fan 1
-    module_type: dell-system-board-fan
-    status: active
-    serial: ''
-    description: System Board Fan1
-    sources:
-    - redfish
-  - bay: Fan 2
-    module_type: dell-system-board-fan
-    status: active
-    serial: ''
-    description: System Board Fan2
-    sources:
-    - redfish
-  - bay: Fan 3
-    module_type: dell-system-board-fan
-    status: active
-    serial: ''
-    description: System Board Fan3
-    sources:
-    - redfish
-  - bay: Fan 4
-    module_type: dell-system-board-fan
-    status: active
-    serial: ''
-    description: System Board Fan4
-    sources:
-    - redfish
 - name: server220
   site: glemmen
   role: server
@@ -175,7 +68,6 @@ devices:
   - production
   sources:
   - manual
-  - redfish
   - unifi
   interfaces:
   - name: Port 1
@@ -190,112 +82,6 @@ devices:
     - address: 192.168.6.133/24
       dns_name: server220
       primary: true
-  module_bays:
-  - name: CPU 1
-    position: '1'
-    bay_type: cpu-socket
-    description: Processor socket.
-    sources:
-    - redfish
-  - name: DIMM A1
-    position: '2'
-    bay_type: dimm-ddr4
-    description: Memory module slot.
-    sources:
-    - redfish
-  - name: DIMM A2
-    position: '3'
-    bay_type: dimm-ddr4
-    description: Memory module slot.
-    sources:
-    - redfish
-  - name: Drive 1
-    position: '4'
-    bay_type: drive-3-5
-    description: Drive bay.
-    sources:
-    - redfish
-  - name: Fan 1
-    position: '5'
-    bay_type: fan
-    description: Chassis cooling fan.
-    sources:
-    - redfish
-  - name: Fan 2
-    position: '6'
-    bay_type: fan
-    description: Chassis cooling fan.
-    sources:
-    - redfish
-  - name: Fan 3
-    position: '7'
-    bay_type: fan
-    description: Chassis cooling fan.
-    sources:
-    - redfish
-  - name: Fan 4
-    position: '8'
-    bay_type: fan
-    description: Chassis cooling fan.
-    sources:
-    - redfish
-  modules:
-  - bay: CPU 1
-    module_type: intel-xeon-e-2314-cpu-2-80ghz
-    status: active
-    serial: ''
-    description: Intel Xeon E-2314 CPU @ 2.80GHz
-    sources:
-    - redfish
-  - bay: DIMM A1
-    module_type: micron-9asf2g72az-3g2f1
-    status: active
-    serial: 3FE36BC0
-    description: 16 GB DDR4 3200 MT/s
-    sources:
-    - redfish
-  - bay: DIMM A2
-    module_type: micron-9asf2g72az-3g2f1
-    status: active
-    serial: 3FE369A5
-    description: 16 GB DDR4 3200 MT/s
-    sources:
-    - redfish
-  - bay: Drive 1
-    module_type: seagate-st2000nm012b-2td
-    status: active
-    serial: WRE0M9SS
-    description: 2000 GB HD
-    sources:
-    - redfish
-  - bay: Fan 1
-    module_type: dell-system-board-fan
-    status: active
-    serial: ''
-    description: System Board Fan1
-    sources:
-    - redfish
-  - bay: Fan 2
-    module_type: dell-system-board-fan
-    status: active
-    serial: ''
-    description: System Board Fan2
-    sources:
-    - redfish
-  - bay: Fan 3
-    module_type: dell-system-board-fan
-    status: active
-    serial: ''
-    description: System Board Fan3
-    sources:
-    - redfish
-  - bay: Fan 4
-    module_type: dell-system-board-fan
-    status: active
-    serial: ''
-    description: System Board Fan4
-    sources:
-    - redfish
 - name: glemmen210
   site: glemmen
   role: server
@@ -798,131 +584,13 @@ devices:
     - address: 192.168.6.70/24
       dns_name: server70
       primary: true
-- name: server110
-  site: glemmen
-  role: server
-  device_type: dell-poweredge-r250
-  status: offline
-  serial: ''
-  description: Physical server between server120 and dellserver01.
-  tags:
-  - production
-  sources:
-  - manual
-  - redfish
-  module_bays:
-  - name: CPU 1
-    position: '1'
-    bay_type: cpu-socket
-    description: Processor socket.
-    sources:
-    - redfish
-  - name: DIMM A1
-    position: '2'
-    bay_type: dimm-ddr4
-    description: Memory module slot.
-    sources:
-    - redfish
-  - name: DIMM A2
-    position: '3'
-    bay_type: dimm-ddr4
-    description: Memory module slot.
-    sources:
-    - redfish
-  - name: Drive 1
-    position: '4'
-    bay_type: drive-3-5
-    description: Drive bay.
-    sources:
-    - redfish
-  - name: Fan 1
-    position: '5'
-    bay_type: fan
-    description: Chassis cooling fan.
-    sources:
-    - redfish
-  - name: Fan 2
-    position: '6'
-    bay_type: fan
-    description: Chassis cooling fan.
-    sources:
-    - redfish
-  - name: Fan 3
-    position: '7'
-    bay_type: fan
-    description: Chassis cooling fan.
-    sources:
-    - redfish
-  - name: Fan 4
-    position: '8'
-    bay_type: fan
-    description: Chassis cooling fan.
-    sources:
-    - redfish
-  modules:
-  - bay: CPU 1
-    module_type: intel-xeon-e-2314-cpu-2-80ghz
-    status: active
-    serial: ''
-    description: Intel Xeon E-2314 CPU @ 2.80GHz
-    sources:
-    - redfish
-  - bay: DIMM A1
-    module_type: micron-9asf2g72az-3g2f1
-    status: active
-    serial: 408E3BDC
-    description: 16 GB DDR4 3200 MT/s
-    sources:
-    - redfish
-  - bay: DIMM A2
-    module_type: micron-9asf2g72az-3g2f1
-    status: active
-    serial: 408E3BDA
-    description: 16 GB DDR4 3200 MT/s
-    sources:
-    - redfish
-  - bay: Drive 1
-    module_type: seagate-st2000nm012b-2td
-    status: active
-    serial: WRE0MWL3
-    description: 2000 GB HD
-    sources:
-    - redfish
-  - bay: Fan 1
-    module_type: dell-system-board-fan
-    status: active
-    serial: ''
-    description: System Board Fan1
-    sources:
-    - redfish
-  - bay: Fan 2
-    module_type: dell-system-board-fan
-    status: active
-    serial: ''
-    description: System Board Fan2
-    sources:
-    - redfish
-  - bay: Fan 3
-    module_type: dell-system-board-fan
-    status: active
-    serial: ''
-    description: System Board Fan3
-    sources:
-    - redfish
-  - bay: Fan 4
-    module_type: dell-system-board-fan
-    status: active
-    serial: ''
-    description: System Board Fan4
-    sources:
-    - redfish
 - name: glemmen130
   site: glemmen
   role: control-plane
   device_type: dell-poweredge-r250
   status: active
   serial: 4c4c4544-004c-3510-8031-b6c04f4a5a33
-  description: Talos (v1.14.4), Kubernetes v1.37.2, kernel 6.18.57-talos, 4 CPU, 31.2
+  description: Talos (v1.14.5), Kubernetes v1.37.2, kernel 6.18.58-talos, 4 CPU, 31.2
     GiB RAM
   tags:
   - production
@@ -933,6 +601,42 @@ devices:
   - name: eno8303
     type: 1000base-t
     enabled: true
+    description: bond0 member (LACP)
+    sources:
+    - talos
+  - name: eno8403
+    type: 1000base-t
+    enabled: true
+    description: bond0 member (LACP)
+    sources:
+    - talos
+  - name: enp4s0f0
+    type: 1000base-t
+    enabled: true
+    description: bond0 member (LACP)
+    sources:
+    - talos
+  - name: enp4s0f1
+    type: 1000base-t
+    enabled: true
+    description: bond0 member (LACP)
+    sources:
+    - talos
+  - name: enp5s0f0
+    type: 1000base-t
+    enabled: true
+    description: bond0 member (LACP)
+    sources:
+    - talos
+  - name: enp5s0f1
+    type: 1000base-t
+    enabled: true
+    description: bond0 member (LACP)
+    sources:
+    - talos
+  - name: bond0
+    type: lag
+    enabled: true
     description: In-band management and cluster traffic
     sources:
     - talos
@@ -940,7 +644,6 @@ devices:
     - address: 192.168.6.130/24
       dns_name: glemmen130
       primary: true
-    mac_address: 6c:3c:8c:75:3d:94
   platform: talos-linux
   module_bays:
   - name: CPU 1
@@ -1080,7 +783,7 @@ devices:
   device_type: dell-poweredge-r250
   status: active
   serial: 4c4c4544-004c-3510-8031-c6c04f4a5a33
-  description: Talos (v1.14.4), Kubernetes v1.37.2, kernel 6.18.57-talos, 4 CPU, 31.2
+  description: Talos (v1.14.5), Kubernetes v1.37.2, kernel 6.18.58-talos, 4 CPU, 31.2
     GiB RAM
   tags:
   - production
@@ -1090,6 +793,48 @@ devices:
   interfaces:
   - name: eno8303
     type: 1000base-t
+    enabled: true
+    description: bond0 member (LACP)
+    sources:
+    - talos
+    mac_address: 6c:3c:8c:75:39:34
+  - name: eno8403
+    type: 1000base-t
+    enabled: true
+    description: bond0 member (LACP)
+    sources:
+    - talos
+    mac_address: 6c:3c:8c:75:39:34
+  - name: ens2f0
+    type: 1000base-t
+    enabled: true
+    description: bond0 member (LACP)
+    sources:
+    - talos
+    mac_address: 6c:3c:8c:75:39:34
+  - name: ens2f1
+    type: 1000base-t
+    enabled: true
+    description: bond0 member (LACP)
+    sources:
+    - talos
+    mac_address: 6c:3c:8c:75:39:34
+  - name: ens2f2
+    type: 1000base-t
+    enabled: true
+    description: bond0 member (LACP)
+    sources:
+    - talos
+    mac_address: 6c:3c:8c:75:39:34
+  - name: ens2f3
+    type: 1000base-t
+    enabled: true
+    description: bond0 member (LACP)
+    sources:
+    - talos
+    mac_address: 6c:3c:8c:75:39:34
+  - name: bond0
+    type: lag
     enabled: true
     description: In-band management and cluster traffic
     sources:
@@ -1225,7 +970,7 @@ devices:
   device_type: dell-poweredge-r250
   status: active
   serial: 4c4c4544-004c-3510-8031-c4c04f4a5a33
-  description: Talos (v1.14.4), Kubernetes v1.37.2, kernel 6.18.57-talos, 4 CPU, 31.2
+  description: Talos (v1.14.5), Kubernetes v1.37.2, kernel 6.18.58-talos, 4 CPU, 31.2
     GiB RAM
   tags:
   - production
@@ -1235,6 +980,48 @@ devices:
   interfaces:
   - name: eno8303
     type: 1000base-t
+    enabled: true
+    description: bond0 member (LACP)
+    sources:
+    - talos
+    mac_address: 6c:3c:8c:75:45:0c
+  - name: eno8403
+    type: 1000base-t
+    enabled: true
+    description: bond0 member (LACP)
+    sources:
+    - talos
+    mac_address: 6c:3c:8c:75:45:0c
+  - name: ens2f0
+    type: 1000base-t
+    enabled: true
+    description: bond0 member (LACP)
+    sources:
+    - talos
+    mac_address: 6c:3c:8c:75:45:0c
+  - name: ens2f1
+    type: 1000base-t
+    enabled: true
+    description: bond0 member (LACP)
+    sources:
+    - talos
+    mac_address: 6c:3c:8c:75:45:0c
+  - name: ens2f2
+    type: 1000base-t
+    enabled: true
+    description: bond0 member (LACP)
+    sources:
+    - talos
+    mac_address: 6c:3c:8c:75:45:0c
+  - name: ens2f3
+    type: 1000base-t
+    enabled: true
+    description: bond0 member (LACP)
+    sources:
+    - talos
+    mac_address: 6c:3c:8c:75:45:0c
+  - name: bond0
+    type: lag
     enabled: true
     description: In-band management and cluster traffic
     sources:
@@ -1381,6 +1168,20 @@ devices:
   - name: eno8303
     type: 1000base-t
     enabled: true
+    description: bond0 member (LACP)
+    sources:
+    - talos
+    mac_address: 6c:3c:8c:75:3c:b4
+  - name: eno8403
+    type: 1000base-t
+    enabled: true
+    description: bond0 member (LACP)
+    sources:
+    - talos
+    mac_address: 6c:3c:8c:75:3c:b4
+  - name: bond0
+    type: lag
+    enabled: true
     description: In-band management and cluster traffic
     sources:
     - talos
@@ -1515,7 +1316,7 @@ devices:
   device_type: dell-poweredge-r250
   status: active
   serial: 4c4c4544-004c-3510-8031-b2c04f4a5a33
-  description: Talos (v1.14.4), Kubernetes v1.37.2, kernel 6.18.57-talos, 4 CPU, 31.2
+  description: Talos (v1.14.5), Kubernetes v1.37.2, kernel 6.18.58-talos, 4 CPU, 31.2
     GiB RAM
   tags:
   - production
@@ -1525,6 +1326,20 @@ devices:
   interfaces:
   - name: eno8303
     type: 1000base-t
+    enabled: true
+    description: bond0 member (LACP)
+    sources:
+    - talos
+    mac_address: 6c:3c:8c:75:3c:44
+  - name: eno8403
+    type: 1000base-t
+    enabled: true
+    description: bond0 member (LACP)
+    sources:
+    - talos
+    mac_address: 6c:3c:8c:75:3c:44
+  - name: bond0
+    type: lag
     enabled: true
     description: In-band management and cluster traffic
     sources:
@@ -1697,6 +1512,12 @@ devices:
     description: Drive bay.
     sources:
     - talos
+  - name: Drive 2
+    position: '6'
+    bay_type: drive-3-5
+    description: Drive bay.
+    sources:
+    - talos
   modules:
   - bay: LGA1200
     module_type: intel-11th-gen-intel-core-i9-11900k-3-50ghz
@@ -1733,6 +1554,13 @@ devices:
     description: 250 GB SSD
     sources:
     - talos
+  - bay: Drive 2
+    module_type: generic-disk-2
+    status: active
+    serial: ''
+    description: 21 GB SSD
+    sources:
+    - talos
 - name: glemmen60
   site: glemmen
   role: worker
@@ -1744,7 +1572,6 @@ devices:
   tags:
   - production
   sources:
-  - ipmi
   - talos
   interfaces:
   - name: eno1
@@ -1760,158 +1587,235 @@ devices:
     mac_address: 08:9e:01:d8:7b:f9
   platform: talos-linux
   module_bays:
-  - name: FAN MOD 1A
-    position: '1'
-    bay_type: fan
-    description: Chassis cooling fan.
-    sources:
-    - ipmi
-  - name: FAN MOD 2A
-    position: '2'
-    bay_type: fan
-    description: Chassis cooling fan.
-    sources:
-    - ipmi
-  - name: FAN MOD 3A
-    position: '3'
-    bay_type: fan
-    description: Chassis cooling fan.
-    sources:
-    - ipmi
-  - name: FAN MOD 4A
-    position: '4'
-    bay_type: fan
-    description: Chassis cooling fan.
-    sources:
-    - ipmi
-  - name: FAN MOD 5A
-    position: '5'
-    bay_type: fan
-    description: Chassis cooling fan.
-    sources:
-    - ipmi
-  - name: PSU 1
-    position: '6'
-    bay_type: power-supply
-    description: Hot-swap power supply bay.
-    sources:
-    - ipmi
-  - name: PSU 2
-    position: '7'
-    bay_type: power-supply
-    description: Hot-swap power supply bay.
-    sources:
-    - ipmi
   - name: CPU1
-    position: '8'
+    position: '1'
     bay_type: cpu-socket
     description: Processor socket.
     sources:
     - talos
   - name: CPU2
-    position: '9'
+    position: '2'
     bay_type: cpu-socket
     description: Processor socket.
     sources:
     - talos
   - name: DIMM_A1
-    position: '10'
+    position: '3'
     bay_type: dimm-ddr3
     description: Memory module slot.
     sources:
     - talos
   - name: DIMM_A2
-    position: '11'
+    position: '4'
     bay_type: dimm-ddr3
     description: Memory module slot.
     sources:
     - talos
   - name: DIMM_A3
-    position: '12'
+    position: '5'
     bay_type: dimm-ddr3
     description: Memory module slot.
     sources:
     - talos
   - name: DIMM_A4
-    position: '13'
+    position: '6'
     bay_type: dimm-ddr3
     description: Memory module slot.
     sources:
     - talos
   - name: DIMM_B1
-    position: '14'
+    position: '7'
     bay_type: dimm-ddr3
     description: Memory module slot.
     sources:
     - talos
   - name: DIMM_B3
-    position: '15'
+    position: '8'
     bay_type: dimm-ddr3
     description: Memory module slot.
     sources:
     - talos
   - name: Drive 1
-    position: '16'
+    position: '9'
     bay_type: drive-3-5
     description: Drive bay.
     sources:
     - talos
   - name: Drive 2
+    position: '10'
+    bay_type: drive-3-5
+    description: Drive bay.
+    sources:
+    - talos
+  - name: Drive 3
+    position: '11'
+    bay_type: drive-3-5
+    description: Drive bay.
+    sources:
+    - talos
+  - name: Drive 4
+    position: '12'
+    bay_type: drive-3-5
+    description: Drive bay.
+    sources:
+    - talos
+  - name: Drive 5
+    position: '13'
+    bay_type: drive-3-5
+    description: Drive bay.
+    sources:
+    - talos
+  - name: Drive 6
+    position: '14'
+    bay_type: drive-3-5
+    description: Drive bay.
+    sources:
+    - talos
+  - name: Drive 7
+    position: '15'
+    bay_type: drive-3-5
+    description: Drive bay.
+    sources:
+    - talos
+  - name: Drive 8
+    position: '16'
+    bay_type: drive-3-5
+    description: Drive bay.
+    sources:
+    - talos
+  - name: Drive 9
     position: '17'
     bay_type: drive-3-5
     description: Drive bay.
     sources:
     - talos
+  - name: Drive 10
+    position: '18'
+    bay_type: drive-3-5
+    description: Drive bay.
+    sources:
+    - talos
+  - name: Drive 11
+    position: '19'
+    bay_type: drive-3-5
+    description: Drive bay.
+    sources:
+    - talos
+  - name: Drive 12
+    position: '20'
+    bay_type: drive-3-5
+    description: Drive bay.
+    sources:
+    - talos
+  - name: Drive 13
+    position: '21'
+    bay_type: drive-3-5
+    description: Drive bay.
+    sources:
+    - talos
+  - name: Drive 14
+    position: '22'
+    bay_type: drive-3-5
+    description: Drive bay.
+    sources:
+    - talos
+  - name: Drive 15
+    position: '23'
+    bay_type: drive-3-5
+    description: Drive bay.
+    sources:
+    - talos
+  - name: Drive 16
+    position: '24'
+    bay_type: drive-3-5
+    description: Drive bay.
+    sources:
+    - talos
+  - name: Drive 17
+    position: '25'
+    bay_type: drive-3-5
+    description: Drive bay.
+    sources:
+    - talos
+  - name: Drive 18
+    position: '26'
+    bay_type: drive-3-5
+    description: Drive bay.
+    sources:
+    - talos
+  - name: Drive 19
+    position: '27'
+    bay_type: drive-3-5
+    description: Drive bay.
+    sources:
+    - talos
+  - name: Drive 20
+    position: '28'
+    bay_type: drive-3-5
+    description: Drive bay.
+    sources:
+    - talos
+  - name: Drive 21
+    position: '29'
+    bay_type: drive-3-5
+    description: Drive bay.
+    sources:
+    - talos
+  - name: Drive 22
+    position: '30'
+    bay_type: drive-3-5
+    description: Drive bay.
+    sources:
+    - talos
+  - name: Drive 23
+    position: '31'
+    bay_type: drive-3-5
+    description: Drive bay.
+    sources:
+    - talos
+  - name: Drive 24
+    position: '32'
+    bay_type: drive-3-5
+    description: Drive bay.
+    sources:
+    - talos
+  - name: Drive 25
+    position: '33'
+    bay_type: drive-3-5
+    description: Drive bay.
+    sources:
+    - talos
+  - name: Drive 26
+    position: '34'
+    bay_type: drive-3-5
+    description: Drive bay.
+    sources:
+    - talos
+  - name: Drive 27
+    position: '35'
+    bay_type: drive-3-5
+    description: Drive bay.
+    sources:
+    - talos
+  - name: Drive 28
+    position: '36'
+    bay_type: drive-3-5
+    description: Drive bay.
+    sources:
+    - talos
+  - name: Drive 29
+    position: '37'
+    bay_type: drive-3-5
+    description: Drive bay.
+    sources:
+    - talos
+  - name: Drive 30
+    position: '38'
+    bay_type: drive-3-5
+    description: Drive bay.
+    sources:
+    - talos
   modules:
-  - bay: FAN MOD 1A
-    module_type: dell-system-board-fan
-    status: active
-    serial: ''
-    description: FAN MOD 1A RPM
-    sources:
-    - ipmi
-  - bay: FAN MOD 2A
-    module_type: dell-system-board-fan
-    status: active
-    serial: ''
-    description: FAN MOD 2A RPM
-    sources:
-    - ipmi
-  - bay: FAN MOD 3A
-    module_type: dell-system-board-fan
-    status: active
-    serial: ''
-    description: FAN MOD 3A RPM
-    sources:
-    - ipmi
-  - bay: FAN MOD 4A
-    module_type: dell-system-board-fan
-    status: active
-    serial: ''
-    description: FAN MOD 4A RPM
-    sources:
-    - ipmi
-  - bay: FAN MOD 5A
-    module_type: dell-system-board-fan
-    status: active
-    serial: ''
-    description: FAN MOD 5A RPM
-    sources:
-    - ipmi
-  - bay: PSU 1
-    module_type: dell-pwr-sply-750w-rdnt-delta
-    status: active
-    serial: CN1797236R09BE
-    description: 750 W
-    sources:
-    - ipmi
-  - bay: PSU 2
-    module_type: dell-pwr-sply-750w-rdnt-delta
-    status: active
-    serial: CN1797236R09BH
-    description: 750 W
-    sources:
-    - ipmi
   - bay: CPU1
     module_type: amd-opteron-processor-4386
     status: active
@@ -1969,17 +1873,213 @@ devices:
     sources:
     - talos
   - bay: Drive 1
+    module_type: generic-disk-1
+    status: active
+    serial: ''
+    description: 21 GB SSD
+    sources:
+    - talos
+  - bay: Drive 2
+    module_type: generic-disk-2
+    status: active
+    serial: ''
+    description: 1 GB SSD
+    sources:
+    - talos
+  - bay: Drive 3
+    module_type: generic-disk-3
+    status: active
+    serial: ''
+    description: 2 GB SSD
+    sources:
+    - talos
+  - bay: Drive 4
+    module_type: generic-disk-4
+    status: active
+    serial: ''
+    description: 2 GB SSD
+    sources:
+    - talos
+  - bay: Drive 5
+    module_type: generic-disk-5
+    status: active
+    serial: ''
+    description: 8 GB SSD
+    sources:
+    - talos
+  - bay: Drive 6
+    module_type: generic-disk-6
+    status: active
+    serial: ''
+    description: 214 GB SSD
+    sources:
+    - talos
+  - bay: Drive 7
+    module_type: generic-disk-7
+    status: active
+    serial: ''
+    description: 2 GB SSD
+    sources:
+    - talos
+  - bay: Drive 8
+    module_type: generic-disk-8
+    status: active
+    serial: ''
+    description: 21 GB SSD
+    sources:
+    - talos
+  - bay: Drive 9
+    module_type: generic-disk-9
+    status: active
+    serial: ''
+    description: 5 GB SSD
+    sources:
+    - talos
+  - bay: Drive 10
+    module_type: generic-disk-10
+    status: active
+    serial: ''
+    description: 2 GB SSD
+    sources:
+    - talos
+  - bay: Drive 11
+    module_type: generic-disk-11
+    status: active
+    serial: ''
+    description: 1 GB SSD
+    sources:
+    - talos
+  - bay: Drive 12
+    module_type: generic-disk-12
+    status: active
+    serial: ''
+    description: 1 GB SSD
+    sources:
+    - talos
+  - bay: Drive 13
+    module_type: generic-disk-13
+    status: active
+    serial: ''
+    description: 107 GB SSD
+    sources:
+    - talos
+  - bay: Drive 14
+    module_type: generic-disk-14
+    status: active
+    serial: ''
+    description: 3 GB SSD
+    sources:
+    - talos
+  - bay: Drive 15
+    module_type: generic-disk-15
+    status: active
+    serial: ''
+    description: 68 GB SSD
+    sources:
+    - talos
+  - bay: Drive 16
+    module_type: generic-disk-16
+    status: active
+    serial: ''
+    description: 8 GB SSD
+    sources:
+    - talos
+  - bay: Drive 17
+    module_type: generic-disk-17
+    status: active
+    serial: ''
+    description: 2 GB SSD
+    sources:
+    - talos
+  - bay: Drive 18
+    module_type: generic-disk-18
+    status: active
+    serial: ''
+    description: 5 GB SSD
+    sources:
+    - talos
+  - bay: Drive 19
+    module_type: generic-disk-19
+    status: active
+    serial: ''
+    description: 1 GB SSD
+    sources:
+    - talos
+  - bay: Drive 20
+    module_type: generic-disk-20
+    status: active
+    serial: ''
+    description: 10 GB SSD
+    sources:
+    - talos
+  - bay: Drive 21
+    module_type: generic-disk-21
+    status: active
+    serial: ''
+    description: 8 GB SSD
+    sources:
+    - talos
+  - bay: Drive 22
+    module_type: generic-disk-22
+    status: active
+    serial: ''
+    description: 5 GB SSD
+    sources:
+    - talos
+  - bay: Drive 23
+    module_type: generic-disk-23
+    status: active
+    serial: ''
+    description: 2 GB SSD
+    sources:
+    - talos
+  - bay: Drive 24
+    module_type: generic-disk-24
+    status: active
+    serial: ''
+    description: 2 GB SSD
+    sources:
+    - talos
+  - bay: Drive 25
     module_type: generic-perc-h700
     status: active
     serial: ''
     description: 599 GB HD
     sources:
     - talos
-  - bay: Drive 2
+  - bay: Drive 26
     module_type: generic-perc-h700
     status: active
     serial: ''
-    description: 7999 GB HD
+    description: 1999 GB HD
+    sources:
+    - talos
+  - bay: Drive 27
+    module_type: generic-perc-h700
+    status: active
+    serial: ''
+    description: 1999 GB HD
+    sources:
+    - talos
+  - bay: Drive 28
+    module_type: generic-perc-h700
+    status: active
+    serial: ''
+    description: 1999 GB HD
+    sources:
+    - talos
+  - bay: Drive 29
+    module_type: generic-perc-h700
+    status: active
+    serial: ''
+    description: 1999 GB HD
+    sources:
+    - talos
+  - bay: Drive 30
+    module_type: generic-perc-h700
+    status: active
+    serial: ''
+    description: 1999 GB HD
     sources:
     - talos
 - name: glemmen80
@@ -1988,7 +2088,7 @@ devices:
   device_type: dell-poweredge-r630
   status: active
   serial: 4c4c4544-0053-5910-8044-b9c04f313332
-  description: Talos (v1.14.4), Kubernetes v1.37.2, kernel 6.18.57-talos, 12 CPU,
+  description: Talos (v1.14.5), Kubernetes v1.37.2, kernel 6.18.58-talos, 12 CPU,
     188.6 GiB RAM
   tags:
   - production
@@ -2296,21 +2396,21 @@ devices:
   - bay: Drive 1
     module_type: generic-st91000640ns
     status: active
-    serial: 9XG58GD8
+    serial: ''
     description: 999 GB HD
     sources:
     - redfish
   - bay: Drive 2
-    module_type: generic-wdc-wd10jfcx-68n
+    module_type: generic-wdc-wd10jfcx-68
     status: active
-    serial: WD WXL1AA5J34UJ
+    serial: ''
     description: 999 GB HD
     sources:
     - redfish
   - bay: Drive 3
-    module_type: generic-wdc-wd10jfcx-68n
+    module_type: generic-wdc-wd10jfcx-68
     status: active
-    serial: WD WXL1AA55CN98
+    serial: ''
     description: 999 GB HD
     sources:
     - redfish

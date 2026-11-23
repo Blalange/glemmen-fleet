@@ -52,13 +52,12 @@ module_types:
   slug: dell-system-board-fan
   profile: Fan
   attributes:
-    rpm: 3960
+    rpm: 3840
   bay_types:
   - fan
   part_number: System Board Fan
   description: Chassis cooling fan
   sources:
-  - ipmi
   - redfish
 - manufacturer: seagate
   model: ST1000DM010-2EP1
@@ -94,7 +93,7 @@ module_types:
   profile: CPU
   attributes:
     cores: 8
-    speed: 3.465
+    speed: 3.5
     architecture: x86_64
   bay_types:
   - cpu-socket
@@ -130,21 +129,19 @@ module_types:
   description: Disk drive
   sources:
   - talos
-- manufacturer: dell
-  model: PWR SPLY,750W,RDNT,DELTA
-  slug: dell-pwr-sply-750w-rdnt-delta
-  profile: Power supply
+- manufacturer: generic
+  model: Disk 2
+  slug: generic-disk-2
+  profile: Hard disk
   attributes:
-    input_current: AC
-    input_voltage: 230
-    hot_swappable: true
-    wattage: 750
+    size: 21
+    type: SSD
   bay_types:
-  - power-supply
-  part_number: PWR SPLY,750W,RDNT,DELTA
-  description: Hot-swap power supply
+  - drive-3-5
+  part_number: Disk 2
+  description: Disk drive
   sources:
-  - ipmi
+  - talos
 - manufacturer: amd
   model: AMD Opteron Processor 4386
   slug: amd-opteron-processor-4386
@@ -172,6 +169,305 @@ module_types:
   - dimm-ddr3
   part_number: M393B2G70BH0-YK0
   description: Memory module
+  sources:
+  - talos
+- manufacturer: generic
+  model: Disk 1
+  slug: generic-disk-1
+  profile: Hard disk
+  attributes:
+    size: 21
+    type: SSD
+  bay_types:
+  - drive-3-5
+  part_number: Disk 1
+  description: Disk drive
+  sources:
+  - talos
+- manufacturer: generic
+  model: Disk 3
+  slug: generic-disk-3
+  profile: Hard disk
+  attributes:
+    size: 2
+    type: SSD
+  bay_types:
+  - drive-3-5
+  part_number: Disk 3
+  description: Disk drive
+  sources:
+  - talos
+- manufacturer: generic
+  model: Disk 4
+  slug: generic-disk-4
+  profile: Hard disk
+  attributes:
+    size: 2
+    type: SSD
+  bay_types:
+  - drive-3-5
+  part_number: Disk 4
+  description: Disk drive
+  sources:
+  - talos
+- manufacturer: generic
+  model: Disk 5
+  slug: generic-disk-5
+  profile: Hard disk
+  attributes:
+    size: 8
+    type: SSD
+  bay_types:
+  - drive-3-5
+  part_number: Disk 5
+  description: Disk drive
+  sources:
+  - talos
+- manufacturer: generic
+  model: Disk 6
+  slug: generic-disk-6
+  profile: Hard disk
+  attributes:
+    size: 214
+    type: SSD
+  bay_types:
+  - drive-3-5
+  part_number: Disk 6
+  description: Disk drive
+  sources:
+  - talos
+- manufacturer: generic
+  model: Disk 7
+  slug: generic-disk-7
+  profile: Hard disk
+  attributes:
+    size: 2
+    type: SSD
+  bay_types:
+  - drive-3-5
+  part_number: Disk 7
+  description: Disk drive
+  sources:
+  - talos
+- manufacturer: generic
+  model: Disk 8
+  slug: generic-disk-8
+  profile: Hard disk
+  attributes:
+    size: 21
+    type: SSD
+  bay_types:
+  - drive-3-5
+  part_number: Disk 8
+  description: Disk drive
+  sources:
+  - talos
+- manufacturer: generic
+  model: Disk 9
+  slug: generic-disk-9
+  profile: Hard disk
+  attributes:
+    size: 5
+    type: SSD
+  bay_types:
+  - drive-3-5
+  part_number: Disk 9
+  description: Disk drive
+  sources:
+  - talos
+- manufacturer: generic
+  model: Disk 10
+  slug: generic-disk-10
+  profile: Hard disk
+  attributes:
+    size: 2
+    type: SSD
+  bay_types:
+  - drive-3-5
+  part_number: Disk 10
+  description: Disk drive
+  sources:
+  - talos
+- manufacturer: generic
+  model: Disk 11
+  slug: generic-disk-11
+  profile: Hard disk
+  attributes:
+    size: 1
+    type: SSD
+  bay_types:
+  - drive-3-5
+  part_number: Disk 11
+  description: Disk drive
+  sources:
+  - talos
+- manufacturer: generic
+  model: Disk 12
+  slug: generic-disk-12
+  profile: Hard disk
+  attributes:
+    size: 1
+    type: SSD
+  bay_types:
+  - drive-3-5
+  part_number: Disk 12
+  description: Disk drive
+  sources:
+  - talos
+- manufacturer: generic
+  model: Disk 13
+  slug: generic-disk-13
+  profile: Hard disk
+  attributes:
+    size: 107
+    type: SSD
+  bay_types:
+  - drive-3-5
+  part_number: Disk 13
+  description: Disk drive
+  sources:
+  - talos
+- manufacturer: generic
+  model: Disk 14
+  slug: generic-disk-14
+  profile: Hard disk
+  attributes:
+    size: 3
+    type: SSD
+  bay_types:
+  - drive-3-5
+  part_number: Disk 14
+  description: Disk drive
+  sources:
+  - talos
+- manufacturer: generic
+  model: Disk 15
+  slug: generic-disk-15
+  profile: Hard disk
+  attributes:
+    size: 68
+    type: SSD
+  bay_types:
+  - drive-3-5
+  part_number: Disk 15
+  description: Disk drive
+  sources:
+  - talos
+- manufacturer: generic
+  model: Disk 16
+  slug: generic-disk-16
+  profile: Hard disk
+  attributes:
+    size: 8
+    type: SSD
+  bay_types:
+  - drive-3-5
+  part_number: Disk 16
+  description: Disk drive
+  sources:
+  - talos
+- manufacturer: generic
+  model: Disk 17
+  slug: generic-disk-17
+  profile: Hard disk
+  attributes:
+    size: 2
+    type: SSD
+  bay_types:
+  - drive-3-5
+  part_number: Disk 17
+  description: Disk drive
+  sources:
+  - talos
+- manufacturer: generic
+  model: Disk 18
+  slug: generic-disk-18
+  profile: Hard disk
+  attributes:
+    size: 5
+    type: SSD
+  bay_types:
+  - drive-3-5
+  part_number: Disk 18
+  description: Disk drive
+  sources:
+  - talos
+- manufacturer: generic
+  model: Disk 19
+  slug: generic-disk-19
+  profile: Hard disk
+  attributes:
+    size: 1
+    type: SSD
+  bay_types:
+  - drive-3-5
+  part_number: Disk 19
+  description: Disk drive
+  sources:
+  - talos
+- manufacturer: generic
+  model: Disk 20
+  slug: generic-disk-20
+  profile: Hard disk
+  attributes:
+    size: 10
+    type: SSD
+  bay_types:
+  - drive-3-5
+  part_number: Disk 20
+  description: Disk drive
+  sources:
+  - talos
+- manufacturer: generic
+  model: Disk 21
+  slug: generic-disk-21
+  profile: Hard disk
+  attributes:
+    size: 8
+    type: SSD
+  bay_types:
+  - drive-3-5
+  part_number: Disk 21
+  description: Disk drive
+  sources:
+  - talos
+- manufacturer: generic
+  model: Disk 22
+  slug: generic-disk-22
+  profile: Hard disk
+  attributes:
+    size: 5
+    type: SSD
+  bay_types:
+  - drive-3-5
+  part_number: Disk 22
+  description: Disk drive
+  sources:
+  - talos
+- manufacturer: generic
+  model: Disk 23
+  slug: generic-disk-23
+  profile: Hard disk
+  attributes:
+    size: 2
+    type: SSD
+  bay_types:
+  - drive-3-5
+  part_number: Disk 23
+  description: Disk drive
+  sources:
+  - talos
+- manufacturer: generic
+  model: Disk 24
+  slug: generic-disk-24
+  profile: Hard disk
+  attributes:
+    size: 2
+    type: SSD
+  bay_types:
+  - drive-3-5
+  part_number: Disk 24
+  description: Disk drive
   sources:
   - talos
 - manufacturer: generic
@@ -246,8 +542,8 @@ module_types:
   sources:
   - redfish
 - manufacturer: generic
-  model: WDC WD10JFCX 68N
-  slug: generic-wdc-wd10jfcx-68n
+  model: WDC WD10JFCX 68
+  slug: generic-wdc-wd10jfcx-68
   profile: Hard disk
   attributes:
     size: 999
@@ -255,7 +551,7 @@ module_types:
     speed: 5400
   bay_types:
   - drive-2-5
-  part_number: WDC WD10JFCX 68N
+  part_number: WDC WD10JFCX 68
   description: Disk drive
   sources:
   - redfish

@@ -63,6 +63,64 @@ devices:
     - address: 192.168.50.245/24
       dns_name: usw-flex-2-5g-5lager
       primary: true
+- name: USW Flex Mini (c171)
+  site: glemmen
+  role: switch
+  device_type: ubiquiti-usw-flex-mini
+  platform: unifi
+  status: offline
+  serial: 245A4C18C171
+  description: UniFi UniFi Switch Flex Mini (USMINI), firmware 2.1.6.762, MAC 24:5a:4c:18:c1:71
+  tags:
+  - production
+  sources:
+  - unifi
+  interfaces:
+  - name: Port 1
+    type: 1000base-t
+    enabled: true
+    description: Unknown, no link
+    mtu: null
+    mode: ''
+    untagged_vlan: null
+    tagged_vlans: []
+    mac_address: 24:5a:4c:18:c1:71
+    ip_addresses:
+    - address: 192.168.50.155/24
+      dns_name: usw-flex-mini-c171
+      primary: true
+  - name: Port 2
+    type: 1000base-t
+    enabled: true
+    description: Unknown, 1 Gbps
+    mtu: null
+    mode: ''
+    untagged_vlan: null
+    tagged_vlans: []
+  - name: Port 3
+    type: 1000base-t
+    enabled: true
+    description: Unknown, no link
+    mtu: null
+    mode: ''
+    untagged_vlan: null
+    tagged_vlans: []
+  - name: Port 4
+    type: 1000base-t
+    enabled: true
+    description: Unknown, 1 Gbps
+    mtu: null
+    mode: ''
+    untagged_vlan: null
+    tagged_vlans: []
+  - name: Port 5
+    type: 1000base-t
+    enabled: true
+    description: Unknown, no link
+    mtu: null
+    mode: ''
+    untagged_vlan: null
+    tagged_vlans: []
 - name: USW Flex 2.5G 5 (97fc)
   site: glemmen
   role: switch
@@ -122,64 +180,6 @@ devices:
     - address: 192.168.50.191/24
       dns_name: usw-flex-2-5g-5-97fc
       primary: true
-- name: USW Flex Mini (c171)
-  site: glemmen
-  role: switch
-  device_type: ubiquiti-usw-flex-mini
-  platform: unifi
-  status: offline
-  serial: 245A4C18C171
-  description: UniFi UniFi Switch Flex Mini (USMINI), firmware 2.1.6.762, MAC 24:5a:4c:18:c1:71
-  tags:
-  - production
-  sources:
-  - unifi
-  interfaces:
-  - name: Port 1
-    type: 1000base-t
-    enabled: true
-    description: Unknown, no link
-    mtu: null
-    mode: ''
-    untagged_vlan: null
-    tagged_vlans: []
-    mac_address: 24:5a:4c:18:c1:71
-    ip_addresses:
-    - address: 192.168.50.155/24
-      dns_name: usw-flex-mini-c171
-      primary: true
-  - name: Port 2
-    type: 1000base-t
-    enabled: true
-    description: Unknown, 1 Gbps
-    mtu: null
-    mode: ''
-    untagged_vlan: null
-    tagged_vlans: []
-  - name: Port 3
-    type: 1000base-t
-    enabled: true
-    description: Unknown, no link
-    mtu: null
-    mode: ''
-    untagged_vlan: null
-    tagged_vlans: []
-  - name: Port 4
-    type: 1000base-t
-    enabled: true
-    description: Unknown, 1 Gbps
-    mtu: null
-    mode: ''
-    untagged_vlan: null
-    tagged_vlans: []
-  - name: Port 5
-    type: 1000base-t
-    enabled: true
-    description: Unknown, no link
-    mtu: null
-    mode: ''
-    untagged_vlan: null
-    tagged_vlans: []
 - name: Dream Machine Pro B bygg
   site: glemmen
   role: gateway
@@ -207,7 +207,6 @@ devices:
     - address: 192.168.6.1/24
     - address: 10.23.42.1/24
     - address: 192.168.4.1/24
-    - address: 192.168.7.1/24
     - address: 192.168.2.1/24
     - address: 192.168.70.1/24
     - address: 192.168.8.1/24
@@ -222,7 +221,7 @@ devices:
   - name: Port 10
     type: 10gbase-x-sfpp
     enabled: true
-    description: Down, 0.01 Gbps
+    description: Up, 10 Gbps
     mtu: null
     mode: ''
     untagged_vlan: null
@@ -500,7 +499,7 @@ devices:
   - name: Port 7
     type: 2.5gbase-t
     enabled: true
-    description: Down, no link PoE
+    description: Up, 1 Gbps PoE
     mtu: null
     mode: ''
     untagged_vlan: null
@@ -827,7 +826,6 @@ devices:
     - 3
     - 4
     - 5
-    - 7
     sources:
     - snmp
     - unifi
@@ -842,7 +840,6 @@ devices:
     - 3
     - 4
     - 5
-    - 7
     sources:
     - snmp
     - unifi
@@ -857,7 +854,6 @@ devices:
     - 3
     - 4
     - 5
-    - 7
     sources:
     - snmp
     - unifi
@@ -872,7 +868,6 @@ devices:
     - 3
     - 4
     - 5
-    - 7
     sources:
     - snmp
     - unifi
@@ -887,7 +882,6 @@ devices:
     - 3
     - 4
     - 5
-    - 7
     sources:
     - snmp
     - unifi
@@ -902,7 +896,6 @@ devices:
     - 1
     - 3
     - 4
-    - 7
     sources:
     - snmp
     - unifi
@@ -917,7 +910,6 @@ devices:
     - 3
     - 4
     - 5
-    - 7
     sources:
     - snmp
     - unifi
@@ -932,7 +924,6 @@ devices:
     - 3
     - 4
     - 5
-    - 7
     sources:
     - snmp
     - unifi
@@ -947,7 +938,6 @@ devices:
     - 3
     - 4
     - 5
-    - 7
     mac_address: d8:b3:70:6d:22:18
     ip_addresses:
     - address: 192.168.50.145/24
@@ -967,7 +957,6 @@ devices:
     - 3
     - 4
     - 5
-    - 7
     sources:
     - snmp
     - unifi
@@ -1063,7 +1052,7 @@ devices:
   - name: Port 3
     type: 2.5gbase-t
     enabled: true
-    description: Up, 1 Gbps
+    description: Down, no link
     mtu: null
     mode: ''
     untagged_vlan: null
@@ -1115,7 +1104,6 @@ devices:
     - 3
     - 4
     - 5
-    - 7
     mac_address: ac:8b:a9:b5:f7:e9
     ip_addresses:
     - address: 192.168.50.178/24
@@ -1135,14 +1123,13 @@ devices:
     - 3
     - 4
     - 5
-    - 7
     sources:
     - snmp
     - unifi
   - name: Port 3
     type: 1000base-t
     enabled: true
-    description: Up, 0.1 Gbps PoE
+    description: Down, no link PoE
     mtu: null
     mode: tagged
     untagged_vlan: 3
@@ -1150,14 +1137,13 @@ devices:
     - 1
     - 4
     - 5
-    - 7
     sources:
     - snmp
     - unifi
   - name: Port 4
     type: 1000base-t
     enabled: true
-    description: Up, 1 Gbps PoE
+    description: Down, no link PoE
     mtu: null
     mode: tagged
     untagged_vlan: 3
@@ -1165,14 +1151,13 @@ devices:
     - 1
     - 4
     - 5
-    - 7
     sources:
     - snmp
     - unifi
   - name: Port 5
     type: 1000base-t
     enabled: true
-    description: Up, 1 Gbps PoE
+    description: Down, 1 Gbps PoE
     mtu: null
     mode: tagged
     untagged_vlan: 3
@@ -1180,14 +1165,13 @@ devices:
     - 1
     - 4
     - 5
-    - 7
     sources:
     - snmp
     - unifi
   - name: Port 6
     type: 1000base-t
     enabled: true
-    description: Up, 1 Gbps PoE
+    description: Down, 1 Gbps PoE
     mtu: null
     mode: tagged
     untagged_vlan: 3
@@ -1195,14 +1179,13 @@ devices:
     - 1
     - 4
     - 5
-    - 7
     sources:
     - snmp
     - unifi
   - name: Port 7
     type: 1000base-t
     enabled: true
-    description: Up, 1 Gbps PoE
+    description: Down, 1 Gbps PoE
     mtu: null
     mode: tagged
     untagged_vlan: 3
@@ -1210,14 +1193,13 @@ devices:
     - 1
     - 4
     - 5
-    - 7
     sources:
     - snmp
     - unifi
   - name: Port 8
     type: 1000base-t
     enabled: true
-    description: Up, 1 Gbps PoE
+    description: Down, 1 Gbps PoE
     mtu: null
     mode: tagged
     untagged_vlan: 3
@@ -1225,14 +1207,13 @@ devices:
     - 1
     - 4
     - 5
-    - 7
     sources:
     - snmp
     - unifi
   - name: Port 9
     type: 1000base-t
     enabled: true
-    description: Up, 1 Gbps PoE
+    description: Down, 1 Gbps PoE
     mtu: null
     mode: tagged
     untagged_vlan: 3
@@ -1240,14 +1221,13 @@ devices:
     - 1
     - 4
     - 5
-    - 7
     sources:
     - snmp
     - unifi
   - name: Port 10
     type: 1000base-t
     enabled: true
-    description: Up, 1 Gbps PoE
+    description: Down, 1 Gbps PoE
     mtu: null
     mode: tagged
     untagged_vlan: 3
@@ -1255,14 +1235,13 @@ devices:
     - 1
     - 4
     - 5
-    - 7
     sources:
     - snmp
     - unifi
   - name: Port 11
     type: 1000base-t
     enabled: true
-    description: Up, 1 Gbps PoE
+    description: Down, 1 Gbps PoE
     mtu: null
     mode: tagged
     untagged_vlan: 3
@@ -1270,14 +1249,13 @@ devices:
     - 1
     - 4
     - 5
-    - 7
     sources:
     - snmp
     - unifi
   - name: Port 12
     type: 1000base-t
     enabled: true
-    description: Up, 1 Gbps PoE
+    description: Down, no link PoE
     mtu: null
     mode: tagged
     untagged_vlan: 3
@@ -1285,14 +1263,13 @@ devices:
     - 1
     - 4
     - 5
-    - 7
     sources:
     - snmp
     - unifi
   - name: Port 13
     type: 1000base-t
     enabled: true
-    description: Up, 1 Gbps PoE
+    description: Down, 1 Gbps PoE
     mtu: null
     mode: tagged
     untagged_vlan: 3
@@ -1300,14 +1277,13 @@ devices:
     - 1
     - 4
     - 5
-    - 7
     sources:
     - snmp
     - unifi
   - name: Port 14
     type: 1000base-t
     enabled: true
-    description: Up, 1 Gbps PoE
+    description: Down, 1 Gbps PoE
     mtu: null
     mode: tagged
     untagged_vlan: 3
@@ -1315,7 +1291,6 @@ devices:
     - 1
     - 4
     - 5
-    - 7
     sources:
     - snmp
     - unifi
@@ -1330,7 +1305,6 @@ devices:
     - 1
     - 4
     - 5
-    - 7
     sources:
     - snmp
     - unifi
@@ -1345,7 +1319,6 @@ devices:
     - 1
     - 4
     - 5
-    - 7
     sources:
     - snmp
     - unifi
@@ -1360,7 +1333,6 @@ devices:
     - 1
     - 4
     - 5
-    - 7
     sources:
     - snmp
     - unifi
@@ -1375,7 +1347,6 @@ devices:
     - 1
     - 4
     - 5
-    - 7
     sources:
     - snmp
     - unifi
@@ -1390,7 +1361,6 @@ devices:
     - 1
     - 4
     - 5
-    - 7
     sources:
     - snmp
     - unifi
@@ -1405,7 +1375,6 @@ devices:
     - 1
     - 4
     - 5
-    - 7
     sources:
     - snmp
     - unifi
@@ -1420,7 +1389,6 @@ devices:
     - 1
     - 4
     - 5
-    - 7
     sources:
     - snmp
     - unifi
@@ -1435,7 +1403,6 @@ devices:
     - 1
     - 4
     - 5
-    - 7
     sources:
     - snmp
     - unifi
@@ -1450,7 +1417,6 @@ devices:
     - 1
     - 4
     - 5
-    - 7
     sources:
     - snmp
     - unifi
@@ -1465,7 +1431,6 @@ devices:
     - 1
     - 4
     - 5
-    - 7
     sources:
     - snmp
     - unifi
@@ -1480,22 +1445,20 @@ devices:
     - 3
     - 4
     - 5
-    - 7
     sources:
     - snmp
     - unifi
   - name: Port 26
     type: 10gbase-x-sfpp
     enabled: true
-    description: Up, 10 Gbps
+    description: Down, 10 Gbps
     mtu: null
     mode: tagged
-    untagged_vlan: 3
+    untagged_vlan: 1
     tagged_vlans:
-    - 1
+    - 3
     - 4
     - 5
-    - 7
     sources:
     - snmp
     - unifi
@@ -1504,282 +1467,14 @@ devices:
   role: switch
   device_type: zyxel-gs1920-24
   status: active
-  serial: ''
+  serial: FOC1832R2YD
   description: Zyxel GS1920-24, firmware V4.10(AAOB.5); server-accessory switch on
     VLAN 4 (ports 1-24) and Servere VLAN 3 (ports 25-27).
   tags:
   - production
   sources:
   - snmp
-  interfaces:
-  - name: Port 1
-    type: 1000base-t
-    enabled: true
-    sources:
-    - snmp
-    mtu: 1500
-    mode: access
-    untagged_vlan: 4
-    tagged_vlans: []
-    description: glemmen160 iDRAC
-  - name: Port 2
-    type: 1000base-t
-    enabled: true
-    sources:
-    - snmp
-    mtu: 1500
-    mode: access
-    untagged_vlan: 4
-    tagged_vlans: []
-    description: glemmen150 iDRAC
-  - name: Port 3
-    type: 1000base-t
-    enabled: true
-    sources:
-    - snmp
-    mtu: 1500
-    mode: access
-    untagged_vlan: 4
-    tagged_vlans: []
-    description: glemmen170 iDRAC
-  - name: Port 4
-    type: 1000base-t
-    enabled: true
-    sources:
-    - snmp
-    mtu: 1500
-    mode: access
-    untagged_vlan: 4
-    tagged_vlans: []
-    description: glemmen130 iDRAC
-  - name: Port 5
-    type: 1000base-t
-    enabled: true
-    sources:
-    - snmp
-    mtu: 1500
-    mode: access
-    untagged_vlan: 4
-    tagged_vlans: []
-    description: glemmen180 iDRAC
-  - name: Port 6
-    type: 1000base-t
-    enabled: true
-    sources:
-    - snmp
-    mtu: 1500
-    mode: access
-    untagged_vlan: 4
-    tagged_vlans: []
-    description: LeanderWin10 iDRAC
-  - name: Port 7
-    type: 1000base-t
-    enabled: true
-    sources:
-    - snmp
-    mtu: 1500
-    mode: access
-    untagged_vlan: 4
-    tagged_vlans: []
-    description: server120 iDRAC
-  - name: Port 8
-    type: 1000base-t
-    enabled: true
-    sources:
-    - snmp
-    mtu: 1500
-    mode: access
-    untagged_vlan: 4
-    tagged_vlans: []
-  - name: Port 9
-    type: 1000base-t
-    enabled: true
-    sources:
-    - snmp
-    mtu: 1500
-    mode: access
-    untagged_vlan: 4
-    tagged_vlans: []
-    description: server110 iDRAC
-  - name: Port 10
-    type: 1000base-t
-    enabled: true
-    sources:
-    - snmp
-    mtu: 1500
-    mode: access
-    untagged_vlan: 4
-    tagged_vlans: []
-    description: 240emy iDRAC
-  - name: Port 11
-    type: 1000base-t
-    enabled: true
-    sources:
-    - snmp
-    mtu: 1500
-    mode: access
-    untagged_vlan: 4
-    tagged_vlans: []
-    description: ubuntu-server iDRAC
-  - name: Port 12
-    type: 1000base-t
-    enabled: true
-    sources:
-    - snmp
-    mtu: 1500
-    mode: access
-    untagged_vlan: 4
-    tagged_vlans: []
-    description: server220 iDRAC
-  - name: Port 13
-    type: 1000base-t
-    enabled: true
-    sources:
-    - snmp
-    mtu: 1500
-    mode: access
-    untagged_vlan: 4
-    tagged_vlans: []
-    description: glemmen210 iDRAC
-  - name: Port 14
-    type: 1000base-t
-    enabled: true
-    sources:
-    - snmp
-    mtu: 1500
-    mode: access
-    untagged_vlan: 4
-    tagged_vlans: []
-    description: server190 iDRAC
-  - name: Port 15
-    type: 1000base-t
-    enabled: true
-    sources:
-    - snmp
-    mtu: 1500
-    mode: access
-    untagged_vlan: 4
-    tagged_vlans: []
-  - name: Port 16
-    type: 1000base-t
-    enabled: true
-    sources:
-    - snmp
-    mtu: 1500
-    mode: access
-    untagged_vlan: 4
-    tagged_vlans: []
-  - name: Port 17
-    type: 1000base-t
-    enabled: true
-    sources:
-    - snmp
-    mtu: 1500
-    mode: access
-    untagged_vlan: 4
-    tagged_vlans: []
-  - name: Port 18
-    type: 1000base-t
-    enabled: true
-    sources:
-    - snmp
-    mtu: 1500
-    mode: access
-    untagged_vlan: 4
-    tagged_vlans: []
-  - name: Port 19
-    type: 100base-tx
-    enabled: true
-    sources:
-    - snmp
-    mtu: 1500
-    mode: access
-    untagged_vlan: 4
-    tagged_vlans: []
-  - name: Port 20
-    type: 100base-tx
-    enabled: true
-    sources:
-    - snmp
-    mtu: 1500
-    mode: access
-    untagged_vlan: 4
-    tagged_vlans: []
-  - name: Port 21
-    type: 1000base-t
-    enabled: true
-    sources:
-    - snmp
-    mtu: 1500
-    mode: access
-    untagged_vlan: 4
-    tagged_vlans: []
-  - name: Port 22
-    type: 1000base-t
-    enabled: true
-    sources:
-    - snmp
-    mtu: 1500
-    mode: access
-    untagged_vlan: 4
-    tagged_vlans: []
-  - name: Port 23
-    type: 1000base-t
-    enabled: true
-    sources:
-    - snmp
-    mtu: 1500
-    mode: access
-    untagged_vlan: 4
-    tagged_vlans: []
-  - name: Port 24
-    type: 1000base-t
-    enabled: true
-    sources:
-    - snmp
-    mtu: 1500
-    mode: access
-    untagged_vlan: 4
-    tagged_vlans: []
-  - name: Port 25
-    type: 1000base-t
-    enabled: true
-    sources:
-    - snmp
-    mtu: 1500
-    mode: access
-    untagged_vlan: 3
-    tagged_vlans: []
-  - name: Port 26
-    type: 1000base-t
-    enabled: true
-    sources:
-    - snmp
-    mtu: 1500
-    mode: access
-    untagged_vlan: 3
-    tagged_vlans: []
-  - name: Port 27
-    type: 1000base-t
-    enabled: true
-    sources:
-    - snmp
-    mtu: 1500
-    mode: access
-    untagged_vlan: 3
-    tagged_vlans: []
-  - name: Port 28
-    type: 1000base-t
-    enabled: true
-    sources:
-    - snmp
-    mtu: 1500
-    mode: tagged
-    untagged_vlan: 1
-    tagged_vlans:
-    - 3
-    - 4
-    description: Dream Machine Pro B bygg Port 8
+  interfaces: []
 vlans:
 - vid: 1
   name: Default
@@ -1807,13 +1502,6 @@ vlans:
   site: glemmen
   status: active
   description: 'UniFi network: Server tilbehør'
-  sources:
-  - unifi
-- vid: 7
-  name: Servere ECMP
-  site: glemmen
-  status: active
-  description: 'UniFi network: Servere ECMP'
   sources:
   - unifi
 prefixes:
@@ -1845,13 +1533,6 @@ prefixes:
   sources:
   - unifi
   vlan: 4
-- prefix: 192.168.7.0/24
-  site: glemmen
-  status: active
-  description: UniFi Servere ECMP (corporate)
-  sources:
-  - unifi
-  vlan: 7
 - prefix: 192.168.2.0/24
   site: glemmen
   status: active
@@ -1994,129 +1675,3 @@ cables:
   description: UniFi uplink to USW Flex 2.5G 5 (22c8) Port 4
   sources:
   - unifi
-- a_device: zyxel-gs1920-24
-  a_interface: Port 1
-  b_device: glemmen160
-  b_interface: iDRAC
-  type: cat6
-  status: connected
-  description: Auto-discovered via SNMP FDB
-  sources:
-  - snmp
-- a_device: zyxel-gs1920-24
-  a_interface: Port 2
-  b_device: glemmen150
-  b_interface: iDRAC
-  type: cat6
-  status: connected
-  description: Auto-discovered via SNMP FDB
-  sources:
-  - snmp
-- a_device: zyxel-gs1920-24
-  a_interface: Port 3
-  b_device: glemmen170
-  b_interface: iDRAC
-  type: cat6
-  status: connected
-  description: Auto-discovered via SNMP FDB
-  sources:
-  - snmp
-- a_device: zyxel-gs1920-24
-  a_interface: Port 4
-  b_device: glemmen130
-  b_interface: iDRAC
-  type: cat6
-  status: connected
-  description: Auto-discovered via SNMP FDB
-  sources:
-  - snmp
-- a_device: zyxel-gs1920-24
-  a_interface: Port 5
-  b_device: glemmen180
-  b_interface: iDRAC
-  type: cat6
-  status: connected
-  description: Auto-discovered via SNMP FDB
-  sources:
-  - snmp
-- a_device: zyxel-gs1920-24
-  a_interface: Port 6
-  b_device: LeanderWin10
-  b_interface: iDRAC
-  type: cat6
-  status: connected
-  description: Auto-discovered via SNMP FDB
-  sources:
-  - snmp
-- a_device: zyxel-gs1920-24
-  a_interface: Port 7
-  b_device: server120
-  b_interface: iDRAC
-  type: cat6
-  status: connected
-  description: Auto-discovered via SNMP FDB
-  sources:
-  - snmp
-- a_device: zyxel-gs1920-24
-  a_interface: Port 9
-  b_device: server110
-  b_interface: iDRAC
-  type: cat6
-  status: connected
-  description: Auto-discovered via SNMP FDB
-  sources:
-  - snmp
-- a_device: zyxel-gs1920-24
-  a_interface: Port 10
-  b_device: 240emy
-  b_interface: iDRAC
-  type: cat6
-  status: connected
-  description: Auto-discovered via SNMP FDB
-  sources:
-  - snmp
-- a_device: zyxel-gs1920-24
-  a_interface: Port 11
-  b_device: ubuntu-server
-  b_interface: iDRAC
-  type: cat6
-  status: connected
-  description: Auto-discovered via SNMP FDB
-  sources:
-  - snmp
-- a_device: zyxel-gs1920-24
-  a_interface: Port 12
-  b_device: server220
-  b_interface: iDRAC
-  type: cat6
-  status: connected
-  description: Auto-discovered via SNMP FDB
-  sources:
-  - snmp
-- a_device: zyxel-gs1920-24
-  a_interface: Port 13
-  b_device: glemmen210
-  b_interface: iDRAC
-  type: cat6
-  status: connected
-  description: Auto-discovered via SNMP FDB
-  sources:
-  - snmp
-- a_device: zyxel-gs1920-24
-  a_interface: Port 14
-  b_device: server190
-  b_interface: iDRAC
-  type: cat6
-  status: connected
-  description: Auto-discovered via SNMP FDB
-  sources:
-  - snmp
-- a_device: zyxel-gs1920-24
-  a_interface: Port 28
-  b_device: Dream Machine Pro B bygg
-  b_interface: Port 8
-  type: cat6
-  status: connected
-  description: Auto-discovered via SNMP LLDP
-  sources:
-  - snmp
