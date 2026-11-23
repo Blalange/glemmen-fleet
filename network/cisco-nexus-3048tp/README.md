@@ -5,6 +5,22 @@ main switch for the Talos servers and all iDRAC/IMM management ports. The
 UniFi USW Pro 24 PoE remains as a downstream switch for the remaining devices
 and is uplinked from SFP4 once glemmen80 has moved to this switch.
 
+## As built
+
+Configured and saved to startup on 2026-11-23 with NX-OS `7.0(3)I7(4)`.
+
+- `mgmt0` is reachable at `192.168.4.2` over SSH; UDM port 8 is VLAN 4 access.
+- `Ethernet1/1–20` are up in VLAN 4 where cabled. Ports 7, 17, 19 and 20 were
+  not connected at the time of the build.
+- SFP3 (`Ethernet1/51`) is up at 10G to UDM port 10; tagged VLAN 4 reaches the
+  iDRACs through the UDM.
+- SFP1, SFP2 and SFP4 are not connected yet. SFP4 is administratively shut.
+- `port-channel10–14` exist but are down until the server LAG cables are
+  moved. `Ethernet1/38` is currently connected as an individual member of
+  `port-channel12`.
+- PSU 1 reports failed/absent; PSU 2 is OK, so the switch is running
+  non-redundant.
+
 ## Hardware and management
 
 - **Model:** Cisco Nexus 3048TP-1GE (`N3K-C3048TP-1GE`)
@@ -15,12 +31,12 @@ and is uplinked from SFP4 once glemmen80 has moved to this switch.
 - **SNMP:** v2c community `public`, read-only, used by the inventory collector
 - **Console:** RS-232 console, currently connected to glemmen80
 - **Config:** [`config_nexus-3048tp.cfg`](config_nexus-3048tp.cfg)
+- **Boot image:** `bootflash:nxos.7.0.3.I7.4.bin` (set with `boot nxos`)
 
-The management address is the address previously used by the Zyxel. Do not
-connect `mgmt0` while the Zyxel is still online with `192.168.4.2`; remove the
-Zyxel first or change its address. The cleanest migration is to reuse the old
-Zyxel uplink cable and configure UDM Pro port 8 as a VLAN 4 access port for
-`mgmt0`. Alternatively, use a USW VLAN 4 access port after SFP4 is active.
+The management address is the address previously used by the Zyxel. `mgmt0`
+is patched to UDM Pro port 8, which is configured as a VLAN 4 access port.
+Keep that UDM port on VLAN 4; if it is reset to the Default network,
+`192.168.4.2` becomes unreachable.
 
 The admin password is deliberately not stored in Git. Set it interactively
 before saving the configuration.
@@ -74,6 +90,10 @@ The APC ATS and any other non-iDRAC VLAN 4 accessory can stay on a USW
 VLAN 4 access port, or use `Ethernet1/20` if it is patched there instead of a
 future iDRAC.
 
+The 3048TP defaults its Ethernet ports to routed mode. The configuration puts
+an explicit `switchport` command on every configured port before applying
+access/trunk mode.
+
 ## VLANs and tagging
 
 | VLAN | Name | Address | Purpose |
@@ -84,8 +104,10 @@ future iDRAC.
 | 5 | JubA | `10.23.42.0/24` | Carried on the uplinks for the USW and wireless devices |
 | 7 | Servere ECMP | `192.168.7.0/24` | Tagged on server ports and uplinks |
 
-- UDM Pro port 10 is the uplink: native VLAN 1, tagged VLAN 3, 4, 5 and 7.
-  Configure it in UniFi Network before connecting SFP3.
+- UDM Pro port 10 is the uplink. It is currently an all-network trunk and
+  carries tagged VLAN 3, 4, 5 and 7. The switch side uses native VLAN 1; if
+  untagged VLAN 1 (PXE/Default) is needed over this trunk, set the UDM port's
+  native network to Default.
 - USW Pro 24 PoE port 26 is the downstream uplink once glemmen80 moves to
   SFP1: native VLAN 1, tagged VLAN 3, 4, 5 and 7.
 - Server ports are trunks with native VLAN 3 and tagged VLAN 1 and 7. They do
@@ -206,8 +228,9 @@ The output should report `HW MTU: 9216`.
 
 ## Migration order
 
-1. **Prepare the UDM.** Configure UDM Pro port 10 as a trunk with native VLAN
-   1 and tagged VLAN 3, 4, 5 and 7. Do not move the existing uplink yet.
+1. **Prepare the UDM.** Confirm UDM Pro port 10 carries tagged VLAN 3, 4, 5
+   and 7, and set its native network to Default if untagged VLAN 1 is needed.
+   Keep UDM port 8 on VLAN 4 for `mgmt0`.
 2. **Install the Nexus.** Apply the configuration over the console. Leave
    SFP2, SFP4 and the spare ports shut down.
 3. **Connect SFP3.** Uplink to UDM Pro port 10. Verify VLANs, STP and
