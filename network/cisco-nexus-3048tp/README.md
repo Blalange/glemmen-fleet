@@ -16,8 +16,7 @@ Configured and saved to startup on 2026-11-23 with NX-OS `7.0(3)I7(4)`.
   iDRACs through the UDM.
 - SFP1, SFP2 and SFP4 are not connected yet. SFP4 is administratively shut.
 - `port-channel10–14` exist but are down until the server LAG cables are
-  moved. `Ethernet1/38` is currently connected as an individual member of
-  `port-channel12`.
+  moved.
 - PSU 1 reports failed/absent; PSU 2 is OK, so the switch is running
   non-redundant.
 
@@ -45,26 +44,7 @@ before saving the configuration.
 
 | Port | Device | Mode |
 | --- | --- | --- |
-| `Ethernet1/1` | glemmen160 iDRAC | Access VLAN 4 |
-| `Ethernet1/2` | glemmen150 iDRAC | Access VLAN 4 |
-| `Ethernet1/3` | glemmen170 iDRAC | Access VLAN 4 |
-| `Ethernet1/4` | glemmen130 iDRAC | Access VLAN 4 |
-| `Ethernet1/5` | glemmen180 iDRAC | Access VLAN 4 |
-| `Ethernet1/6` | LeanderWin10 iDRAC | Access VLAN 4 |
-| `Ethernet1/7` | server120 iDRAC | Access VLAN 4 |
-| `Ethernet1/8` | server200 iDRAC | Access VLAN 4 |
-| `Ethernet1/9` | server110 iDRAC | Access VLAN 4 |
-| `Ethernet1/10` | 240emy iDRAC | Access VLAN 4 |
-| `Ethernet1/11` | ubuntu-server iDRAC | Access VLAN 4 |
-| `Ethernet1/12` | server220 iDRAC | Access VLAN 4 |
-| `Ethernet1/13` | glemmen210 iDRAC | Access VLAN 4 |
-| `Ethernet1/14` | server190 iDRAC | Access VLAN 4 |
-| `Ethernet1/15` | dellserver01 iDRAC | Access VLAN 4 |
-| `Ethernet1/16` | glemmen50 IMM | Access VLAN 4 |
-| `Ethernet1/17` | glemmen60 iDRAC | Access VLAN 4 |
-| `Ethernet1/18` | glemmen80 iDRAC | Access VLAN 4 |
-| `Ethernet1/19` | server70/glemmen70 iDRAC | Access VLAN 4 |
-| `Ethernet1/20` | spare iDRAC | Access VLAN 4 |
+| `Ethernet1/1–20` | iDRAC/IMM ports | Access VLAN 4 |
 | `Ethernet1/21–26` | glemmen130, 6 × 1G | LACP `port-channel10` |
 | `Ethernet1/27–32` | glemmen150, 6 × 1G | LACP `port-channel11` |
 | `Ethernet1/33–38` | glemmen160, 6 × 1G | LACP `port-channel12` |
@@ -79,16 +59,10 @@ before saving the configuration.
 | `Ethernet1/51` (SFP3) | UDM Pro port 10 | Uplink trunk |
 | `Ethernet1/52` (SFP4) | USW Pro 24 PoE port 26 | Uplink trunk, shut down until cutover |
 
-Port 8 was not present in the old Zyxel forwarding table. It is labelled for
-server200 based on the rack position; confirm the physical cable before
-relying on the description. Port 20 is left free for a future iDRAC.
-
-The iDRAC/IMM ports preserve the old Zyxel order where it was known. Ports
-15–19 are the iDRACs that were not visible in the old forwarding table.
-
-The APC ATS and any other non-iDRAC VLAN 4 accessory can stay on a USW
-VLAN 4 access port, or use `Ethernet1/20` if it is patched there instead of a
-future iDRAC.
+The iDRAC/IMM ports are deliberately not labelled with individual device
+names; the patch cabling determines which iDRAC is on which port. The APC ATS
+and any other non-iDRAC VLAN 4 accessory can stay on a USW VLAN 4 access
+port.
 
 The 3048TP defaults its Ethernet ports to routed mode. The configuration puts
 an explicit `switchport` command on every configured port before applying
