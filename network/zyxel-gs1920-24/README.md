@@ -1,5 +1,9 @@
 # Zyxel GS1920-24
 
+> **Being replaced.** This switch is replaced by the
+> [Cisco Nexus 3048TP](../cisco-nexus-3048tp/). Keep this configuration and
+> the backup below for rollback until the Nexus cutover is complete.
+
 Switch for miscellaneous server accessories on the `192.168.4.0/24`
 (`Server tilbehør`, VLAN 4) network, plus the SFP ports 25-27 on the
 `192.168.6.0/24` (`Servere`, VLAN 3) network.
