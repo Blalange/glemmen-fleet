@@ -2,8 +2,7 @@
 
 Glemmen server/access switch. It replaces the Zyxel GS1920-24 and becomes the
 main switch for the Talos servers and all iDRAC/IMM management ports. The
-UniFi USW Pro 24 PoE remains as a downstream switch for the remaining devices
-and is uplinked from SFP4 once glemmen80 has moved to this switch.
+UniFi USW Pro 24 PoE remains uplinked to UDM Pro port 1; SFP4 is not used.
 
 ## As built
 
@@ -14,7 +13,8 @@ Configured and saved to startup on 2026-11-23 with NX-OS `7.0(3)I7(4)`.
   not connected at the time of the build.
 - SFP3 (`Ethernet1/51`) is up at 10G to UDM port 10; tagged VLAN 4 reaches the
   iDRACs through the UDM.
-- SFP1, SFP2 and SFP4 are not connected yet. SFP4 is administratively shut.
+- SFP1 (`Ethernet1/49`) is up at 10G to glemmen80. SFP2 is empty. SFP4 has a
+  DAC but is administratively shut; the USW remains on UDM port 1.
 - `port-channel10–14` exist but are down until the server LAG cables are
   moved.
 - PSU 1 reports failed/absent; PSU 2 is OK, so the switch is running
@@ -57,7 +57,7 @@ before saving the configuration.
 | `Ethernet1/49` (SFP1) | glemmen80, 10G | Server trunk |
 | `Ethernet1/50` (SFP2) | future glemmen70, 10G | Server trunk, shut down |
 | `Ethernet1/51` (SFP3) | UDM Pro port 10 | Uplink trunk |
-| `Ethernet1/52` (SFP4) | USW Pro 24 PoE port 26 | Uplink trunk, shut down until cutover |
+| `Ethernet1/52` (SFP4) | unused | Uplink trunk, shut down |
 
 The iDRAC/IMM ports are deliberately not labelled with individual device
 names; the patch cabling determines which iDRAC is on which port. The APC ATS
@@ -82,8 +82,8 @@ access/trunk mode.
   carries tagged VLAN 3, 4, 5 and 7. The switch side uses native VLAN 1; if
   untagged VLAN 1 (PXE/Default) is needed over this trunk, set the UDM port's
   native network to Default.
-- USW Pro 24 PoE port 26 is the downstream uplink once glemmen80 moves to
-  SFP1: native VLAN 1, tagged VLAN 3, 4, 5 and 7.
+- The USW Pro 24 PoE stays uplinked to UDM Pro port 1. It is not connected to
+  the Nexus; SFP4 is shut down.
 - Server ports are trunks with native VLAN 3 and tagged VLAN 1 and 7. They do
   not carry VLAN 4; iDRACs are on separate access ports.
 - The iDRAC access ports are ordinary edge ports with BPDU guard enabled.
@@ -222,8 +222,7 @@ The output should report `HW MTU: 9216`.
 8. **Install the 4-port NICs and move glemmen130/150/160.** Cable all six
    links to `Ethernet1/21–26`, `27–32` and `33–38`, then configure the
    six-member LACP bonds with `xmit_hash_policy layer3+4`.
-9. **Move the USW uplink.** Once glemmen80 is off USW port 26, configure USW
-   port 26 as the trunk to SFP4 and enable `Ethernet1/52`.
+9. **Leave the USW on UDM port 1.** SFP4 is not used and stays shut down.
 10. **Save and document.** Run `copy running-config startup-config`, update
     the inventory collector after the cutover, and record the final cable
     mapping.
