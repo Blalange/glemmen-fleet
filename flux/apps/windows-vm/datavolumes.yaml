@@ -1,4 +1,4 @@
-# Install media imported by CDI into Ceph RBD block volumes.
+# Install media imported by CDI into Ceph RBD filesystem volumes.
 #
 # The Windows ISO is Microsoft's official Windows Server 2025 Evaluation
 # (build 26100.1742, English, Standard/Datacenter). The evaluation is valid for
@@ -8,7 +8,11 @@
 # development/testing).
 #
 # The downloads are ~5.6 GiB, ~0.9 GiB and ~1.2 GiB. CDI uses nvme-rbd for the
-# resulting volumes and for its scratch space (see the CDI CR).
+# resulting volumes and for its scratch space (see the CDI CR). The ISO DVs are
+# filesystem volumes: the CDI importer runs as a non-root user (107) and cannot
+# open a raw block device on containerd without device_ownership_from_security_context.
+# KubeVirt attaches the disk.img file from the filesystem PVC as a CD-ROM. The
+# Windows system disk itself stays a raw block PVC.
 apiVersion: cdi.kubevirt.io/v1beta1
 kind: DataVolume
 metadata:
@@ -23,7 +27,7 @@ spec:
   storage:
     accessModes:
       - ReadWriteOnce
-    volumeMode: Block
+    volumeMode: Filesystem
     storageClassName: nvme-rbd
     resources:
       requests:
@@ -43,7 +47,7 @@ spec:
   storage:
     accessModes:
       - ReadWriteOnce
-    volumeMode: Block
+    volumeMode: Filesystem
     storageClassName: nvme-rbd
     resources:
       requests:
@@ -65,7 +69,7 @@ spec:
   storage:
     accessModes:
       - ReadWriteOnce
-    volumeMode: Block
+    volumeMode: Filesystem
     storageClassName: nvme-rbd
     resources:
       requests:
