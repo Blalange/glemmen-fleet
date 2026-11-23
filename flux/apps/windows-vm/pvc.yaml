@@ -1,0 +1,17 @@
+# Windows system disk. Raw block volume on the NVMe Ceph tier; KubeVirt
+# attaches it as a virtio-blk disk. 64 GiB leaves room for Windows Update
+# without over-allocating the pool.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: winsrv01-root
+  labels:
+    app: winsrv01
+spec:
+  accessModes:
+    - ReadWriteOnce
+  volumeMode: Block
+  storageClassName: nvme-rbd
+  resources:
+    requests:
+      storage: 64Gi

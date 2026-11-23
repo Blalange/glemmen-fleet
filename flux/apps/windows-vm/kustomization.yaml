@@ -1,0 +1,14 @@
+# Windows Server 2025 VM on KubeVirt.
+#
+# The sysprep Secret (winsrv01-sysprep) is created by hand and is not in Git;
+# see README.md. Everything else, including the media imports, is reconciled by
+# Flux.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: virtualization
+resources:
+  - namespace.yaml
+  - pvc.yaml
+  - datavolumes.yaml
+  - vm.yaml
+  - service.yaml

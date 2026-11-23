@@ -130,6 +130,42 @@ Ceph RGW is exposed in-cluster at `rook-ceph-rgw-fast.rook-ceph.svc.cluster.loca
 
 SFTPGo provides a Web UI at <https://sftpgo.glem.men>, WebDAV at <https://dav.glem.men> and SFTP on `192.168.6.99:22022` (`sftp.glem.men:22022`). Per-user homes live on a 100 GiB `ReadWriteMany` CephFS volume, `sftpgo-homes-ceph`, on the CMR `fast-fs` tier; the SQLite database and SSH host keys live on a small `nvme-rbd` volume. Authentication uses an in-cluster Authentik LDAP outpost: users are auto-created on first login with a private home directory under `/data/homes/<username>`. The `ldapservice` bind password and outpost token live in the hand-created `sftpgo-authentik` Secret in `sftpgo`; the local WebAdmin break-glass password and HTTPD signing passphrase live in `sftpgo-admin`. See [`flux/apps/sftpgo/README.md`](flux/apps/sftpgo/README.md).
 
+### Virtualization
+
+KubeVirt v1.10.0 and the Containerized Data Importer v1.66.1 run in the
+`kubevirt` and `cdi` namespaces (`flux/infrastructure/kubevirt/`). CDI imports
+install media into Ceph RBD volumes, using the `nvme-rbd` tier for both the
+images and its scratch space. Live migration is enabled; the VM disk is on
+shared Ceph storage.
+
+KVM is available on the five 1xx nodes (`glemmen130`–`glemmen180`).
+`glemmen80`, `glemmen60` and `glemmen250` have virtualization disabled in the
+BIOS, so KubeVirt keeps virtual machines on the 1xx nodes. `glemmen130`–`180`
+are control planes and workers, so this is the same pool that already runs
+workloads.
+
+`winsrv01` in the `virtualization` namespace is a Windows Server 2025 Standard
+Evaluation (Desktop Experience) VM: 2 vCPU, 8 GiB RAM, a 64 GiB `nvme-rbd`
+virtio disk, UEFI, and a virtio network interface. It runs AD DS (forest
+`ad.glemmen.internal`, NetBIOS `GLEMMEN`), DNS, IIS FTP, OpenSSH Server and
+SQL Server 2025 Enterprise Developer (development/testing only). All services
+are on the MetalLB VIP `192.168.6.96`: RDP `3389`, SSH `22`, SQL `1433`, DNS
+`53` UDP/TCP, and FTP `21` plus passive `50000-50009`. The DNS server is
+authoritative for the internal zone `simon.no`, whose apex points to
+`192.168.6.96`; it does not change public DNS. The AD users are
+`GLEMMEN\simon` (Domain Admin, RDP, SSH) and `GLEMMEN\ftpuser` (FTP only). The
+VM is behind masquerade NAT, so LAN clients can use the exposed ports and the
+`simon.no` zone but cannot join the AD domain without a direct LAN interface.
+
+The evaluation is valid for 180 days and can be activated with a
+retail/volume key later. The unattended answer file and the AD/SQL bootstrap
+passwords live only in the hand-created `winsrv01-sysprep` Secret, not in Git.
+See [`flux/apps/windows-vm/README.md`](flux/apps/windows-vm/README.md) for
+credentials, provisioning phases, console/reinstall and rotation procedures,
+and
+[`flux/infrastructure/kubevirt/README.md`](flux/infrastructure/kubevirt/README.md)
+for the KubeVirt/CDI configuration.
+
 ### Databases
 
 NetBox uses its own PostgreSQL instance in the `netbox` namespace (see `flux/apps/netbox/`). Grafana uses a three-node YugabyteDB (YSQL) cluster in the `yugabyte` namespace (`flux/infrastructure/yugabyte/`) with replication factor 3. The cluster is managed by the official `yugabytedb/yugabyte` Helm chart (three YB-Master and three YB-TServer pods), not the earlier hand-written StatefulSet. Clients connect to `yb-tservers.yugabyte.svc.cluster.local:5433`; the database is not exposed outside the cluster. The media apps use SQLite on Ceph `nvme-rbd` volumes: the Servarr apps cannot parse YB's `server_version` string, Jellyfin has no supported PostgreSQL backend, and Seerr's TypeORM migrations do not complete reliably on YSQL. ARTEX uses a dedicated PostgreSQL 18.6 instance in the `artex` namespace on `nvme-rbd`; its schema needs GiST/inet and JSONB[] indexes that YSQL does not implement. LLM provider keys are configured in the ARTEX UI and stored encrypted in that database, not in Git.

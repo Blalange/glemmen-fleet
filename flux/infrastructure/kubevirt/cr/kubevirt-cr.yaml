@@ -1,0 +1,31 @@
+# KubeVirt control plane. The operator and CRDs are installed from
+# operator/kubevirt-operator.yaml (v1.10.0); this CR makes the operator deploy
+# virt-api, virt-controller and the privileged virt-handler DaemonSet.
+#
+# KVM is available on the 1xx nodes (glemmen130-180). The other workers have
+# VT-x/AMD-V disabled in the BIOS, so KubeVirt marks them unschedulable and VMs
+# stay on the 1xx nodes. See README.md.
+apiVersion: kubevirt.io/v1
+kind: KubeVirt
+metadata:
+  name: kubevirt
+  namespace: kubevirt
+spec:
+  certificateRotateStrategy: {}
+  configuration:
+    developerConfiguration:
+      # All KVM-capable nodes share Ceph RBD, so a VM can be live-migrated
+      # during KubeVirt upgrades or node maintenance.
+      featureGates:
+        - LiveMigration
+    smbios:
+      manufacturer: Glemmen
+      product: KubeVirt
+      family: glemmen-fleet
+      sku: 2ITA
+      version: v1.10.0
+  customizeComponents: {}
+  imagePullPolicy: IfNotPresent
+  workloadUpdateStrategy:
+    workloadUpdateMethods:
+      - LiveMigrate

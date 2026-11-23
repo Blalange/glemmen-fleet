@@ -21,3 +21,4 @@ resources:
   - volunteer.yaml
   - warrior.yaml
   - webodm.yaml
+  - windows-vm.yaml

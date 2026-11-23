@@ -1,0 +1,18 @@
+# Containerized Data Importer. CDI downloads the Windows and virtio-win ISOs
+# into Ceph RBD block volumes; it uses the same tier for scratch space so a
+# 6 GiB ISO does not consume node-local disk.
+apiVersion: cdi.kubevirt.io/v1beta1
+kind: CDI
+metadata:
+  name: cdi
+spec:
+  config:
+    scratchSpaceStorageClass: nvme-rbd
+    podResourceRequirements:
+      requests:
+        cpu: 100m
+        memory: 128Mi
+      limits:
+        cpu: "2"
+        memory: 4Gi
+  imagePullPolicy: IfNotPresent

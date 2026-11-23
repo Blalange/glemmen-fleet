@@ -1,0 +1,118 @@
+# Windows Server 2025 Standard Evaluation (Desktop Experience).
+#
+# First boot: the blank root disk has no boot loader, so UEFI falls through to
+# the Windows ISO and Setup runs unattended from the answer file in the
+# winsrv01-sysprep Secret. The post-install script installs the virtio drivers
+# and QEMU guest agent from the virtio ISO, enables RDP, and reboots. Later
+# boots use the virtio disk.
+#
+# The sysprep Secret is created by hand (see README.md); it is not in Git.
+apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: winsrv01
+  labels:
+    app: winsrv01
+spec:
+  runStrategy: Always
+  template:
+    metadata:
+      labels:
+        app: winsrv01
+        kubevirt.io/vm: winsrv01
+      annotations:
+        # Masquerade/pod networking can be live-migrated.
+        kubevirt.io/allow-pod-bridge-network-live-migration: "true"
+    spec:
+      terminationGracePeriodSeconds: 30
+      evictionStrategy: LiveMigrate
+      domain:
+        cpu:
+          cores: 2
+          sockets: 1
+          threads: 1
+        resources:
+          requests:
+            memory: 8Gi
+        machine:
+          type: q35
+        firmware:
+          bootloader:
+            efi:
+              secureBoot: false
+        features:
+          acpi: {}
+          apic: {}
+          smm: {}
+          hyperv:
+            reenlightenment: {}
+            ipi: {}
+            synic: {}
+            synictimer:
+              direct: {}
+            spinlocks:
+              spinlocks: 8191
+            reset: {}
+            relaxed: {}
+            vpindex: {}
+            runtime: {}
+            tlbflush: {}
+            frequencies: {}
+            vapic: {}
+        clock:
+          utc: {}
+          timer:
+            hpet:
+              present: false
+            hyperv: {}
+            pit:
+              tickPolicy: delay
+            rtc:
+              tickPolicy: catchup
+        devices:
+          disks:
+            - name: root
+              disk:
+                bus: virtio
+              bootOrder: 1
+            - name: windows-iso
+              cdrom:
+                bus: sata
+              bootOrder: 2
+            - name: virtio-win
+              cdrom:
+                bus: sata
+            - name: sql-iso
+              cdrom:
+                bus: sata
+            - name: sysprep
+              cdrom:
+                bus: sata
+          interfaces:
+            - name: default
+              masquerade: {}
+              model: virtio
+          inputs:
+            - bus: usb
+              name: tablet
+              type: tablet
+      networks:
+        - name: default
+          pod: {}
+      volumes:
+        - name: root
+          persistentVolumeClaim:
+            claimName: winsrv01-root
+        - name: windows-iso
+          dataVolume:
+            name: winsrv01-windows-iso
+        - name: virtio-win
+          dataVolume:
+            name: winsrv01-virtio-iso
+        - name: sql-iso
+          dataVolume:
+            name: winsrv01-sql-iso
+        - name: sysprep
+          sysprep:
+            secret:
+              name: winsrv01-sysprep

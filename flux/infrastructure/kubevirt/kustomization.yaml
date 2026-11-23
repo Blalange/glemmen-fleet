@@ -1,0 +1,24 @@
+# KubeVirt + CDI. The operator manifests are vendored from the upstream
+# release assets so Flux does not depend on a remote kustomize base:
+#
+#   https://github.com/kubevirt/kubevirt/releases/download/v1.10.0/kubevirt-operator.yaml
+#   https://github.com/kubevirt/containerized-data-importer/releases/download/v1.66.1/cdi-operator.yaml
+#
+# Keep the versions in sync with check-updates.py and the README. The
+# kubevirt namespace already has pod-security.kubernetes.io/enforce=privileged
+# in the upstream manifest; the cdi namespace gets the same label here.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - operator/kubevirt-operator.yaml
+  - operator/cdi-operator.yaml
+  - cr/kubevirt-cr.yaml
+  - cr/cdi-cr.yaml
+patches:
+  - target:
+      kind: Namespace
+      name: cdi
+    patch: |-
+      - op: add
+        path: /metadata/labels/pod-security.kubernetes.io~1enforce
+        value: privileged

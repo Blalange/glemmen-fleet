@@ -23,12 +23,14 @@ flux/
 │   ├── network-mesh.yaml       -> flux/monitoring/network-mesh (host-network probe, wait: false)
 │   ├── pxe.yaml                -> flux/infrastructure/pxe (proxyDHCP/TFTP + Talos boot assets)
 │   ├── monitoring-dashboards.yaml / monitoring-alerts.yaml
-│   └── apps.yaml               -> flux/apps (application Kustomizations)
-├── infrastructure/             namespaces, cert-manager, external-dns, MetalLB, metrics-server, descheduler, YugabyteDB, Rook Ceph, NFD, GPU operator, PXE chainloader
+│   ├── kubevirt.yaml           -> flux/infrastructure/kubevirt (KubeVirt + CDI)
+│   ├── apps/                   -> flux/apps (application Kustomizations)
+│   │   └── windows-vm.yaml     -> flux/apps/windows-vm (winsrv01)
+├── infrastructure/             namespaces, cert-manager, external-dns, MetalLB, metrics-server, descheduler, YugabyteDB, Rook Ceph, NFD, GPU operator, PXE chainloader, KubeVirt + CDI
 ├── ingress/                    Traefik HelmRelease + values
 ├── monitoring/                 kube-prometheus-stack, Thanos, smartctl-exporter, idrac-exporter, network-mesh, unpoller
 ├── logging/                    Loki (single replica) and the Alloy log collector
-└── apps/                       Kustomization objects, Homepage, NetBox + inventory sync, media stack, SFTPGo, Minecraft servers (Radar)
+└── apps/                       Kustomization objects, Homepage, NetBox + inventory sync, media stack, SFTPGo, Minecraft servers (Radar), Windows Server VM
 ```
 
 The application manifests themselves stay in the repository root (`colibri/`,

@@ -1,0 +1,25 @@
+# KubeVirt + CDI (operators, CRDs, CRs). Separate from the infrastructure
+# group because the KubeVirt and CDI CRs are only accepted after their CRDs
+# exist, and the operators pull several large images.
+#
+# wait stays false on purpose: the KubeVirt CR does not expose a Ready
+# condition, so a blocking wait would time out even after the control plane is
+# healthy. The windows-vm Kustomization depends on this one and waits for its
+# own resources.
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: kubevirt
+  namespace: flux-system
+spec:
+  interval: 1h
+  retryInterval: 2m
+  timeout: 30m
+  path: ./flux/infrastructure/kubevirt
+  prune: true
+  wait: false
+  dependsOn:
+    - name: infrastructure
+  sourceRef:
+    kind: GitRepository
+    name: flux-system

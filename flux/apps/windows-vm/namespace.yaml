@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: virtualization
+  labels:
+    # virt-launcher pods and CDI importer pods need privileged access to
+    # /dev/kvm, /dev/net/tun and the Ceph block devices.
+    pod-security.kubernetes.io/enforce: privileged

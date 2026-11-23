@@ -1,0 +1,72 @@
+# Install media imported by CDI into Ceph RBD block volumes.
+#
+# The Windows ISO is Microsoft's official Windows Server 2025 Evaluation
+# (build 26100.1742, English, Standard/Datacenter). The evaluation is valid for
+# 180 days; it can be activated later with a retail/volume key in the guest.
+# The virtio-win ISO is pinned to 0.1.302, which includes the 2k25 drivers.
+# The SQL ISO is the SQL Server 2025 Enterprise Developer media (free for
+# development/testing).
+#
+# The downloads are ~5.6 GiB, ~0.9 GiB and ~1.2 GiB. CDI uses nvme-rbd for the
+# resulting volumes and for its scratch space (see the CDI CR).
+apiVersion: cdi.kubevirt.io/v1beta1
+kind: DataVolume
+metadata:
+  name: winsrv01-windows-iso
+  labels:
+    app: winsrv01
+spec:
+  contentType: kubevirt
+  source:
+    http:
+      url: https://software-static.download.prss.microsoft.com/dbazure/888969d5-f34g-4e03-ac9d-1f9786c66749/26100.1742.240906-0331.ge_release_svc_refresh_SERVER_EVAL_x64FRE_en-us.iso
+  storage:
+    accessModes:
+      - ReadWriteOnce
+    volumeMode: Block
+    storageClassName: nvme-rbd
+    resources:
+      requests:
+        storage: 7Gi
+---
+apiVersion: cdi.kubevirt.io/v1beta1
+kind: DataVolume
+metadata:
+  name: winsrv01-virtio-iso
+  labels:
+    app: winsrv01
+spec:
+  contentType: kubevirt
+  source:
+    http:
+      url: https://fedorapeople.org/groups/virt/virtio-win/direct-downloads/archive-virtio/virtio-win-0.1.302-1/virtio-win.iso
+  storage:
+    accessModes:
+      - ReadWriteOnce
+    volumeMode: Block
+    storageClassName: nvme-rbd
+    resources:
+      requests:
+        storage: 1Gi
+---
+# SQL Server 2025 Developer Edition (Enterprise Developer) install media.
+# Attached as a fourth CD-ROM; phase3-configure.ps1 runs setup.exe from it.
+apiVersion: cdi.kubevirt.io/v1beta1
+kind: DataVolume
+metadata:
+  name: winsrv01-sql-iso
+  labels:
+    app: winsrv01
+spec:
+  contentType: kubevirt
+  source:
+    http:
+      url: https://download.microsoft.com/download/dea8c210-c44a-4a9d-9d80-0c81578860c5/ENU/SQLServer2025-x64-ENU-EntDev.iso
+  storage:
+    accessModes:
+      - ReadWriteOnce
+    volumeMode: Block
+    storageClassName: nvme-rbd
+    resources:
+      requests:
+        storage: 2Gi

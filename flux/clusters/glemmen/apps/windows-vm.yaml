@@ -1,0 +1,24 @@
+# Windows Server 2025 VM. Depends on the KubeVirt/CDI stack; the first
+# reconciliation also waits for the two ISO imports (~7 GiB total) and the
+# root PVC.
+#
+# The winsrv01-sysprep Secret is created by hand (see README.md) and is not
+# managed by Flux.
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: windows-vm
+  namespace: flux-system
+spec:
+  interval: 1h
+  retryInterval: 2m
+  timeout: 60m
+  path: ./flux/apps/windows-vm
+  prune: true
+  wait: true
+  targetNamespace: virtualization
+  dependsOn:
+    - name: kubevirt
+  sourceRef:
+    kind: GitRepository
+    name: flux-system

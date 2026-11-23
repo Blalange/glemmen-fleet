@@ -1,0 +1,84 @@
+# Additional service ports on the same VM. One LoadBalancer Service keeps the
+# VIP allocation simple: MetalLB assigns 192.168.6.96 once and forwards all
+# ports to the virt-launcher pod.
+#
+# FTP passive ports 50000-50009 must match the IIS FTP firewallSupport range
+# configured by phase3-configure.ps1.
+apiVersion: v1
+kind: Service
+metadata:
+  name: winsrv01
+  labels:
+    app: winsrv01
+  annotations:
+    metallb.io/loadBalancerIPs: 192.168.6.96
+spec:
+  type: LoadBalancer
+  externalTrafficPolicy: Local
+  selector:
+    kubevirt.io/vm: winsrv01
+  ports:
+    - name: rdp
+      protocol: TCP
+      port: 3389
+      targetPort: 3389
+    - name: ssh
+      protocol: TCP
+      port: 22
+      targetPort: 22
+    - name: sql
+      protocol: TCP
+      port: 1433
+      targetPort: 1433
+    - name: dns-udp
+      protocol: UDP
+      port: 53
+      targetPort: 53
+    - name: dns-tcp
+      protocol: TCP
+      port: 53
+      targetPort: 53
+    - name: ftp
+      protocol: TCP
+      port: 21
+      targetPort: 21
+    - name: ftp-50000
+      protocol: TCP
+      port: 50000
+      targetPort: 50000
+    - name: ftp-50001
+      protocol: TCP
+      port: 50001
+      targetPort: 50001
+    - name: ftp-50002
+      protocol: TCP
+      port: 50002
+      targetPort: 50002
+    - name: ftp-50003
+      protocol: TCP
+      port: 50003
+      targetPort: 50003
+    - name: ftp-50004
+      protocol: TCP
+      port: 50004
+      targetPort: 50004
+    - name: ftp-50005
+      protocol: TCP
+      port: 50005
+      targetPort: 50005
+    - name: ftp-50006
+      protocol: TCP
+      port: 50006
+      targetPort: 50006
+    - name: ftp-50007
+      protocol: TCP
+      port: 50007
+      targetPort: 50007
+    - name: ftp-50008
+      protocol: TCP
+      port: 50008
+      targetPort: 50008
+    - name: ftp-50009
+      protocol: TCP
+      port: 50009
+      targetPort: 50009
