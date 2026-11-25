@@ -26,10 +26,12 @@ prefixes:
   - cidr: 192.168.4.0/24
     site: glemmen
     vlan: 4
-    description: Out-of-band iDRAC, IPMI, Zyxel GS1920-24, and APC ATS network.
+    gateway: 192.168.4.1
+    description: Out-of-band iDRAC, IPMI, Cisco Nexus 3048TP, and APC ATS network.
   - cidr: 192.168.6.0/24
     site: glemmen
     vlan: 6
+    gateway: 192.168.6.1
     description: Talos Linux cluster and server subnet (VIP 192.168.6.98 K8s API, 192.168.6.99 Traefik MetalLB).
   - cidr: 192.168.50.0/24
     site: glemmen

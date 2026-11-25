@@ -20,6 +20,17 @@ devices:
         profile: glemmen
         interfaces: true
         cables: true
+    interfaces:
+      - name: lan
+        type: virtual
+        kind: virtual
+        ip_addresses:
+          - address: 192.168.50.1/24
+            primary: true
+          - address: 192.168.4.1/24
+            description: "Gateway: OOB / Server tilbehør"
+          - address: 192.168.6.1/24
+            description: "Gateway: Kubernetes & Compute"
 
   - name: USW Pro 24 PoE
     site: glemmen
@@ -40,23 +51,44 @@ devices:
         interfaces: true
         cables: true
 
-  - name: zyxel-gs1920-24
+  - name: cisco-nexus-3048tp
     site: glemmen
     location: server-room
     role: switch
-    device_type: zyxel-gs1920-24
+    device_type: cisco-n3k-c3048tp-1ge
     status: active
     oob_ip: 192.168.4.2
     contacts:
       - contact: Simon Bråten
         role: technical-contact
-    description: Zyxel GS1920-24, firmware V4.10(AAOB.5); server-accessory switch on VLAN 4 (ports 1-24) and Servere VLAN 3 (ports 25-27).
+    description: Cisco Nexus 3048TP-1GE core server and OOB switch (replaces Zyxel GS1920-24 on 192.168.4.2).
+    identity:
+      serial: FOC1832R2YD
     collect:
       snmp:
         ip: 192.168.4.2
         profile: glemmen
         interfaces: true
         cables: true
+    interfaces:
+      - name: mgmt0
+        type: 1000base-t
+        mgmt_only: true
+        ip_addresses:
+          - address: 192.168.4.2/24
+            dns_name: cisco-nexus-3048tp
+            primary: true
+
+  - name: zyxel-gs1920-24
+    site: glemmen
+    location: server-room
+    role: switch
+    device_type: zyxel-gs1920-24
+    status: offline
+    contacts:
+      - contact: Simon Bråten
+        role: technical-contact
+    description: Zyxel GS1920-24 (disconnected; replaced on 192.168.4.2 by cisco-nexus-3048tp).
     interfaces:
       - name: Port 25
         type: 1000base-x-sfp
@@ -66,10 +98,6 @@ devices:
         type: 1000base-x-sfp
       - name: Port 28
         type: 1000base-x-sfp
-        ip_addresses:
-          - address: 192.168.4.2/24
-            dns_name: zyxel-gs1920-24
-            primary: true
 
   # ------------------------------------------------------------------ Power
   - name: apc-ats
@@ -116,11 +144,6 @@ devices:
       unifi:
         ip: 192.168.6.181
         mac: 6c:3c:8c:75:3e:84
-    uplinks:
-      - interface: Port 1
-        switch: USW Pro 24 PoE
-        port: "19"
-        type: cat6
     interfaces:
       - name: iDRAC
         type: 1000base-t
@@ -151,11 +174,6 @@ devices:
       unifi:
         ip: 192.168.6.230
         mac: 6c:3c:8c:75:3b:f4
-    uplinks:
-      - interface: Port 1
-        switch: USW Pro 24 PoE
-        port: "20"
-        type: cat6
     interfaces:
       - name: iDRAC
         type: 1000base-t
@@ -189,11 +207,6 @@ devices:
       unifi:
         ip: 192.168.6.133
         mac: 6c:3c:8c:75:3c:3c
-    uplinks:
-      - interface: Port 1
-        switch: USW Pro 24 PoE
-        port: "23"
-        type: cat6
     interfaces:
       - name: iDRAC
         type: 1000base-t
@@ -227,11 +240,6 @@ devices:
       unifi:
         ip: 192.168.6.68
         mac: 6c:3c:8c:75:3c:f4
-    uplinks:
-      - interface: Port 1
-        switch: USW Pro 24 PoE
-        port: "22"
-        type: cat6
     interfaces:
       - name: iDRAC
         type: 1000base-t
@@ -270,11 +278,6 @@ devices:
       unifi:
         ip: 192.168.6.190
         mac: 6c:3c:8c:75:3c:c4
-    uplinks:
-      - interface: Port 1
-        switch: USW Pro 24 PoE
-        port: "21"
-        type: cat6
     interfaces:
       - name: iDRAC
         type: 1000base-t
@@ -308,11 +311,6 @@ devices:
       unifi:
         ip: 192.168.6.140
         mac: 6c:3c:8c:75:43:4c
-    uplinks:
-      - interface: Port 1
-        switch: USW Pro 24 PoE
-        port: "18"
-        type: cat6
     interfaces:
       - name: iDRAC
         type: 1000base-t
@@ -331,23 +329,21 @@ devices:
     role: server
     device_type: dell-poweredge-r250
     status: active
-    oob_ip: 192.168.4.120
+    oob_ip: 192.168.4.105
+    contacts:
+      - contact: Simon Bråten
+        role: technical-contact
     identity:
       service_tag: JL51JZ3
       macs:
         - 6c:3c:8c:75:37:64
     collect:
       redfish:
-        ip: 192.168.4.120
+        ip: 192.168.4.105
         profile: glemmen
       unifi:
         ip: 192.168.6.120
         mac: 6c:3c:8c:75:37:64
-    uplinks:
-      - interface: Port 1
-        switch: USW Pro 24 PoE
-        port: "17"
-        type: cat6
     interfaces:
       - name: iDRAC
         type: 1000base-t
@@ -357,7 +353,7 @@ devices:
         mac_address: 6c:3c:8c:75:37:5e
         untagged_vlan: 4
         ip_addresses:
-          - address: 192.168.4.120/24
+          - address: 192.168.4.105/24
             dns_name: idrac-jl51jz3
 
   - name: server110
@@ -408,11 +404,6 @@ devices:
       unifi:
         ip: 192.168.6.100
         mac: 6c:3c:8c:75:3a:44
-    uplinks:
-      - interface: Port 1
-        switch: USW Pro 24 PoE
-        port: "16"
-        type: cat6
     interfaces:
       - name: iDRAC
         type: 1000base-t
@@ -431,6 +422,7 @@ devices:
     role: server
     device_type: dell-poweredge-r630
     status: active
+    oob_ip: 192.168.4.70
     contacts:
       - contact: Eric
         role: technical-contact
@@ -438,14 +430,23 @@ devices:
       macs:
         - b8:2a:72:d5:dd:04
     collect:
+      redfish:
+        ip: 192.168.4.70
+        profile: glemmen
       unifi:
         ip: 192.168.6.70
         mac: b8:2a:72:d5:dd:04
-    uplinks:
-      - interface: Port 1
-        switch: USW Pro 24 PoE
-        port: "24"
-        type: cat6
+    interfaces:
+      - name: iDRAC
+        type: 1000base-t
+        enabled: true
+        mgmt_only: true
+        description: Dell iDRAC out-of-band management.
+        mac_address: b8:2a:72:fb:da:20
+        untagged_vlan: 4
+        ip_addresses:
+          - address: 192.168.4.70/24
+            dns_name: idrac-server70
 
   # ------------------------------------------------------------------ Talos Kubernetes nodes
   - name: glemmen130
@@ -468,15 +469,6 @@ devices:
       kubernetes:
         node: glemmen130
         cluster: glemmen
-    uplinks:
-      - interface: eno8303
-        switch: USW Pro 24 PoE
-        port: "5"
-        type: cat6
-      - interface: eno8403
-        switch: USW Pro 24 PoE
-        port: "6"
-        type: cat6
     interfaces:
       - name: iDRAC
         type: 1000base-t
@@ -509,15 +501,6 @@ devices:
       kubernetes:
         node: glemmen150
         cluster: glemmen
-    uplinks:
-      - interface: eno8303
-        switch: USW Pro 24 PoE
-        port: "7"
-        type: cat6
-      - interface: eno8403
-        switch: USW Pro 24 PoE
-        port: "8"
-        type: cat6
     interfaces:
       - name: iDRAC
         type: 1000base-t
@@ -550,15 +533,6 @@ devices:
       kubernetes:
         node: glemmen160
         cluster: glemmen
-    uplinks:
-      - interface: eno8303
-        switch: USW Pro 24 PoE
-        port: "9"
-        type: cat6
-      - interface: eno8403
-        switch: USW Pro 24 PoE
-        port: "10"
-        type: cat6
     interfaces:
       - name: iDRAC
         type: 1000base-t
@@ -591,15 +565,6 @@ devices:
       kubernetes:
         node: glemmen170
         cluster: glemmen
-    uplinks:
-      - interface: eno8303
-        switch: USW Pro 24 PoE
-        port: "11"
-        type: cat6
-      - interface: eno8403
-        switch: USW Pro 24 PoE
-        port: "12"
-        type: cat6
     interfaces:
       - name: iDRAC
         type: 1000base-t
@@ -632,15 +597,6 @@ devices:
       kubernetes:
         node: glemmen180
         cluster: glemmen
-    uplinks:
-      - interface: eno8303
-        switch: USW Pro 24 PoE
-        port: "13"
-        type: cat6
-      - interface: eno8403
-        switch: USW Pro 24 PoE
-        port: "14"
-        type: cat6
     interfaces:
       - name: iDRAC
         type: 1000base-t
@@ -673,17 +629,13 @@ devices:
       kubernetes:
         node: glemmen60
         cluster: glemmen
-    uplinks:
-      - interface: eno1
-        switch: USW Pro 24 PoE
-        port: "4"
-        type: cat6
     interfaces:
       - name: iDRAC
         type: 1000base-t
         enabled: true
         mgmt_only: true
         description: Dell iDRAC 6 out-of-band management.
+        mac_address: 08:9e:01:d8:7b:fb
         untagged_vlan: 4
         ip_addresses:
           - address: 192.168.4.60/24
@@ -709,11 +661,6 @@ devices:
       kubernetes:
         node: glemmen80
         cluster: glemmen
-    uplinks:
-      - interface: enp4s0f0
-        switch: USW Pro 24 PoE
-        port: "26"
-        type: dac-passive
     interfaces:
       - name: iDRAC
         type: 1000base-t

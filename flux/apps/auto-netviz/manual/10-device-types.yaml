@@ -189,6 +189,39 @@ device_types:
           connector: iec-c14
           count: 1
 
+  - id: cisco-n3k-c3048tp-1ge
+    manufacturer: Cisco
+    model: N3K-C3048TP-1GE
+    u_height: 1
+    depth: full
+    role_hint: switch
+    part_number: N3K-C3048TP-1GE
+    airflow: front-to-rear
+    description: Cisco Nexus 3048TP-1GE 48 x 1G BASE-T + 4 x 10G SFP+ switch.
+    faceplate:
+      front:
+        - kind: lcd
+          label: N3K
+          width: 2
+        - kind: port_grid
+          connector: rj45
+          rows: 2
+          cols: 24
+          start: 1
+          prefix: "Port "
+        - kind: port_grid
+          connector: sfpp
+          rows: 2
+          cols: 2
+          start: 49
+          prefix: "Port "
+      rear:
+        - kind: psu_bays
+          count: 2
+          prefix: "PSU "
+        - kind: mgmt_port
+          name: mgmt0
+
   - id: ubiquiti-udm-pro
     manufacturer: Ubiquiti
     model: UniFi Dream Machine Pro
