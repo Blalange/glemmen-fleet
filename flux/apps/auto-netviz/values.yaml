@@ -100,6 +100,11 @@ collector:
           reverse_dns: true
           concurrency: 32
           timeout: 2s
+      lldp:
+        - name: glemmen
+          site: glemmen
+          passive_raw: false
+          lldpctl: true
 
 ingress:
   enabled: true
