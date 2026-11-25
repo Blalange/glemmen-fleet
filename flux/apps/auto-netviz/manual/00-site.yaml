@@ -1,0 +1,51 @@
+schema_version: 1
+
+defaults:
+  site: glemmen
+  owner: Glemmen VGS
+  tags:
+    - production
+
+sites:
+  - id: glemmen
+    name: Glemmen
+    status: active
+    description: 2ITA Kubernetes cluster and network at Glemmen.
+
+locations:
+  - id: server-room
+    site: glemmen
+    name: Server Room
+    description: Physical Glemmen rack and server lab area.
+
+owner_groups:
+  - name: Glemmen IT
+    description: School cluster, lab, and network infrastructure administration.
+
+owners:
+  - name: Glemmen VGS
+    group: Glemmen IT
+    description: Primary infrastructure owner at Glemmen VGS.
+
+contacts:
+  - name: Simon Bråten
+    role: technical-contact
+    owner: Glemmen VGS
+  - name: Eric
+    role: technical-contact
+    owner: Glemmen VGS
+  - name: Robin
+    role: technical-contact
+    owner: Glemmen VGS
+
+rules:
+  auto_create:
+    network_devices: true
+    servers: true
+    wired_clients: true
+    wireless_clients: false
+  ignore:
+    cidrs:
+      - 169.254.0.0/16
+    mac_prefixes:
+      - 02:42:ac

@@ -1,0 +1,45 @@
+schema_version: 1
+
+racks:
+  - name: Glemmen rack
+    site: glemmen
+    location: server-room
+    status: active
+    width: 19
+    u_height: 42
+    desc_units: false
+    description: Physical Glemmen rack, ordered top to bottom.
+    layout:
+      - gap: 1
+      - device: Dream Machine Pro B bygg
+        face: rear
+      - device: USW Pro 24 PoE
+        face: rear
+      - gap: 2
+      - device: 240emy
+      - device: ubuntu-server
+      - device: server220
+      - device: glemmen210
+      - device: server200
+      - device: server190
+      - device: glemmen180
+      - device: glemmen170
+      - device: glemmen160
+      - device: glemmen150
+      - device: LeanderWin10
+      - device: glemmen130
+      - device: server120
+      - device: server110
+      - device: dellserver01
+      - device: apc-ats
+      - device: glemmen80
+      - device: server70
+      - gap: 2
+      - device: zyxel-gs1920-24
+        face: rear
+      - gap: 8
+      - device: storwize-02
+      - device: storwize-01
+      - device: glemmen60
+      - device: rail-one
+      - gap: 1

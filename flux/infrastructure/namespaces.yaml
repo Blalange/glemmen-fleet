@@ -157,3 +157,8 @@ apiVersion: v1
 kind: Namespace
 metadata:
   name: sftpgo
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: auto-netviz

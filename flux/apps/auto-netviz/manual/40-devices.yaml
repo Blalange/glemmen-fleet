@@ -1,0 +1,822 @@
+schema_version: 1
+
+devices:
+  # ------------------------------------------------------------------ Network
+  - name: Dream Machine Pro B bygg
+    site: glemmen
+    location: server-room
+    role: gateway
+    device_type: ubiquiti-udm-pro
+    platform: unifi
+    status: active
+    oob_ip: 192.168.50.1
+    identity:
+      serial: 245A4C7679D1
+    collect:
+      unifi:
+        serial: 245A4C7679D1
+      snmp:
+        ip: 192.168.50.1
+        profile: glemmen
+        interfaces: true
+        cables: true
+
+  - name: USW Pro 24 PoE
+    site: glemmen
+    location: server-room
+    role: switch
+    device_type: ubiquiti-usw-pro-24-poe
+    platform: unifi
+    status: active
+    oob_ip: 192.168.50.178
+    identity:
+      serial: AC8BA9B5F7E9
+    collect:
+      unifi:
+        serial: AC8BA9B5F7E9
+      snmp:
+        ip: 192.168.50.178
+        profile: glemmen
+        interfaces: true
+        cables: true
+
+  - name: zyxel-gs1920-24
+    site: glemmen
+    location: server-room
+    role: switch
+    device_type: zyxel-gs1920-24
+    status: active
+    oob_ip: 192.168.4.2
+    contacts:
+      - contact: Simon Bråten
+        role: technical-contact
+    description: Zyxel GS1920-24, firmware V4.10(AAOB.5); server-accessory switch on VLAN 4 (ports 1-24) and Servere VLAN 3 (ports 25-27).
+    collect:
+      snmp:
+        ip: 192.168.4.2
+        profile: glemmen
+        interfaces: true
+        cables: true
+    interfaces:
+      - name: Port 25
+        type: 1000base-x-sfp
+      - name: Port 26
+        type: 1000base-x-sfp
+      - name: Port 27
+        type: 1000base-x-sfp
+      - name: Port 28
+        type: 1000base-x-sfp
+        ip_addresses:
+          - address: 192.168.4.2/24
+            dns_name: zyxel-gs1920-24
+            primary: true
+
+  # ------------------------------------------------------------------ Power
+  - name: apc-ats
+    site: glemmen
+    location: server-room
+    role: power
+    device_type: apc-ap4423a
+    status: active
+    oob_ip: 192.168.4.3
+    contacts:
+      - contact: Simon Bråten
+        role: technical-contact
+    description: APC automatic transfer switch between server80 and server100.
+    interfaces:
+      - name: mgmt
+        type: 1000base-t
+        mgmt_only: true
+        enabled: true
+        untagged_vlan: 4
+        description: APC management port.
+        ip_addresses:
+          - address: 192.168.4.3/24
+            primary: true
+
+  # ------------------------------------------------------------------ Physical servers
+  - name: 240emy
+    site: glemmen
+    location: server-room
+    role: server
+    device_type: dell-poweredge-r250
+    status: active
+    oob_ip: 192.168.4.240
+    contacts:
+      - contact: Robin
+        role: technical-contact
+    identity:
+      service_tag: HL51JZ3
+      macs:
+        - 6c:3c:8c:75:3e:84
+    collect:
+      redfish:
+        ip: 192.168.4.240
+        profile: glemmen
+      unifi:
+        ip: 192.168.6.181
+        mac: 6c:3c:8c:75:3e:84
+    uplinks:
+      - interface: Port 1
+        switch: USW Pro 24 PoE
+        port: "19"
+        type: cat6
+    interfaces:
+      - name: iDRAC
+        type: 1000base-t
+        enabled: true
+        mgmt_only: true
+        description: Dell iDRAC HL51JZ3 out-of-band management.
+        mac_address: 6c:3c:8c:75:3e:7e
+        untagged_vlan: 4
+        ip_addresses:
+          - address: 192.168.4.240/24
+            dns_name: idrac-hl51jz3
+
+  - name: ubuntu-server
+    site: glemmen
+    location: server-room
+    role: server
+    device_type: dell-poweredge-r250
+    status: active
+    oob_ip: 192.168.4.230
+    identity:
+      service_tag: 8L51JZ3
+      macs:
+        - 6c:3c:8c:75:3b:f4
+    collect:
+      redfish:
+        ip: 192.168.4.230
+        profile: glemmen
+      unifi:
+        ip: 192.168.6.230
+        mac: 6c:3c:8c:75:3b:f4
+    uplinks:
+      - interface: Port 1
+        switch: USW Pro 24 PoE
+        port: "20"
+        type: cat6
+    interfaces:
+      - name: iDRAC
+        type: 1000base-t
+        enabled: true
+        mgmt_only: true
+        description: Dell iDRAC 8L51JZ3 out-of-band management.
+        mac_address: 6c:3c:8c:75:3b:ee
+        untagged_vlan: 4
+        ip_addresses:
+          - address: 192.168.4.230/24
+            dns_name: idrac-8l51jz3
+
+  - name: server220
+    site: glemmen
+    location: server-room
+    role: server
+    device_type: dell-poweredge-r250
+    status: active
+    oob_ip: 192.168.4.220
+    contacts:
+      - contact: Robin
+        role: technical-contact
+    identity:
+      service_tag: 7L51JZ3
+      macs:
+        - 6c:3c:8c:75:3c:3c
+    collect:
+      redfish:
+        ip: 192.168.4.220
+        profile: glemmen
+      unifi:
+        ip: 192.168.6.133
+        mac: 6c:3c:8c:75:3c:3c
+    uplinks:
+      - interface: Port 1
+        switch: USW Pro 24 PoE
+        port: "23"
+        type: cat6
+    interfaces:
+      - name: iDRAC
+        type: 1000base-t
+        enabled: true
+        mgmt_only: true
+        description: Dell iDRAC 7L51JZ3 out-of-band management.
+        mac_address: 6c:3c:8c:75:3c:36
+        untagged_vlan: 4
+        ip_addresses:
+          - address: 192.168.4.220/24
+            dns_name: idrac-7l51jz3
+
+  - name: glemmen210
+    site: glemmen
+    location: server-room
+    role: server
+    device_type: dell-poweredge-r250
+    status: active
+    oob_ip: 192.168.4.210
+    contacts:
+      - contact: Robin
+        role: technical-contact
+    identity:
+      service_tag: BL51JZ3
+      macs:
+        - 6c:3c:8c:75:3c:f4
+    collect:
+      redfish:
+        ip: 192.168.4.210
+        profile: glemmen
+      unifi:
+        ip: 192.168.6.68
+        mac: 6c:3c:8c:75:3c:f4
+    uplinks:
+      - interface: Port 1
+        switch: USW Pro 24 PoE
+        port: "22"
+        type: cat6
+    interfaces:
+      - name: iDRAC
+        type: 1000base-t
+        enabled: true
+        mgmt_only: true
+        description: Dell iDRAC BL51JZ3 out-of-band management.
+        mac_address: 6c:3c:8c:75:3c:ee
+        untagged_vlan: 4
+        ip_addresses:
+          - address: 192.168.4.210/24
+            dns_name: idrac-bl51jz3
+
+  - name: server200
+    site: glemmen
+    location: server-room
+    role: server
+    device_type: dell-poweredge-r250
+    status: failed
+    description: Physical server between glemmen210 and server190. Currently broken; no management address.
+
+  - name: server190
+    site: glemmen
+    location: server-room
+    role: server
+    device_type: dell-poweredge-r250
+    status: active
+    oob_ip: 192.168.4.190
+    identity:
+      service_tag: 3L51JZ3
+      macs:
+        - 6c:3c:8c:75:3c:c4
+    collect:
+      redfish:
+        ip: 192.168.4.190
+        profile: glemmen
+      unifi:
+        ip: 192.168.6.190
+        mac: 6c:3c:8c:75:3c:c4
+    uplinks:
+      - interface: Port 1
+        switch: USW Pro 24 PoE
+        port: "21"
+        type: cat6
+    interfaces:
+      - name: iDRAC
+        type: 1000base-t
+        enabled: true
+        mgmt_only: true
+        description: Dell iDRAC 3L51JZ3 out-of-band management.
+        mac_address: 6c:3c:8c:75:3c:be
+        untagged_vlan: 4
+        ip_addresses:
+          - address: 192.168.4.190/24
+            dns_name: idrac-3l51jz3
+
+  - name: LeanderWin10
+    site: glemmen
+    location: server-room
+    role: server
+    device_type: dell-poweredge-r250
+    status: active
+    oob_ip: 192.168.4.140
+    contacts:
+      - contact: Eric
+        role: technical-contact
+    identity:
+      service_tag: 9L51JZ3
+      macs:
+        - 6c:3c:8c:75:43:4c
+    collect:
+      redfish:
+        ip: 192.168.4.140
+        profile: glemmen
+      unifi:
+        ip: 192.168.6.140
+        mac: 6c:3c:8c:75:43:4c
+    uplinks:
+      - interface: Port 1
+        switch: USW Pro 24 PoE
+        port: "18"
+        type: cat6
+    interfaces:
+      - name: iDRAC
+        type: 1000base-t
+        enabled: true
+        mgmt_only: true
+        description: Dell iDRAC 9L51JZ3 out-of-band management.
+        mac_address: 6c:3c:8c:75:43:46
+        untagged_vlan: 4
+        ip_addresses:
+          - address: 192.168.4.140/24
+            dns_name: idrac-9l51jz3
+
+  - name: server120
+    site: glemmen
+    location: server-room
+    role: server
+    device_type: dell-poweredge-r250
+    status: active
+    oob_ip: 192.168.4.120
+    identity:
+      service_tag: JL51JZ3
+      macs:
+        - 6c:3c:8c:75:37:64
+    collect:
+      redfish:
+        ip: 192.168.4.120
+        profile: glemmen
+      unifi:
+        ip: 192.168.6.120
+        mac: 6c:3c:8c:75:37:64
+    uplinks:
+      - interface: Port 1
+        switch: USW Pro 24 PoE
+        port: "17"
+        type: cat6
+    interfaces:
+      - name: iDRAC
+        type: 1000base-t
+        enabled: true
+        mgmt_only: true
+        description: Dell iDRAC JL51JZ3 out-of-band management.
+        mac_address: 6c:3c:8c:75:37:5e
+        untagged_vlan: 4
+        ip_addresses:
+          - address: 192.168.4.120/24
+            dns_name: idrac-jl51jz3
+
+  - name: server110
+    site: glemmen
+    location: server-room
+    role: server
+    device_type: dell-poweredge-r250
+    status: offline
+    oob_ip: 192.168.4.110
+    description: Physical server between server120 and dellserver01.
+    identity:
+      service_tag: CL51JZ3
+      macs:
+        - 6c:3c:8c:75:37:84
+    collect:
+      redfish:
+        ip: 192.168.4.110
+        profile: glemmen
+      unifi:
+        mac: 6c:3c:8c:75:37:84
+    interfaces:
+      - name: iDRAC
+        type: 1000base-t
+        enabled: true
+        mgmt_only: true
+        description: Dell iDRAC CL51JZ3 out-of-band management.
+        mac_address: 6c:3c:8c:75:47:86
+        untagged_vlan: 4
+        ip_addresses:
+          - address: 192.168.4.110/24
+            dns_name: idrac-cl51jz3
+
+  - name: dellserver01
+    site: glemmen
+    location: server-room
+    role: server
+    device_type: dell-poweredge-r250
+    status: active
+    oob_ip: 192.168.4.100
+    identity:
+      service_tag: 5L51JZ3
+      macs:
+        - 6c:3c:8c:75:3a:44
+    collect:
+      redfish:
+        ip: 192.168.4.100
+        profile: glemmen
+      unifi:
+        ip: 192.168.6.100
+        mac: 6c:3c:8c:75:3a:44
+    uplinks:
+      - interface: Port 1
+        switch: USW Pro 24 PoE
+        port: "16"
+        type: cat6
+    interfaces:
+      - name: iDRAC
+        type: 1000base-t
+        enabled: true
+        mgmt_only: true
+        description: Dell iDRAC 5L51JZ3 out-of-band management.
+        mac_address: 6c:3c:8c:75:3a:3e
+        untagged_vlan: 4
+        ip_addresses:
+          - address: 192.168.4.100/24
+            dns_name: idrac-5l51jz3
+
+  - name: server70
+    site: glemmen
+    location: server-room
+    role: server
+    device_type: dell-poweredge-r630
+    status: active
+    contacts:
+      - contact: Eric
+        role: technical-contact
+    identity:
+      macs:
+        - b8:2a:72:d5:dd:04
+    collect:
+      unifi:
+        ip: 192.168.6.70
+        mac: b8:2a:72:d5:dd:04
+    uplinks:
+      - interface: Port 1
+        switch: USW Pro 24 PoE
+        port: "24"
+        type: cat6
+
+  # ------------------------------------------------------------------ Talos Kubernetes nodes
+  - name: glemmen130
+    site: glemmen
+    location: server-room
+    role: control-plane
+    device_type: dell-poweredge-r250
+    platform: talos-linux
+    status: active
+    oob_ip: 192.168.4.130
+    contacts:
+      - contact: Simon Bråten
+        role: technical-contact
+    identity:
+      service_tag: 6L51JZ3
+    collect:
+      redfish:
+        ip: 192.168.4.130
+        profile: glemmen
+      kubernetes:
+        node: glemmen130
+        cluster: glemmen
+    uplinks:
+      - interface: eno8303
+        switch: USW Pro 24 PoE
+        port: "5"
+        type: cat6
+      - interface: eno8403
+        switch: USW Pro 24 PoE
+        port: "6"
+        type: cat6
+    interfaces:
+      - name: iDRAC
+        type: 1000base-t
+        enabled: true
+        mgmt_only: true
+        description: Dell iDRAC 6L51JZ3 out-of-band management.
+        mac_address: 6c:3c:8c:75:3d:8e
+        untagged_vlan: 4
+        ip_addresses:
+          - address: 192.168.4.130/24
+            dns_name: idrac-6l51jz3
+
+  - name: glemmen150
+    site: glemmen
+    location: server-room
+    role: control-plane
+    device_type: dell-poweredge-r250
+    platform: talos-linux
+    status: active
+    oob_ip: 192.168.4.150
+    contacts:
+      - contact: Simon Bråten
+        role: technical-contact
+    identity:
+      service_tag: FL51JZ3
+    collect:
+      redfish:
+        ip: 192.168.4.150
+        profile: glemmen
+      kubernetes:
+        node: glemmen150
+        cluster: glemmen
+    uplinks:
+      - interface: eno8303
+        switch: USW Pro 24 PoE
+        port: "7"
+        type: cat6
+      - interface: eno8403
+        switch: USW Pro 24 PoE
+        port: "8"
+        type: cat6
+    interfaces:
+      - name: iDRAC
+        type: 1000base-t
+        enabled: true
+        mgmt_only: true
+        description: Dell iDRAC FL51JZ3 out-of-band management.
+        mac_address: 6c:3c:8c:75:39:2e
+        untagged_vlan: 4
+        ip_addresses:
+          - address: 192.168.4.150/24
+            dns_name: idrac-fl51jz3
+
+  - name: glemmen160
+    site: glemmen
+    location: server-room
+    role: control-plane
+    device_type: dell-poweredge-r250
+    platform: talos-linux
+    status: active
+    oob_ip: 192.168.4.160
+    contacts:
+      - contact: Simon Bråten
+        role: technical-contact
+    identity:
+      service_tag: DL51JZ3
+    collect:
+      redfish:
+        ip: 192.168.4.160
+        profile: glemmen
+      kubernetes:
+        node: glemmen160
+        cluster: glemmen
+    uplinks:
+      - interface: eno8303
+        switch: USW Pro 24 PoE
+        port: "9"
+        type: cat6
+      - interface: eno8403
+        switch: USW Pro 24 PoE
+        port: "10"
+        type: cat6
+    interfaces:
+      - name: iDRAC
+        type: 1000base-t
+        enabled: true
+        mgmt_only: true
+        description: Dell iDRAC DL51JZ3 out-of-band management.
+        mac_address: 6c:3c:8c:75:45:06
+        untagged_vlan: 4
+        ip_addresses:
+          - address: 192.168.4.160/24
+            dns_name: idrac-dl51jz3
+
+  - name: glemmen170
+    site: glemmen
+    location: server-room
+    role: control-plane
+    device_type: dell-poweredge-r250
+    platform: talos-linux
+    status: active
+    oob_ip: 192.168.4.170
+    contacts:
+      - contact: Simon Bråten
+        role: technical-contact
+    identity:
+      service_tag: 4L51JZ3
+    collect:
+      redfish:
+        ip: 192.168.4.170
+        profile: glemmen
+      kubernetes:
+        node: glemmen170
+        cluster: glemmen
+    uplinks:
+      - interface: eno8303
+        switch: USW Pro 24 PoE
+        port: "11"
+        type: cat6
+      - interface: eno8403
+        switch: USW Pro 24 PoE
+        port: "12"
+        type: cat6
+    interfaces:
+      - name: iDRAC
+        type: 1000base-t
+        enabled: true
+        mgmt_only: true
+        description: Dell iDRAC 4L51JZ3 out-of-band management.
+        mac_address: 6c:3c:8c:75:3c:ae
+        untagged_vlan: 4
+        ip_addresses:
+          - address: 192.168.4.170/24
+            dns_name: idrac-4l51jz3
+
+  - name: glemmen180
+    site: glemmen
+    location: server-room
+    role: control-plane
+    device_type: dell-poweredge-r250
+    platform: talos-linux
+    status: active
+    oob_ip: 192.168.4.180
+    contacts:
+      - contact: Simon Bråten
+        role: technical-contact
+    identity:
+      service_tag: 2L51JZ3
+    collect:
+      redfish:
+        ip: 192.168.4.180
+        profile: glemmen
+      kubernetes:
+        node: glemmen180
+        cluster: glemmen
+    uplinks:
+      - interface: eno8303
+        switch: USW Pro 24 PoE
+        port: "13"
+        type: cat6
+      - interface: eno8403
+        switch: USW Pro 24 PoE
+        port: "14"
+        type: cat6
+    interfaces:
+      - name: iDRAC
+        type: 1000base-t
+        enabled: true
+        mgmt_only: true
+        description: Dell iDRAC 2L51JZ3 out-of-band management.
+        mac_address: 6c:3c:8c:75:3c:3e
+        untagged_vlan: 4
+        ip_addresses:
+          - address: 192.168.4.180/24
+            dns_name: idrac-2l51jz3
+
+  - name: glemmen60
+    site: glemmen
+    location: server-room
+    role: worker
+    device_type: dell-poweredge-r515
+    platform: talos-linux
+    status: active
+    oob_ip: 192.168.4.60
+    contacts:
+      - contact: Simon Bråten
+        role: technical-contact
+    identity:
+      service_tag: JVCJGZ1
+    collect:
+      ipmi:
+        ip: 192.168.4.60
+        profile: glemmen
+      kubernetes:
+        node: glemmen60
+        cluster: glemmen
+    uplinks:
+      - interface: eno1
+        switch: USW Pro 24 PoE
+        port: "4"
+        type: cat6
+    interfaces:
+      - name: iDRAC
+        type: 1000base-t
+        enabled: true
+        mgmt_only: true
+        description: Dell iDRAC 6 out-of-band management.
+        untagged_vlan: 4
+        ip_addresses:
+          - address: 192.168.4.60/24
+            dns_name: idrac-jvcjgz1
+
+  - name: glemmen80
+    site: glemmen
+    location: server-room
+    role: worker
+    device_type: dell-poweredge-r630
+    platform: talos-linux
+    status: active
+    oob_ip: 192.168.4.80
+    contacts:
+      - contact: Simon Bråten
+        role: technical-contact
+    identity:
+      service_tag: 9SYD132
+    collect:
+      redfish:
+        ip: 192.168.4.80
+        profile: glemmen
+      kubernetes:
+        node: glemmen80
+        cluster: glemmen
+    uplinks:
+      - interface: enp4s0f0
+        switch: USW Pro 24 PoE
+        port: "26"
+        type: dac-passive
+    interfaces:
+      - name: iDRAC
+        type: 1000base-t
+        enabled: true
+        mgmt_only: true
+        description: Dell iDRAC 9SYD132 out-of-band management.
+        untagged_vlan: 4
+        ip_addresses:
+          - address: 192.168.4.80/24
+            dns_name: idrac-9syd132
+
+  - name: glemmen250
+    site: glemmen
+    location: server-room
+    role: worker
+    device_type: komplett-pc-i9-11900k
+    platform: talos-linux
+    status: active
+    serial: "22403308"
+    description: Komplett desktop used as the GPU worker; 2 x NVIDIA GeForce GTX 1660 SUPER.
+    contacts:
+      - contact: Simon Bråten
+        role: technical-contact
+    identity:
+      serial: "22403308"
+    collect:
+      kubernetes:
+        node: glemmen250
+        cluster: glemmen
+
+  # ------------------------------------------------------------------ Storage
+  - name: storwize-01
+    site: glemmen
+    location: server-room
+    role: storage
+    device_type: ibm-storwize-v5000-lff-expansion
+    status: staged
+    contacts:
+      - contact: Simon Bråten
+        role: technical-contact
+    description: IBM Storwize V5000 LFF expansion enclosure with 12 x 12 TB disks.
+    module_bays: &storwize_bays
+      - { name: Drive 1, position: "1", bay_type: drive-3-5 }
+      - { name: Drive 2, position: "2", bay_type: drive-3-5 }
+      - { name: Drive 3, position: "3", bay_type: drive-3-5 }
+      - { name: Drive 4, position: "4", bay_type: drive-3-5 }
+      - { name: Drive 5, position: "5", bay_type: drive-3-5 }
+      - { name: Drive 6, position: "6", bay_type: drive-3-5 }
+      - { name: Drive 7, position: "7", bay_type: drive-3-5 }
+      - { name: Drive 8, position: "8", bay_type: drive-3-5 }
+      - { name: Drive 9, position: "9", bay_type: drive-3-5 }
+      - { name: Drive 10, position: "10", bay_type: drive-3-5 }
+      - { name: Drive 11, position: "11", bay_type: drive-3-5 }
+      - { name: Drive 12, position: "12", bay_type: drive-3-5 }
+      - { name: PSU 1, position: "13", bay_type: power-supply }
+      - { name: PSU 2, position: "14", bay_type: power-supply }
+      - { name: Canister 1, position: "15", bay_type: expansion-canister }
+      - { name: Canister 2, position: "16", bay_type: expansion-canister }
+    modules: &storwize_modules
+      - { bay: Drive 1, module_type: generic-12tb-sas-hdd, status: staged, description: 12 TB SAS HDD (bay 1) }
+      - { bay: Drive 2, module_type: generic-12tb-sas-hdd, status: staged, description: 12 TB SAS HDD (bay 2) }
+      - { bay: Drive 3, module_type: generic-12tb-sas-hdd, status: staged, description: 12 TB SAS HDD (bay 3) }
+      - { bay: Drive 4, module_type: generic-12tb-sas-hdd, status: staged, description: 12 TB SAS HDD (bay 4) }
+      - { bay: Drive 5, module_type: generic-12tb-sas-hdd, status: staged, description: 12 TB SAS HDD (bay 5) }
+      - { bay: Drive 6, module_type: generic-12tb-sas-hdd, status: staged, description: 12 TB SAS HDD (bay 6) }
+      - { bay: Drive 7, module_type: generic-12tb-sas-hdd, status: staged, description: 12 TB SAS HDD (bay 7) }
+      - { bay: Drive 8, module_type: generic-12tb-sas-hdd, status: staged, description: 12 TB SAS HDD (bay 8) }
+      - { bay: Drive 9, module_type: generic-12tb-sas-hdd, status: staged, description: 12 TB SAS HDD (bay 9) }
+      - { bay: Drive 10, module_type: generic-12tb-sas-hdd, status: staged, description: 12 TB SAS HDD (bay 10) }
+      - { bay: Drive 11, module_type: generic-12tb-sas-hdd, status: staged, description: 12 TB SAS HDD (bay 11) }
+      - { bay: Drive 12, module_type: generic-12tb-sas-hdd, status: staged, description: 12 TB SAS HDD (bay 12) }
+      - { bay: PSU 1, module_type: ibm-storwize-v5000-800w-psu, status: staged }
+      - { bay: PSU 2, module_type: ibm-storwize-v5000-800w-psu, status: staged }
+      - { bay: Canister 1, module_type: ibm-storwize-v5000-expansion-canister, status: staged }
+      - { bay: Canister 2, module_type: ibm-storwize-v5000-expansion-canister, status: staged }
+
+  - name: storwize-02
+    site: glemmen
+    location: server-room
+    role: storage
+    device_type: ibm-storwize-v5000-lff-expansion
+    status: staged
+    contacts:
+      - contact: Simon Bråten
+        role: technical-contact
+    description: IBM Storwize V5000 LFF expansion enclosure with 12 x 12 TB disks.
+    module_bays: *storwize_bays
+    modules: *storwize_modules
+
+  # ------------------------------------------------------------------ Appliances
+  - name: minikjoleskap
+    site: glemmen
+    location: server-room
+    role: appliance
+    device_type: biltema-minikjoleskap-4l
+    status: active
+    description: Biltema 4 l mini fridge and warmer.
+    comments: Not rack-mounted; recorded at site level. Biltema article 49-586 (web article 2000061760).
+
+  - name: rail-one
+    site: glemmen
+    location: server-room
+    role: appliance
+    device_type: hpe-proliant-dl360-g5
+    status: offline
+    description: 1U rack server used as a rail to stack servers.

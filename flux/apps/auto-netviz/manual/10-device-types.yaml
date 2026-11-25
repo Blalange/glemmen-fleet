@@ -1,0 +1,424 @@
+schema_version: 1
+
+module_types:
+  - id: generic-12tb-sas-hdd
+    manufacturer: Generic
+    model: 12 TB SAS HDD
+    profile: storage-disk
+    bay_type: drive-3-5
+    description: Generic 3.5-inch 12 TB SAS enterprise hard drive.
+  - id: ibm-storwize-v5000-800w-psu
+    manufacturer: IBM
+    model: Storwize V5000 800W PSU
+    profile: power-supply
+    bay_type: power-supply
+    description: Hot-swap 800W redundant power supply for Storwize V5000 expansion.
+  - id: ibm-storwize-v5000-expansion-canister
+    manufacturer: IBM
+    model: Storwize V5000 Expansion Canister
+    profile: expansion-canister
+    bay_type: expansion-canister
+    description: Dual-port 12 Gbps SAS expansion canister module.
+
+device_types:
+  - id: dell-poweredge-r250
+    manufacturer: Dell
+    model: PowerEdge R250
+    u_height: 1
+    depth: full
+    role_hint: server
+    part_number: R250
+    airflow: front-to-rear
+    weight_kg: 12.48
+    description: 1U single-socket rack server used for 1xx/2xx servers and Talos control planes.
+    faceplate:
+      front:
+        - kind: drive_bays
+          form_factor: "3.5"
+          count: 4
+          prefix: "Drive "
+      rear:
+        - kind: psu_bays
+          count: 2
+          prefix: "PSU "
+        - kind: mgmt_port
+          name: iDRAC
+        - kind: port_grid
+          connector: rj45
+          rows: 1
+          cols: 3
+          names: ["Port 1", eno8303, eno8403]
+
+  - id: dell-poweredge-r515
+    manufacturer: Dell
+    model: PowerEdge R515
+    u_height: 2
+    depth: full
+    role_hint: server
+    part_number: R515
+    airflow: front-to-rear
+    weight_kg: 29
+    description: Dell PowerEdge R515 2U dual-socket AMD Opteron rack server.
+    faceplate:
+      front:
+        - kind: drive_bays
+          form_factor: "3.5"
+          count: 12
+          prefix: "Drive "
+      rear:
+        - kind: psu_bays
+          count: 2
+          prefix: "PSU "
+        - kind: mgmt_port
+          name: iDRAC
+        - kind: port_grid
+          connector: rj45
+          rows: 1
+          cols: 2
+          names: [eno1, eno2]
+
+  - id: dell-poweredge-r630
+    manufacturer: Dell
+    model: PowerEdge R630
+    u_height: 1
+    depth: full
+    role_hint: server
+    part_number: R630
+    airflow: front-to-rear
+    weight_kg: 18.5
+    description: 1U dual-socket rack server used for server70 and glemmen80.
+    faceplate:
+      front:
+        - kind: drive_bays
+          form_factor: "2.5"
+          count: 8
+          prefix: "Drive "
+      rear:
+        - kind: psu_bays
+          count: 2
+          prefix: "PSU "
+        - kind: mgmt_port
+          name: iDRAC
+        - kind: port_grid
+          connector: rj45
+          rows: 1
+          cols: 2
+          names: ["Port 1", eno1]
+        - kind: port_grid
+          connector: sfpp
+          rows: 1
+          cols: 2
+          names: [enp4s0f0, enp4s0f1]
+
+  - id: ibm-storwize-v5000-lff-expansion
+    manufacturer: IBM
+    model: Storwize V5000 LFF Expansion Enclosure
+    u_height: 2
+    depth: full
+    role_hint: storage
+    part_number: 6194-12E
+    airflow: front-to-rear
+    description: 2U LFF SAS expansion enclosure with 12 x 3.5-inch drive bays.
+    faceplate:
+      front:
+        - kind: drive_bays
+          form_factor: "3.5"
+          count: 12
+          prefix: "Drive "
+      rear:
+        - kind: psu_bays
+          count: 2
+          prefix: "PSU "
+        - kind: port_grid
+          connector: sfpp
+          rows: 1
+          cols: 2
+          names: ["Canister 1", "Canister 2"]
+
+  - id: apc-ap4423a
+    manufacturer: APC
+    model: AP4423A
+    u_height: 1
+    depth: half
+    role_hint: power
+    part_number: AP4423A
+    airflow: passive
+    weight_kg: 3.74
+    description: APC NetShelter Rack Automatic Transfer Switch, 1U, 16A.
+    faceplate:
+      front:
+        - kind: lcd
+          label: ATS
+          width: 3
+        - kind: mgmt_port
+          name: mgmt
+      rear:
+        - kind: power
+          connector: iec-c14
+          count: 8
+
+  - id: zyxel-gs1920-24
+    manufacturer: Zyxel
+    model: GS1920-24
+    u_height: 1
+    depth: half
+    role_hint: switch
+    part_number: GS1920-24
+    airflow: passive
+    weight_kg: 2.17
+    description: 24 x 1G ports + 4 x SFP smart managed switch.
+    faceplate:
+      front:
+        - kind: lcd
+          label: ZYXEL
+          width: 2
+        - kind: port_grid
+          connector: rj45
+          rows: 2
+          cols: 12
+          start: 1
+          prefix: "Port "
+        - kind: port_grid
+          connector: sfp
+          rows: 2
+          cols: 2
+          start: 25
+          prefix: "Port "
+      rear:
+        - kind: power
+          connector: iec-c14
+          count: 1
+
+  - id: ubiquiti-udm-pro
+    manufacturer: Ubiquiti
+    model: UniFi Dream Machine Pro
+    u_height: 1
+    depth: half
+    role_hint: gateway
+    part_number: UDM-PRO
+    airflow: front-to-rear
+    weight_kg: 3.9
+    description: UniFi Dream Machine Pro gateway.
+    faceplate:
+      front:
+        - kind: lcd
+          label: UDM
+          width: 2
+        - kind: port_grid
+          connector: rj45
+          rows: 2
+          cols: 4
+          start: 1
+          prefix: "Port "
+        - kind: port_grid
+          connector: rj45
+          rows: 1
+          cols: 1
+          start: 9
+          prefix: "Port "
+        - kind: port_grid
+          connector: sfpp
+          rows: 2
+          cols: 1
+          start: 10
+          prefix: "Port "
+      rear:
+        - kind: power
+          connector: iec-c14
+          count: 1
+
+  - id: ubiquiti-usw-pro-24-poe
+    manufacturer: Ubiquiti
+    model: UniFi Switch 24 Pro PoE Gen2
+    u_height: 1
+    depth: half
+    role_hint: switch
+    part_number: USW-Pro-24-POE
+    airflow: front-to-rear
+    weight_kg: 4.4
+    description: 24-port PoE switch with 2 x SFP+.
+    faceplate:
+      front:
+        - kind: lcd
+          label: USW
+          width: 2
+        - kind: port_grid
+          connector: rj45
+          rows: 2
+          cols: 12
+          start: 1
+          prefix: "Port "
+          poe: true
+        - kind: port_grid
+          connector: sfpp
+          rows: 2
+          cols: 1
+          start: 25
+          prefix: "Port "
+      rear:
+        - kind: power
+          connector: iec-c14
+          count: 1
+
+  - id: ubiquiti-us-8-poe-150w
+    manufacturer: Ubiquiti
+    model: US-8-150W
+    u_height: 0
+    depth: half
+    role_hint: switch
+    part_number: US-8-150W
+    airflow: passive
+    weight_kg: 1.65
+    description: 8-port PoE switch with 2 x SFP.
+    faceplate:
+      front:
+        - kind: port_grid
+          connector: rj45
+          rows: 1
+          cols: 8
+          start: 1
+          prefix: "Port "
+          poe: true
+        - kind: port_grid
+          connector: sfp
+          rows: 1
+          cols: 2
+          start: 9
+          prefix: "Port "
+
+  - id: ubiquiti-usw-flex-2-5g-5
+    manufacturer: Ubiquiti
+    model: UniFi Switch Flex Mini 2.5G
+    u_height: 0
+    depth: half
+    role_hint: switch
+    part_number: USW-Flex-2-5G-5
+    airflow: passive
+    weight_kg: 0.21
+    description: Compact 5-port 2.5G switch.
+    faceplate:
+      front:
+        - kind: port_grid
+          connector: rj45
+          rows: 1
+          cols: 5
+          start: 1
+          prefix: "Port "
+
+  - id: ubiquiti-usw-flex-2-5g-8-poe
+    manufacturer: Ubiquiti
+    model: UniFi Switch Flex 2.5G 8 PoE
+    u_height: 0
+    depth: half
+    role_hint: switch
+    part_number: USW-Flex-2-5G-8-PoE
+    airflow: passive
+    weight_kg: 0.57
+    description: Compact 8-port 2.5G PoE switch.
+    faceplate:
+      front:
+        - kind: port_grid
+          connector: rj45
+          rows: 1
+          cols: 8
+          start: 1
+          prefix: "Port "
+          poe: true
+
+  - id: ubiquiti-usw-flex-mini
+    manufacturer: Ubiquiti
+    model: UniFi Switch Flex Mini
+    u_height: 0
+    depth: half
+    role_hint: switch
+    part_number: USW-Flex-Mini
+    airflow: passive
+    weight_kg: 0.15
+    description: Compact 5-port 1G switch.
+    faceplate:
+      front:
+        - kind: port_grid
+          connector: rj45
+          rows: 1
+          cols: 5
+          start: 1
+          prefix: "Port "
+
+  - id: ubiquiti-u6-pro
+    manufacturer: Ubiquiti
+    model: U6 Pro
+    u_height: 0
+    depth: half
+    role_hint: access-point
+    part_number: U6-Pro
+    airflow: passive
+    weight_kg: 0.46
+    description: Ceiling-mounted WiFi 6 access point.
+    faceplate:
+      front:
+        - kind: lcd
+          label: U6-PRO
+          width: 2
+        - kind: port_grid
+          connector: rj45
+          rows: 1
+          cols: 1
+          start: 1
+          prefix: "Port "
+          poe: true
+
+  - id: biltema-minikjoleskap-4l
+    manufacturer: Biltema
+    model: Minikjøleskap 4 l
+    u_height: 0
+    depth: half
+    role_hint: appliance
+    part_number: "49-586"
+    airflow: passive
+    weight_kg: 1.73
+    description: Biltema 4 l portable mini fridge and warmer (230V AC / 12V DC).
+    faceplate:
+      front:
+        - kind: lcd
+          label: "4L 18C"
+          width: 3
+
+  - id: hpe-proliant-dl360-g5
+    manufacturer: HPE
+    model: ProLiant DL360 G5
+    u_height: 1
+    depth: full
+    role_hint: appliance
+    part_number: 399524-b21
+    airflow: front-to-rear
+    weight_kg: 14.5
+    description: 1U rack server chassis used as a rail to stack servers.
+    faceplate:
+      front:
+        - kind: drive_bays
+          form_factor: "2.5"
+          count: 6
+          prefix: "Bay "
+      rear:
+        - kind: psu_bays
+          count: 2
+          prefix: "PSU "
+
+  - id: komplett-pc-i9-11900k
+    manufacturer: Komplett
+    model: Komplett PC i9-11900K
+    u_height: 0
+    depth: half
+    role_hint: worker
+    airflow: front-to-rear
+    description: Komplett custom desktop GPU worker (i9-11900K, 2x GTX 1660 SUPER).
+    faceplate:
+      front:
+        - kind: lcd
+          label: GPU
+          width: 2
+        - kind: port_grid
+          connector: rj45
+          rows: 1
+          cols: 1
+          names: [enp3s0]

@@ -1,0 +1,38 @@
+schema_version: 1
+
+vlans:
+  - site: glemmen
+    vid: 1
+    name: LAN
+    color: "#3b82f6"
+    description: Default LAN / UniFi management.
+  - site: glemmen
+    vid: 3
+    name: Servere
+    color: "#06b6d4"
+    description: Physical servers VLAN.
+  - site: glemmen
+    vid: 4
+    name: Server tilbehør
+    color: "#f59e0b"
+    description: Out-of-band iDRAC, Zyxel GS1920-24, and APC ATS management.
+  - site: glemmen
+    vid: 6
+    name: Kubernetes & Compute
+    color: "#8b5cf6"
+    description: Talos Kubernetes cluster nodes, API VIP (.98), and MetalLB VIP (.99).
+
+prefixes:
+  - cidr: 192.168.4.0/24
+    site: glemmen
+    vlan: 4
+    description: Out-of-band iDRAC, IPMI, Zyxel GS1920-24, and APC ATS network.
+  - cidr: 192.168.6.0/24
+    site: glemmen
+    vlan: 6
+    description: Talos Linux cluster and server subnet (VIP 192.168.6.98 K8s API, 192.168.6.99 Traefik MetalLB).
+  - cidr: 192.168.50.0/24
+    site: glemmen
+    vlan: 1
+    gateway: 192.168.50.1
+    description: UniFi infrastructure management subnet.

@@ -1,0 +1,108 @@
+server:
+  persistence:
+    enabled: true
+    storageClassName: nvme-rbd
+    accessModes:
+      - ReadWriteOnce
+    size: 5Gi
+  retentionDays: 30
+  logLevel: info
+  manual:
+    existingConfigMap: auto-netviz-manual
+
+web:
+  replicaCount: 1
+
+collector:
+  enabled: true
+  demo: false
+  logLevel: info
+  rbac:
+    create: true
+    kubernetesReadOnly: true
+    secretGrants:
+      - namespace: monitoring
+        name: unpoller-unifi
+  config:
+    collector_id: glemmen-k8s
+    name: Glemmen Cluster Collector
+    site: glemmen
+    zone: glemmen-cluster
+    spool_dir: /spool
+    heartbeat_interval: 15s
+    schedules:
+      unifi: 60s
+      snmp: 60s
+      redfish: 120s
+      ipmi: 120s
+      discovery: 180s
+      kubernetes: 45s
+    defaults:
+      unifi_models:
+        UDMPRO: ubiquiti-udm-pro
+        US24PRO: ubiquiti-usw-pro-24-poe
+        US8P150: ubiquiti-us-8-poe-150w
+        USWED35: ubiquiti-usw-flex-2-5g-5
+        USWED37: ubiquiti-usw-flex-2-5g-8-poe
+        USMINI: ubiquiti-usw-flex-mini
+        UAP6MP: ubiquiti-u6-pro
+      unifi_vlan_names:
+        4: Server tilbehør
+    sources:
+      unifi:
+        - name: glemmen
+          site: glemmen
+          url: https://unifi.glem.men
+          unifi_site: default
+          username:
+            from_k8s_secret: monitoring/unpoller-unifi#username
+          password:
+            from_k8s_secret: monitoring/unpoller-unifi#password
+          verify_tls: false
+          snmp_credential: glemmen
+          include_clients: true
+      snmp:
+        - name: glemmen
+          version: "2c"
+          community: public
+          timeout: 2s
+          retries: 1
+          auto_unifi: true
+          port_names: port-number
+          default: true
+      redfish:
+        - name: glemmen
+          username: readonly
+          password: readonly
+          verify_tls: false
+          timeout: 5s
+          default: true
+      ipmi:
+        - name: glemmen
+          username: root
+          password: calvin
+          timeout: 5s
+          default: true
+      kubernetes:
+        - name: glemmen
+          site: glemmen
+          cluster: glemmen
+          in_cluster: true
+      discovery:
+        - name: glemmen-mgmt
+          site: glemmen
+          cidrs:
+            - 192.168.4.0/24
+            - 192.168.6.0/24
+          read_local_arp: false
+          probe_redfish: true
+          probe_snmp: false
+          reverse_dns: true
+          concurrency: 32
+          timeout: 2s
+
+ingress:
+  enabled: true
+  className: traefik
+  hosts:
+    - host: netviz.glem.men
