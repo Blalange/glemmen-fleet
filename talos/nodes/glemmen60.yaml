@@ -19,9 +19,21 @@ apiVersion: v1alpha1
 kind: HostnameConfig
 hostname: glemmen60
 ---
+# Two-port LACP bundle: both onboard 1G ports. The switch side is
+# port-channel14 with LACP active, layer3+4 hashing and no lacp
+# suspend-individual for PXE.
 apiVersion: v1alpha1
-kind: LinkConfig
-name: eno1
+kind: BondConfig
+name: bond0
+links:
+  - eno1
+  - eno2
+bondMode: 802.3ad
+xmitHashPolicy: layer3+4
+lacpRate: fast
+miimon: 100
+updelay: 200
+downdelay: 200
 up: true
 mtu: 9000
 addresses:

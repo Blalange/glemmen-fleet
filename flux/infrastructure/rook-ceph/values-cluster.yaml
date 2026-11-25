@@ -89,6 +89,13 @@ cephClusterSpec:
       # Keep three OSDs on a 32 GB control-plane node reasonable. The OSD
       # daemon's own memory target is deliberately below the pod limit.
       osd_memory_target: "2147483648"
+      # The mClock scheduler ignores the recovery/backfill concurrency
+      # settings unless this override is enabled.
+      osd_mclock_override_recovery_settings: "true"
+      # Allow three concurrent backfills and recoveries per OSD to drain the
+      # recovery queue faster after OSD changes.
+      osd_max_backfills: "3"
+      osd_recovery_max_active: "3"
     mds:
       # Keep the MDS cache below the 4Gi pod limit. The Ceph default is 4Gi,
       # which would leave no headroom for the daemon itself.
