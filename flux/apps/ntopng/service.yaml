@@ -1,0 +1,19 @@
+# The pod uses hostNetwork so it can capture the two mirror NICs on glemmen80.
+# Its pod IP is therefore the node IP (192.168.6.80), and this ordinary
+# selector Service gives Traefik a stable target for the web UI.
+apiVersion: v1
+kind: Service
+metadata:
+  name: ntopng
+  labels:
+    app.kubernetes.io/name: ntopng
+    app.kubernetes.io/instance: ntopng
+spec:
+  selector:
+    app.kubernetes.io/name: ntopng
+    app.kubernetes.io/instance: ntopng
+  ports:
+    - name: http
+      port: 3000
+      protocol: TCP
+      targetPort: http

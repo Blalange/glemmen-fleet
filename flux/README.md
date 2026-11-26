@@ -30,7 +30,7 @@ flux/
 ├── ingress/                    Traefik HelmRelease + values
 ├── monitoring/                 kube-prometheus-stack, Thanos, smartctl-exporter, idrac-exporter, network-mesh, unpoller
 ├── logging/                    Loki (single replica) and the Alloy log collector
-└── apps/                       Kustomization objects, Homepage, NetBox + inventory sync, media stack, SFTPGo, Minecraft servers (Radar), Windows Server VM
+└── apps/                       Kustomization objects, Homepage, NetBox + inventory sync, ntopng, media stack, SFTPGo, Minecraft servers (Radar), Windows Server VM
 ```
 
 The application manifests themselves stay in the repository root (`colibri/`,
@@ -619,6 +619,7 @@ is managed by external-dns.
   token) in `media`; created for SFTPGo: `sftpgo-authentik` (Authentik LDAP
   outpost token and `ldapservice` bind password) and `sftpgo-admin` (local
   WebAdmin password and signing passphrase) in `sftpgo`; created for
+  ntopng: `ntopng-admin` (web admin password and MD5) in `ntopng`; created for
   ARTEX: `artex-db` (PostgreSQL password and
   DSN) and `artex-authentik-outpost` (outpost token) in `artex`; created for
   the private ARTEX image: `ghcr-pull` (GitHub `read:packages` credential) in

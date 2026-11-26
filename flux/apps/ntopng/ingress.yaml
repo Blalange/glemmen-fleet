@@ -1,0 +1,22 @@
+# Traefik terminates TLS with the *.glem.men wildcard certificate and forwards
+# to the ntopng web UI. ntopng still enforces its own admin login.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: ntopng
+  labels:
+    app.kubernetes.io/name: ntopng
+    app.kubernetes.io/instance: ntopng
+spec:
+  ingressClassName: traefik
+  rules:
+    - host: ntopng.glem.men
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: ntopng
+                port:
+                  number: 3000

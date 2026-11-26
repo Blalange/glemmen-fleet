@@ -1,0 +1,33 @@
+# ntopng keeps its RRD/host history in /var/lib/ntopng and its configuration,
+# users and DNS/flow caches in the local Redis at /var/lib/redis. Both need to
+# survive pod restarts; ntopng writes continuously, so keep them on the NVMe
+# Ceph tier rather than the CMR `fast-rbd` tier.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: ntopng-data
+  labels:
+    app.kubernetes.io/name: ntopng
+    app.kubernetes.io/instance: ntopng
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: nvme-rbd
+  resources:
+    requests:
+      storage: 20Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: ntopng-redis
+  labels:
+    app.kubernetes.io/name: ntopng
+    app.kubernetes.io/instance: ntopng
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: nvme-rbd
+  resources:
+    requests:
+      storage: 2Gi

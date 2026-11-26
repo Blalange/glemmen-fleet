@@ -19,6 +19,21 @@ addresses:
 routes:
   - gateway: 192.168.6.1
 ---
+# Mirror capture NICs for ntopng. They have no addresses; they only need to be
+# administratively up so libpcap can read the frames the UDM/USW mirror to
+# them. See network/unifi/README.md.
+apiVersion: v1alpha1
+kind: LinkConfig
+name: eno1
+up: true
+mtu: 1500
+---
+apiVersion: v1alpha1
+kind: LinkConfig
+name: eno2
+up: true
+mtu: 1500
+---
 # Install to the ST91000640NS (slot moved to sda); overrides the common install target.
 apiVersion: v1alpha1
 kind: UnattendedInstallConfig

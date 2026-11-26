@@ -1,0 +1,20 @@
+# ntopng traffic probe on glemmen80. It captures the UDM WAN and USW uplink
+# mirror ports; see network/unifi/README.md and flux/apps/ntopng/.
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: ntopng
+  namespace: flux-system
+spec:
+  interval: 1h
+  retryInterval: 2m
+  timeout: 10m
+  path: ./flux/apps/ntopng
+  prune: true
+  wait: true
+  targetNamespace: ntopng
+  dependsOn:
+    - name: infrastructure
+  sourceRef:
+    kind: GitRepository
+    name: flux-system

@@ -110,6 +110,15 @@ metadata:
 apiVersion: v1
 kind: Namespace
 metadata:
+  name: ntopng
+  labels:
+    # ntopng needs hostNetwork, NET_ADMIN and NET_RAW to capture the mirror
+    # NICs on glemmen80.
+    pod-security.kubernetes.io/enforce: privileged
+---
+apiVersion: v1
+kind: Namespace
+metadata:
   name: volunteer
 ---
 apiVersion: v1

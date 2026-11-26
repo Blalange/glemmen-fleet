@@ -283,6 +283,10 @@ config:
               url: https://unifi.glem.men
               username: "{{HOMEPAGE_VAR_UNIFI_USER}}"
               password: "{{HOMEPAGE_VAR_UNIFI_PASSWORD}}"
+        - ntopng:
+            icon: ntopng.png
+            href: https://ntopng.glem.men
+            description: Sanntids trafikkanalyse fra UDM- og USW-speilene
         - Rancher:
             icon: rancher.png
             href: https://rancher.blalange.org

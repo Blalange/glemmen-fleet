@@ -16,6 +16,7 @@ resources:
   - netbird.yaml
   - netbox-inventory.yaml
   - netbox.yaml
+  - ntopng.yaml
   - panel.yaml
   - sftpgo.yaml
   - unifi.yaml

@@ -1,0 +1,195 @@
+# ntopng network traffic probe.
+#
+# It runs on glemmen80 because that node has spare NICs and a 10G link to the
+# Cisco Nexus. The two mirror feeds currently used are:
+#
+#   eno1  UDM Pro port 7 (mirror of WAN port 9)
+#   eno2  USW Pro 24 PoE port 3 (mirror of uplink port 1)
+#
+# The mirror configuration and cabling are documented in
+# network/unifi/README.md. UniFi does not manage these manifests; the UDM/USW
+# settings are applied manually or through the controller API.
+#
+# The namespace is declared in flux/infrastructure/namespaces.yaml. The
+# ntopng-admin secret is created by hand, not by Flux:
+#
+#   kubectl -n ntopng create secret generic ntopng-admin \
+#     --from-literal=password="$(openssl rand -hex 24)" \
+#     --from-literal=password-md5="$(printf '%s' '<password>' | md5sum | cut -d' ' -f1)"
+#
+# The MD5 is what ntopng stores in Redis. The startup script re-applies it on
+# every start, so changing the secret and restarting the pod rotates the login.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ntopng
+  labels:
+    app.kubernetes.io/name: ntopng
+    app.kubernetes.io/instance: ntopng
+spec:
+  replicas: 1
+  # One ReadWriteOnce volume pair and one packet capture: never run the old
+  # and the new pod at the same time.
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: ntopng
+      app.kubernetes.io/instance: ntopng
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: ntopng
+        app.kubernetes.io/instance: ntopng
+    spec:
+      # The capture interfaces and the web UI port live in the host network
+      # namespace. This is required for libpcap to see the mirror NICs.
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
+      nodeSelector:
+        kubernetes.io/hostname: glemmen80
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
+      initContainers:
+        # The image's Redis and ntopng users are not root. Ceph RBD volumes
+        # arrive owned by root, so hand the two volume roots to the users the
+        # image starts as. The chown is deliberately not recursive: ntopng
+        # creates its own files as the ntopng user.
+        - name: fix-permissions
+          image: ntop/ntopng@sha256:62fe81075340d03c889e638cef6d40c4a63c9dce4f182d95651db1e9e4456502
+          imagePullPolicy: IfNotPresent
+          command:
+            - /bin/bash
+            - -lc
+            - |
+              set -e
+              chown ntopng:ntop /var/lib/ntopng
+              chown redis:redis /var/lib/redis
+          securityContext:
+            runAsUser: 0
+            runAsGroup: 0
+            allowPrivilegeEscalation: false
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/ntopng
+            - name: redis
+              mountPath: /var/lib/redis
+        # Bring the mirror NICs up even after a node reboot before the Talos
+        # LinkConfig objects have been applied. The interfaces have no
+        # addresses; they only need to receive mirrored frames.
+        - name: link-up
+          image: busybox:1.38.0
+          imagePullPolicy: IfNotPresent
+          command:
+            - sh
+            - -c
+            - |
+              set -e
+              for iface in eno1 eno2; do
+                if [ -e "/sys/class/net/$iface" ]; then
+                  ip link set dev "$iface" up
+                fi
+              done
+          securityContext:
+            capabilities:
+              add:
+                - NET_ADMIN
+      containers:
+        - name: ntopng
+          image: ntop/ntopng@sha256:62fe81075340d03c889e638cef6d40c4a63c9dce4f182d95651db1e9e4456502
+          imagePullPolicy: IfNotPresent
+          command:
+            - /bin/bash
+            - -lc
+            - |
+              set -euo pipefail
+
+              # The image's /etc/init.d/redis-server listens on 127.0.0.1 only
+              # and stores its data on the mounted redis volume.
+              /etc/init.d/redis-server start
+              for _ in $(seq 1 30); do
+                if redis-cli ping >/dev/null 2>&1; then
+                  break
+                fi
+                sleep 1
+              done
+              if ! redis-cli ping >/dev/null 2>&1; then
+                echo "redis did not start" >&2
+                exit 1
+              fi
+
+              # Replace the default admin/admin login before ntopng starts.
+              # ntopng stores the MD5 of the password, not the plaintext.
+              redis-cli set ntopng.user.admin.password "$NTOPNG_ADMIN_PASSWORD_MD5" >/dev/null
+              redis-cli set ntopng.user.admin.full_name "ntopng Administrator" >/dev/null
+              redis-cli set ntopng.user.admin.group administrator >/dev/null
+
+              # Keep the UI on the server VLAN only. The pod is pinned to
+              # glemmen80, so the node address is stable. The two mirror feeds
+              # are separate interfaces, so traffic is not double-counted
+              # between the UDM WAN and the USW uplink. -n 0 resolves names for
+              # the local networks only; it does not reverse-resolve every
+              # public address seen on the WAN.
+              exec ntopng \
+                --community \
+                -d /var/lib/ntopng \
+                -i eno1 \
+                -i eno2 \
+                -w 192.168.6.80:3000 \
+                -m "192.168.2.0/24,192.168.4.0/24,192.168.6.0/24,192.168.8.0/24,192.168.50.0/24,192.168.70.0/24,10.23.42.0/24" \
+                -n 0
+          env:
+            - name: NTOPNG_ADMIN_PASSWORD_MD5
+              valueFrom:
+                secretKeyRef:
+                  name: ntopng-admin
+                  key: password-md5
+          ports:
+            - name: http
+              containerPort: 3000
+              protocol: TCP
+          securityContext:
+            # NET_RAW opens the AF_PACKET capture sockets; NET_ADMIN lets
+            # libpcap put the mirror interfaces into promiscuous mode.
+            capabilities:
+              add:
+                - NET_ADMIN
+                - NET_RAW
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 20
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 6
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 60
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 6
+          resources:
+            requests:
+              cpu: 250m
+              memory: 512Mi
+            limits:
+              # glemmen80 has 192 GiB RAM and a 10G link. Leave headroom for
+              # bursts while ntopng indexes a new flow table.
+              cpu: "4"
+              memory: 8Gi
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/ntopng
+            - name: redis
+              mountPath: /var/lib/redis
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: ntopng-data
+        - name: redis
+          persistentVolumeClaim:
+            claimName: ntopng-redis
