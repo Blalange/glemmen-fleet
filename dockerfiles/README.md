@@ -6,6 +6,7 @@ instead of pulling from an upstream registry.
 | Path | Upstream source | Build context | Builder |
 |---|---|---|---|
 | `artex/Dockerfile` | [BaaRai/ARTEX](https://github.com/BaaRai/ARTEX) tag `v0.6.0` | an ARTEX checkout at the same tag | `scripts/artex/build-image.sh` |
+| `raidian/Dockerfile` | Debian 12 + pinned Broadcom/Dell/hwraid packages | `dockerfiles/raidian` | `scripts/raidian/build-image.sh` |
 
 Rules:
 
@@ -30,3 +31,16 @@ When upgrading ARTEX:
 2. Update `ARTEX_VERSION` in `scripts/artex/build-image.sh` and the image tag
    in `flux/apps/artex/artex.yaml`.
 3. Rebuild and push, then update the Flux revision.
+
+## RAIDian
+
+`raidian/Dockerfile` builds a Debian 12 RAID-management toolbox with MegaCLI,
+PERCCLI, StorCLI, `mdadm`, `smartctl`, `nvme-cli` and related disk utilities.
+It is published to GHCR as `ghcr.io/blalange/raidian`.
+`scripts/raidian/build-image.sh` builds `linux/amd64` from this directory and
+pushes the image.
+
+The vendor packages are downloaded during the build and checked against pinned
+SHA-256 sums in the Dockerfile. When upgrading a tool, update the URL, version
+and checksum together. See [`raidian/README.md`](raidian/README.md) for the tool
+versions, usage examples and the rebuild procedure.
