@@ -65,4 +65,4 @@ labels:
   # Stable selector for GPU workloads; the GPU operator manages the
   # nvidia.com/* labels itself.
   glem.men/gpu: "true"
-  glem.men/lan-speed: "1"
+  glem.men/lan-speed: "1000"

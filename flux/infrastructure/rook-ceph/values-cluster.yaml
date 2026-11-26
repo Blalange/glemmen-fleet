@@ -354,6 +354,15 @@ cephObjectStores:
                   matchLabels:
                     app: rook-ceph-rgw
                 topologyKey: kubernetes.io/hostname
+          nodeAffinity:
+            requiredDuringSchedulingIgnoredDuringExecution:
+              nodeSelectorTerms:
+                # Keep the RGW gateway on nodes with at least a 5 Gbps LAN connection, so the S3 traffic does not saturate the 1 Gbps uplinks of the other nodes.
+                - matchExpressions:
+                    - key: glem.men/lan-speed
+                      operator: Gt
+                      values:
+                        - "4999"
         resources:
           requests:
             cpu: 200m

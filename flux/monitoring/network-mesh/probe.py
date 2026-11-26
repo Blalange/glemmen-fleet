@@ -56,7 +56,7 @@ ZERO_FILE_SIZE = 4 * 1024 * 1024
 ZERO_FILE_LOCK = threading.Lock()
 DEFAULT_PORT = 9101
 # Aggregate LAN speed in Gbit/s, maintained on the Talos nodes (for example
-# "10" for a 10G link or "6" for a six-port 1G LACP bond).
+# "10000" for a 10G link or "6000" for a six-port 1G LACP bond).
 LAN_SPEED_LABEL = "glem.men/lan-speed"
 
 
@@ -129,8 +129,8 @@ def parse_capacities(raw):
 def parse_lan_speed(value):
     """Return the link capacity in Mbit/s from a glem.men/lan-speed label.
 
-    The label holds the aggregate LAN speed in Gbit/s (for example "10" or
-    "2").  Returns None when the label is missing or not a positive number.
+    The label holds the aggregate LAN speed in Mbit/s (for example "10000" or
+    "2000").  Returns None when the label is missing or not a positive number.
     """
     if value is None:
         return None
@@ -140,7 +140,7 @@ def parse_lan_speed(value):
         return None
     if not math.isfinite(speed) or speed <= 0:
         return None
-    return speed * 1000.0
+    return speed
 
 
 EXPECTED_NODES = parse_expected_nodes(EXPECTED_NODES_RAW)

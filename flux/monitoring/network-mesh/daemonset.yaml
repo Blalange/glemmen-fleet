@@ -12,7 +12,7 @@
 # the 1 Gbit/s access ports from being saturated by the monitoring itself.
 #
 # Expected link capacities come from the glem.men/lan-speed node label
-# (aggregate LAN speed in Gbit/s), which the probe reads from the Kubernetes
+# (aggregate LAN speed in Mbit/s), which the probe reads from the Kubernetes
 # API; there is no capacity list to keep in sync here.
 apiVersion: apps/v1
 kind: DaemonSet

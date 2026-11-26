@@ -24,8 +24,8 @@ dashboard time range: `max`, `min`, `avg`, `p50`, `p95`, `p99` or `latest`.
 Each matrix has one row per source; columns are the destinations.
 
 Expected link capacities are read from the `glem.men/lan-speed` node label,
-which holds the aggregate LAN speed in Gbit/s (for example `10` for a 10G
-link or `6` for a six-port 1G LACP bond). The probe converts the label to
+which holds the aggregate LAN speed in Mbit/s (for example `10000` for a 10G
+link or `6000` for a six-port 1G LACP bond). The probe converts the label to
 Mbit/s and exposes it as `mesh_node_capacity_mbps`; utilization is measured
 against the slower endpoint of each pair.
 
@@ -54,12 +54,12 @@ those endpoints.
 
 ## Layout
 
-| File | Purpose |
-| --- | --- |
-| `daemonset.yaml` | One pod-network probe per node, env configuration, probes |
-| `probe.py` | ICMP + iperf3 test loop and Prometheus/HTTP server (stdlib + iperf3) |
-| `rbac.yaml` | ServiceAccount and read-only pod/node list permission |
-| `kustomization.yaml` | ConfigMap generator for `probe.py` |
+| File                 | Purpose                                                              |
+| -------------------- | -------------------------------------------------------------------- |
+| `daemonset.yaml`     | One pod-network probe per node, env configuration, probes            |
+| `probe.py`           | ICMP + iperf3 test loop and Prometheus/HTTP server (stdlib + iperf3) |
+| `rbac.yaml`          | ServiceAccount and read-only pod/node list permission                |
+| `kustomization.yaml` | ConfigMap generator for `probe.py`                                   |
 
 The deployed resources are in `flux/monitoring/network-mesh/`. They are applied
 by a dedicated Flux Kustomization (`flux/clusters/glemmen/network-mesh.yaml`,
@@ -73,21 +73,21 @@ in `flux/monitoring/resources/dashboards/network-mesh/network-mesh.json`.
 
 The DaemonSet passes these environment variables:
 
-| Variable | Default | Meaning |
-| --- | --- | --- |
-| `PING_INTERVAL_SECONDS` | `60` | Time between ping cycles |
-| `TRANSFER_INTERVAL_SECONDS` | `1800` | Time between throughput cycles |
-| `PING_COUNT` | `10` | ICMP echo requests per peer |
-| `PING_INTERVAL_MS` | `200` | Delay between ICMP requests |
-| `PING_TIMEOUT_SECONDS` | `1` | Per-request reply timeout |
-| `EXPECTED_NODES` | current 8 nodes | Peers that must appear in the mesh; missing nodes emit `mesh_peer_unreachable=1` |
-| `TRANSFER_BYTES` | `33554432` | Bytes per manual HTTP `/download`/`/upload` test |
-| `TRANSFER_FLOWS` | `16` | Parallel iperf3 streams (and HTTP flows) |
-| `TRANSFER_TIMEOUT_SECONDS` | `20` | iperf3 subprocess timeout |
-| `IPERF_PORT` | `5201` | Peer iperf3 server port |
-| `IPERF_SECONDS` | `3` | Total iperf3 run duration |
-| `IPERF_OMIT_SECONDS` | `1` | Initial warm-up second excluded from the interval statistics |
-| `PORT` | `9101` | Metrics, health and manual-transfer HTTP port |
+| Variable                    | Default         | Meaning                                                                          |
+| --------------------------- | --------------- | -------------------------------------------------------------------------------- |
+| `PING_INTERVAL_SECONDS`     | `60`            | Time between ping cycles                                                         |
+| `TRANSFER_INTERVAL_SECONDS` | `1800`          | Time between throughput cycles                                                   |
+| `PING_COUNT`                | `10`            | ICMP echo requests per peer                                                      |
+| `PING_INTERVAL_MS`          | `200`           | Delay between ICMP requests                                                      |
+| `PING_TIMEOUT_SECONDS`      | `1`             | Per-request reply timeout                                                        |
+| `EXPECTED_NODES`            | current 8 nodes | Peers that must appear in the mesh; missing nodes emit `mesh_peer_unreachable=1` |
+| `TRANSFER_BYTES`            | `33554432`      | Bytes per manual HTTP `/download`/`/upload` test                                 |
+| `TRANSFER_FLOWS`            | `16`            | Parallel iperf3 streams (and HTTP flows)                                         |
+| `TRANSFER_TIMEOUT_SECONDS`  | `20`            | iperf3 subprocess timeout                                                        |
+| `IPERF_PORT`                | `5201`          | Peer iperf3 server port                                                          |
+| `IPERF_SECONDS`             | `3`             | Total iperf3 run duration                                                        |
+| `IPERF_OMIT_SECONDS`        | `1`             | Initial warm-up second excluded from the interval statistics                     |
+| `PORT`                      | `9101`          | Metrics, health and manual-transfer HTTP port                                    |
 
 In the cluster, capacities are read from the `glem.men/lan-speed` node label,
 so there is no per-node capacity list in the DaemonSet. `NODE_CAPACITIES`
@@ -116,39 +116,39 @@ metrics use `node` for the probe's own node; the PodMonitor adds the same
 `node` label to every series for consistency with node-exporter (`honorLabels`
 keeps the probe's value where both exist).
 
-| Metric | Labels | Meaning |
-| --- | --- | --- |
-| `mesh_ping_rtt_ms` | source, destination | Average ICMP RTT |
-| `mesh_ping_rtt_min_ms` | source, destination | Minimum RTT |
-| `mesh_ping_rtt_max_ms` | source, destination | Maximum RTT |
-| `mesh_ping_rtt_mdev_ms` | source, destination | Mean RTT deviation |
-| `mesh_ping_loss_percent` | source, destination | Packet loss (0-100) |
-| `mesh_ping_sent_packets` | source, destination | Echo requests sent |
-| `mesh_ping_received_packets` | source, destination | Echo replies received |
-| `mesh_ping_success` | source, destination | 1 when at least one reply was received (reachability) |
-| `mesh_peer_unreachable` | source, peer | 1 when an expected peer is missing or not Ready |
-| `mesh_transfer_mbps` | source, destination, direction | iperf3 receiver-side throughput |
-| `mesh_transfer_utilization_percent` | source, destination, direction | Throughput relative to the slower endpoint's capacity |
-| `mesh_transfer_error` | source, destination, direction, reason | Last iperf3 failure reason |
-| `mesh_transfer_last_success_timestamp_seconds` | source, destination, direction | Last successful test time |
-| `mesh_transfer_bytes` | source, destination, direction | Bytes received in the measured interval |
-| `mesh_transfer_seconds` | source, destination, direction | Measured interval duration |
-| `mesh_transfer_flows` | source, destination, direction | Parallel iperf3 streams |
-| `mesh_transfer_success` | source, destination, direction | 1 when the test completed |
-| `mesh_iperf_server_up` | node | 1 when the local iperf3 server is listening |
-| `mesh_test_active` | node | 1 during a throughput cycle (alert inhibition) |
-| `mesh_probe_pod_mtu` | node | MTU of the probe pod interface |
-| `mesh_node_capacity_mbps` | node | Expected NIC capacity from `glem.men/lan-speed` |
-| `mesh_probe_last_ping_timestamp_seconds` | node | Last completed ping cycle |
-| `mesh_probe_last_transfer_timestamp_seconds` | node | Last completed throughput cycle |
-| `mesh_last_test_timestamp_seconds` | source, destination, test | Last test completion time |
-| `mesh_probe_info` | node, version | Static probe info |
-| `mesh_probe_start_time_seconds` | node | Probe process start time |
-| `mesh_probe_peers` | node | Configured peer count |
-| `mesh_probe_last_cycle_timestamp_seconds` | node | Last cycle completion time |
-| `mesh_probe_cycle_duration_seconds` | node | Last cycle duration |
-| `mesh_peer_ready` | source, peer | Peer Ready condition from Kubernetes |
-| `mesh_peer_info` | source, peer, address, port | Peer address |
+| Metric                                         | Labels                                 | Meaning                                               |
+| ---------------------------------------------- | -------------------------------------- | ----------------------------------------------------- |
+| `mesh_ping_rtt_ms`                             | source, destination                    | Average ICMP RTT                                      |
+| `mesh_ping_rtt_min_ms`                         | source, destination                    | Minimum RTT                                           |
+| `mesh_ping_rtt_max_ms`                         | source, destination                    | Maximum RTT                                           |
+| `mesh_ping_rtt_mdev_ms`                        | source, destination                    | Mean RTT deviation                                    |
+| `mesh_ping_loss_percent`                       | source, destination                    | Packet loss (0-100)                                   |
+| `mesh_ping_sent_packets`                       | source, destination                    | Echo requests sent                                    |
+| `mesh_ping_received_packets`                   | source, destination                    | Echo replies received                                 |
+| `mesh_ping_success`                            | source, destination                    | 1 when at least one reply was received (reachability) |
+| `mesh_peer_unreachable`                        | source, peer                           | 1 when an expected peer is missing or not Ready       |
+| `mesh_transfer_mbps`                           | source, destination, direction         | iperf3 receiver-side throughput                       |
+| `mesh_transfer_utilization_percent`            | source, destination, direction         | Throughput relative to the slower endpoint's capacity |
+| `mesh_transfer_error`                          | source, destination, direction, reason | Last iperf3 failure reason                            |
+| `mesh_transfer_last_success_timestamp_seconds` | source, destination, direction         | Last successful test time                             |
+| `mesh_transfer_bytes`                          | source, destination, direction         | Bytes received in the measured interval               |
+| `mesh_transfer_seconds`                        | source, destination, direction         | Measured interval duration                            |
+| `mesh_transfer_flows`                          | source, destination, direction         | Parallel iperf3 streams                               |
+| `mesh_transfer_success`                        | source, destination, direction         | 1 when the test completed                             |
+| `mesh_iperf_server_up`                         | node                                   | 1 when the local iperf3 server is listening           |
+| `mesh_test_active`                             | node                                   | 1 during a throughput cycle (alert inhibition)        |
+| `mesh_probe_pod_mtu`                           | node                                   | MTU of the probe pod interface                        |
+| `mesh_node_capacity_mbps`                      | node                                   | Expected NIC capacity from `glem.men/lan-speed`       |
+| `mesh_probe_last_ping_timestamp_seconds`       | node                                   | Last completed ping cycle                             |
+| `mesh_probe_last_transfer_timestamp_seconds`   | node                                   | Last completed throughput cycle                       |
+| `mesh_last_test_timestamp_seconds`             | source, destination, test              | Last test completion time                             |
+| `mesh_probe_info`                              | node, version                          | Static probe info                                     |
+| `mesh_probe_start_time_seconds`                | node                                   | Probe process start time                              |
+| `mesh_probe_peers`                             | node                                   | Configured peer count                                 |
+| `mesh_probe_last_cycle_timestamp_seconds`      | node                                   | Last cycle completion time                            |
+| `mesh_probe_cycle_duration_seconds`            | node                                   | Last cycle duration                                   |
+| `mesh_peer_ready`                              | source, peer                           | Peer Ready condition from Kubernetes                  |
+| `mesh_peer_info`                               | source, peer, address, port            | Peer address                                          |
 
 `direction` is `upload` (source -> destination) or `download` (destination ->
 source). Failed transfers keep `mesh_transfer_success=0` and omit

@@ -53,4 +53,4 @@ provisioning:
 apiVersion: v1alpha1
 kind: KubeNodeConfig
 labels:
-  glem.men/lan-speed: "2"
+  glem.men/lan-speed: "2000"

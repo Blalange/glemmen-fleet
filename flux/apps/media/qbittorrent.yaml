@@ -47,7 +47,7 @@ spec:
                   - key: glem.men/lan-speed
                     operator: Gt
                     values:
-                      - "1"
+                      - "1999"
       terminationGracePeriodSeconds: 30
       securityContext:
         seccompProfile:
