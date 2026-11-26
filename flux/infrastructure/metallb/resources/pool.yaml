@@ -27,12 +27,9 @@ spec:
     - internal
   nodeSelectors:
     - matchExpressions:
-        - key: glem.men/ecmp-node
+        - key: glem.men/1xx
           operator: In
           values: ["true"]
-        - key: kubernetes.io/hostname
-          operator: NotIn
-          values: ["glemmen80"]
   interfaces:
     - bond0
 ---

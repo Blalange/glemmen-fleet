@@ -4,32 +4,31 @@
 below. It runs on KubeVirt; the KubeVirt/CDI stack is in
 `flux/infrastructure/kubevirt/`.
 
-| | |
-| --- | --- |
-| Name | `winsrv01` (namespace `virtualization`) |
-| OS | Windows Server 2025 Standard Evaluation (Desktop Experience), en-US |
-| Media | Microsoft Evaluation ISO build `26100.1742` |
-| CPU / RAM | 2 vCPU / 8 GiB |
-| System disk | 64 GiB, `nvme-rbd`, raw block |
-| Firmware | UEFI (q35, Secure Boot off) |
-| Disk / NIC | virtio-blk / virtio-net |
-| Network | KubeVirt pod network (masquerade) |
-| LAN VIP | `192.168.6.96` (MetalLB) |
+|             |                                                                     |
+| ----------- | ------------------------------------------------------------------- |
+| Name        | `winsrv01` (namespace `virtualization`)                             |
+| OS          | Windows Server 2025 Standard Evaluation (Desktop Experience), en-US |
+| Media       | Microsoft Evaluation ISO build `26100.1742`                         |
+| CPU / RAM   | 2 vCPU / 8 GiB                                                      |
+| System disk | 64 GiB, `nvme-rbd`, raw block                                       |
+| Firmware    | UEFI (q35, Secure Boot off)                                         |
+| Disk / NIC  | virtio-blk / virtio-net                                             |
+| Network     | KubeVirt pod network (masquerade)                                   |
+| LAN VIP     | `192.168.6.96` (MetalLB)                                            |
 
 ## Services
 
-| Service | Address | Account |
-| --- | --- | --- |
-| RDP | `192.168.6.96:3389` | `GLEMMEN\simon` or `Administrator` |
-| SSH | `192.168.6.96:22` | `GLEMMEN\simon` |
-| SQL Server 2025 | `192.168.6.96:1433` | `GLEMMEN\simon`, SQL `simon`, or `sa` |
-| DNS | `192.168.6.96:53` UDP+TCP | — |
-| FTP | `192.168.6.96:21`, passive `50000-50009` | `GLEMMEN\ftpuser` |
-| Active Directory | forest `ad.glemmen.internal` | `GLEMMEN\simon` (Domain Admin), `GLEMMEN\ftpuser` |
+| Service          | Address                                  | Account                                           |
+| ---------------- | ---------------------------------------- | ------------------------------------------------- |
+| RDP              | `192.168.6.96:3389`                      | `GLEMMEN\simon` or `Administrator`                |
+| SSH              | `192.168.6.96:22`                        | `GLEMMEN\simon`                                   |
+| SQL Server 2025  | `192.168.6.96:1433`                      | `GLEMMEN\simon`, SQL `simon`, or `sa`             |
+| DNS              | `192.168.6.96:53` UDP+TCP                | —                                                 |
+| FTP              | `192.168.6.96:21`, passive `50000-50009` | `GLEMMEN\ftpuser`                                 |
+| Active Directory | forest `ad.glemmen.internal`             | `GLEMMEN\simon` (Domain Admin), `GLEMMEN\ftpuser` |
 
 The Service uses `externalTrafficPolicy: Cluster`, so the VM can run on any
-KubeVirt-schedulable node. MetalLB announces the VIP on the
-`glem.men/ecmp-node` speakers; source addresses are SNATed to the announcing
+KubeVirt-schedulable node. MetalLB announces the VIP on the speakers; source addresses are SNATed to the announcing
 node, which the Windows firewall rules allow. The VM currently runs on
 `glemmen60`.
 
@@ -96,13 +95,13 @@ slmgr /ato
 The answer file and the AD/SQL bootstrap passwords live only in the
 `winsrv01-sysprep` Secret in the cluster. The Secret has these keys:
 
-| Key | Contents |
-| --- | --- |
-| `autounattend.xml` | Windows Setup answer file, including the Administrator password |
-| `secrets.json` | `simon_password`, `ftp_password`, `sa_password`, `dsrm_password` |
-| `post-install.ps1` | First-logon script |
-| `phase2-ad.ps1` | Role install + AD DS promotion |
-| `phase3-configure.ps1` | Users, DNS, SSH, FTP, SQL |
+| Key                    | Contents                                                         |
+| ---------------------- | ---------------------------------------------------------------- |
+| `autounattend.xml`     | Windows Setup answer file, including the Administrator password  |
+| `secrets.json`         | `simon_password`, `ftp_password`, `sa_password`, `dsrm_password` |
+| `post-install.ps1`     | First-logon script                                               |
+| `phase2-ad.ps1`        | Role install + AD DS promotion                                   |
+| `phase3-configure.ps1` | Users, DNS, SSH, FTP, SQL                                        |
 
 Create or rotate it with the values you want:
 

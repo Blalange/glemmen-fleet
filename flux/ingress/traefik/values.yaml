@@ -20,9 +20,10 @@ affinity:
     requiredDuringSchedulingIgnoredDuringExecution:
       nodeSelectorTerms:
         - matchExpressions:
-            - key: glem.men/ecmp-node
-              operator: In
-              values: ["true"]
+            - key: glem.men/lan-speed
+              operator: Gt
+              values:
+                - "4999"
 podDisruptionBudget:
   enabled: true
   minAvailable: 1

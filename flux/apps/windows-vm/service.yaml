@@ -16,7 +16,7 @@ spec:
   type: LoadBalancer
   # Cluster (not Local): the VM may run on any KubeVirt-schedulable node,
   # including nodes that do not announce the MetalLB VIP. The VIP is still
-  # announced by the glem.men/ecmp-node speakers, and kube-proxy routes the
+  # announced by the MetalLB speakers, and kube-proxy routes the
   # service to the VM's node. The source IP is therefore SNATed to the
   # announcing node, which the Windows firewall rules allow.
   externalTrafficPolicy: Cluster

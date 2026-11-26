@@ -38,16 +38,17 @@ spec:
     controller:
       # Keep the controller on a server-VLAN node.
       nodeSelector:
-        glem.men/ecmp-node: "true"
+        glem.men/1xx: "true"
     speaker:
       affinity:
         nodeAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:
             nodeSelectorTerms:
               - matchExpressions:
-                  - key: glem.men/ecmp-node
-                    operator: In
-                    values: ["true"]
+                  - key: glem.men/lan-speed
+                    operator: Gt
+                    values:
+                      - "4999"
     prometheus:
       serviceMonitor:
         enabled: true
