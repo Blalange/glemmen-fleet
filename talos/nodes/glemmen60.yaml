@@ -49,3 +49,8 @@ provisioning:
   diskSelector:
     match: 'disk.wwid == "naa.6b8ca3a0f77e3f003260c7f61614887d"'
   wipe: true
+---
+apiVersion: v1alpha1
+kind: KubeNodeConfig
+labels:
+  glem.men/lan-speed: "2"

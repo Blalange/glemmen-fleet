@@ -15,20 +15,21 @@ name: enp4s0f0
 up: true
 mtu: 9000
 addresses:
-    - address: 192.168.6.80/24
+  - address: 192.168.6.80/24
 routes:
-    - gateway: 192.168.6.1
+  - gateway: 192.168.6.1
 ---
 # Install to the ST91000640NS (slot moved to sda); overrides the common install target.
 apiVersion: v1alpha1
 kind: UnattendedInstallConfig
 reboot: true
 provisioning:
-    diskSelector:
-        match: 'disk.wwid == "naa.5000c500647fdfa5"'
-    wipe: true
+  diskSelector:
+    match: 'disk.wwid == "naa.5000c500647fdfa5"'
+  wipe: true
 ---
 apiVersion: v1alpha1
 kind: KubeNodeConfig
 labels:
-    glem.men/ecmp-node: "true"
+  glem.men/ecmp-node: "true"
+  glem.men/lan-speed: "10"

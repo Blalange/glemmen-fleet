@@ -88,3 +88,4 @@ apiVersion: v1alpha1
 kind: KubeNodeConfig
 labels:
   glem.men/ecmp-node: "true"
+  glem.men/lan-speed: "2"
