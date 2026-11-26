@@ -23,6 +23,12 @@ variable at the top selects how each table reduces the samples over the
 dashboard time range: `max`, `min`, `avg`, `p50`, `p95`, `p99` or `latest`.
 Each matrix has one row per source; columns are the destinations.
 
+Expected link capacities are read from the `glem.men/lan-speed` node label,
+which holds the aggregate LAN speed in Gbit/s (for example `10` for a 10G
+link or `6` for a six-port 1G LACP bond). The probe converts the label to
+Mbit/s and exposes it as `mesh_node_capacity_mbps`; utilization is measured
+against the slower endpoint of each pair.
+
 ## Why pod networking and iperf3?
 
 The probe deliberately runs on the pod network: the tests then traverse the
@@ -52,7 +58,7 @@ those endpoints.
 | --- | --- |
 | `daemonset.yaml` | One pod-network probe per node, env configuration, probes |
 | `probe.py` | ICMP + iperf3 test loop and Prometheus/HTTP server (stdlib + iperf3) |
-| `rbac.yaml` | ServiceAccount and read-only pod list permission |
+| `rbac.yaml` | ServiceAccount and read-only pod/node list permission |
 | `kustomization.yaml` | ConfigMap generator for `probe.py` |
 
 The deployed resources are in `flux/monitoring/network-mesh/`. They are applied
@@ -75,7 +81,6 @@ The DaemonSet passes these environment variables:
 | `PING_INTERVAL_MS` | `200` | Delay between ICMP requests |
 | `PING_TIMEOUT_SECONDS` | `1` | Per-request reply timeout |
 | `EXPECTED_NODES` | current 8 nodes | Peers that must appear in the mesh; missing nodes emit `mesh_peer_unreachable=1` |
-| `NODE_CAPACITIES` | per-node map | Expected NIC capacity in Mbit/s for utilization panels |
 | `TRANSFER_BYTES` | `33554432` | Bytes per manual HTTP `/download`/`/upload` test |
 | `TRANSFER_FLOWS` | `16` | Parallel iperf3 streams (and HTTP flows) |
 | `TRANSFER_TIMEOUT_SECONDS` | `20` | iperf3 subprocess timeout |
@@ -83,6 +88,12 @@ The DaemonSet passes these environment variables:
 | `IPERF_SECONDS` | `3` | Total iperf3 run duration |
 | `IPERF_OMIT_SECONDS` | `1` | Initial warm-up second excluded from the interval statistics |
 | `PORT` | `9101` | Metrics, health and manual-transfer HTTP port |
+
+In the cluster, capacities are read from the `glem.men/lan-speed` node label,
+so there is no per-node capacity list in the DaemonSet. `NODE_CAPACITIES`
+(comma-separated `node:mbps`) remains available as a fallback for standalone
+runs; label values take precedence over it. Nodes without either source get
+no capacity series and therefore no utilization values.
 
 `STATIC_PEERS` can replace Kubernetes pod discovery, which is useful for
 running the probe outside the cluster:
@@ -127,7 +138,7 @@ keeps the probe's value where both exist).
 | `mesh_iperf_server_up` | node | 1 when the local iperf3 server is listening |
 | `mesh_test_active` | node | 1 during a throughput cycle (alert inhibition) |
 | `mesh_probe_pod_mtu` | node | MTU of the probe pod interface |
-| `mesh_node_capacity_mbps` | node | Expected NIC capacity |
+| `mesh_node_capacity_mbps` | node | Expected NIC capacity from `glem.men/lan-speed` |
 | `mesh_probe_last_ping_timestamp_seconds` | node | Last completed ping cycle |
 | `mesh_probe_last_transfer_timestamp_seconds` | node | Last completed throughput cycle |
 | `mesh_last_test_timestamp_seconds` | source, destination, test | Last test completion time |
@@ -172,6 +183,9 @@ Common causes of failing tests:
   Prometheus targets page.
 - **Table cell is `-`**: the source has not completed a test against that
   destination yet, or the peer probe pod is not running.
+- **Utilization is empty but throughput is shown**: one of the endpoints has
+  no `glem.men/lan-speed` node label (or `NODE_CAPACITIES` entry in standalone
+  mode), so the probe cannot compute capacity-relative utilization.
 
 The probe is intentionally not a privileged pod. It gets only `NET_RAW`,
 drops all other capabilities, runs with a read-only root filesystem and

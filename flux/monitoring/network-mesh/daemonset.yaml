@@ -10,6 +10,10 @@
 # every 30 minutes with 16 parallel iperf3 streams in each direction; they are
 # phase-shifted so only one node runs a throughput cycle at a time.  This keeps
 # the 1 Gbit/s access ports from being saturated by the monitoring itself.
+#
+# Expected link capacities come from the glem.men/lan-speed node label
+# (aggregate LAN speed in Gbit/s), which the probe reads from the Kubernetes
+# API; there is no capacity list to keep in sync here.
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
@@ -98,8 +102,6 @@ spec:
               value: "1"
             - name: EXPECTED_NODES
               value: "glemmen60,glemmen80,glemmen130,glemmen150,glemmen160,glemmen170,glemmen180,glemmen250"
-            - name: NODE_CAPACITIES
-              value: "glemmen60:1000,glemmen80:10000,glemmen130:2000,glemmen150:2000,glemmen160:2000,glemmen170:2000,glemmen180:2000,glemmen250:1000"
             - name: PYTHONDONTWRITEBYTECODE
               value: "1"
           ports:

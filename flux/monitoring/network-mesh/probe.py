@@ -10,7 +10,8 @@ node. Every instance periodically:
 
 and exposes the results as Prometheus metrics on /metrics. Peer probe pods are
 discovered from the Kubernetes API (or from STATIC_PEERS when running outside
-the cluster). Running on the pod network makes the tests traverse the Calico
+the cluster), and expected link capacities come from the glem.men/lan-speed
+node label. Running on the pod network makes the tests traverse the Calico
 pod-CIDR routes.
 
 The HTTP server also implements endpoints for metrics, health and manual
@@ -43,7 +44,7 @@ import urllib.parse
 import urllib.request
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
-VERSION = "1.4.0"
+VERSION = "1.5.0"
 
 SA_DIR = "/var/run/secrets/kubernetes.io/serviceaccount"
 SA_TOKEN = os.path.join(SA_DIR, "token")
@@ -54,6 +55,9 @@ ZERO_FILE = "/tmp/network-mesh-zero"
 ZERO_FILE_SIZE = 4 * 1024 * 1024
 ZERO_FILE_LOCK = threading.Lock()
 DEFAULT_PORT = 9101
+# Aggregate LAN speed in Gbit/s, maintained on the Talos nodes (for example
+# "10" for a 10G link or "6" for a six-port 1G LACP bond).
+LAN_SPEED_LABEL = "glem.men/lan-speed"
 
 
 def env_int(name, default):
@@ -122,7 +126,26 @@ def parse_capacities(raw):
     return capacities
 
 
+def parse_lan_speed(value):
+    """Return the link capacity in Mbit/s from a glem.men/lan-speed label.
+
+    The label holds the aggregate LAN speed in Gbit/s (for example "10" or
+    "2").  Returns None when the label is missing or not a positive number.
+    """
+    if value is None:
+        return None
+    try:
+        speed = float(str(value).strip())
+    except ValueError:
+        return None
+    if not math.isfinite(speed) or speed <= 0:
+        return None
+    return speed * 1000.0
+
+
 EXPECTED_NODES = parse_expected_nodes(EXPECTED_NODES_RAW)
+# Optional fallback for runs outside the cluster; in-cluster capacities come
+# from the glem.men/lan-speed node label.
 NODE_CAPACITIES = parse_capacities(NODE_CAPACITIES_RAW)
 IPERF_SERVER_UP = False
 
@@ -432,18 +455,16 @@ def start_iperf_server():
 # Peer discovery
 
 
-def kubernetes_probe_pods():
+def kubernetes_get(path, query=None):
     with open(SA_TOKEN, "r") as handle:
         token = handle.read().strip()
     # KUBERNETES_SERVICE_HOST/PORT are injected into every pod. The in-cluster
     # DNS name is a fallback for unusual setups.
     host = os.environ.get("KUBERNETES_SERVICE_HOST", "kubernetes.default.svc")
     port = os.environ.get("KUBERNETES_SERVICE_PORT", "443")
-
-    selector = urllib.parse.urlencode(
-        {"labelSelector": "app.kubernetes.io/name=network-mesh-probe"})
-    url = "https://{}:{}/api/v1/namespaces/{}/pods?{}".format(
-        host, port, urllib.parse.quote(POD_NAMESPACE, safe=""), selector)
+    url = "https://{}:{}{}".format(host, port, path)
+    if query:
+        url += "?" + urllib.parse.urlencode(query)
     request = urllib.request.Request(
         url,
         headers={
@@ -453,7 +474,14 @@ def kubernetes_probe_pods():
     )
     context = ssl.create_default_context(cafile=SA_CA)
     with urllib.request.urlopen(request, timeout=10, context=context) as resp:
-        payload = json.load(resp)
+        return json.load(resp)
+
+
+def kubernetes_probe_pods():
+    payload = kubernetes_get(
+        "/api/v1/namespaces/{}/pods".format(
+            urllib.parse.quote(POD_NAMESPACE, safe="")),
+        {"labelSelector": "app.kubernetes.io/name=network-mesh-probe"})
 
     candidates = []
     for item in payload.get("items", []):
@@ -492,6 +520,22 @@ def kubernetes_probe_pods():
             "ready": ready,
         })
     return sorted(peers, key=lambda peer: peer["name"])
+
+
+def kubernetes_node_capacities():
+    """Return node NIC capacities in Mbit/s from glem.men/lan-speed labels."""
+    payload = kubernetes_get("/api/v1/nodes")
+    capacities = {}
+    for item in payload.get("items", []):
+        metadata = item.get("metadata") or {}
+        name = metadata.get("name")
+        if not name:
+            continue
+        value = parse_lan_speed(
+            (metadata.get("labels") or {}).get(LAN_SPEED_LABEL))
+        if value is not None:
+            capacities[name] = value
+    return capacities
 
 
 def discover_peers():
@@ -581,6 +625,7 @@ class ProbeState(object):
         self.test_active = 0
         self.expected_nodes = list(EXPECTED_NODES)
         self.capacities = dict(NODE_CAPACITIES)
+        self.label_capacities = {}
         self.last_transfer_success = {}
 
     def update_peers(self, peers):
@@ -589,6 +634,10 @@ class ProbeState(object):
         # renderer now emits an explicit unreachable series instead.
         with self.lock:
             self.peers = peers
+
+    def update_capacities(self, capacities):
+        with self.lock:
+            self.label_capacities = dict(capacities)
 
     def set_test_active(self, active):
         with self.lock:
@@ -651,6 +700,7 @@ class ProbeState(object):
             test_active = self.test_active
             expected_nodes = list(self.expected_nodes)
             capacities = dict(self.capacities)
+            capacities.update(self.label_capacities)
             last_transfer_success = dict(self.last_transfer_success)
 
         peer_by_name = {
@@ -936,6 +986,11 @@ class Scheduler(object):
             log("peer discovery returned no nodes")
             return previous
         self.state.update_peers(peers)
+        if not STATIC_PEERS:
+            try:
+                self.state.update_capacities(kubernetes_node_capacities())
+            except Exception as exc:
+                log("node capacity discovery failed: {}".format(exc))
         return peers
 
     def phase_offset(self, peers, interval):
