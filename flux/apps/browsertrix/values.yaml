@@ -41,6 +41,8 @@ crawler_browser_instances: 4
 enable_auto_resize_crawlers: true
 max_crawler_memory: 8Gi
 crawler_storage: 25Gi
+crawler_cpu_base: 600m
+crawler_extra_cpu_per_browser: 300m
 crawler_min_avail_storage_ratio: 2.5
 # The previous deployment allowed unlimited pages; keep workflow limits only.
 max_pages_per_crawl: 0
