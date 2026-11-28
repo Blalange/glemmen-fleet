@@ -21,3 +21,6 @@ scripts/bin/
 
 # Device Type Library runtime cache (never commit catalog data)
 inventory/.dtl-cache/
+
+# Browsertrix organization export (contains user/crawl metadata; import only)
+org-export.json

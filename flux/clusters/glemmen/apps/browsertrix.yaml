@@ -1,0 +1,21 @@
+# Browsertrix web archiving. Its crawl PVCs use the CMR CephFS class from
+# rook-ceph and MongoDB is post-rendered onto nvme-rbd.
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: browsertrix
+  namespace: flux-system
+spec:
+  interval: 1h
+  retryInterval: 2m
+  timeout: 20m
+  path: ./flux/apps/browsertrix
+  prune: true
+  wait: true
+  targetNamespace: browsertrix
+  dependsOn:
+    - name: infrastructure
+    - name: rook-ceph
+  sourceRef:
+    kind: GitRepository
+    name: flux-system

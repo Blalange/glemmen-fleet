@@ -134,6 +134,11 @@ metadata:
 apiVersion: v1
 kind: Namespace
 metadata:
+  name: browsertrix
+---
+apiVersion: v1
+kind: Namespace
+metadata:
   name: yugabyte
 ---
 apiVersion: v1

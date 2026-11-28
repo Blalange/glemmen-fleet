@@ -8,6 +8,7 @@ resources:
   - artex.yaml
   - auto-netviz.yaml
   - bokami.yaml
+  - browsertrix.yaml
   - energisjappa.yaml
   - frigate.yaml
   - homepage.yaml

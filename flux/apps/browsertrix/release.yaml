@@ -1,0 +1,58 @@
+# Browsertrix Helm chart and release.
+#
+# The chart is pinned. The only post-render patch moves the local MongoDB onto
+# NVMe RBD; every dynamic crawl PVC keeps the chart-wide fast-fs-crawl class
+# from values.yaml. See values.yaml for why the two classes are split.
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: HelmRepository
+metadata:
+  name: browsertrix
+spec:
+  interval: 1h
+  url: https://docs.browsertrix.com/helm-repo/
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: browsertrix
+spec:
+  interval: 1h
+  # The first install creates the CRDs, MongoDB and the operator stack.
+  timeout: 20m
+  chart:
+    spec:
+      chart: browsertrix
+      version: 1.27.0
+      sourceRef:
+        kind: HelmRepository
+        name: browsertrix
+  install:
+    crds: Create
+    remediation:
+      retries: 3
+  upgrade:
+    crds: CreateReplace
+    remediation:
+      retries: 3
+      remediateLastFailure: true
+  valuesFrom:
+    - kind: ConfigMap
+      name: browsertrix-values
+      valuesKey: values.yaml
+    # Created manually (see README.md): superuser/Mongo passwords, the backend
+    # cookie secret and the `btrix` S3 access keys.
+    - kind: Secret
+      name: browsertrix-secrets
+      valuesKey: values.yaml
+  postRenderers:
+    - kustomize:
+        patches:
+          # The database is latency-sensitive and single-writer; keep it on
+          # NVMe block storage instead of the CMR CephFS crawl class.
+          - target:
+              kind: StatefulSet
+              name: local-mongo
+            patch: |
+              - op: replace
+                path: /spec/volumeClaimTemplates/0/spec/storageClassName
+                value: nvme-rbd

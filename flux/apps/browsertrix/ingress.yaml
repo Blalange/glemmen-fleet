@@ -1,0 +1,31 @@
+# Traefik terminates TLS with the *.glem.men wildcard certificate and forwards
+# API requests to the backend and everything else to the frontend. The chart's
+# own Ingress is disabled in values.yaml so this file stays in the repo's
+# ingress style and does not create a second cert-manager ClusterIssuer.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: browsertrix
+  labels:
+    app.kubernetes.io/name: browsertrix
+    app.kubernetes.io/instance: browsertrix
+spec:
+  ingressClassName: traefik
+  rules:
+    - host: browsertrix.glem.men
+      http:
+        paths:
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: browsertrix-cloud-backend
+                port:
+                  number: 8000
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: browsertrix-cloud-frontend
+                port:
+                  number: 80

@@ -1,0 +1,77 @@
+# Browsertrix (Webrecorder) - web archiving and replay.
+#
+# The chart has a single `volume_storage_class` for every PVC it provisions:
+# the MongoDB database and all dynamic crawl resources (crawler workspaces,
+# per-crawl Redis and dedupe indexes). We want those in different places, so:
+#
+#   - this value points at the CMR CephFS class with Delete reclaim. Crawl
+#     PVCs are created per crawl and removed when the operator drops them; the
+#     Delete policy also removes the CephFS subvolume instead of leaking it.
+#   - release.yaml post-renders the MongoDB StatefulSet onto `nvme-rbd`.
+#
+# CephFS keeps the per-crawl volumes thin and expandable online, and (unlike
+# RBD) allows several crawler pods of the same crawl to mount one claim.
+volume_storage_class: fast-fs-crawl
+
+name: browsertrix-cloud
+crawler_namespace: browsertrix-crawlers
+
+# S3 is the `btrix` bucket in the fast Ceph RGW. The access keys and endpoints
+# live in the browsertrix-secrets Secret, not in Git.
+minio_local: false
+
+# The chart's MongoDB StatefulSet uses `backend_num_replicas`; 1.27.0 does not
+# define it in values.yaml, so set it explicitly to keep replicas at 1.
+backend_num_replicas: 1
+mongo_local: true
+mongo_storage: 10Gi
+mongo_auth:
+  username: root
+
+# The default org must not collide with the imported "My Organization" slug.
+default_org: "Glemmen"
+superuser:
+  email: hexahigh0@gmail.com
+
+registration_enabled: "0"
+
+# Crawler resources. Four browsers per crawler pod; the CephFS workspace is
+# expanded online if a crawl needs more than 25 GiB.
+crawler_browser_instances: 4
+enable_auto_resize_crawlers: true
+max_crawler_memory: 8Gi
+crawler_storage: 25Gi
+crawler_min_avail_storage_ratio: 2.5
+# The previous deployment allowed unlimited pages; keep workflow limits only.
+max_pages_per_crawl: 0
+
+redis_storage: 4Gi
+redis_memory: 512Mi
+dedupe:
+  storage: 10Gi
+  memory: 2Gi
+
+backend_workers: 2
+backend_max_replicas: 1
+frontend_max_replicas: 1
+backend_cpu: 500m
+backend_memory: 1Gi
+mongo_cpu: 200m
+mongo_memory: 1Gi
+frontend_cpu: 50m
+frontend_memory: 128Mi
+job_cpu: 50m
+job_memory: 512Mi
+
+# Browsertrix is exposed by ingress.yaml; the chart must not create its own
+# nginx/cert-manager Ingress or ClusterIssuer.
+ingress:
+  host: ""
+  tls: false
+
+# Restrict application egress to DNS, its own services, S3, the API and the
+# public web. Crawler egress is restricted separately by the chart.
+namespace_network_policy_enabled: true
+
+signer:
+  enabled: false

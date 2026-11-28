@@ -95,3 +95,30 @@ parameters:
 reclaimPolicy: Retain
 allowVolumeExpansion: true
 volumeBindingMode: Immediate
+---
+# CMR CephFS with Delete reclaim, used for Browsertrix crawl workspaces (and
+# the chart's other per-crawl PVCs). CephFS grows online, so a crawler can be
+# given more space without a pre-sized block volume. Delete reclaim is
+# deliberate: the operator removes a crawl's PVC when the crawl finishes, and
+# the CephFS subvolume must go with it instead of accumulating on the CMR
+# tier. Do not use this class for data that must survive PVC deletion.
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: fast-fs-crawl
+provisioner: rook-ceph.cephfs.csi.ceph.com
+parameters:
+  clusterID: rook-ceph
+  fsName: cephfs
+  pool: cephfs-fast
+  csi.storage.k8s.io/provisioner-secret-name: rook-csi-cephfs-provisioner
+  csi.storage.k8s.io/provisioner-secret-namespace: rook-ceph
+  csi.storage.k8s.io/controller-expand-secret-name: rook-csi-cephfs-provisioner
+  csi.storage.k8s.io/controller-expand-secret-namespace: rook-ceph
+  csi.storage.k8s.io/controller-publish-secret-name: rook-csi-cephfs-provisioner
+  csi.storage.k8s.io/controller-publish-secret-namespace: rook-ceph
+  csi.storage.k8s.io/node-stage-secret-name: rook-csi-cephfs-node
+  csi.storage.k8s.io/node-stage-secret-namespace: rook-ceph
+reclaimPolicy: Delete
+allowVolumeExpansion: true
+volumeBindingMode: Immediate
