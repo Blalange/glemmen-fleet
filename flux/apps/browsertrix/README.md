@@ -26,6 +26,27 @@ metacontroller-based crawler operator. Crawl pods run in the separate
   but not private RFC1918 ranges, except the Browsertrix services they need.
   The application namespace egress policy is also on.
 
+### Replay CORS
+
+Replay fetches WACZ files directly from `s3.glem.men` in the browser, so the
+`btrix` bucket must send CORS headers for `https://browsertrix.glem.men` (a
+cross-origin `GET`/`HEAD`). This is RGW bucket state, not a Kubernetes
+resource; reapply it if the bucket is recreated:
+
+```sh
+AWS_ACCESS_KEY_ID="$(kubectl -n rook-ceph get secret rook-ceph-object-user-fast-btrix \
+  -o jsonpath='{.data.AccessKey}' | base64 -d)"
+AWS_SECRET_ACCESS_KEY="$(kubectl -n rook-ceph get secret rook-ceph-object-user-fast-btrix \
+  -o jsonpath='{.data.SecretKey}' | base64 -d)"
+AWS_DEFAULT_REGION=us-east-1 aws s3api put-bucket-cors \
+  --bucket btrix \
+  --cors-configuration file://flux/apps/browsertrix/bucket-cors.json \
+  --endpoint-url https://s3.glem.men
+```
+
+Without it, the replay page loads but the WACZ request fails in the browser
+because RGW sends no `Access-Control-Allow-Origin` header.
+
 ## Secret
 
 The HelmRelease reads `browsertrix-secrets` (key `values.yaml`). Create it
