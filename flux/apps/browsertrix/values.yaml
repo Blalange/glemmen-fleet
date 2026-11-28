@@ -9,8 +9,8 @@
 #     Delete policy also removes the CephFS subvolume instead of leaking it.
 #   - release.yaml post-renders the MongoDB StatefulSet onto `nvme-rbd`.
 #
-# CephFS keeps the per-crawl volumes thin and expandable online, and (unlike
-# RBD) allows several crawler pods of the same crawl to mount one claim.
+# CephFS keeps the per-crawl volumes thin and expandable online and avoids
+# RBD's single-node attach restriction if a crawl's pod is rescheduled.
 volume_storage_class: fast-fs-crawl
 
 name: browsertrix-cloud

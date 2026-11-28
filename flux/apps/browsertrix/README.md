@@ -53,7 +53,12 @@ storages:
     access_key: "${ACCESS_KEY}"
     secret_key: "${SECRET_KEY}"
     bucket_name: "btrix"
-    endpoint_url: "http://rook-ceph-rgw-fast.rook-ceph.svc:80/"
+    # Keep the endpoint and access endpoint on the same public host. The chart
+    # appends bucket_name to endpoint_url, so the stored endpoint is
+    # https://s3.glem.men/btrix/; access_endpoint_url must match it. If they
+    # differ, Browsertrix signs with SigV4 for the internal host and then
+    # rewrites the host, which invalidates the signature.
+    endpoint_url: "https://s3.glem.men/"
     access_endpoint_url: "https://s3.glem.men/btrix/"
     access_addressing_style: path
     region: "us-east-1"
