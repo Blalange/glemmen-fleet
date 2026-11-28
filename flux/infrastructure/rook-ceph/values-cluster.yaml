@@ -395,5 +395,9 @@ cephObjectStoreUsers:
     spec:
       store: fast
       displayName: Plus
+  - name: btrix
+    spec:
+      store: fast
+      displayName: Browsertrix
 
 cephECBlockPools: []
