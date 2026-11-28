@@ -77,8 +77,12 @@ Until then the media library stays on `fast-fs` and Frigate recordings stay on
 The fast RGW (`rook-ceph-rgw-fast`) runs on the CMR tier and is exposed over
 HTTPS at <https://s3.glem.men> via Traefik (path-style S3 access). Its metadata
 and data pools are replicated RF2 on `deviceClass: cmr`, with
-`preservePoolsOnDelete` set. Thanos, Loki, and Plus use the `thanos`, `loki`,
-and `plus-media` buckets through this store.
+`preservePoolsOnDelete` set. Thanos, Loki, Plus, and Browsertrix use the
+`thanos`, `loki`, `plus-media`, and `btrix` buckets through this store.
+
+Buckets are created once through the S3 API with the owning user's
+credentials (`radosgw-admin bucket create` no longer exists in Tentacle), and
+are not recreated by Flux.
 
 The RGW is intended to move to the bulk EC 8+2 pools on glemmen80 later. The
 bucket names and clients do not need to change for that move.
